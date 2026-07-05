@@ -1202,6 +1202,63 @@ test('standard guided flow exposes setup, eligibility, and publish phases withou
     assert.equal(postQualification.operatorState.availableActions.includes('EXECUTE_PUBLICATION'), false);
 });
 
+test('guided qualification remains eligible when a legacy publication policy also exists', () => {
+    const root = makeTempRoot();
+    const request = buildRequest(root);
+    upsertInterpretivePublicationPolicy(request, makePublicationPolicyPayload({
+        now: Date.parse('2026-06-26T00:12:06.000Z'),
+    }));
+    const created = createInterpretiveCandidate(request, makeBasePayload({
+        interpretationId: 'interp_guided_legacy_policy_case',
+        interpretationRevisionId: 'interprev_guided_legacy_policy_case_v1',
+        now: Date.parse('2026-06-26T00:12:07.000Z'),
+    }));
+    const subjectRequest = created.interpretation.reviewRequests.find((entry) => entry.reviewerRole === 'MEMORY_SUBJECT');
+    const participantRequest = created.interpretation.reviewRequests.find((entry) => entry.reviewerRole === 'RELATIONAL_PARTICIPANT');
+
+    submitInterpretiveReviewDisposition(request, subjectRequest.reviewRequestId, {
+        actorEntityId: 'character:jeep.png',
+        disposition: 'APPROVE',
+        reviewEnvelopeHash: created.interpretation.reviewEnvelopeHash,
+        now: Date.parse('2026-06-26T00:12:08.000Z'),
+    });
+    submitInterpretiveReviewDisposition(request, participantRequest.reviewRequestId, {
+        actorEntityId: 'user:Chris',
+        disposition: 'APPROVE',
+        reviewEnvelopeHash: created.interpretation.reviewEnvelopeHash,
+        now: Date.parse('2026-06-26T00:12:09.000Z'),
+    });
+    const granted = recordInterpretiveSubjectDisposition(request, 'interprev_guided_legacy_policy_case_v1', {
+        actorEntityId: 'character:jeep.png',
+        state: 'GRANTED',
+        reviewEnvelopeHash: created.interpretation.reviewEnvelopeHash,
+        now: Date.parse('2026-06-26T00:12:10.000Z'),
+    });
+
+    const bootstrapped = bootstrapStandardInterpretivePublicationPolicy(request, {
+        now: Date.parse('2026-06-26T00:12:11.000Z'),
+    });
+    assert.equal(bootstrapped.ok, true);
+    assert.equal(bootstrapped.publicationPolicy.publicationPolicyId, 'standard-governed-publication');
+
+    const operatorState = getInterpretivePublicationOperatorState(request, 'interprev_guided_legacy_policy_case_v1');
+    assert.equal(operatorState.operatorState.guidedFlow.status, 'READY_TO_CHECK');
+    assert.equal(operatorState.operatorState.guidedFlow.nextAction.action, 'CHECK_ELIGIBILITY');
+
+    const qualification = qualifyInterpretivePublication(request, 'interprev_guided_legacy_policy_case_v1', {
+        publicationPolicyId: 'standard-governed-publication',
+        continuityTargetId: 'character:jeep.png',
+        proposalContentHash: granted.interpretation.proposalContentHash,
+        reviewEnvelopeHash: granted.interpretation.reviewEnvelopeHash,
+        subjectDispositionRecordId: granted.subjectDisposition.subjectDispositionId,
+        now: Date.parse('2026-06-26T00:12:12.000Z'),
+    });
+
+    assert.equal(qualification.qualification.publicationPolicyId, 'standard-governed-publication');
+    assert.equal(qualification.qualification.eligibilityVerdict, 'ELIGIBLE');
+    assert.deepEqual(qualification.qualification.refusalCodes, []);
+});
+
 test('publishInterpretiveMemory bootstraps the standard policy and publishes an approved root revision atomically', () => {
     const root = makeTempRoot();
     const request = buildRequest(root);

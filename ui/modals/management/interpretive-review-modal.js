@@ -1313,6 +1313,8 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
     }
 
     if (guidedFlow?.nextAction?.action === 'CHECK_ELIGIBILITY' && canQualify) {
+        const guidedPolicyId = standardPolicy?.publicationPolicyId || operatorState.latestQualification?.publicationPolicyId || '';
+        const guidedPolicyVersion = standardPolicy?.policyVersion || '';
         actionForms.push(renderPublicationActionForm({
             formKind: 'publication-qualify',
             title: 'Check Eligibility',
@@ -1322,6 +1324,8 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
             disabled: !canQualify,
             dataset: {
                 interpretationRevisionId: interpretation.interpretationRevisionId,
+                publicationPolicyId: guidedPolicyId,
+                publicationPolicyVersion: guidedPolicyVersion,
                 proposalContentHash: interpretation.proposalContentHash || '',
                 reviewEnvelopeHash: interpretation.reviewEnvelopeHash || '',
                 subjectDispositionRecordId: interpretation.subjectDisposition?.subjectDispositionId || '',
@@ -1329,9 +1333,7 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
             fieldsHtml: `
                 <label class="ss-interpretive-review-field">
                     <span>Publication policy</span>
-                    <select class="text_pole" name="publicationPolicyId">
-                        ${buildPublicationPolicyOptions(matchingPolicies, operatorState.latestQualification?.publicationPolicyId || '')}
-                    </select>
+                    <input class="text_pole" type="text" value="${escapeHtml(`${guidedPolicyId || 'n/a'}${guidedPolicyVersion ? ` v${guidedPolicyVersion}` : ''}`)}" readonly />
                 </label>
                 <label class="ss-interpretive-review-field">
                     <span>Continuity Target</span>
@@ -3212,7 +3214,7 @@ export async function openInterpretiveReviewModal() {
         async function handlePublicationQualificationSubmit(form) {
             const interpretationRevisionId = String(form.dataset.interpretationRevisionId || '').trim();
             const payload = {
-                publicationPolicyId: String(form.querySelector('[name="publicationPolicyId"]')?.value || '').trim(),
+                publicationPolicyId: String(form.dataset.publicationPolicyId || form.querySelector('[name="publicationPolicyId"]')?.value || '').trim(),
                 continuityTargetId: String(form.querySelector('[name="continuityTargetId"]')?.value || '').trim(),
                 proposalContentHash: String(form.dataset.proposalContentHash || '').trim(),
                 reviewEnvelopeHash: String(form.dataset.reviewEnvelopeHash || '').trim(),
