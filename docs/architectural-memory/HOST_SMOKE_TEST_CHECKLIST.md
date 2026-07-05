@@ -14,24 +14,36 @@ Purpose: track live host verification across the restored Summary Sharder build 
 ## Prerequisites
 
 - [ ] Similharity plugin is installed and running before any RAG, vectorization, retrieval, or reranker test is treated as valid
-- [ ] Pre-`C0.6.4-5` host proof only: at least one active interpretive publication policy exists before any `Publication Lifecycle` action test is treated as valid
 
 Notes:
 
 - Summary Sharder RAG depends on Similharity as a prerequisite plugin.
 - Without Similharity, the RAG settings surface, health checks, embedding tests, reranker tests, and related retrieval flows may appear broken even when the Summary Sharder build itself is functioning correctly.
 - Do not classify a failed RAG smoke test as a sharder regression until Similharity availability is confirmed first.
-- The host review modal can qualify, authorize, and execute publication, but the pre-`C0.6.4-5` host path cannot create publication policies.
-- If `Publication Readiness` shows `No Active Publication Policy`, the current host lifecycle path is blocked by missing governance data, not by a broken action button.
-- `C0.6.4-5` changes the intended operator flow to:
+- `C0.6.4-5` changes the standard operator flow to:
   - `Publication setup required`
   - `Set Up Standard Publication Policy`
   - `Check Eligibility`
   - `Publish Memory`
-- Current seed path for local test environments before `C0.6.4-5` lands:
-  - API route: `POST /interpretive/publication/policies`
+- Standard publication no longer requires script or raw-API bootstrap in the intended host path.
+- Legacy helper scripts remain available only for fixture seeding and lower-level proof work:
+  - policy route: `POST /interpretive/publication/policies`
   - proof/reference script: `tools/server-plugin/prove-c0-6-4-2.ps1`
-  - candidate helper script already in repo: `tools/server-plugin/seed-interpretive-candidate.ps1`
+  - candidate helper: `tools/server-plugin/seed-interpretive-candidate.ps1`
+
+### Guided publication contract proof
+
+- [x] Standard policy bootstrap is explicit, idempotent, and replay-safe
+- [x] Guided root publication bootstraps, qualifies, authorizes internally, and publishes atomically
+- [x] Guided publication replay restores the same published/active state after restart
+- [x] Packaged publication path succeeds under Node
+- [x] Packaged publication path succeeds under Bun
+- [x] Standard publication contract no longer requires script, JSON body, raw policy field, or refusal-code knowledge for ordinary flow
+
+Evidence:
+
+- automated proof: `tools/server-plugin/summary-sharder-memory/interpretive.test.mjs`
+- packaged runtime parity: `tools/server-plugin/summary-sharder-memory/package.test.mjs`
 
 ## Verified now
 
@@ -138,7 +150,7 @@ Verified live evidence:
 - Current boundary:
   - there is no confirmed host UI entry point yet for proposal generation
   - if the queue is empty, seed one governed candidate through the plugin route before continuing UI smoke
-  - pre-`C0.6.4-5`, publication lifecycle cannot progress past `Granted` until an active publication policy has been seeded
+  - `C0.6.4-5` now defines in-app bootstrap/check/publish flow, but the updated host path still needs live UI proof on the served build
   - helper script: `tools/server-plugin/seed-interpretive-candidate.ps1`
 
 - [ ] Verify saved evidence can feed proposal generation
