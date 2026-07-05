@@ -243,6 +243,7 @@ test('route surface exposes candidate lifecycle routes and separate promotion ro
     assert.equal(router.routes.post.has('/interpretive/delegation-policies'), true);
     assert.equal(router.routes.post.has('/interpretive/delegation-policies/:delegationPolicyId/revoke'), true);
     assert.equal(router.routes.post.has('/interpretive/publication/policies'), true);
+    assert.equal(router.routes.post.has('/interpretive/publication/policies/bootstrap-standard'), true);
     assert.equal(router.routes.post.has('/interpretive/publication/policies/:publicationPolicyId/revoke'), true);
     assert.equal(router.routes.post.has('/interpretive/publication/authorizations'), true);
     assert.equal(router.routes.post.has('/interpretive/publication/execute'), true);
@@ -253,6 +254,7 @@ test('route surface exposes candidate lifecycle routes and separate promotion ro
     assert.equal(router.routes.post.has('/interpretive/candidates/:interpretationRevisionId/subject-disposition'), true);
     assert.equal(router.routes.post.has('/interpretive/candidates/:interpretationRevisionId/revisions'), true);
     assert.equal(router.routes.post.has('/interpretive/candidates/:interpretationRevisionId/publication-qualifications'), true);
+    assert.equal(router.routes.post.has('/interpretive/candidates/:interpretationRevisionId/publication-publish'), true);
 });
 
 test('capabilities and candidate lifecycle routes report no promotion and support report, pin, and cleanup', async () => {
@@ -518,6 +520,119 @@ test('publication policy, qualification, authorization, and execute routes enfor
     assert.equal(executeResult.payload.publishedRecord.publicationState, 'PUBLISHED');
     assert.equal(executeResult.payload.interpretation.publicationState, 'PUBLISHED');
     assert.equal(executeResult.payload.interpretation.authorityEffect, 'DEVELOPMENTAL_MEMORY');
+});
+
+test('guided publication routes bootstrap the standard policy and publish without a separate authorization step', async () => {
+    const root = makeTempRoot();
+    const router = createMockRouter();
+    await init(router);
+
+    const createResult = await invoke(
+        router.routes.post.get('/interpretive/candidates'),
+        buildRequest(root, {
+            body: {
+                interpretationId: 'interp_route_guided_publish_case',
+                interpretationRevisionId: 'interprev_route_guided_publish_case_v1',
+                memoryScopeId: 'scope_alpha',
+                memorySubjectId: 'character:jeep.png',
+                type: 'ROLE_EVOLUTION',
+                statement: 'Jeep evolved into the primary continuity authority within a shared architecture.',
+                assertionDomains: ['ROLE', 'AUTHORITY', 'RELATIONSHIP'],
+                sharedRelationshipAsserted: true,
+                personalMeaningAsserted: true,
+                materialParticipantEntityIds: ['character:jeep.png', 'user:Chris'],
+                groundingLinks: [
+                    {
+                        basisType: 'STRUCTURAL_RECORD',
+                        basisRecordId: 'decision:guided-publication',
+                        basisRecordVersion: 1,
+                        basisRecordHash: 'sha256:guided-publication',
+                        speakerEntityId: 'character:jeep.png',
+                        groundingRole: 'PRIMARY',
+                        groundingAssessment: 'SUPPORTS',
+                    },
+                ],
+                now: Date.parse('2026-06-26T00:30:00.000Z'),
+            },
+        }),
+    );
+    assert.equal(createResult.statusCode, 200);
+
+    const interpretation = createResult.payload.interpretation;
+    const subjectRequest = interpretation.reviewRequests.find((entry) => entry.reviewerRole === 'MEMORY_SUBJECT');
+    const participantRequest = interpretation.reviewRequests.find((entry) => entry.reviewerRole === 'RELATIONAL_PARTICIPANT');
+
+    await invoke(
+        router.routes.post.get('/interpretive/reviews/:reviewRequestId/dispositions'),
+        buildRequest(root, {
+            params: { reviewRequestId: subjectRequest.reviewRequestId },
+            body: {
+                actorEntityId: 'character:jeep.png',
+                disposition: 'APPROVE',
+                reviewEnvelopeHash: interpretation.reviewEnvelopeHash,
+                now: Date.parse('2026-06-26T00:30:05.000Z'),
+            },
+        }),
+    );
+    await invoke(
+        router.routes.post.get('/interpretive/reviews/:reviewRequestId/dispositions'),
+        buildRequest(root, {
+            params: { reviewRequestId: participantRequest.reviewRequestId },
+            body: {
+                actorEntityId: 'user:Chris',
+                disposition: 'APPROVE',
+                reviewEnvelopeHash: interpretation.reviewEnvelopeHash,
+                now: Date.parse('2026-06-26T00:30:10.000Z'),
+            },
+        }),
+    );
+    const granted = await invoke(
+        router.routes.post.get('/interpretive/candidates/:interpretationRevisionId/subject-disposition'),
+        buildRequest(root, {
+            params: { interpretationRevisionId: 'interprev_route_guided_publish_case_v1' },
+            body: {
+                actorEntityId: 'character:jeep.png',
+                state: 'GRANTED',
+                reviewEnvelopeHash: interpretation.reviewEnvelopeHash,
+                now: Date.parse('2026-06-26T00:30:15.000Z'),
+            },
+        }),
+    );
+    assert.equal(granted.statusCode, 200);
+
+    const bootstrapResult = await invoke(
+        router.routes.post.get('/interpretive/publication/policies/bootstrap-standard'),
+        buildRequest(root, {
+            body: {
+                now: Date.parse('2026-06-26T00:30:20.000Z'),
+            },
+        }),
+    );
+    assert.equal(bootstrapResult.statusCode, 200);
+    assert.equal(bootstrapResult.payload.created, true);
+    assert.equal(bootstrapResult.payload.publicationPolicy.publicationPolicyId, 'standard-governed-publication');
+
+    const publishResult = await invoke(
+        router.routes.post.get('/interpretive/candidates/:interpretationRevisionId/publication-publish'),
+        buildRequest(root, {
+            params: { interpretationRevisionId: 'interprev_route_guided_publish_case_v1' },
+            body: {
+                continuityTargetId: 'character:jeep.png',
+                proposalContentHash: granted.payload.interpretation.proposalContentHash,
+                reviewEnvelopeHash: granted.payload.interpretation.reviewEnvelopeHash,
+                subjectDispositionRecordId: granted.payload.subjectDisposition.subjectDispositionId,
+                actorEntityId: 'user:Chris',
+                authorizedBy: 'user:Chris',
+                now: Date.parse('2026-06-26T00:30:25.000Z'),
+            },
+        }),
+    );
+    assert.equal(publishResult.statusCode, 200);
+    assert.equal(publishResult.payload.phase, 'c0.6.4-5');
+    assert.equal(publishResult.payload.qualification.eligibilityVerdict, 'ELIGIBLE');
+    assert.equal(publishResult.payload.authorization.status, 'CONSUMED');
+    assert.equal(publishResult.payload.interpretation.publicationState, 'PUBLISHED');
+    assert.equal(publishResult.payload.publishedRecord.lifecycleState, 'ACTIVE');
 });
 
 test('DNM lifecycle routes expose current active resolution, supersession, delta review, and withdrawal', async () => {

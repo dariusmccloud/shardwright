@@ -163,6 +163,13 @@ export async function listInterpretivePublicationPolicies(filters = {}) {
     return await fetchJson(`/interpretive/publication/policies${buildQueryString(filters)}`);
 }
 
+export async function bootstrapStandardInterpretivePublicationPolicy(payload = {}) {
+    return await fetchJson('/interpretive/publication/policies/bootstrap-standard', {
+        method: 'POST',
+        body: payload || {},
+    });
+}
+
 export async function listInterpretiveReviews(filters = {}) {
     return await fetchJson(`/interpretive/reviews${buildQueryString(filters)}`);
 }
@@ -203,6 +210,17 @@ export async function createInterpretivePublicationAuthorization(payload) {
 
 export async function executeInterpretivePublicationAuthorization(payload) {
     return await fetchJson('/interpretive/publication/execute', {
+        method: 'POST',
+        body: payload || {},
+    });
+}
+
+export async function publishInterpretiveMemory(interpretationRevisionId, payload) {
+    const normalizedId = String(interpretationRevisionId || '').trim();
+    if (!normalizedId) {
+        throw new Error('interpretationRevisionId is required');
+    }
+    return await fetchJson(`/interpretive/candidates/${encodeURIComponent(normalizedId)}/publication-publish`, {
         method: 'POST',
         body: payload || {},
     });

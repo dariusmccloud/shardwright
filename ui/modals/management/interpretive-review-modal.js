@@ -1,11 +1,13 @@
 import { Popup, POPUP_TYPE } from '../../../../../../popup.js';
 import {
+    bootstrapStandardInterpretivePublicationPolicy,
     createInterpretivePublicationAuthorization,
     executeInterpretivePublicationAuthorization,
     getInterpretiveCandidate,
     getInterpretivePublicationOperatorState,
     listInterpretiveDelegationPolicies,
     listInterpretiveReviews,
+    publishInterpretiveMemory,
     qualifyInterpretivePublication,
     recordDnmDeltaReview,
     recordInterpretiveSubjectDisposition,
@@ -32,10 +34,11 @@ import {
 
 const REVIEW_STATUS_OPTIONS = Object.freeze([
     { value: '', label: 'All statuses' },
-    { value: 'PENDING', label: 'Pending' },
-    { value: 'APPROVED', label: 'Approved' },
+    { value: 'PENDING_APPROVAL', label: 'Pending approval' },
+    { value: 'PENDING_DECISION', label: 'Pending decision' },
     { value: 'APPROVE_WITH_EDIT', label: 'Approved with changes' },
     { value: 'APPROVE_FOR_SCOPE_ONLY', label: 'Approved for scope only' },
+    { value: 'READY_FOR_PUBLICATION', label: 'Ready for publication' },
     { value: 'CONTESTED', label: 'Contested' },
     { value: 'DEFERRED', label: 'Deferred' },
     { value: 'REJECTED', label: 'Rejected' },
@@ -134,11 +137,139 @@ function renderCollapsibleSection(title, description, content, options = {}) {
     `;
 }
 
+function renderStaticSection(title, description, content, options = {}) {
+    const extraClass = String(options.extraClass || '').trim();
+    return `
+        <div class="ss-interpretive-review-section ss-review-section ss-review-section--static ss-interpretive-review-static-section${extraClass ? ` ${escapeHtml(extraClass)}` : ''}">
+            <div class="ss-review-section__header ss-interpretive-review-static-header">
+                <div class="ss-review-section__title">${escapeHtml(title)}</div>
+                ${description ? `<div class="ss-review-section__description">${escapeHtml(description)}</div>` : ''}
+            </div>
+            <div class="ss-review-section__body">
+                ${content}
+            </div>
+        </div>
+    `;
+}
+
 function renderStringList(items, emptyLabel = '(none)') {
     if (!Array.isArray(items) || items.length === 0) {
         return escapeHtml(emptyLabel);
     }
     return items.map((item) => `<code>${escapeHtml(String(item))}</code>`).join(', ');
+}
+
+function renderCopyControl(value, label = 'Copy') {
+    const normalized = String(value || '').trim();
+    if (!normalized) {
+        return '';
+    }
+    return `
+        <button
+            type="button"
+            class="ss-interpretive-review-copy-btn"
+            data-copy-value="${escapeHtml(normalized)}">
+            ${escapeHtml(label)}
+        </button>
+    `;
+}
+
+function renderCopyableCode(value, options = {}) {
+    const normalized = String(value || '').trim();
+    if (!normalized) {
+        return escapeHtml(options.emptyLabel || 'n/a');
+    }
+    return `
+        <span class="ss-interpretive-review-copyable">
+            <code>${escapeHtml(normalized)}</code>
+            ${renderCopyControl(normalized, options.copyLabel || 'Copy')}
+        </span>
+    `;
+}
+
+function renderAuditTable(rows) {
+    const filteredRows = Array.isArray(rows)
+        ? rows.filter((row) => row && String(row.value || '').trim())
+        : [];
+    if (filteredRows.length === 0) {
+        return '<div class="ss-hint">No details available.</div>';
+    }
+    return `
+        <table class="ss-interpretive-review-audit-table">
+            <tbody>
+                ${filteredRows.map((row) => `
+                    <tr>
+                        <th scope="row">${escapeHtml(row.label || '')}</th>
+                        <td>${row.value}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+function renderAuditSection(title, rows, options = {}) {
+    const content = typeof rows === 'string' ? rows : renderAuditTable(rows);
+    if (options.collapsible) {
+        return renderCollapsibleSection(
+            title,
+            options.description || '',
+            content,
+            {
+                open: options.open === true,
+                extraClass: `ss-interpretive-review-audit-section ${String(options.extraClass || '').trim()}`.trim(),
+            },
+        );
+    }
+    return `
+        <div class="ss-interpretive-review-section ss-review-section ss-review-section--static ss-interpretive-review-static-section ss-interpretive-review-audit-section">
+            <div class="ss-review-section__header ss-interpretive-review-static-header">
+                <div class="ss-review-section__title">${escapeHtml(title)}</div>
+                ${options.description ? `<div class="ss-review-section__description">${escapeHtml(options.description)}</div>` : ''}
+            </div>
+            <div class="ss-review-section__body">
+                ${content}
+            </div>
+        </div>
+    `;
+}
+
+function renderEvidenceBindingsTable(groundingLinks) {
+    if (!Array.isArray(groundingLinks) || groundingLinks.length === 0) {
+        return '<div class="ss-hint">No bound source records.</div>';
+    }
+    return `
+        <div class="ss-interpretive-review-evidence-table-wrap">
+            <table class="ss-interpretive-review-audit-table ss-interpretive-review-evidence-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Role</th>
+                        <th scope="col">Source Type</th>
+                        <th scope="col">Source</th>
+                        <th scope="col">Speaker</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${groundingLinks.map((link) => {
+                        const role = String(link?.groundingRole || 'GROUNDING').trim();
+                        const sourceType = String(link?.basisType || 'UNKNOWN').trim();
+                        const sourceValue = sourceType === 'SOURCE_OCCURRENCE'
+                            ? [String(link?.chatInstanceId || '').trim(), String(link?.messageId || '').trim()].filter(Boolean).join(' / ')
+                            : String(link?.basisRecordId || '').trim();
+                        const speakerValue = String(link?.speakerEntityId || '').trim();
+                        return `
+                            <tr>
+                                <td>${renderBadge(role, { fallback: role || 'n/a' })}</td>
+                                <td>${renderBadge(sourceType, { fallback: sourceType || 'n/a' })}</td>
+                                <td>${renderCopyableCode(sourceValue, { emptyLabel: 'n/a' })}</td>
+                                <td>${renderCopyableCode(speakerValue, { emptyLabel: 'n/a' })}</td>
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
 }
 
 function hasDisplayableValues(items) {
@@ -181,7 +312,7 @@ function renderServerReasonList(items, emptyLabel = 'None') {
     }
     return `<div class="ss-interpretive-review-inline-meta">${items.map((item) => {
         const normalized = String(item || '').trim();
-        const label = INTERPRETIVE_REASON_CODE_LABELS.get(normalized) || normalized;
+        const label = INTERPRETIVE_REASON_CODE_LABELS.get(normalized) || formatLifecycleBlockingReason(normalized);
         return renderBadge(label, { fallback: normalized || 'n/a' });
     }).join('')}</div>`;
 }
@@ -194,7 +325,7 @@ function renderBlockedActionList(entries, emptyLabel = 'None') {
         <div class="ss-interpretive-review-list">
             ${entries.map((entry) => `
                 <div class="ss-interpretive-review-card">
-                    <strong>${escapeHtml(formatSubmissionModeLabel(entry.action || ''))}</strong>
+                    <strong>${escapeHtml(formatLifecycleActionLabel(entry.action || ''))}</strong>
                     <div>${renderServerReasonList(entry.blockingReasons, 'None')}</div>
                 </div>
             `).join('')}
@@ -321,12 +452,12 @@ function buildCompactProvenanceText(provenance) {
     return `Submitted directly by ${recordedBy}.`;
 }
 
-function buildHistoryContextLabel(provenance) {
+function buildHistoryContextLabel(provenance, label = 'Recorded context') {
     const text = buildCompactProvenanceText(provenance);
     if (!text) {
         return '';
     }
-    return `Recorded context: ${text}`;
+    return `${label}: ${text}`;
 }
 
 function normalizeHistoryCommentary(commentary, dispositionLabel) {
@@ -353,9 +484,11 @@ function renderHistoryActionCard({
     extraLines = [],
     compact = false,
     bodyHtml = '',
+    contextLabel = 'Recorded context',
+    commentaryLabel = 'Review comment',
 }) {
     const compactProvenance = buildCompactProvenanceText(provenance);
-    const historyContextLabel = buildHistoryContextLabel(provenance);
+    const historyContextLabel = buildHistoryContextLabel(provenance, contextLabel);
     const normalizedCommentary = normalizeHistoryCommentary(commentary, dispositionLabel);
     const filteredExtraLines = Array.isArray(extraLines)
         ? extraLines.filter((line) => String(line || '').trim())
@@ -372,7 +505,7 @@ function renderHistoryActionCard({
             </div>
             ${historyContextLabel ? `
                 <div class="ss-interpretive-review-history-block">
-                    <div class="ss-interpretive-review-history-block-label">Recorded context</div>
+                    <div class="ss-interpretive-review-history-block-label">${escapeHtml(contextLabel)}</div>
                     <div class="ss-interpretive-review-summary-note">${escapeHtml(compactProvenance)}</div>
                 </div>
             ` : ''}
@@ -380,7 +513,7 @@ function renderHistoryActionCard({
             ${normalizedCommentary
                 ? `
                     <div class="ss-interpretive-review-history-block">
-                        <div class="ss-interpretive-review-history-block-label">Review comment</div>
+                        <div class="ss-interpretive-review-history-block-label">${escapeHtml(commentaryLabel)}</div>
                         <div class="ss-interpretive-review-statement">${escapeHtml(normalizedCommentary)}</div>
                     </div>
                 `
@@ -733,9 +866,7 @@ function renderPublicationActionForm({
     dataset = {},
     disabled = false,
 }) {
-    const attributes = Object.entries(dataset)
-        .map(([key, value]) => `data-${escapeHtml(key)}="${escapeHtml(String(value ?? ''))}"`)
-        .join(' ');
+    const attributes = buildDatasetAttributes(dataset);
     return `
         <div class="ss-interpretive-review-card ss-interpretive-action-card">
             <strong>${escapeHtml(title)}</strong>
@@ -796,9 +927,7 @@ function renderLifecycleGovernanceForm({
         hasApplicablePolicies,
         hasAutoSubjectEvidenceRefs,
     });
-    const attributes = Object.entries(dataset)
-        .map(([key, value]) => `data-${escapeHtml(key)}="${escapeHtml(String(value ?? ''))}"`)
-        .join(' ');
+    const attributes = buildDatasetAttributes(dataset);
 
     return `
         <div class="ss-interpretive-review-card ss-interpretive-action-card">
@@ -859,6 +988,18 @@ function renderLifecycleGovernanceForm({
             </form>
         </div>
     `;
+}
+
+function buildDatasetAttributes(dataset = {}) {
+    return Object.entries(dataset)
+        .map(([key, value]) => {
+            const normalizedKey = String(key || '')
+                .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+                .replace(/[_\s]+/g, '-')
+                .toLowerCase();
+            return `data-${escapeHtml(normalizedKey)}="${escapeHtml(String(value ?? ''))}"`;
+        })
+        .join(' ');
 }
 
 function renderReviewRecords(interpretation, policiesById, selectedReviewRequestId, currentActorId, actionStatus) {
@@ -922,15 +1063,18 @@ function renderSubjectDispositionSection(interpretation, policiesById, currentAc
     const pendingRequests = Array.isArray(interpretation.reviewRequests)
         ? interpretation.reviewRequests.filter((entry) => entry.status === 'PENDING' || entry.status === 'DEFERRED')
         : [];
-    const subjectDispositionHtml = interpretation.subjectDisposition ? `
+    const recordedSubjectDisposition = hasRecordedSubjectDisposition(interpretation.subjectDisposition)
+        ? interpretation.subjectDisposition
+        : null;
+    const subjectDispositionHtml = recordedSubjectDisposition ? `
         ${renderKeyValueGrid([
-            { label: 'State', value: renderBadge(interpretation.subjectDisposition.state) },
-            { label: 'Authority', value: renderBadge(interpretation.subjectDisposition.finalDispositionAuthority || 'n/a') },
-            { label: 'Updated', value: escapeHtml(formatTimestamp(interpretation.subjectDisposition.updatedAt)) },
+            { label: 'State', value: renderBadge(recordedSubjectDisposition.state) },
+            { label: 'Authority', value: renderBadge(recordedSubjectDisposition.finalDispositionAuthority || 'n/a') },
+            { label: 'Updated', value: escapeHtml(formatTimestamp(recordedSubjectDisposition.updatedAt)) },
         ])}
-        ${renderReasonCodes(interpretation.subjectDisposition.reasonCodes)}
-        <div class="ss-interpretive-review-card ss-interpretive-review-statement">${escapeHtml(interpretation.subjectDisposition.commentary || '(no commentary)')}</div>
-        ${renderProvenance(interpretation.subjectDisposition.provenance, policiesById)}
+        ${renderReasonCodes(recordedSubjectDisposition.reasonCodes)}
+        <div class="ss-interpretive-review-card ss-interpretive-review-statement">${escapeHtml(recordedSubjectDisposition.commentary || '(no commentary)')}</div>
+        ${renderProvenance(recordedSubjectDisposition.provenance, policiesById)}
     ` : '<div class="ss-hint">No subject decision has been recorded.</div>';
 
     const blocked = pendingRequests.length > 0
@@ -939,11 +1083,11 @@ function renderSubjectDispositionSection(interpretation, policiesById, currentAc
         || interpretation.reviewState === 'DEFERRED';
 
     const supersededByChild = !blocked
-        && !interpretation.subjectDisposition
+        && !recordedSubjectDisposition
         && Array.isArray(interpretation.childRevisionIds)
         && interpretation.childRevisionIds.length > 0;
 
-    const formHtml = interpretation.subjectDisposition
+    const formHtml = recordedSubjectDisposition
         ? '<div class="ss-hint">The subject decision is already recorded for this revision. Any further subject action needs a new governed revision or lifecycle step, not an overwrite.</div>'
         : blocked
         ? '<div class="ss-hint">The subject decision is still blocked until every required review is complete.</div>'
@@ -998,15 +1142,15 @@ function renderQualificationCard(qualification) {
     const refusalCodes = Array.isArray(qualification.refusalCodes) ? qualification.refusalCodes : [];
     return `
         <div class="ss-interpretive-review-card">
-            <strong>Latest qualification</strong>
+            <strong>Latest eligibility check</strong>
             ${renderKeyValueGrid([
                 { label: 'Verdict', value: renderBadge(qualification.eligibilityVerdict) },
                 { label: 'Policy', value: `<code>${escapeHtml(qualification.publicationPolicyId)}</code> v${escapeHtml(String(qualification.policyVersion))}` },
-                { label: 'Continuity Target', value: `<code>${escapeHtml(qualification.continuityTargetId || 'n/a')}</code>` },
+                { label: 'Memory Line', value: `<code>${escapeHtml(qualification.continuityTargetId || 'n/a')}</code>` },
                 { label: 'Evaluated At', value: escapeHtml(formatTimestamp(qualification.evaluatedAt)) },
             ])}
             ${refusalCodes.length > 0 ? `
-                <div><strong>Refusal reasons</strong></div>
+                <div><strong>Why publication is blocked</strong></div>
                 <div>${renderServerReasonList(refusalCodes, 'No refusal codes.')}</div>
             ` : ''}
             ${renderTechnicalDetailsSection([
@@ -1024,7 +1168,7 @@ function renderAuthorizationCard(authorization) {
     }
     return `
         <div class="ss-interpretive-review-card">
-            <strong>Latest authorization</strong>
+            <strong>Latest publication authorization</strong>
             ${renderKeyValueGrid([
                 { label: 'Status', value: renderBadge(authorization.status) },
                 { label: 'Authorized By', value: `<code>${escapeHtml(authorization.authorizedBy || 'n/a')}</code>` },
@@ -1040,7 +1184,34 @@ function renderAuthorizationCard(authorization) {
     `;
 }
 
+function renderPublicationGuidanceCard(guidedFlow) {
+    if (!guidedFlow) {
+        return '';
+    }
+    const nextAction = guidedFlow.nextAction || null;
+    const refusalCodes = Array.isArray(guidedFlow.technicalRefusalCodes) ? guidedFlow.technicalRefusalCodes : [];
+    return `
+        <div class="ss-interpretive-review-card">
+            <strong>${escapeHtml(guidedFlow.headline || 'Publication guidance')}</strong>
+            <div class="ss-interpretive-review-summary-note">${escapeHtml(guidedFlow.detail || '')}</div>
+            ${nextAction ? `
+                <div>
+                    <strong>Next lawful action</strong>
+                </div>
+                <div class="ss-interpretive-review-inline-meta">${renderBadge(nextAction.label || nextAction.action || 'Next action')}</div>
+            ` : ''}
+            ${refusalCodes.length > 0 ? `
+                <div>
+                    <strong>Technical refusal codes</strong>
+                </div>
+                <div>${renderServerReasonList(refusalCodes, 'None')}</div>
+            ` : ''}
+        </div>
+    `;
+}
+
 function renderDnmRecordCard(record, options = {}) {
+    const descriptor = describePublicationRecord(record, !options.compact);
     const statusBadges = [
         renderBadge(record.publicationState),
         renderBadge(record.lifecycleState),
@@ -1056,24 +1227,25 @@ function renderDnmRecordCard(record, options = {}) {
     const blockingReasons = Array.isArray(record.operatorState?.blockingReasons) ? record.operatorState.blockingReasons : [];
     return `
         <div class="ss-interpretive-review-card">
-            <strong>${escapeHtml(options.compact ? 'Previous continuity record' : 'Current continuity record')}</strong>
+            <strong>${escapeHtml(descriptor.title)}</strong>
             <div class="ss-interpretive-review-inline-meta">${statusBadges.join('')}</div>
             ${renderKeyValueGrid(rows)}
+            <div class="ss-hint">${escapeHtml(descriptor.summary)}</div>
             <div class="ss-interpretive-review-statement">${escapeHtml(record.publishedStatement || '(no statement)')}</div>
             ${renderTechnicalDetailsSection([
-                { label: 'DNM Record ID', value: `<code>${escapeHtml(record.dnmRecordId)}</code>` },
+                { label: 'Published Record ID', value: `<code>${escapeHtml(record.dnmRecordId)}</code>` },
                 { label: 'Source Revision', value: `<code>${escapeHtml(record.sourceInterpretationRevisionId || 'n/a')}</code>` },
-                { label: 'Continuity Target', value: options.showContinuityTarget ? `<code>${escapeHtml(record.continuityTargetId || 'n/a')}</code>` : '' },
+                { label: 'Memory Line', value: options.showContinuityTarget ? `<code>${escapeHtml(record.continuityTargetId || 'n/a')}</code>` : '' },
                 { label: 'Supersedes', value: record.supersedesDnmRecordId ? `<code>${escapeHtml(record.supersedesDnmRecordId)}</code>` : '' },
                 { label: 'Superseded By', value: record.supersededByDnmRecordId ? `<code>${escapeHtml(record.supersededByDnmRecordId)}</code>` : '' },
                 { label: 'Authorization', value: options.showAuthorization ? `<code>${escapeHtml(record.publicationAuthorizationId || 'n/a')}</code>` : '' },
             ])}
             ${options.showOperatorState && availableActions.length > 0 ? `
-                <div><strong>Available actions</strong></div>
+                <div><strong>Lawful actions now</strong></div>
                 <div>${renderServerReasonList(availableActions, 'None')}</div>
             ` : ''}
             ${options.showOperatorState && blockedActions.length > 0 ? `
-                <div><strong>Blocked actions</strong></div>
+                <div><strong>Why other steps are unavailable</strong></div>
                 <div>${renderBlockedActionList(blockedActions, 'None')}</div>
             ` : ''}
             ${options.showOperatorState && blockingReasons.length > 0 ? `
@@ -1105,7 +1277,7 @@ function renderDnmRecordCard(record, options = {}) {
 
 function renderPublicationOperatorSection(interpretation, operatorState, policiesById, options = {}) {
     if (!operatorState) {
-        return '<div class="ss-hint">Publication and continuity details are unavailable for this candidate.</div>';
+        return '<div class="ss-hint">Lifecycle controls are unavailable for this memory.</div>';
     }
 
     const matchingPolicies = Array.isArray(operatorState.matchingPolicies) ? operatorState.matchingPolicies : [];
@@ -1115,174 +1287,176 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
         ? recordsForTarget.filter((record) => record.dnmRecordId !== activeRecord.dnmRecordId)
         : recordsForTarget;
     const continuityTargetId = operatorState.continuityTargetId || interpretation.memorySubjectId;
+    const guidedFlow = operatorState.guidedFlow || null;
+    const standardPolicy = operatorState.standardPolicy || null;
     const latestEligibleQualification = operatorState.latestQualification?.eligibilityVerdict === 'ELIGIBLE'
         ? operatorState.latestQualification
         : null;
-    const latestAuthorized = operatorState.latestAuthorization?.status === 'AUTHORIZED'
-        ? operatorState.latestAuthorization
-        : null;
     const canQualify = operatorState.availableActions?.includes('QUALIFY_PUBLICATION') === true;
-    const canAuthorize = operatorState.availableActions?.includes('AUTHORIZE_PUBLICATION') === true;
-    const canExecute = operatorState.availableActions?.includes('EXECUTE_PUBLICATION') === true;
     const canWithdrawActive = activeRecord?.operatorState?.availableActions?.includes('WITHDRAW_DNM') === true;
     const governancePolicies = [...policiesById.values()];
     const operatorAvailableActions = getVisibleOperatorActions(interpretation, operatorState);
     const operatorBlockedActions = Array.isArray(operatorState.blockedActions) ? operatorState.blockedActions : [];
     const operatorBlockingReasons = Array.isArray(operatorState.blockingReasons) ? operatorState.blockingReasons : [];
+    const actionForms = [];
+
+    if (guidedFlow?.nextAction?.action === 'BOOTSTRAP_STANDARD_PUBLICATION_POLICY') {
+        actionForms.push(renderPublicationActionForm({
+            formKind: 'publication-bootstrap',
+            title: 'Publication setup required',
+            description: 'Create the standard governed publication policy for this host.',
+            actionStatus: options.actionStatus,
+            submitLabel: 'Set Up Standard Publication Policy',
+            dataset: {},
+            fieldsHtml: '',
+        }));
+    }
+
+    if (guidedFlow?.nextAction?.action === 'CHECK_ELIGIBILITY' && canQualify) {
+        actionForms.push(renderPublicationActionForm({
+            formKind: 'publication-qualify',
+            title: 'Check Eligibility',
+            description: 'Check whether this revision can be published.',
+            actionStatus: options.actionStatus,
+            submitLabel: 'Check Eligibility',
+            disabled: !canQualify,
+            dataset: {
+                interpretationRevisionId: interpretation.interpretationRevisionId,
+                proposalContentHash: interpretation.proposalContentHash || '',
+                reviewEnvelopeHash: interpretation.reviewEnvelopeHash || '',
+                subjectDispositionRecordId: interpretation.subjectDisposition?.subjectDispositionId || '',
+            },
+            fieldsHtml: `
+                <label class="ss-interpretive-review-field">
+                    <span>Publication policy</span>
+                    <select class="text_pole" name="publicationPolicyId">
+                        ${buildPublicationPolicyOptions(matchingPolicies, operatorState.latestQualification?.publicationPolicyId || '')}
+                    </select>
+                </label>
+                <label class="ss-interpretive-review-field">
+                    <span>Continuity Target</span>
+                    <input class="text_pole" type="text" name="continuityTargetId" value="${escapeHtml(continuityTargetId || '')}" readonly />
+                </label>
+            `,
+        }));
+    }
+
+    if (guidedFlow?.nextAction?.action === 'PUBLISH_MEMORY' && latestEligibleQualification) {
+        actionForms.push(renderPublicationActionForm({
+            formKind: 'publication-publish',
+            title: 'Publish Memory',
+            description: 'Publish this eligible revision into governed memory.',
+            actionStatus: options.actionStatus,
+            submitLabel: 'Publish Memory',
+            disabled: !latestEligibleQualification,
+            dataset: {
+                interpretationRevisionId: interpretation.interpretationRevisionId,
+                continuityTargetId,
+                publicationPolicyId: standardPolicy?.publicationPolicyId || latestEligibleQualification?.publicationPolicyId || '',
+                proposalContentHash: interpretation.proposalContentHash || '',
+                reviewEnvelopeHash: interpretation.reviewEnvelopeHash || '',
+                subjectDispositionRecordId: interpretation.subjectDisposition?.subjectDispositionId || '',
+            },
+            fieldsHtml: `
+                <label class="ss-interpretive-review-field">
+                    <span>Publication policy</span>
+                    <input class="text_pole" type="text" value="${escapeHtml(`${standardPolicy?.publicationPolicyId || latestEligibleQualification?.publicationPolicyId || 'n/a'}${standardPolicy?.policyVersion ? ` v${standardPolicy.policyVersion}` : ''}`)}" readonly />
+                </label>
+                <label class="ss-interpretive-review-field">
+                    <span>Continuity Target</span>
+                    <input class="text_pole" type="text" value="${escapeHtml(continuityTargetId || '')}" readonly />
+                </label>
+                <label class="ss-interpretive-review-field">
+                    <span>Published by</span>
+                    <input class="text_pole" type="text" value="${escapeHtml(options.currentActorId || '')}" readonly />
+                </label>
+            `,
+        }));
+    }
+
+    if (canWithdrawActive && activeRecord) {
+        actionForms.push(renderLifecycleGovernanceForm({
+            formKind: 'dnm-withdraw',
+            title: 'Withdraw Current Memory',
+            description: '',
+            actionKind: 'DNM_WITHDRAWAL',
+            ownerId: interpretation.memorySubjectId,
+            interpretation,
+            currentActorId: options.currentActorId,
+            policies: governancePolicies,
+            actionStatus: options.actionStatus,
+            submitLabel: 'Withdraw Current Memory',
+            dataset: {
+                dnmRecordId: activeRecord.dnmRecordId,
+            },
+        }));
+    }
 
     return `
-        ${renderCollapsibleSection(
-            'Active Memory Record',
-            '',
+        ${renderStaticSection(
+            'Current Published Memory',
+            'Shows the currently published memory for this memory line, if one exists.',
             activeRecord ? `
                 ${renderDnmRecordCard(activeRecord, {
                     showContinuityTarget: true,
                     showAuthorization: true,
                 })}
-                ${canWithdrawActive ? renderLifecycleGovernanceForm({
-                    formKind: 'dnm-withdraw',
-                    title: 'Withdraw Current Memory',
-                    description: '',
-                    actionKind: 'DNM_WITHDRAWAL',
-                    ownerId: interpretation.memorySubjectId,
-                    interpretation,
-                    currentActorId: options.currentActorId,
-                    policies: governancePolicies,
-                    actionStatus: options.actionStatus,
-                    submitLabel: 'Withdraw Current Memory',
-                    dataset: {
-                        dnmRecordId: activeRecord.dnmRecordId,
-                    },
-                }) : ''}
-            ` : '<div class="ss-hint">No active DNM record exists for this continuity target.</div>',
-            { open: !!activeRecord || canWithdrawActive },
+            ` : '<div class="ss-hint">No published memory exists yet for this memory line.</div>',
+            { extraClass: 'ss-interpretive-review-lifecycle-section' },
         )}
 
-        ${renderCollapsibleSection(
-            'Publication status',
-            'Shows where this revision sits between grant, qualification, authorization, publication, and active continuity.',
+        ${renderStaticSection(
+            'Publication Readiness',
+            'Shows only lawful publication and active-memory lifecycle operations.',
             `
-                ${renderKeyValueGrid([
+                ${renderAuditTable([
                     { label: 'Granted', value: renderBadge(interpretation.subjectDispositionState || 'NONE') },
                     { label: 'Qualified', value: renderBadge(operatorState.latestQualification?.eligibilityVerdict || 'UNQUALIFIED') },
                     { label: 'Authorized', value: renderBadge(operatorState.latestAuthorization?.status || 'UNAUTHORIZED') },
                     { label: 'Published', value: renderBadge(interpretation.publicationState || 'NOT_PUBLISHED') },
-                    { label: 'Current Active DNM', value: renderBadge(activeRecord?.lifecycleState || 'NONE') },
-                    { label: 'Continuity Target', value: `<code>${escapeHtml(continuityTargetId || 'n/a')}</code>` },
+                    { label: 'Current Active Memory', value: renderBadge(activeRecord?.lifecycleState || 'NONE') },
+                    { label: 'Memory Line', value: renderCopyableCode(continuityTargetId, { emptyLabel: 'n/a' }) },
                 ])}
-                ${operatorAvailableActions.length > 0 ? `
-                    <div><strong>Available actions</strong></div>
-                    <div>${renderServerReasonList(operatorAvailableActions, 'None')}</div>
-                ` : ''}
-                ${operatorBlockedActions.length > 0 ? `
-                    <div><strong>Blocked actions</strong></div>
-                    <div>${renderBlockedActionList(operatorBlockedActions, 'None')}</div>
-                ` : ''}
-                ${operatorBlockingReasons.length > 0 ? `
-                    <div><strong>Blocking reasons</strong></div>
-                    <div>${renderServerReasonList(operatorBlockingReasons, 'None')}</div>
-                ` : ''}
-            `,
-            { open: !activeRecord && !canQualify && !canAuthorize && !canExecute },
-        )}
-
-        ${renderCollapsibleSection(
-            'Eligibility',
-            'Shows the eligibility snapshot for this revision against one policy and one continuity target.',
-            `
+                ${renderPublicationGuidanceCard(guidedFlow)}
                 ${renderQualificationCard(operatorState.latestQualification)}
-                ${renderPublicationActionForm({
-                    formKind: 'publication-qualify',
-                    title: 'Check Eligibility',
-                    description: 'Check whether this revision can be published.',
-                    actionStatus: options.actionStatus,
-                    submitLabel: 'Check Eligibility',
-                    disabled: !canQualify,
-                    dataset: {
-                        interpretationRevisionId: interpretation.interpretationRevisionId,
-                        proposalContentHash: interpretation.proposalContentHash || '',
-                        reviewEnvelopeHash: interpretation.reviewEnvelopeHash || '',
-                        subjectDispositionRecordId: interpretation.subjectDisposition?.subjectDispositionId || '',
-                    },
-                    fieldsHtml: `
-                        <label class="ss-interpretive-review-field">
-                            <span>Publication policy</span>
-                            <select class="text_pole" name="publicationPolicyId">
-                                ${buildPublicationPolicyOptions(matchingPolicies, operatorState.latestQualification?.publicationPolicyId || '')}
-                            </select>
-                        </label>
-                        <label class="ss-interpretive-review-field">
-                            <span>Continuity Target</span>
-                            <input class="text_pole" type="text" name="continuityTargetId" value="${escapeHtml(continuityTargetId || '')}" readonly />
-                        </label>
+                ${guidedFlow?.nextAction?.action === 'PUBLISH_MEMORY' ? '' : renderAuthorizationCard(operatorState.latestAuthorization)}
+                ${actionForms.length > 0 ? '<div><strong>Lawful actions now</strong></div>' : ''}
+                ${actionForms.length > 0
+                    ? `<div class="ss-interpretive-review-list">${actionForms.join('')}</div>`
+                    : '<div class="ss-hint">No lifecycle actions are currently lawful for this memory.</div>'}
+                ${operatorBlockedActions.length > 0 || operatorBlockingReasons.length > 0 ? renderCollapsibleSection(
+                    'Why other steps are unavailable',
+                    'Hidden by default to keep only actionable lifecycle work in the main path.',
+                    `
+                        ${operatorBlockedActions.length > 0 ? `
+                            <div><strong>Blocked actions</strong></div>
+                            <div>${renderBlockedActionList(operatorBlockedActions, 'None')}</div>
+                        ` : ''}
+                        ${operatorBlockingReasons.length > 0 ? `
+                            <div><strong>Blocking reasons</strong></div>
+                            <div>${renderServerReasonList(operatorBlockingReasons, 'None')}</div>
+                        ` : ''}
                     `,
-                })}
+                    { extraClass: 'ss-interpretive-review-subsection' },
+                ) : ''}
             `,
-            { open: canQualify },
+            { extraClass: 'ss-interpretive-review-lifecycle-section' },
         )}
 
-        ${renderCollapsibleSection(
-            'Authorization',
-            'Shows whether a one-time publication authorization exists, has been used, or is still missing.',
-            `
-                ${renderAuthorizationCard(operatorState.latestAuthorization)}
-                ${renderPublicationActionForm({
-                    formKind: 'publication-authorize',
-                    title: 'Authorize Publication',
-                    description: 'Issue a one-time authorization for the latest eligible revision.',
-                    actionStatus: options.actionStatus,
-                    submitLabel: 'Authorize Publication',
-                    disabled: !(latestEligibleQualification && canAuthorize),
-                    dataset: {
-                        qualificationId: latestEligibleQualification?.qualificationId || '',
-                    },
-                    fieldsHtml: `
-                        <label class="ss-interpretive-review-field">
-                            <span>Qualification</span>
-                            <input class="text_pole" type="text" value="${escapeHtml(latestEligibleQualification?.qualificationId || 'No eligible qualification')}" readonly />
-                        </label>
-                        <label class="ss-interpretive-review-field">
-                            <span>Authorized By</span>
-                            <input class="text_pole" type="text" name="authorizedBy" value="${escapeHtml(options.currentActorId || '')}" readonly />
-                        </label>
-                        <label class="ss-interpretive-review-field">
-                            <span>Expires At</span>
-                            <input class="text_pole" type="datetime-local" name="expiresAt" value="${escapeHtml(formatDateTimeLocalValue(Date.now() + 60 * 60 * 1000))}" />
-                        </label>
-                    `,
-                })}
-                ${renderPublicationActionForm({
-                    formKind: 'publication-execute',
-                    title: 'Publish',
-                    description: 'Publish this revision to active memory.',
-                    actionStatus: options.actionStatus,
-                    submitLabel: 'Publish',
-                    disabled: !(latestAuthorized && canExecute),
-                    dataset: {
-                        publicationAuthorizationId: latestAuthorized?.publicationAuthorizationId || '',
-                    },
-                    fieldsHtml: `
-                        <label class="ss-interpretive-review-field">
-                            <span>Authorization</span>
-                            <input class="text_pole" type="text" value="${escapeHtml(latestAuthorized?.publicationAuthorizationId || 'No active authorization')}" readonly />
-                        </label>
-                    `,
-                })}
-            `,
-            { open: canAuthorize || canExecute },
-        )}
-
-        ${renderCollapsibleSection(
-            'Continuity history',
-            'Keeps publication, supersession, withdrawal, and delta-review history visible instead of flattening everything into one state.',
-            lineageRecords.length > 0 ? `
+        ${renderStaticSection(
+            'Publication History',
+            'Shows eligibility, authorization, publication, supersession, and withdrawal over time.',
+            (activeRecord || lineageRecords.length > 0) ? `
                 <div class="ss-interpretive-review-list">
-                    ${lineageRecords.map((record) => `
+                    ${[activeRecord, ...lineageRecords]
+                        .filter(Boolean)
+                        .sort((left, right) => Number(right?.publishedAt || 0) - Number(left?.publishedAt || 0))
+                        .map((record) => `
                         ${renderDnmRecordCard(record, { compact: true })}
                         ${record.operatorState?.availableActions?.includes('SUPERSEDE_ACTIVE_WITH_RECORD') ? renderLifecycleGovernanceForm({
                             formKind: 'dnm-supersede',
-                            title: 'Replace active record with this one',
-                            description: 'Promote this delta-pending record into active continuity while keeping the prior history intact.',
+                            title: 'Replace current memory with this one',
+                            description: 'Promote this published replacement into the current active memory while keeping the prior history intact.',
                             actionKind: 'DNM_SUPERSESSION',
                             ownerId: interpretation.memorySubjectId,
                             interpretation,
@@ -1297,13 +1471,22 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
                         }) : ''}
                     `).join('')}
                 </div>
-            ` : '<div class="ss-hint">No DNM publication records exist for this continuity target.</div>',
+            ` : '<div class="ss-hint">No publication events have been recorded for this memory line.</div>',
+            { extraClass: 'ss-interpretive-review-lifecycle-section' },
         )}
 
-        ${renderCollapsibleSection(
-            'Publication policy',
-            'Explains the policy layer that decides whether a granted interpretation may enter continuity.',
-            renderPublicationPolicyCards(matchingPolicies),
+        ${renderStaticSection(
+            'Policy and Audit',
+            'Shows lifecycle policy inputs and exact operator-level state without repeating the whole record dump.',
+            `
+                ${renderAuditTable([
+                    { label: 'Memory Line', value: renderCopyableCode(continuityTargetId, { emptyLabel: 'n/a' }) },
+                    { label: 'Available Lifecycle Actions', value: renderServerReasonList(operatorAvailableActions, 'None') },
+                    { label: 'Blocking Reasons', value: renderServerReasonList(operatorBlockingReasons, 'None') },
+                ])}
+                ${renderPublicationPolicyCards(matchingPolicies)}
+            `,
+            { extraClass: 'ss-interpretive-review-lifecycle-section' },
         )}
     `;
 }
@@ -1332,14 +1515,34 @@ function buildQueueGroups(reviews) {
     return groups;
 }
 
-function summarizeQueueGroupStatus(reviews) {
-    const normalized = (Array.isArray(reviews) ? reviews : []).map((review) => String(review?.status || '').trim().toUpperCase());
-    if (normalized.some((value) => value === 'PENDING')) return 'Decision required';
-    if (normalized.some((value) => value === 'CONTESTED')) return 'Contested';
-    if (normalized.some((value) => value === 'DEFERRED')) return 'Deferred';
-    if (normalized.some((value) => value === 'REJECTED')) return 'Rejected';
-    if (normalized.length > 0 && normalized.every((value) => value === 'APPROVED')) return 'Review complete';
-    return normalized.length > 0 ? formatHumanStateLabel(normalized[0]) : 'Pending';
+function groupMatchesStatusFilter(group, statusFilter = '') {
+    const normalizedFilter = String(statusFilter || '').trim().toUpperCase();
+    if (!normalizedFilter) {
+        return true;
+    }
+    const reviews = Array.isArray(group?.reviews) ? group.reviews : [];
+    const representativeReview = getQueueGroupRepresentativeReview(reviews);
+    if (!representativeReview) {
+        return false;
+    }
+    const canonicalRevisionState = representativeReview?.canonicalRevisionState || null;
+    const revisionStatus = getRevisionFilterStatus({
+        reviewRequests: reviews,
+        reviewState: canonicalRevisionState?.reviewState ?? representativeReview.reviewState,
+        subjectDispositionState: canonicalRevisionState?.subjectDispositionState ?? representativeReview.subjectDispositionState,
+        publicationState: canonicalRevisionState?.publicationState ?? representativeReview.publicationState,
+    });
+    if (revisionStatus === normalizedFilter) {
+        return true;
+    }
+    if (normalizedFilter === 'APPROVE_WITH_EDIT' || normalizedFilter === 'APPROVE_FOR_SCOPE_ONLY') {
+        return reviews.some((review) => String(review?.disposition?.disposition || '').trim().toUpperCase() === normalizedFilter);
+    }
+    return false;
+}
+
+function buildFilteredQueueGroups(reviews, statusFilter = '') {
+    return buildQueueGroups(reviews).filter((group) => groupMatchesStatusFilter(group, statusFilter));
 }
 
 function getQueueGroupRepresentativeReview(reviews) {
@@ -1355,7 +1558,7 @@ function renderQueueGroupItem(group, selectedReviewRequestId, selectedInterpreta
     if (!representativeReview) {
         return '';
     }
-    const summaryStatus = summarizeQueueGroupStatus(reviews);
+    const canonicalRevisionState = representativeReview?.canonicalRevisionState || null;
     const createdAt = reviews.reduce((earliest, review) => {
         const created = Number(review?.createdAt || 0);
         if (!Number.isFinite(created) || created <= 0) {
@@ -1366,14 +1569,20 @@ function renderQueueGroupItem(group, selectedReviewRequestId, selectedInterpreta
 
     const groupSelected = String(group.interpretationRevisionId || '') === String(selectedInterpretationRevisionId || '')
         || reviews.some((review) => review.reviewRequestId === selectedReviewRequestId);
+    const revisionWorkflowBadge = renderBadge(buildPrimaryWorkflowStatus({
+        reviewRequests: reviews,
+        reviewState: canonicalRevisionState?.reviewState ?? representativeReview.reviewState,
+        subjectDispositionState: canonicalRevisionState?.subjectDispositionState ?? representativeReview.subjectDispositionState,
+        publicationState: canonicalRevisionState?.publicationState ?? representativeReview.publicationState,
+    }, null));
 
     return `
         <div
             class="ss-interpretive-review-item ss-interpretive-review-group-item${groupSelected ? ' active' : ''}"
             data-interpretation-revision-id="${escapeHtml(group.interpretationRevisionId)}">
-            <div class="ss-interpretive-review-item-title">${escapeHtml(formatRevisionLabel(group.interpretationRevisionId))}</div>
-            <div class="ss-interpretive-review-inline-meta">
-                ${renderBadge(summaryStatus)}
+            <div class="ss-interpretive-review-item-title">
+                <span>${escapeHtml(formatRevisionLabel(group.interpretationRevisionId))}</span>
+                <span class="ss-interpretive-review-inline-meta">${revisionWorkflowBadge}</span>
             </div>
             ${createdAt ? `<div class="ss-hint">${escapeHtml(formatTimestamp(createdAt))}</div>` : ''}
             <div class="ss-interpretive-review-group-rows">
@@ -1402,6 +1611,7 @@ function renderDetailTabs(selectedView) {
         { id: 'review', label: 'Review' },
         { id: 'history', label: 'History' },
         { id: 'technical', label: 'Technical Details' },
+        { id: 'lifecycle', label: 'Publication Lifecycle' },
     ];
     return `
         <div class="ss-interpretive-review-detail-tabs" role="tablist" aria-label="Memory review views">
@@ -1460,9 +1670,20 @@ function formatInterpretationTypeLabel(value) {
 
 function formatRevisionLabel(value) {
     const text = String(value || '').trim();
-    const match = text.match(/_v(\d+)$/i);
-    if (match) {
-        return `Revision ${Number(match[1])}`;
+    const patterns = [
+        /(?:^|[_-])v(?:ersion)?[_-]?(\d+)$/i,
+        /(?:^|[_-])revision[_-]?(\d+)$/i,
+        /(?:^|[_-])rev[_-]?(\d+)$/i,
+    ];
+    for (const pattern of patterns) {
+        const match = text.match(pattern);
+        if (match) {
+            return `Revision ${Number(match[1])}`;
+        }
+    }
+    const tail = text.split(/[_-]+/).filter(Boolean).at(-1) || '';
+    if (/^\d+$/.test(tail)) {
+        return `Revision ${Number(tail)}`;
     }
     return 'Revision';
 }
@@ -1481,7 +1702,7 @@ function formatHumanStateLabel(value) {
     const normalized = String(value || '').trim().toUpperCase();
     const map = {
         SEALED_FOR_REVIEW: 'Ready for review',
-        PENDING: 'Decision required',
+        PENDING: 'Pending',
         APPROVED: 'Approved',
         REJECTED: 'Rejected',
         DEFERRED: 'Deferred',
@@ -1501,6 +1722,209 @@ function formatHumanStateLabel(value) {
         BLOCKED: 'Blocked',
     };
     return map[normalized] || formatSubmissionModeLabel(normalized);
+}
+
+function formatLifecycleActionLabel(value) {
+    const normalized = String(value || '').trim().toUpperCase();
+    const map = {
+        QUALIFY_PUBLICATION: 'Check publication readiness',
+        AUTHORIZE_PUBLICATION: 'Authorize publication',
+        EXECUTE_PUBLICATION: 'Publish approved memory',
+        WITHDRAW_DNM: 'Withdraw current memory',
+        SUPERSEDE_ACTIVE_WITH_RECORD: 'Replace current memory',
+        RECORD_DNM_DELTA_REVIEW: 'Record follow-up review',
+    };
+    return map[normalized] || formatSubmissionModeLabel(normalized);
+}
+
+function formatLifecycleBlockingReason(value) {
+    const normalized = String(value || '').trim().toUpperCase();
+    const map = {
+        PUBLICATION_QUALIFICATION_REQUIRED: 'Eligibility check is still required',
+        PUBLICATION_AUTHORIZATION_REQUIRED: 'Publication authorization is still required',
+        PUBLICATION_AUTHORIZATION_CONSUMED: 'The existing publication authorization has already been used',
+        INTERPRETATION_ALREADY_PUBLISHED: 'This memory is already published',
+        RECORD_NOT_ACTIVE_FOR_WITHDRAWAL: 'Only the current published memory can be withdrawn',
+        RECORD_NOT_DELTA_PENDING_FOR_SUPERSESSION: 'Only a pending replacement can take over as current memory',
+        NO_CURRENT_ACTIVE_RECORD_TO_SUPERSEDE: 'There is no current published memory to replace',
+        RECORD_ALREADY_ACTIVE: 'This memory is already the current published memory',
+    };
+    return map[normalized] || formatSubmissionModeLabel(normalized);
+}
+
+function summarizeReviewWorkflowCode(reviews) {
+    const normalized = (Array.isArray(reviews) ? reviews : [])
+        .map((review) => String(review?.status || '').trim().toUpperCase())
+        .filter(Boolean);
+    if (normalized.some((value) => value === 'PENDING')) return 'PENDING';
+    if (normalized.some((value) => value === 'CONTESTED')) return 'CONTESTED';
+    if (normalized.some((value) => value === 'DEFERRED')) return 'DEFERRED';
+    if (normalized.some((value) => value === 'REJECTED')) return 'REJECTED';
+    if (normalized.length > 0 && normalized.every((value) => value === 'APPROVED')) return 'COMPLETE';
+    return '';
+}
+
+function getRevisionFilterStatus(interpretationLike) {
+    const reviewWorkflow = summarizeReviewWorkflowCode(interpretationLike?.reviewRequests)
+        || String(interpretationLike?.reviewState || '').trim().toUpperCase();
+    const subjectState = String(interpretationLike?.subjectDispositionState || '').trim().toUpperCase() || 'PENDING';
+    const publicationState = String(interpretationLike?.publicationState || '').trim().toUpperCase();
+
+    if (reviewWorkflow === 'PENDING') return 'PENDING_APPROVAL';
+    if (reviewWorkflow === 'CONTESTED') return 'CONTESTED';
+    if (reviewWorkflow === 'DEFERRED') return 'DEFERRED';
+    if (reviewWorkflow === 'REJECTED') return 'REJECTED';
+    if (reviewWorkflow === 'COMPLETE' && subjectState === 'PENDING') return 'PENDING_DECISION';
+    if (subjectState === 'GRANTED' && publicationState !== 'PUBLISHED') return 'READY_FOR_PUBLICATION';
+    if (subjectState === 'DENIED') return 'REJECTED';
+    return '';
+}
+
+function describePublicationRecord(record, isActive) {
+    const lifecycleState = String(record?.lifecycleState || '').trim().toUpperCase();
+    if (isActive || lifecycleState === 'ACTIVE') {
+        return {
+            title: 'Published and active',
+            summary: 'This is the current published memory.',
+        };
+    }
+    if (lifecycleState === 'SUPERSEDED') {
+        return {
+            title: 'Published and later replaced',
+            summary: 'A newer approved memory replaced this published version.',
+        };
+    }
+    if (lifecycleState === 'WITHDRAWN') {
+        return {
+            title: 'Published and later withdrawn',
+            summary: 'This published memory was later removed from active use.',
+        };
+    }
+    if (lifecycleState === 'DELTA_PENDING') {
+        return {
+            title: 'Published replacement pending',
+            summary: 'This memory is published but is not yet the current active version.',
+        };
+    }
+    return {
+        title: 'Published memory',
+        summary: 'This memory was published in the past.',
+    };
+}
+
+function formatEvidenceEvaluationLabel(value) {
+    const normalized = String(value || '').trim().toUpperCase();
+    const map = {
+        COMPLETE: 'Complete',
+        SEALED_FOR_GROUNDING: 'Pending',
+        INVALIDATED_SOURCE_MUTATION: 'Invalidated by source change',
+        UNSUPPORTED: 'Unsupported',
+    };
+    return map[normalized] || formatSubmissionModeLabel(normalized || 'UNKNOWN');
+}
+
+function formatReviewWorkflowLabel(interpretation) {
+    const reviewWorkflow = summarizeReviewWorkflowCode(interpretation?.reviewRequests)
+        || String(interpretation?.reviewState || '').trim().toUpperCase();
+    const map = {
+        COMPLETE: 'Complete',
+        PENDING: 'Pending',
+        BLOCKED: 'Blocked',
+        DEFERRED: 'Deferred',
+        CONTESTED: 'Contested',
+        REJECTED: 'Rejected',
+        NOT_ROUTED: 'Not routed',
+    };
+    return map[reviewWorkflow] || formatHumanStateLabel(reviewWorkflow || 'PENDING');
+}
+
+function formatSubjectDecisionStatusLabel(value) {
+    const normalized = String(value || '').trim().toUpperCase();
+    const map = {
+        PENDING: 'Pending',
+        GRANTED: 'Granted',
+        DENIED: 'Denied',
+        DEFERRED: 'Deferred',
+        CONTESTED: 'Contested',
+    };
+    return map[normalized] || formatHumanStateLabel(normalized || 'PENDING');
+}
+
+function formatPublicationStatusLabel(value) {
+    const normalized = String(value || '').trim().toUpperCase();
+    const map = {
+        NOT_PUBLISHED: 'Not published',
+        PUBLISHED: 'Published',
+    };
+    return map[normalized] || formatHumanStateLabel(normalized || 'NOT_PUBLISHED');
+}
+
+function formatStructuralAuthorityLabel(value) {
+    const normalized = String(value || '').trim().toUpperCase();
+    const map = {
+        DESCRIPTIVE_ONLY: 'Unchanged',
+    };
+    return map[normalized] || formatHumanStateLabel(normalized || 'UNKNOWN');
+}
+
+function getSelectedReviewRequest(interpretation, selectedReviewRequestId) {
+    const requests = Array.isArray(interpretation?.reviewRequests) ? interpretation.reviewRequests : [];
+    return requests.find((entry) => entry.reviewRequestId === selectedReviewRequestId)
+        || requests[0]
+        || null;
+}
+
+function buildPrimaryWorkflowStatus(interpretation, operatorState) {
+    const reviewWorkflow = summarizeReviewWorkflowCode(interpretation?.reviewRequests)
+        || String(interpretation?.reviewState || '').trim().toUpperCase();
+    const subjectState = String(interpretation?.subjectDispositionState || '').trim().toUpperCase() || 'PENDING';
+    const publicationState = String(interpretation?.publicationState || '').trim().toUpperCase();
+    const lifecycleStatus = getRevisionLifecycleStatus(interpretation, operatorState);
+
+    if (reviewWorkflow === 'PENDING') return 'Pending approval';
+    if (reviewWorkflow === 'CONTESTED') return 'Contested';
+    if (reviewWorkflow === 'DEFERRED') return 'Deferred';
+    if (reviewWorkflow === 'REJECTED') return 'Rejected';
+    if (lifecycleStatus === 'WITHDRAWN') return 'Withdrawn';
+    if (lifecycleStatus === 'SUPERSEDED') return 'Superseded';
+    if (publicationState === 'PUBLISHED') return lifecycleStatus === 'ACTIVE' ? 'Published' : 'Published';
+    if (reviewWorkflow === 'COMPLETE' && subjectState === 'PENDING') return 'Pending decision';
+    if (subjectState === 'GRANTED') return 'Ready for publication';
+    if (subjectState === 'DENIED') return 'Decision denied';
+    return formatHumanStateLabel(reviewWorkflow || subjectState || 'PENDING');
+}
+
+function renderSelectedReviewerSummary(interpretation, selectedReviewRequestId) {
+    const selectedRequest = getSelectedReviewRequest(interpretation, selectedReviewRequestId);
+    if (!selectedRequest) {
+        return '';
+    }
+    const dispositionsByRequestId = new Map(
+        (Array.isArray(interpretation.reviewDispositions) ? interpretation.reviewDispositions : [])
+            .map((entry) => [entry.reviewRequestId, entry]),
+    );
+    const disposition = dispositionsByRequestId.get(selectedRequest.reviewRequestId) || null;
+    const reviewerLabel = formatHumanEntityLabel(selectedRequest.reviewerEntityId || '');
+    const roleLabel = formatHumanRoleLabel(selectedRequest.reviewerRole || 'REVIEWER');
+    const statusLabel = disposition
+        ? formatHumanStateLabel(disposition.disposition)
+        : formatHumanStateLabel(selectedRequest.status);
+    const commentary = String(disposition?.commentary || '').trim();
+    const contextLine = disposition
+        ? `Recorded response for ${reviewerLabel}.`
+        : `${reviewerLabel} still has a pending review response.`;
+    return `
+        <div class="ss-interpretive-review-card ss-interpretive-review-status-card">
+            <strong>Selected reviewer</strong>
+            <div class="ss-interpretive-review-inline-meta">
+                ${renderBadge(reviewerLabel, { fallback: reviewerLabel || 'Reviewer' })}
+                ${renderBadge(roleLabel, { fallback: roleLabel || 'Reviewer' })}
+                ${renderBadge(statusLabel, { fallback: statusLabel || 'Pending' })}
+            </div>
+            <div class="ss-interpretive-review-summary-note">${escapeHtml(contextLine)}</div>
+            ${commentary ? `<div class="ss-interpretive-review-summary-note">${escapeHtml(commentary)}</div>` : ''}
+        </div>
+    `;
 }
 
 function formatPossessiveLabel(value) {
@@ -1578,6 +2002,7 @@ function getRevisionLifecycleStatus(interpretation, operatorState) {
     const activeRecord = operatorState?.currentActiveRecord || null;
     const activeRevisionId = String(activeRecord?.sourceInterpretationRevisionId || '').trim();
     const revisionId = String(interpretation?.interpretationRevisionId || '').trim();
+    const reviewWorkflow = summarizeReviewWorkflowCode(interpretation?.reviewRequests);
 
     if (record?.lifecycleState === 'WITHDRAWN') {
         return 'WITHDRAWN';
@@ -1591,11 +2016,11 @@ function getRevisionLifecycleStatus(interpretation, operatorState) {
     if (publicationState === 'PUBLISHED') {
         return 'PUBLISHED';
     }
+    if (reviewWorkflow) {
+        return reviewWorkflow;
+    }
     if (String(interpretation?.subjectDispositionState || '').trim().toUpperCase() === 'GRANTED') {
         return 'GRANTED';
-    }
-    if (String(interpretation?.reviewState || '').trim().toUpperCase() === 'COMPLETE') {
-        return 'COMPLETE';
     }
     return String(interpretation?.reviewState || '').trim().toUpperCase() || 'PENDING';
 }
@@ -1620,6 +2045,7 @@ function buildNoActionSummary(interpretation, operatorState) {
     const subjectState = String(interpretation.subjectDispositionState || '').trim().toUpperCase();
     const publicationState = String(interpretation.publicationState || '').trim().toUpperCase();
     const isActive = operatorState?.currentActiveRecord?.sourceInterpretationRevisionId === interpretation.interpretationRevisionId;
+    const visibleLifecycleActions = getVisibleOperatorActions(interpretation, operatorState);
 
     if (lifecycleStatus === 'SUPERSEDED') {
         return 'This revision was published and later replaced by a newer approved memory.';
@@ -1629,8 +2055,11 @@ function buildNoActionSummary(interpretation, operatorState) {
     }
     if (publicationState === 'PUBLISHED') {
         return isActive
-            ? 'This memory is already published and active. Use History or Technical Details to inspect later lifecycle events.'
-            : 'This memory has already been published. Use History or Technical Details to inspect its publication lifecycle.';
+            ? 'This memory is already published and active. Use History or Publication Lifecycle to inspect later lifecycle events.'
+            : 'This memory has already been published. Use History or Publication Lifecycle to inspect its publication lifecycle.';
+    }
+    if (visibleLifecycleActions.length > 0) {
+        return 'Publication and active-memory actions are available in Publication Lifecycle.';
     }
     if (subjectState === 'GRANTED' && reviewState === 'COMPLETE') {
         return 'No actions available.';
@@ -1656,12 +2085,12 @@ function renderHumanEvidenceSection(interpretation) {
                     </div>
                     <div class="ss-interpretive-review-summary-note">
                         ${boundCount > 0
-                            ? `${boundLabel.charAt(0).toUpperCase()}${boundLabel.slice(1)} are bound, but no human-readable evidence summary is available yet.`
+                            ? `${boundLabel.charAt(0).toUpperCase()}${boundLabel.slice(1)} are attached. Human-readable findings are not available yet.`
                             : 'No bound evidence is available yet.'}
                     </div>
                     <div class="ss-hint">
                         ${boundCount > 0
-                            ? 'See Technical Details to inspect the bound source records.'
+                            ? 'Open Technical Details to inspect the exact bound source records.'
                             : 'See Technical Details for source information.'}
                     </div>
                 </div>
@@ -1672,14 +2101,15 @@ function renderHumanEvidenceSection(interpretation) {
 
 function buildLifecycleTrailLabel(interpretation, operatorState) {
     const stages = [];
-    const reviewState = String(interpretation.reviewState || '').trim().toUpperCase();
+    const reviewState = summarizeReviewWorkflowCode(interpretation.reviewRequests)
+        || String(interpretation.reviewState || '').trim().toUpperCase();
     const subjectState = String(interpretation.subjectDispositionState || '').trim().toUpperCase();
     const publicationState = String(interpretation.publicationState || '').trim().toUpperCase();
     const isActive = operatorState?.currentActiveRecord?.sourceInterpretationRevisionId === interpretation.interpretationRevisionId;
     const lifecycleStatus = getRevisionLifecycleStatus(interpretation, operatorState);
 
     if (reviewState === 'COMPLETE' || reviewState === 'APPROVED') {
-        stages.push('Review complete');
+        stages.push('Reviews complete');
     } else if (reviewState) {
         stages.push(formatHumanStateLabel(reviewState));
     }
@@ -1727,7 +2157,7 @@ function getVisibleOperatorActions(interpretation, operatorState) {
     });
 }
 
-function renderReviewResponseSummary(interpretation) {
+function renderReviewResponseSummary(interpretation, selectedReviewRequestId = '') {
     const requests = Array.isArray(interpretation.reviewRequests) ? interpretation.reviewRequests : [];
     const dispositionsByRequestId = new Map(
         (Array.isArray(interpretation.reviewDispositions) ? interpretation.reviewDispositions : [])
@@ -1736,9 +2166,14 @@ function renderReviewResponseSummary(interpretation) {
     if (requests.length === 0) {
         return '<div class="ss-hint">No reviews yet.</div>';
     }
+    const orderedRequests = [...requests].sort((left, right) => {
+        const leftSelected = left.reviewRequestId === selectedReviewRequestId ? 1 : 0;
+        const rightSelected = right.reviewRequestId === selectedReviewRequestId ? 1 : 0;
+        return rightSelected - leftSelected;
+    });
     return `
         <div class="ss-interpretive-review-list">
-            ${requests.map((request) => {
+            ${orderedRequests.map((request) => {
                 const disposition = dispositionsByRequestId.get(request.reviewRequestId) || null;
                 const reviewerLabel = formatHumanEntityLabel(request.reviewerEntityId);
                 const roleLabel = formatHumanRoleLabel(request.reviewerRole || 'REVIEWER');
@@ -1759,7 +2194,7 @@ function renderReviewResponseSummary(interpretation) {
     `;
 }
 
-function renderSubmittedActionsHistory(interpretation, policiesById = new Map()) {
+function renderSubmittedActionsHistory(interpretation, policiesById = new Map(), selectedReviewRequestId = '') {
     const reviewDispositions = Array.isArray(interpretation.reviewDispositions) ? interpretation.reviewDispositions : [];
     const subjectDisposition = hasRecordedSubjectDisposition(interpretation.subjectDisposition)
         ? interpretation.subjectDisposition
@@ -1772,10 +2207,18 @@ function renderSubmittedActionsHistory(interpretation, policiesById = new Map())
         (Array.isArray(interpretation.reviewRequests) ? interpretation.reviewRequests : [])
             .map((request) => [request.reviewRequestId, request]),
     );
+    const orderedReviewDispositions = [...reviewDispositions].sort((left, right) => {
+        const leftSelected = left.reviewRequestId === selectedReviewRequestId ? 1 : 0;
+        const rightSelected = right.reviewRequestId === selectedReviewRequestId ? 1 : 0;
+        if (leftSelected !== rightSelected) {
+            return rightSelected - leftSelected;
+        }
+        return Number(left.submittedAt || 0) - Number(right.submittedAt || 0);
+    });
 
     return `
         <div class="ss-interpretive-review-list">
-            ${reviewDispositions.map((disposition) => {
+            ${orderedReviewDispositions.map((disposition) => {
                 const request = requestMap.get(disposition.reviewRequestId) || null;
                 const reviewerName = formatHumanEntityLabel(request?.reviewerEntityId || disposition?.provenance?.dispositionOwnerId || '');
                 return renderHistoryActionCard({
@@ -1796,140 +2239,11 @@ function renderSubmittedActionsHistory(interpretation, policiesById = new Map())
                 provenance: subjectDisposition.provenance,
                 timestamp: subjectDisposition.recordedAt,
                 bodyHtml: renderHistorySubmissionDetails(subjectDisposition.provenance, policiesById),
+                contextLabel: 'Decision context',
+                commentaryLabel: 'Decision comment',
             }) : ''}
         </div>
     `;
-}
-
-function renderPublicationCurrentActions(interpretation, operatorState, policiesById, options = {}) {
-    if (!operatorState) {
-        return '';
-    }
-    const matchingPolicies = Array.isArray(operatorState.matchingPolicies) ? operatorState.matchingPolicies : [];
-    const activeRecord = operatorState.currentActiveRecord || null;
-    const continuityTargetId = operatorState.continuityTargetId || interpretation.memorySubjectId;
-    const isPublishedRevision = String(interpretation.publicationState || '').trim().toUpperCase() === 'PUBLISHED';
-    const latestEligibleQualification = operatorState.latestQualification?.eligibilityVerdict === 'ELIGIBLE'
-        ? operatorState.latestQualification
-        : null;
-    const latestAuthorized = operatorState.latestAuthorization?.status === 'AUTHORIZED'
-        ? operatorState.latestAuthorization
-        : null;
-    const canQualify = operatorState.availableActions?.includes('QUALIFY_PUBLICATION') === true;
-    const canAuthorize = operatorState.availableActions?.includes('AUTHORIZE_PUBLICATION') === true;
-    const canExecute = operatorState.availableActions?.includes('EXECUTE_PUBLICATION') === true;
-    const canWithdrawActive = activeRecord?.operatorState?.availableActions?.includes('WITHDRAW_DNM') === true;
-    const governancePolicies = [...policiesById.values()];
-    const forms = [];
-
-    if (!isPublishedRevision && canQualify) {
-        const selectedPolicyLabel = matchingPolicies[0]
-            ? `${matchingPolicies[0].publicationPolicyId} v${matchingPolicies[0].policyVersion}`
-            : '';
-        forms.push(renderPublicationActionForm({
-            formKind: 'publication-qualify',
-            title: 'Check Eligibility',
-            description: 'Check whether this revision can be published.',
-            actionStatus: options.actionStatus,
-            submitLabel: 'Check Eligibility',
-            disabled: false,
-            dataset: {
-                interpretationRevisionId: interpretation.interpretationRevisionId,
-                proposalContentHash: interpretation.proposalContentHash || '',
-                reviewEnvelopeHash: interpretation.reviewEnvelopeHash || '',
-                subjectDispositionRecordId: interpretation.subjectDisposition?.subjectDispositionId || '',
-            },
-            fieldsHtml: `
-                ${matchingPolicies.length > 1 ? `
-                    <label class="ss-interpretive-review-field">
-                        <span>Publication policy</span>
-                        <select class="text_pole" name="publicationPolicyId">
-                            ${buildPublicationPolicyOptions(matchingPolicies, operatorState.latestQualification?.publicationPolicyId || '')}
-                        </select>
-                    </label>
-                ` : `
-                    <label class="ss-interpretive-review-field">
-                        <span>Active publication policy</span>
-                        <input class="text_pole" type="text" name="publicationPolicyId" value="${escapeHtml(matchingPolicies[0]?.publicationPolicyId || '')}" readonly />
-                        ${selectedPolicyLabel ? `<span class="ss-hint">${escapeHtml(selectedPolicyLabel)}</span>` : ''}
-                    </label>
-                `}
-                <label class="ss-interpretive-review-field">
-                    <span>Continuity Target</span>
-                    <input class="text_pole" type="text" name="continuityTargetId" value="${escapeHtml(continuityTargetId || '')}" readonly />
-                    <span class="ss-hint">${escapeHtml(formatHumanEntityLabel(continuityTargetId || ''))}</span>
-                </label>
-            `,
-        }));
-    }
-
-    if (!isPublishedRevision && latestEligibleQualification && canAuthorize) {
-        forms.push(renderPublicationActionForm({
-            formKind: 'publication-authorize',
-            title: 'Authorize Publication',
-            description: 'Issue a one-time authorization for the latest eligible revision.',
-            actionStatus: options.actionStatus,
-            submitLabel: 'Authorize Publication',
-            disabled: false,
-            dataset: {
-                qualificationId: latestEligibleQualification.qualificationId,
-            },
-            fieldsHtml: `
-                <label class="ss-interpretive-review-field">
-                    <span>Authorized By</span>
-                    <input class="text_pole" type="text" name="authorizedBy" value="${escapeHtml(options.currentActorId || '')}" readonly />
-                    <span class="ss-hint">${escapeHtml(formatHumanEntityLabel(options.currentActorId || ''))}</span>
-                </label>
-                <label class="ss-interpretive-review-field">
-                    <span>Expires At</span>
-                    <input class="text_pole" type="datetime-local" name="expiresAt" value="${escapeHtml(formatDateTimeLocalValue(Date.now() + 60 * 60 * 1000))}" />
-                </label>
-            `,
-        }));
-    }
-
-    if (!isPublishedRevision && latestAuthorized && canExecute) {
-        forms.push(renderPublicationActionForm({
-            formKind: 'publication-execute',
-            title: 'Publish',
-            description: 'Publish this revision to active memory.',
-            actionStatus: options.actionStatus,
-            submitLabel: 'Publish',
-            disabled: false,
-            dataset: {
-                publicationAuthorizationId: latestAuthorized.publicationAuthorizationId,
-            },
-            fieldsHtml: '',
-        }));
-    }
-
-    if (canWithdrawActive) {
-        forms.push(renderLifecycleGovernanceForm({
-            formKind: 'dnm-withdraw',
-            title: 'Withdraw Current Memory',
-            description: '',
-            actionKind: 'DNM_WITHDRAWAL',
-            ownerId: interpretation.memorySubjectId,
-            interpretation,
-            currentActorId: options.currentActorId,
-            policies: governancePolicies,
-            actionStatus: options.actionStatus,
-            submitLabel: 'Withdraw Current Memory',
-            dataset: {
-                dnmRecordId: activeRecord?.dnmRecordId || '',
-            },
-        }));
-    }
-
-    if (forms.length === 0) {
-        return '';
-    }
-
-    if (forms.length === 1) {
-        return forms[0];
-    }
-
-    return forms.join('');
 }
 
 function renderCurrentActionSurface(interpretation, policiesById, options = {}) {
@@ -1938,6 +2252,11 @@ function renderCurrentActionSurface(interpretation, policiesById, options = {}) 
     const pendingRequest = selectedRequest?.status === 'PENDING'
         ? selectedRequest
         : requests.find((entry) => entry.status === 'PENDING') || null;
+    const recordedSubjectDisposition = hasRecordedSubjectDisposition(interpretation.subjectDisposition);
+    const subjectReviewRequest = requests.find((entry) =>
+        entry?.reviewerRole === 'MEMORY_SUBJECT'
+        || entry?.reviewerEntityId === interpretation.memorySubjectId,
+    ) || null;
 
     if (pendingRequest) {
         return {
@@ -1957,7 +2276,25 @@ function renderCurrentActionSurface(interpretation, policiesById, options = {}) 
         };
     }
 
-    if (!interpretation.subjectDisposition) {
+    if (!recordedSubjectDisposition) {
+        const selectedIsSubjectRequest = !selectedRequest
+            || selectedRequest.reviewerRole === 'MEMORY_SUBJECT'
+            || selectedRequest.reviewerEntityId === interpretation.memorySubjectId;
+        if (!selectedIsSubjectRequest) {
+            const subjectLabel = formatHumanEntityLabel(
+                subjectReviewRequest?.reviewerEntityId || interpretation.memorySubjectId || '',
+            );
+            return {
+                title: 'Decision details',
+                description: '',
+                content: `
+                    <div class="ss-hint">
+                        The final subject decision belongs to ${escapeHtml(subjectLabel || 'the context owner')}.
+                        Select that reviewer entry to record the decision for this revision.
+                    </div>
+                `,
+            };
+        }
         return {
             title: 'Decision details',
             description: '',
@@ -1974,19 +2311,6 @@ function renderCurrentActionSurface(interpretation, policiesById, options = {}) 
         };
     }
 
-    if (options.publicationOperatorState?.availableActions?.length) {
-        return {
-            title: 'Publication details',
-            description: '',
-            content: renderPublicationCurrentActions(
-                interpretation,
-                options.publicationOperatorState,
-                policiesById,
-                options,
-            ),
-        };
-    }
-
     return null;
 }
 
@@ -1999,10 +2323,11 @@ function renderCandidateDetail(interpretation, policiesById, options = {}) {
     const relatedPolicies = relatedPolicyIds
         .map((policyId) => policiesById.get(policyId))
         .filter(Boolean);
-    const allowedViews = new Set(['review', 'history', 'technical']);
+    const allowedViews = new Set(['review', 'history', 'technical', 'lifecycle']);
     const selectedView = allowedViews.has(String(options.detailView || '').trim())
         ? String(options.detailView || '').trim()
         : 'review';
+    const selectedReviewRequest = getSelectedReviewRequest(interpretation, options.selectedReviewRequestId);
     const participantLabels = Array.isArray(interpretation.materialParticipantEntityIds)
         ? interpretation.materialParticipantEntityIds
             .filter((id) => id && id !== interpretation.memorySubjectId)
@@ -2030,8 +2355,9 @@ function renderCandidateDetail(interpretation, policiesById, options = {}) {
         interpretation,
         options.publicationOperatorState,
     );
-    const currentStateBadge = renderBadge(formatHumanStateLabel(
-        getRevisionLifecycleStatus(interpretation, options.publicationOperatorState),
+    const currentStateBadge = renderBadge(buildPrimaryWorkflowStatus(
+        interpretation,
+        options.publicationOperatorState,
     ));
     const evidenceSection = renderHumanEvidenceSection(interpretation);
     const hasReviewHistory = Array.isArray(interpretation.reviewDispositions) && interpretation.reviewDispositions.length > 0;
@@ -2063,6 +2389,7 @@ function renderCandidateDetail(interpretation, policiesById, options = {}) {
 
             <div class="ss-interpretive-review-review-main">
                 ${evidenceSection}
+                ${renderSelectedReviewerSummary(interpretation, options.selectedReviewRequestId)}
             </div>
         </div>
 
@@ -2080,7 +2407,7 @@ function renderCandidateDetail(interpretation, policiesById, options = {}) {
             </div>
         ` : `
             <div class="ss-interpretive-review-card ss-interpretive-review-status-card">
-                <strong>Current status</strong>
+                <strong>Review status</strong>
                 <div class="ss-interpretive-review-summary-note">${escapeHtml(noActionSummary)}</div>
             </div>
         `}
@@ -2095,14 +2422,14 @@ function renderCandidateDetail(interpretation, policiesById, options = {}) {
         ${hasReviewHistory ? renderCollapsibleSection(
             'Review history',
             'Shows who responded and when.',
-            renderReviewResponseSummary(interpretation),
+            renderReviewResponseSummary(interpretation, options.selectedReviewRequestId),
             { open: true },
         ) : ''}
 
         ${(hasReviewHistory || hasSubjectHistory) ? renderCollapsibleSection(
             'Decision history',
             'Shows the recorded actions in compact human-readable form.',
-            renderSubmittedActionsHistory(interpretation, policiesById),
+            renderSubmittedActionsHistory(interpretation, policiesById, options.selectedReviewRequestId),
             { open: true },
         ) : ''}
 
@@ -2122,109 +2449,114 @@ function renderCandidateDetail(interpretation, policiesById, options = {}) {
     `;
 
     const technicalView = `
-        ${renderCollapsibleSection(
-            'Identity and timeline',
-            'Shows what this revision is, where it came from, and where it sits in the governed flow.',
-            renderKeyValueGrid([
-                { label: 'Interpretation ID', value: `<code>${escapeHtml(interpretation.interpretationId || 'n/a')}</code>` },
-                { label: 'Parent Revision', value: interpretation.parentRevisionId ? `<code>${escapeHtml(interpretation.parentRevisionId)}</code>` : 'None' },
-                { label: 'Created From Disposition', value: interpretation.createdFromDispositionId ? `<code>${escapeHtml(interpretation.createdFromDispositionId)}</code>` : 'None' },
-                { label: 'Memory Scope', value: `<code>${escapeHtml(interpretation.memoryScopeId || 'n/a')}</code>` },
-                { label: 'Memory Subject', value: `<code>${escapeHtml(interpretation.memorySubjectId || 'n/a')}</code>` },
+        ${renderAuditSection(
+            'Record Summary',
+            [
+                { label: 'Subject', value: escapeHtml(formatHumanEntityLabel(interpretation.memorySubjectId)) },
+                { label: 'Revision', value: escapeHtml(formatRevisionLabel(interpretation.interpretationRevisionId)) },
+                { label: 'Memory Scope', value: renderCopyableCode(interpretation.memoryScopeId, { emptyLabel: 'n/a' }) },
+                { label: 'Parent Revision', value: renderCopyableCode(interpretation.parentRevisionId, { emptyLabel: 'None' }) },
                 { label: 'Revision Reason', value: escapeHtml(interpretation.revisionReason || 'n/a') },
-                { label: 'Candidate State', value: renderBadge(interpretation.candidateState) },
-                { label: 'Grounding State', value: renderBadge(interpretation.groundingState) },
                 { label: 'Created', value: escapeHtml(formatTimestamp(interpretation.createdAt)) },
                 { label: 'Updated', value: escapeHtml(formatTimestamp(interpretation.updatedAt)) },
-            ]),
-            { open: true },
+            ],
+            { description: 'Exact record identity and timeline for this revision.' },
         )}
 
-        ${renderCollapsibleSection(
-            'Claims and scope',
-            'Summarizes the claims this interpretation is making about role, authority, relationship, and meaning.',
-            renderKeyValueGrid([
-                { label: 'Assertion Domains', value: renderStringList(interpretation.assertionDomains, 'None') },
-                { label: 'Participants', value: renderStringList(interpretation.materialParticipantEntityIds, 'None') },
-                { label: 'Shared Relationship', value: renderBadge(interpretation.sharedRelationshipAsserted ? 'TRUE' : 'FALSE') },
-                { label: 'Personal Meaning', value: renderBadge(interpretation.personalMeaningAsserted ? 'TRUE' : 'FALSE') },
-            ]),
+        ${renderAuditSection(
+            'Identifiers',
+            [
+                { label: 'Interpretation ID', value: renderCopyableCode(interpretation.interpretationId, { emptyLabel: 'n/a' }) },
+                { label: 'Interpretation Revision ID', value: renderCopyableCode(interpretation.interpretationRevisionId, { emptyLabel: 'n/a' }) },
+                { label: 'Created From Disposition', value: renderCopyableCode(interpretation.createdFromDispositionId, { emptyLabel: 'None' }) },
+                { label: 'Candidate State Raw', value: renderCopyableCode(interpretation.candidateState, { emptyLabel: 'n/a' }) },
+                { label: 'Authority Effect Raw', value: renderCopyableCode(interpretation.authorityEffect, { emptyLabel: 'n/a' }) },
+            ],
+            {
+                description: 'Expandable raw identifiers and internal-state codes kept out of the main scan path.',
+                collapsible: true,
+                open: false,
+            },
         )}
 
-        ${renderCollapsibleSection(
-            'Risk and policy',
-            'Shows why this candidate routes the way it does and which validation policy judged it.',
-            renderKeyValueGrid([
-                { label: 'Risk Class', value: renderBadge(interpretation.risk?.riskClass || 'n/a') },
+        ${renderAuditSection(
+            'Current State',
+            [
+                { label: 'Evidence Evaluation', value: renderBadge(formatEvidenceEvaluationLabel(interpretation.groundingState)) },
+                { label: 'Reviews', value: renderBadge(formatReviewWorkflowLabel(interpretation)) },
+                { label: 'Subject Decision', value: renderBadge(formatSubjectDecisionStatusLabel(interpretation.subjectDispositionState || 'PENDING')) },
+                { label: 'Publication', value: renderBadge(formatPublicationStatusLabel(interpretation.publicationState)) },
+            ],
+            { description: 'Current workflow state for evidence, reviews, subject decision, and publication.' },
+        )}
+
+        ${renderAuditSection(
+            'Claims and Participants',
+            [
+                { label: 'Claim Domains', value: renderStringList(interpretation.assertionDomains, 'None') },
+                { label: 'Participants', value: Array.isArray(interpretation.materialParticipantEntityIds) && interpretation.materialParticipantEntityIds.length > 0
+                    ? interpretation.materialParticipantEntityIds.map((id) => escapeHtml(formatHumanEntityLabel(id))).join(', ')
+                    : 'None' },
+                { label: 'Shared Relationship', value: interpretation.sharedRelationshipAsserted ? 'Yes' : 'No' },
+                { label: 'Personal Meaning', value: interpretation.personalMeaningAsserted ? 'Yes' : 'No' },
+            ],
+            { description: 'What this memory claims, and who it materially involves.' },
+        )}
+
+        ${renderAuditSection(
+            'Routing and Policy',
+            [
+                { label: 'Structural Authority', value: renderBadge(formatStructuralAuthorityLabel(interpretation.authorityEffect)) },
+                { label: 'Risk Class', value: renderBadge(formatHumanStateLabel(interpretation.risk?.riskClass || 'n/a')) },
                 { label: 'Risk Reasons', value: renderStringList(interpretation.risk?.riskReasons, 'None') },
-                { label: 'Validation Policy', value: interpretation.policyBinding ? `<code>${escapeHtml(interpretation.policyBinding.validationPolicyId)}</code> v${escapeHtml(String(interpretation.policyBinding.policyVersion))}` : 'n/a' },
+                { label: 'Validation Policy', value: interpretation.policyBinding
+                    ? `${renderCopyableCode(interpretation.policyBinding.validationPolicyId, { emptyLabel: 'n/a' })} v${escapeHtml(String(interpretation.policyBinding.policyVersion || ''))}`
+                    : 'n/a' },
+                { label: 'Policy Version', value: interpretation.policyBinding ? escapeHtml(String(interpretation.policyBinding.policyVersion)) : 'n/a' },
                 { label: 'Matched Rules', value: renderStringList(interpretation.policyBinding?.matchedRuleIds, 'None') },
-            ]),
+                { label: 'Referenced Delegation Policies', value: relatedPolicies.length > 0
+                    ? relatedPolicies.map((policy) => renderCopyableCode(policy.delegationPolicyId, { emptyLabel: 'n/a' })).join(', ')
+                    : 'None' },
+            ],
+            { description: 'Why this candidate routed here, and which exact policy inputs were used.' },
         )}
 
-        ${renderCollapsibleSection(
-            'Technical record',
-            'Preserves the exact canonical fields, policy bindings, and source identifiers for audit or debugging.',
-            `
-                ${renderKeyValueGrid([
-                    { label: 'Interpretation ID', value: `<code>${escapeHtml(interpretation.interpretationId || 'n/a')}</code>` },
-                    { label: 'Interpretation Revision ID', value: `<code>${escapeHtml(interpretation.interpretationRevisionId || 'n/a')}</code>` },
-                    { label: 'Memory Scope', value: `<code>${escapeHtml(interpretation.memoryScopeId || 'n/a')}</code>` },
-                    { label: 'Memory Subject', value: `<code>${escapeHtml(interpretation.memorySubjectId || 'n/a')}</code>` },
-                    { label: 'Review status', value: renderBadge(interpretation.reviewState) },
-                    { label: 'Subject decision state', value: renderBadge(interpretation.subjectDispositionState) },
-                    { label: 'Publication status', value: renderBadge(interpretation.publicationState) },
-                    { label: 'Authority Effect', value: renderBadge(interpretation.authorityEffect) },
-                    { label: 'Validation Policy', value: interpretation.policyBinding ? `<code>${escapeHtml(interpretation.policyBinding.validationPolicyId)}</code>` : 'n/a' },
-                    { label: 'Policy Version', value: interpretation.policyBinding ? escapeHtml(String(interpretation.policyBinding.policyVersion)) : 'n/a' },
-                    { label: 'Matched Rules', value: renderStringList(interpretation.policyBinding?.matchedRuleIds, 'None') },
-                    { label: 'Proposal Content Hash', value: `<code>${escapeHtml(interpretation.proposalContentHash || 'n/a')}</code>` },
-                    { label: 'Review Envelope Hash', value: `<code>${escapeHtml(interpretation.reviewEnvelopeHash || 'n/a')}</code>` },
-                ])}
-            `,
-            { open: true },
+        ${renderAuditSection(
+            'Evidence Bindings',
+            renderEvidenceBindingsTable(interpretation.groundingLinks),
+            { description: 'Exact source bindings for this candidate. References stay copyable even when no direct navigation exists.' },
         )}
 
-        ${renderCollapsibleSection(
-            'Evidence and grounding',
-            'Preserves the grounding outcome, source identifiers, and hashes for audit or debugging.',
-            `
-                ${renderKeyValueGrid([
-                    { label: 'Grounding Outcome', value: renderBadge(interpretation.groundingAggregate?.groundingOutcome || 'n/a') },
-                    { label: 'Evaluated At', value: escapeHtml(formatTimestamp(interpretation.groundingAggregate?.evaluatedAt)) },
-                    { label: 'Proposal Content Hash', value: `<code>${escapeHtml(interpretation.proposalContentHash || 'n/a')}</code>` },
-                    { label: 'Review Envelope Hash', value: `<code>${escapeHtml(interpretation.reviewEnvelopeHash || 'n/a')}</code>` },
-                ])}
-                ${renderGroundingLinks(interpretation.groundingLinks)}
-            `,
-        )}
-
-        ${relatedPolicies.length > 0 ? renderCollapsibleSection(
-            'Related Delegation Policies',
-            'Shows which delegation policies were actually involved in review, subject decision, or later lifecycle steps.',
-            renderDelegationPolicies(relatedPolicies),
-        ) : ''}
-
-        ${renderCollapsibleSection(
-            'Publication and lifecycle details',
-            'Preserves the complete DNM operator surface and lifecycle detail.',
-            renderPublicationOperatorSection(
-                interpretation,
-                options.publicationOperatorState,
-                policiesById,
-                options,
-            ),
+        ${renderAuditSection(
+            'Integrity and Audit',
+            [
+                { label: 'Proposal Content Hash', value: renderCopyableCode(interpretation.proposalContentHash, { emptyLabel: 'n/a' }) },
+                { label: 'Review Envelope Hash', value: renderCopyableCode(interpretation.reviewEnvelopeHash, { emptyLabel: 'n/a' }) },
+                { label: 'Grounding Outcome', value: renderBadge(formatHumanStateLabel(interpretation.groundingAggregate?.groundingOutcome || 'n/a')) },
+                { label: 'Evaluated At', value: escapeHtml(formatTimestamp(interpretation.groundingAggregate?.evaluatedAt)) },
+            ],
+            {
+                description: 'Low-priority audit detail kept collapsed until needed.',
+                collapsible: true,
+                open: false,
+            },
         )}
     `;
+
+    const lifecycleView = renderPublicationOperatorSection(
+        interpretation,
+        options.publicationOperatorState,
+        policiesById,
+        options,
+    );
 
     return `
         <div class="ss-interpretive-review-detail-header">
             <div class="ss-interpretive-review-detail-header-main">
                 <div class="ss-interpretive-review-detail-header-top">
                     <div>
-                        <div class="ss-interpretive-review-detail-title">${escapeHtml(formatInterpretationTypeLabel(interpretation.type || 'Interpretation'))}</div>
                         <div class="ss-hint">${escapeHtml(formatRevisionLabel(interpretation.interpretationRevisionId))}</div>
-                        ${lifecycleTrailLabel ? `<div class="ss-hint">${escapeHtml(lifecycleTrailLabel)}</div>` : ''}
+                        ${selectedReviewRequest ? `<div class="ss-hint">${escapeHtml(formatHumanEntityLabel(selectedReviewRequest.reviewerEntityId || ''))} · ${escapeHtml(formatHumanRoleLabel(selectedReviewRequest.reviewerRole || 'REVIEWER'))}</div>` : ''}
                     </div>
                     <div class="ss-interpretive-review-inline-meta">
                         ${currentStateBadge}
@@ -2242,6 +2574,9 @@ function renderCandidateDetail(interpretation, policiesById, options = {}) {
             </div>
             <div class="ss-interpretive-review-detail-view${selectedView === 'technical' ? ' active' : ''}" data-detail-view-panel="technical">
                 ${technicalView}
+            </div>
+            <div class="ss-interpretive-review-detail-view${selectedView === 'lifecycle' ? ' active' : ''}" data-detail-view-panel="lifecycle">
+                ${lifecycleView}
             </div>
         </div>
     `;
@@ -2296,7 +2631,7 @@ function renderModalHtml(state) {
 
 export async function openInterpretiveReviewModal() {
     const state = {
-        filters: { status: 'PENDING' },
+        filters: { status: 'PENDING_APPROVAL' },
         reviews: [],
         selectedReviewRequestId: null,
         selectedInterpretationRevisionId: null,
@@ -2338,11 +2673,11 @@ export async function openInterpretiveReviewModal() {
 
         const renderQueue = () => {
             if (!queueList) return;
-            if (state.reviews.length === 0) {
-                queueList.innerHTML = '<div class="ss-interpretive-review-queue-empty ss-hint">No review requests matched the current filter.</div>';
+            const groups = buildFilteredQueueGroups(state.reviews, state.filters.status);
+            if (groups.length === 0) {
+                queueList.innerHTML = '<div class="ss-interpretive-review-queue-empty ss-hint">No revisions matched the current filter.</div>';
                 return;
             }
-            const groups = buildQueueGroups(state.reviews);
             queueList.innerHTML = groups.map((group) => {
                 return renderQueueGroupItem(
                     group,
@@ -2365,6 +2700,50 @@ export async function openInterpretiveReviewModal() {
             const policyMap = new Map(policies.map((policy) => [policy.delegationPolicyId, policy]));
             state.policiesByScopeId.set(scopeId, policyMap);
             return policyMap;
+        };
+
+        const enrichReviewsWithCandidateStates = async (reviews) => {
+            const reviewList = Array.isArray(reviews) ? reviews : [];
+            const revisionIds = [...new Set(
+                reviewList
+                    .map((review) => String(review?.interpretationRevisionId || '').trim())
+                    .filter(Boolean),
+            )];
+            if (revisionIds.length === 0) {
+                return reviewList;
+            }
+
+            const candidateEntries = await Promise.all(revisionIds.map(async (revisionId) => {
+                let interpretation = state.candidateCache.get(revisionId) || null;
+                if (!interpretation) {
+                    const response = await getInterpretiveCandidate(revisionId);
+                    interpretation = response?.interpretation || null;
+                    if (interpretation) {
+                        state.candidateCache.set(revisionId, interpretation);
+                    }
+                }
+                return [revisionId, interpretation];
+            }));
+
+            const candidateByRevisionId = new Map(candidateEntries);
+            return reviewList.map((review) => {
+                const interpretation = candidateByRevisionId.get(String(review?.interpretationRevisionId || '').trim()) || null;
+                if (!interpretation) {
+                    return review;
+                }
+                const canonicalRevisionState = {
+                    reviewState: interpretation.reviewState,
+                    subjectDispositionState: interpretation.subjectDispositionState,
+                    publicationState: interpretation.publicationState,
+                };
+                return {
+                    ...review,
+                    reviewState: canonicalRevisionState.reviewState,
+                    subjectDispositionState: canonicalRevisionState.subjectDispositionState,
+                    publicationState: canonicalRevisionState.publicationState,
+                    canonicalRevisionState,
+                };
+            });
         };
 
         const renderCurrentDetail = () => {
@@ -2480,12 +2859,18 @@ export async function openInterpretiveReviewModal() {
                 queueList.innerHTML = '<div class="ss-interpretive-review-queue-empty ss-hint">Loading requests...</div>';
             }
             try {
-                const response = await listInterpretiveReviews(
-                    state.filters.status ? { status: state.filters.status } : {},
+                const response = await listInterpretiveReviews({});
+                const rawReviews = Array.isArray(response?.reviews) ? response.reviews : [];
+                for (const revisionId of new Set(rawReviews.map((review) => String(review?.interpretationRevisionId || '').trim()).filter(Boolean))) {
+                    state.candidateCache.delete(revisionId);
+                }
+                state.reviews = await enrichReviewsWithCandidateStates(rawReviews);
+                const filteredGroups = buildFilteredQueueGroups(state.reviews, state.filters.status);
+                const visibleReviewIds = new Set(
+                    filteredGroups.flatMap((group) => (Array.isArray(group.reviews) ? group.reviews : []).map((review) => review.reviewRequestId)),
                 );
-                state.reviews = Array.isArray(response?.reviews) ? response.reviews : [];
-                if (!state.reviews.some((review) => review.reviewRequestId === state.selectedReviewRequestId)) {
-                    state.selectedReviewRequestId = state.reviews[0]?.reviewRequestId || null;
+                if (!visibleReviewIds.has(state.selectedReviewRequestId)) {
+                    state.selectedReviewRequestId = filteredGroups[0]?.reviews?.[0]?.reviewRequestId || null;
                 }
                 renderQueue();
                 if (state.selectedReviewRequestId) {
@@ -2497,7 +2882,7 @@ export async function openInterpretiveReviewModal() {
                     await loadInterpretationByRevision(state.selectedInterpretationRevisionId);
                     return;
                 }
-                renderDetailError('No review requests matched the current filter.');
+                renderDetailError('No revisions matched the current filter.');
             } catch (error) {
                 if (queueList) {
                     queueList.innerHTML = `<div class="ss-interpretive-review-queue-empty ss-hint">Could not load review requests: ${escapeHtml(error?.message || error)}</div>`;
@@ -2852,6 +3237,29 @@ export async function openInterpretiveReviewModal() {
             }
         }
 
+        async function handlePublicationBootstrapSubmit(form) {
+            setFormBusy(form, true);
+            setInlineFormStatus(form, 'info', 'Creating the standard governed publication policy...');
+            try {
+                const response = await bootstrapStandardInterpretivePublicationPolicy({});
+                if (state.selectedInterpretationRevisionId) {
+                    invalidateInterpretationCaches(state.selectedInterpretationRevisionId, state.activeInterpretation?.memorySubjectId);
+                }
+                state.actionStatus = {
+                    kind: 'publication-bootstrap',
+                    tone: 'success',
+                    message: response?.reused
+                        ? 'Standard publication policy is already active.'
+                        : 'Standard publication policy created.',
+                };
+                await refreshReviews({ preserveDetail: true });
+            } catch (error) {
+                setInlineFormStatus(form, 'error', error?.message || String(error));
+            } finally {
+                setFormBusy(form, false);
+            }
+        }
+
         async function handlePublicationAuthorizationSubmit(form) {
             const qualificationId = String(form.dataset.qualificationId || '').trim();
             const expiresAt = parseDateTimeLocalValue(form.querySelector('[name="expiresAt"]')?.value || '');
@@ -2902,7 +3310,45 @@ export async function openInterpretiveReviewModal() {
                 state.actionStatus = {
                     kind: 'publication-execute',
                     tone: 'success',
-                    message: `Published DNM record ${response?.publishedRecord?.dnmRecordId || ''}.`,
+                    message: `Published memory record ${response?.publishedRecord?.dnmRecordId || ''}.`,
+                };
+                await refreshReviews({ preserveDetail: true });
+            } catch (error) {
+                setInlineFormStatus(form, 'error', error?.message || String(error));
+            } finally {
+                setFormBusy(form, false);
+            }
+        }
+
+        async function handlePublicationPublishSubmit(form) {
+            const interpretationRevisionId = String(form.dataset.interpretationRevisionId || '').trim();
+            if (!interpretationRevisionId) {
+                setInlineFormStatus(form, 'error', 'No interpretation revision is available to publish.');
+                return;
+            }
+
+            const payload = {
+                publicationPolicyId: String(form.dataset.publicationPolicyId || '').trim(),
+                continuityTargetId: String(form.dataset.continuityTargetId || '').trim(),
+                proposalContentHash: String(form.dataset.proposalContentHash || '').trim(),
+                reviewEnvelopeHash: String(form.dataset.reviewEnvelopeHash || '').trim(),
+                subjectDispositionRecordId: String(form.dataset.subjectDispositionRecordId || '').trim(),
+                actorEntityId: options.currentActorId || getCurrentActorEntityId() || '',
+                authorizedBy: options.currentActorId || getCurrentActorEntityId() || 'user:system',
+            };
+
+            setFormBusy(form, true);
+            setInlineFormStatus(form, 'info', 'Publishing memory...');
+            try {
+                const response = await publishInterpretiveMemory(interpretationRevisionId, payload);
+                invalidateInterpretationCaches(
+                    response?.interpretation?.interpretationRevisionId || interpretationRevisionId,
+                    response?.publishedRecord?.continuityTargetId || payload.continuityTargetId,
+                );
+                state.actionStatus = {
+                    kind: 'publication-publish',
+                    tone: 'success',
+                    message: `Published memory record ${response?.publishedRecord?.dnmRecordId || ''}.`.trim(),
                 };
                 await refreshReviews({ preserveDetail: true });
             } catch (error) {
@@ -2936,7 +3382,7 @@ export async function openInterpretiveReviewModal() {
                 return;
             }
             setFormBusy(form, true);
-            setInlineFormStatus(form, 'info', 'Superseding active DNM record...');
+            setInlineFormStatus(form, 'info', 'Replacing the current published memory...');
             try {
                 const response = await supersedeDnmPublicationRecord(payload);
                 invalidateInterpretationCaches(state.selectedInterpretationRevisionId, response?.replacementRecord?.continuityTargetId);
@@ -2964,7 +3410,7 @@ export async function openInterpretiveReviewModal() {
                 return;
             }
             setFormBusy(form, true);
-            setInlineFormStatus(form, 'info', 'Withdrawing current DNM record...');
+            setInlineFormStatus(form, 'info', 'Withdrawing the current published memory...');
             try {
                 const response = await withdrawDnmPublicationRecord(payload);
                 invalidateInterpretationCaches(state.selectedInterpretationRevisionId, response?.record?.continuityTargetId);
@@ -2994,7 +3440,7 @@ export async function openInterpretiveReviewModal() {
                 return;
             }
             setFormBusy(form, true);
-            setInlineFormStatus(form, 'info', 'Recording DNM delta review...');
+            setInlineFormStatus(form, 'info', 'Recording follow-up review on the published memory...');
             try {
                 const response = await recordDnmDeltaReview(payload);
                 invalidateInterpretationCaches(state.selectedInterpretationRevisionId, response?.record?.continuityTargetId);
@@ -3085,6 +3531,17 @@ export async function openInterpretiveReviewModal() {
         }, true);
 
         detailRoot?.addEventListener('click', (event) => {
+            const copyButton = event.target.closest('[data-copy-value]');
+            if (copyButton) {
+                event.preventDefault();
+                const copyValue = String(copyButton.getAttribute('data-copy-value') || '').trim();
+                if (copyValue && navigator.clipboard?.writeText) {
+                    navigator.clipboard.writeText(copyValue)
+                        .then(() => globalThis.toastr?.success?.('Copied to clipboard'))
+                        .catch(() => globalThis.toastr?.error?.('Clipboard copy failed'));
+                }
+                return;
+            }
             const reasonButton = event.target.closest('[data-reason-code]');
             if (reasonButton) {
                 event.preventDefault();
@@ -3162,12 +3619,20 @@ export async function openInterpretiveReviewModal() {
                 await handleSubjectSubmit(form);
                 return;
             }
+            if (form.dataset.formKind === 'publication-bootstrap') {
+                await handlePublicationBootstrapSubmit(form);
+                return;
+            }
             if (form.dataset.formKind === 'publication-qualify') {
                 await handlePublicationQualificationSubmit(form);
                 return;
             }
             if (form.dataset.formKind === 'publication-authorize') {
                 await handlePublicationAuthorizationSubmit(form);
+                return;
+            }
+            if (form.dataset.formKind === 'publication-publish') {
+                await handlePublicationPublishSubmit(form);
                 return;
             }
             if (form.dataset.formKind === 'publication-execute') {

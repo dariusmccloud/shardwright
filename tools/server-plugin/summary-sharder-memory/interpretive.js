@@ -155,6 +155,15 @@ const ALLOWED_DNM_DELTA_REVIEW_STATES = new Set([
     'CLOSED',
 ]);
 
+const STANDARD_PUBLICATION_POLICY_ID = 'standard-governed-publication';
+const STANDARD_PUBLICATION_POLICY_VERSION = 1;
+const STANDARD_PUBLICATION_POLICY_CLASS = 'standard-governed-publication';
+const STANDARD_PUBLICATION_POLICY_DETAILS = Object.freeze({
+    policyClass: STANDARD_PUBLICATION_POLICY_CLASS,
+    displayName: 'Standard Governed Publication',
+    description: 'Standard governed publication contract for approved interpretive memory.',
+});
+
 const GROUNDING_OUTCOME_ORDER = Object.freeze({
     UNSUPPORTED: 0,
     BASIS_INCOMPLETE: 1,
@@ -669,6 +678,43 @@ function buildInterpretivePublicationPolicyRecord(payload, timestamp) {
         ...policy,
         policyHash: computePublicationPolicyHash(policy),
     };
+}
+
+function buildStandardInterpretivePublicationPolicyPayload(now = Date.now()) {
+    return {
+        publicationPolicyId: STANDARD_PUBLICATION_POLICY_ID,
+        policyVersion: STANDARD_PUBLICATION_POLICY_VERSION,
+        continuityTargetType: 'MEMORY_SUBJECT',
+        subjectIdentityMode: 'EXACT_SUBJECT',
+        permittedInterpretationTypes: ['ROLE_EVOLUTION', 'RELATIONAL_PROGRESSION'],
+        requiredFinalSubjectState: 'GRANTED',
+        requiredGroundingOutcome: 'SUPPORTED',
+        participantDisagreementBlocksPublication: true,
+        contestOrDeferBlocksPublication: true,
+        immutableChildRequiredForTypes: [],
+        postGrantHumanPublicationAuthorizationRequired: false,
+        details: { ...STANDARD_PUBLICATION_POLICY_DETAILS },
+        now,
+    };
+}
+
+function normalizePublicationPolicySemanticShape(policy) {
+    return {
+        continuityTargetType: policy.continuityTargetType,
+        subjectIdentityMode: policy.subjectIdentityMode,
+        permittedInterpretationTypes: [...(policy.permittedInterpretationTypes || [])].sort(),
+        requiredFinalSubjectState: policy.requiredFinalSubjectState,
+        requiredGroundingOutcome: policy.requiredGroundingOutcome,
+        participantDisagreementBlocksPublication: policy.participantDisagreementBlocksPublication === true,
+        contestOrDeferBlocksPublication: policy.contestOrDeferBlocksPublication === true,
+        immutableChildRequiredForTypes: [...(policy.immutableChildRequiredForTypes || [])].sort(),
+        postGrantHumanPublicationAuthorizationRequired: policy.postGrantHumanPublicationAuthorizationRequired === true,
+        details: cloneJson(policy.details || {}),
+    };
+}
+
+function arePublicationPoliciesSemanticallyEquivalent(left, right) {
+    return stableStringify(normalizePublicationPolicySemanticShape(left)) === stableStringify(normalizePublicationPolicySemanticShape(right));
 }
 
 function defaultReviewSubmissionMode(requestRow, submittedByActorId) {
@@ -1789,7 +1835,7 @@ function loadInterpretivePublicationAuthorizationsForRevision(adapter, interpret
     return rows.map((row) => loadInterpretivePublicationAuthorizationProjection(adapter, row.publication_authorization_id));
 }
 
-function loadInterpretivePublicationPoliciesForType(adapter, interpretationType) {
+function loadActiveInterpretivePublicationPolicies(adapter) {
     const rows = adapter.all(
         `SELECT publication_policy_id, policy_version
          FROM interpretation_publication_policies
@@ -1798,7 +1844,25 @@ function loadInterpretivePublicationPoliciesForType(adapter, interpretationType)
     );
     return rows
         .map((row) => loadInterpretivePublicationPolicyProjection(adapter, row.publication_policy_id, Number(row.policy_version)))
+        .filter(Boolean);
+}
+
+function loadInterpretivePublicationPoliciesForType(adapter, interpretationType) {
+    return loadActiveInterpretivePublicationPolicies(adapter)
         .filter((policy) => policy && Array.isArray(policy.permittedInterpretationTypes) && policy.permittedInterpretationTypes.includes(interpretationType));
+}
+
+function loadEquivalentStandardInterpretivePublicationPolicy(adapter, interpretationType = '') {
+    const standardShape = buildStandardInterpretivePublicationPolicyPayload();
+    return loadActiveInterpretivePublicationPolicies(adapter).find((policy) => {
+        if (policy.continuityTargetType !== 'MEMORY_SUBJECT') {
+            return false;
+        }
+        if (interpretationType && !policy.permittedInterpretationTypes.includes(interpretationType)) {
+            return false;
+        }
+        return arePublicationPoliciesSemanticallyEquivalent(policy, standardShape);
+    }) || null;
 }
 
 function loadDnmPublicationRecordProjection(adapter, dnmRecordId) {
@@ -1847,6 +1911,7 @@ function loadDnmPublicationRecordProjection(adapter, dnmRecordId) {
 function buildCandidatePublicationOperatorState(adapter, interpretation, continuityTargetId) {
     const matchingPolicies = loadInterpretivePublicationPoliciesForType(adapter, interpretation.type)
         .filter((policy) => policy.continuityTargetType === 'MEMORY_SUBJECT');
+    const standardPolicy = loadEquivalentStandardInterpretivePublicationPolicy(adapter, interpretation.type);
     const qualifications = loadInterpretivePublicationQualificationsForRevision(
         adapter,
         interpretation.interpretationRevisionId,
@@ -1892,11 +1957,17 @@ function buildCandidatePublicationOperatorState(adapter, interpretation, continu
         addBlockedAction('QUALIFY_PUBLICATION', qualificationReasons);
     }
 
+    const requiresExplicitPublicationAuthorization = latestQualification
+        ? latestQualification.binding?.postGrantHumanPublicationAuthorizationRequired === true
+        : matchingPolicies.some((policy) => policy?.postGrantHumanPublicationAuthorizationRequired === true);
+
     const authorizationReasons = [];
     if (interpretation.publicationState === 'PUBLISHED') {
         authorizationReasons.push('INTERPRETATION_ALREADY_PUBLISHED');
     }
-    if (!latestQualification) {
+    if (!requiresExplicitPublicationAuthorization) {
+        authorizationReasons.push('PUBLICATION_AUTHORIZATION_INTERNALIZED');
+    } else if (!latestQualification) {
         authorizationReasons.push('PUBLICATION_QUALIFICATION_REQUIRED');
     } else if (latestQualification.eligibilityVerdict !== 'ELIGIBLE') {
         authorizationReasons.push(...latestQualification.refusalCodes);
@@ -1911,7 +1982,9 @@ function buildCandidatePublicationOperatorState(adapter, interpretation, continu
     if (interpretation.publicationState === 'PUBLISHED') {
         executeReasons.push('INTERPRETATION_ALREADY_PUBLISHED');
     }
-    if (!latestAuthorization) {
+    if (!requiresExplicitPublicationAuthorization) {
+        executeReasons.push('PUBLICATION_AUTHORIZATION_INTERNALIZED');
+    } else if (!latestAuthorization) {
         executeReasons.push('PUBLICATION_AUTHORIZATION_REQUIRED');
     } else if (latestAuthorization.status === 'EXPIRED') {
         executeReasons.push('PUBLICATION_AUTHORIZATION_EXPIRED');
@@ -1926,9 +1999,18 @@ function buildCandidatePublicationOperatorState(adapter, interpretation, continu
         addBlockedAction('EXECUTE_PUBLICATION', executeReasons);
     }
 
+    const guidedFlow = buildPublicationGuidedFlow(
+        interpretation,
+        continuityTargetId,
+        standardPolicy,
+        latestQualification,
+    );
+
     return {
         continuityTargetId,
         matchingPolicies,
+        standardPolicy,
+        guidedFlow,
         qualifications,
         latestQualification,
         authorizations,
@@ -2026,6 +2108,153 @@ function loadDnmPublicationLifecycleMetadata(adapter, dnmRecordId) {
         deltaReviewState: row.delta_review_state,
         latestDeltaReviewId: row.latest_delta_review_id,
         updatedAt: Number(row.updated_at),
+    };
+}
+
+function buildPublicationGuidedAction(action, label, extras = {}) {
+    return {
+        action,
+        label,
+        ...extras,
+    };
+}
+
+function buildPublicationGuidedFlow(interpretation, continuityTargetId, standardPolicy, latestQualification = null) {
+    const latestChildRevisionId = Array.isArray(interpretation.childRevisionIds) && interpretation.childRevisionIds.length > 0
+        ? interpretation.childRevisionIds[interpretation.childRevisionIds.length - 1]
+        : null;
+    const technicalRefusalCodes = [];
+    const base = {
+        continuityTargetId,
+        standardPolicyId: standardPolicy?.publicationPolicyId || null,
+        standardPolicyVersion: standardPolicy?.policyVersion || null,
+        nextAction: null,
+        technicalRefusalCodes,
+    };
+
+    if (!standardPolicy) {
+        technicalRefusalCodes.push('NO_ACTIVE_PUBLICATION_POLICY');
+        return {
+            ...base,
+            status: 'SETUP_REQUIRED',
+            headline: 'Publication setup required',
+            detail: 'Create the standard governed publication policy before publishing memory from this host.',
+            nextAction: buildPublicationGuidedAction('BOOTSTRAP_STANDARD_PUBLICATION_POLICY', 'Set Up Standard Publication Policy'),
+        };
+    }
+
+    if (interpretation.publicationState === 'PUBLISHED') {
+        technicalRefusalCodes.push('INTERPRETATION_ALREADY_PUBLISHED');
+        return {
+            ...base,
+            status: 'ALREADY_PUBLISHED',
+            headline: 'Already published',
+            detail: 'This revision has already been published.',
+        };
+    }
+
+    if (latestChildRevisionId) {
+        technicalRefusalCodes.push('INTERPRETATION_REVISION_NOT_LATEST_ELIGIBLE_CHILD');
+        return {
+            ...base,
+            status: 'REVISION_REQUIRED',
+            headline: 'Revision required',
+            detail: 'A newer child revision exists. Review and publish the latest child revision instead of the parent.',
+            nextAction: buildPublicationGuidedAction('OPEN_CHILD_REVISION', 'Open Latest Revision', {
+                interpretationRevisionId: latestChildRevisionId,
+            }),
+        };
+    }
+
+    if (interpretation.reviewState !== 'COMPLETE') {
+        technicalRefusalCodes.push('REVIEW_STATE_NOT_COMPLETE');
+        return {
+            ...base,
+            status: 'REVIEWS_PENDING',
+            headline: 'Reviews still pending',
+            detail: 'All required reviews must be complete before publication.',
+            nextAction: buildPublicationGuidedAction('COMPLETE_REVIEWS', 'Complete Reviews'),
+        };
+    }
+
+    if (interpretation.subjectDispositionState !== 'GRANTED') {
+        technicalRefusalCodes.push('SUBJECT_DISPOSITION_STATE_MISMATCH');
+        return {
+            ...base,
+            status: 'DECISION_PENDING',
+            headline: 'Decision pending',
+            detail: 'The context owner must grant the reviewed memory before it can be published.',
+            nextAction: buildPublicationGuidedAction('RECORD_SUBJECT_DECISION', 'Record Subject Decision'),
+        };
+    }
+
+    const qualificationMatchesStandard = latestQualification
+        && latestQualification.publicationPolicyId === standardPolicy.publicationPolicyId
+        && Number(latestQualification.policyVersion) === Number(standardPolicy.policyVersion)
+        && latestQualification.continuityTargetId === continuityTargetId;
+
+    if (!qualificationMatchesStandard) {
+        return {
+            ...base,
+            status: 'READY_TO_CHECK',
+            headline: 'Ready to check eligibility',
+            detail: 'Run the publication eligibility check before publishing this revision.',
+            nextAction: buildPublicationGuidedAction('CHECK_ELIGIBILITY', 'Check Eligibility'),
+        };
+    }
+
+    if (latestQualification.eligibilityVerdict === 'ELIGIBLE') {
+        return {
+            ...base,
+            status: 'READY_TO_PUBLISH',
+            headline: 'Ready to publish',
+            detail: 'The latest eligibility check passed. This revision can now be published.',
+            nextAction: buildPublicationGuidedAction('PUBLISH_MEMORY', 'Publish Memory'),
+        };
+    }
+
+    technicalRefusalCodes.push(...(Array.isArray(latestQualification.refusalCodes) ? latestQualification.refusalCodes : []));
+    const uniqueRefusalCodes = Array.from(new Set(technicalRefusalCodes));
+
+    if (uniqueRefusalCodes.includes('GROUNDING_OUTCOME_BELOW_POLICY')) {
+        return {
+            ...base,
+            technicalRefusalCodes: uniqueRefusalCodes,
+            status: 'EVIDENCE_INSUFFICIENT',
+            headline: 'Evidence requirements not satisfied',
+            detail: 'This revision did not satisfy the current publication evidence requirement.',
+        };
+    }
+
+    if (
+        uniqueRefusalCodes.includes('CONTEST_OR_DEFER_BLOCKS_PUBLICATION')
+        || uniqueRefusalCodes.includes('PARTICIPANT_DISAGREEMENT_BLOCKS_PUBLICATION')
+    ) {
+        return {
+            ...base,
+            technicalRefusalCodes: uniqueRefusalCodes,
+            status: 'REVIEW_BLOCKED',
+            headline: 'Review blockers remain',
+            detail: 'Publication is blocked until the recorded contest, defer, or disagreement state is resolved.',
+        };
+    }
+
+    if (uniqueRefusalCodes.includes('UNSUPPORTED_INTERPRETATION_TYPE_FOR_TARGET')) {
+        return {
+            ...base,
+            technicalRefusalCodes: uniqueRefusalCodes,
+            status: 'POLICY_MISMATCH',
+            headline: 'Policy does not cover this memory',
+            detail: 'The current standard policy does not permit publication for this interpretation type.',
+        };
+    }
+
+    return {
+        ...base,
+        technicalRefusalCodes: uniqueRefusalCodes,
+        status: 'PUBLICATION_BLOCKED',
+        headline: 'Publication is blocked',
+        detail: 'The latest eligibility check found blockers that must be resolved before publication.',
     };
 }
 
@@ -5302,6 +5531,9 @@ export function listInterpretiveReviews(request, filters = {}) {
                 r.status,
                 r.review_envelope_hash,
                 r.created_at,
+                ir.review_state,
+                ir.subject_disposition_state,
+                ir.publication_state,
                 o.obligation_state,
                 o.blocking_reason,
                 d.review_disposition_id,
@@ -5310,6 +5542,7 @@ export function listInterpretiveReviews(request, filters = {}) {
                 d.commentary,
                 d.submitted_at
             FROM interpretation_review_requests r
+            INNER JOIN interpretation_revisions ir ON ir.interpretation_revision_id = r.interpretation_revision_id
             INNER JOIN interpretation_review_obligations o ON o.review_obligation_id = r.review_obligation_id
             LEFT JOIN interpretation_review_dispositions d ON d.review_request_id = r.review_request_id
             ${where.length > 0 ? `WHERE ${where.join(' AND ')}` : ''}
@@ -5340,6 +5573,9 @@ export function listInterpretiveReviews(request, filters = {}) {
                 status: row.status,
                 reviewEnvelopeHash: row.review_envelope_hash,
                 createdAt: Number(row.created_at),
+                reviewState: row.review_state,
+                subjectDispositionState: row.subject_disposition_state,
+                publicationState: row.publication_state,
                 obligationState: row.obligation_state,
                 blockingReason: row.blocking_reason,
                 disposition: row.review_disposition_id ? {
@@ -5981,6 +6217,44 @@ export function upsertInterpretivePublicationPolicy(request, payload = {}) {
     }
 }
 
+export function bootstrapStandardInterpretivePublicationPolicy(request, payload = {}) {
+    const timestamp = nowTimestamp(payload?.now);
+    const standardPayload = buildStandardInterpretivePublicationPolicyPayload(timestamp);
+    const userRoot = getAuthenticatedUserRoot(request);
+    const paths = getStoragePaths(userRoot);
+    const adapter = openOperationalDatabase(paths, { now: timestamp });
+    try {
+        const equivalent = loadEquivalentStandardInterpretivePublicationPolicy(adapter);
+        if (equivalent) {
+            return {
+                ok: true,
+                phase: 'c0.6.4-5',
+                created: false,
+                reused: true,
+                publicationPolicy: equivalent,
+            };
+        }
+
+        const latestStandard = loadLatestInterpretivePublicationPolicy(adapter, STANDARD_PUBLICATION_POLICY_ID);
+        if (latestStandard && !arePublicationPoliciesSemanticallyEquivalent(latestStandard, standardPayload)) {
+            throw createError(
+                409,
+                `Publication policy ${STANDARD_PUBLICATION_POLICY_ID} already exists with a conflicting contract`,
+                'ARCH_STANDARD_PUBLICATION_POLICY_CONFLICT',
+            );
+        }
+    } finally {
+        adapter.close();
+    }
+
+    const created = upsertInterpretivePublicationPolicy(request, standardPayload);
+    return {
+        ...created,
+        phase: 'c0.6.4-5',
+        reused: false,
+    };
+}
+
 export function revokeInterpretivePublicationPolicy(request, publicationPolicyId, payload = {}) {
     const timestamp = nowTimestamp(payload?.now);
     const policyVersion = payload?.policyVersion == null
@@ -6276,6 +6550,50 @@ export function executeInterpretivePublicationAuthorization(request, payload = {
     } finally {
         adapter.close();
     }
+}
+
+export function publishInterpretiveMemory(request, interpretationRevisionId, payload = {}) {
+    const timestamp = nowTimestamp(payload?.now);
+    const policy = payload?.publicationPolicyId
+        ? null
+        : bootstrapStandardInterpretivePublicationPolicy(request, { now: timestamp }).publicationPolicy;
+    const publicationPolicyId = payload?.publicationPolicyId
+        ? sanitizeIdentifier(payload.publicationPolicyId, 'publicationPolicyId')
+        : policy?.publicationPolicyId || STANDARD_PUBLICATION_POLICY_ID;
+    const continuityTargetId = payload?.continuityTargetId
+        ? sanitizeIdentifier(payload.continuityTargetId, 'continuityTargetId')
+        : sanitizeIdentifier(payload?.memorySubjectId || '', 'continuityTargetId');
+    const qualification = qualifyInterpretivePublication(request, interpretationRevisionId, {
+        publicationPolicyId,
+        continuityTargetId,
+        proposalContentHash: payload?.proposalContentHash,
+        reviewEnvelopeHash: payload?.reviewEnvelopeHash,
+        subjectDispositionRecordId: payload?.subjectDispositionRecordId,
+        now: timestamp,
+    });
+    if (qualification?.qualification?.eligibilityVerdict !== 'ELIGIBLE') {
+        throw createError(
+            409,
+            'Publication is blocked. Resolve the latest eligibility result before publishing.',
+            'ARCH_PUBLICATION_NOT_ELIGIBLE',
+        );
+    }
+
+    const authorization = createInterpretivePublicationAuthorization(request, {
+        qualificationId: qualification.qualification.qualificationId,
+        authorizedBy: sanitizeIdentifier(payload?.authorizedBy || payload?.actorEntityId || 'user:system', 'authorizedBy'),
+        expiresAt: timestamp + (5 * 60 * 1000),
+        now: timestamp + 1,
+    });
+    const executed = executeInterpretivePublicationAuthorization(request, {
+        publicationAuthorizationId: authorization.authorization.publicationAuthorizationId,
+        now: timestamp + 2,
+    });
+    return {
+        ...executed,
+        phase: 'c0.6.4-5',
+        qualification: qualification.qualification,
+    };
 }
 
 export function listInterpretiveSynthesisPolicies(request, filters = {}) {

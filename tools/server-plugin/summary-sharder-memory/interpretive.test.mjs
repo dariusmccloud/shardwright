@@ -6,6 +6,7 @@ import path from 'node:path';
 
 import { getStoragePaths, openOperationalDatabase } from './core.js';
 import {
+    bootstrapStandardInterpretivePublicationPolicy,
     createInterpretivePublicationAuthorization,
     executeInterpretiveSynthesisRun,
     executeInterpretivePublicationAuthorization,
@@ -24,6 +25,7 @@ import {
     listInterpretiveReviews,
     prepareInterpretiveCandidate,
     qualifyInterpretivePublication,
+    publishInterpretiveMemory,
     recordDnmDeltaReview,
     recordInterpretiveSubjectDisposition,
     replayPublicationLedger,
@@ -1101,6 +1103,156 @@ test('publication policy storage is portable and replayable from the DNM publica
     assert.equal(listed.ok, true);
     assert.equal(listed.policies.length, 1);
     assert.equal(listed.policies[0].revocationReason, 'policy retired for replay test');
+});
+
+test('bootstrapStandardInterpretivePublicationPolicy is explicit, idempotent, and replay-safe', () => {
+    const sourceRoot = makeTempRoot();
+    const sourceRequest = buildRequest(sourceRoot);
+
+    const first = bootstrapStandardInterpretivePublicationPolicy(sourceRequest, {
+        now: Date.parse('2026-06-26T00:11:30.000Z'),
+    });
+    assert.equal(first.ok, true);
+    assert.equal(first.created, true);
+    assert.equal(first.reused, false);
+    assert.equal(first.publicationPolicy.publicationPolicyId, 'standard-governed-publication');
+    assert.equal(first.publicationPolicy.policyVersion, 1);
+    assert.deepEqual(first.publicationPolicy.immutableChildRequiredForTypes, []);
+    assert.equal(first.publicationPolicy.postGrantHumanPublicationAuthorizationRequired, false);
+    assert.equal(first.publicationPolicy.details.displayName, 'Standard Governed Publication');
+
+    const second = bootstrapStandardInterpretivePublicationPolicy(sourceRequest, {
+        now: Date.parse('2026-06-26T00:11:40.000Z'),
+    });
+    assert.equal(second.ok, true);
+    assert.equal(second.created, false);
+    assert.equal(second.reused, true);
+    assert.equal(second.publicationPolicy.policyHash, first.publicationPolicy.policyHash);
+
+    const sourcePaths = getStoragePaths(sourceRoot);
+    const targetRoot = makeTempRoot();
+    const targetPaths = getStoragePaths(targetRoot);
+    fs.mkdirSync(targetPaths.storageRoot, { recursive: true });
+    fs.copyFileSync(sourcePaths.dnmPublicationLedgerPath, targetPaths.dnmPublicationLedgerPath);
+
+    const replayed = replayPublicationLedger(buildRequest(targetRoot));
+    assert.equal(replayed.ok, true);
+    assert.equal(
+        replayed.replayedPublicationPolicies.some((entry) => entry.publicationPolicyId === 'standard-governed-publication'),
+        true,
+    );
+});
+
+test('standard guided flow exposes setup, eligibility, and publish phases without a separate authorization step', () => {
+    const root = makeTempRoot();
+    const request = buildRequest(root);
+    const created = createInterpretiveCandidate(request, makeBasePayload({
+        interpretationId: 'interp_guided_flow_case',
+        interpretationRevisionId: 'interprev_guided_flow_case_v1',
+        now: Date.parse('2026-06-26T00:11:50.000Z'),
+    }));
+    const subjectRequest = created.interpretation.reviewRequests.find((entry) => entry.reviewerRole === 'MEMORY_SUBJECT');
+    const participantRequest = created.interpretation.reviewRequests.find((entry) => entry.reviewerRole === 'RELATIONAL_PARTICIPANT');
+
+    submitInterpretiveReviewDisposition(request, subjectRequest.reviewRequestId, {
+        actorEntityId: 'character:jeep.png',
+        disposition: 'APPROVE',
+        reviewEnvelopeHash: created.interpretation.reviewEnvelopeHash,
+        now: Date.parse('2026-06-26T00:11:55.000Z'),
+    });
+    submitInterpretiveReviewDisposition(request, participantRequest.reviewRequestId, {
+        actorEntityId: 'user:Chris',
+        disposition: 'APPROVE',
+        reviewEnvelopeHash: created.interpretation.reviewEnvelopeHash,
+        now: Date.parse('2026-06-26T00:12:00.000Z'),
+    });
+    const granted = recordInterpretiveSubjectDisposition(request, 'interprev_guided_flow_case_v1', {
+        actorEntityId: 'character:jeep.png',
+        state: 'GRANTED',
+        reviewEnvelopeHash: created.interpretation.reviewEnvelopeHash,
+        now: Date.parse('2026-06-26T00:12:05.000Z'),
+    });
+
+    const preBootstrap = getInterpretivePublicationOperatorState(request, 'interprev_guided_flow_case_v1');
+    assert.equal(preBootstrap.operatorState.guidedFlow.status, 'SETUP_REQUIRED');
+    assert.equal(preBootstrap.operatorState.guidedFlow.nextAction.action, 'BOOTSTRAP_STANDARD_PUBLICATION_POLICY');
+
+    const bootstrapped = bootstrapStandardInterpretivePublicationPolicy(request, {
+        now: Date.parse('2026-06-26T00:12:10.000Z'),
+    });
+    assert.equal(bootstrapped.created, true);
+
+    const preQualification = getInterpretivePublicationOperatorState(request, 'interprev_guided_flow_case_v1');
+    assert.equal(preQualification.operatorState.guidedFlow.status, 'READY_TO_CHECK');
+    assert.equal(preQualification.operatorState.guidedFlow.nextAction.action, 'CHECK_ELIGIBILITY');
+
+    qualifyInterpretivePublication(request, 'interprev_guided_flow_case_v1', {
+        publicationPolicyId: 'standard-governed-publication',
+        continuityTargetId: 'character:jeep.png',
+        proposalContentHash: granted.interpretation.proposalContentHash,
+        reviewEnvelopeHash: granted.interpretation.reviewEnvelopeHash,
+        subjectDispositionRecordId: granted.subjectDisposition.subjectDispositionId,
+        now: Date.parse('2026-06-26T00:12:15.000Z'),
+    });
+
+    const postQualification = getInterpretivePublicationOperatorState(request, 'interprev_guided_flow_case_v1');
+    assert.equal(postQualification.operatorState.guidedFlow.status, 'READY_TO_PUBLISH');
+    assert.equal(postQualification.operatorState.guidedFlow.nextAction.action, 'PUBLISH_MEMORY');
+    assert.equal(postQualification.operatorState.availableActions.includes('AUTHORIZE_PUBLICATION'), false);
+    assert.equal(postQualification.operatorState.availableActions.includes('EXECUTE_PUBLICATION'), false);
+});
+
+test('publishInterpretiveMemory bootstraps the standard policy and publishes an approved root revision atomically', () => {
+    const root = makeTempRoot();
+    const request = buildRequest(root);
+    const created = createInterpretiveCandidate(request, makeBasePayload({
+        interpretationId: 'interp_publish_guided_case',
+        interpretationRevisionId: 'interprev_publish_guided_case_v1',
+        now: Date.parse('2026-06-26T00:12:20.000Z'),
+    }));
+    const subjectRequest = created.interpretation.reviewRequests.find((entry) => entry.reviewerRole === 'MEMORY_SUBJECT');
+    const participantRequest = created.interpretation.reviewRequests.find((entry) => entry.reviewerRole === 'RELATIONAL_PARTICIPANT');
+
+    submitInterpretiveReviewDisposition(request, subjectRequest.reviewRequestId, {
+        actorEntityId: 'character:jeep.png',
+        disposition: 'APPROVE',
+        reviewEnvelopeHash: created.interpretation.reviewEnvelopeHash,
+        now: Date.parse('2026-06-26T00:12:25.000Z'),
+    });
+    submitInterpretiveReviewDisposition(request, participantRequest.reviewRequestId, {
+        actorEntityId: 'user:Chris',
+        disposition: 'APPROVE',
+        reviewEnvelopeHash: created.interpretation.reviewEnvelopeHash,
+        now: Date.parse('2026-06-26T00:12:30.000Z'),
+    });
+    const granted = recordInterpretiveSubjectDisposition(request, 'interprev_publish_guided_case_v1', {
+        actorEntityId: 'character:jeep.png',
+        state: 'GRANTED',
+        reviewEnvelopeHash: created.interpretation.reviewEnvelopeHash,
+        now: Date.parse('2026-06-26T00:12:35.000Z'),
+    });
+
+    const published = publishInterpretiveMemory(request, 'interprev_publish_guided_case_v1', {
+        continuityTargetId: 'character:jeep.png',
+        proposalContentHash: granted.interpretation.proposalContentHash,
+        reviewEnvelopeHash: granted.interpretation.reviewEnvelopeHash,
+        subjectDispositionRecordId: granted.subjectDisposition.subjectDispositionId,
+        actorEntityId: 'user:Chris',
+        authorizedBy: 'user:Chris',
+        now: Date.parse('2026-06-26T00:12:40.000Z'),
+    });
+
+    assert.equal(published.ok, true);
+    assert.equal(published.phase, 'c0.6.4-5');
+    assert.equal(published.authorization.status, 'CONSUMED');
+    assert.equal(published.qualification.eligibilityVerdict, 'ELIGIBLE');
+    assert.equal(published.interpretation.publicationState, 'PUBLISHED');
+    assert.equal(published.publishedRecord.publicationState, 'PUBLISHED');
+    assert.equal(published.publishedRecord.lifecycleState, 'ACTIVE');
+    assert.equal(published.interpretation.authorityEffect, 'DEVELOPMENTAL_MEMORY');
+
+    const current = getCurrentActiveDnmRecord(request, 'character:jeep.png');
+    assert.equal(current.currentActiveRecord.dnmRecordId, published.publishedRecord.dnmRecordId);
 });
 
 test('publication qualification binds exact current child-revision state without enabling publication', () => {

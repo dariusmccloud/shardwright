@@ -39,6 +39,7 @@ import {
     recoverPromotionState,
 } from './promotion.js';
 import {
+    bootstrapStandardInterpretivePublicationPolicy,
     executeInterpretiveSynthesisRun,
     executeInterpretivePublicationAuthorization,
     createInterpretiveSynthesisRun,
@@ -55,6 +56,7 @@ import {
     listInterpretiveReviews,
     listInterpretivePolicyDefinitions,
     listInterpretiveSynthesisPolicies,
+    publishInterpretiveMemory,
     qualifyInterpretivePublication,
     recordDnmDeltaReview,
     recordInterpretiveSubjectDisposition,
@@ -546,6 +548,15 @@ export async function init(router) {
         }
     });
 
+    router.post('/interpretive/publication/policies/bootstrap-standard', async (request, response) => {
+        try {
+            const result = bootstrapStandardInterpretivePublicationPolicy(request, request.body || {});
+            return response.send(result);
+        } catch (error) {
+            return handleError(response, error);
+        }
+    });
+
     router.post('/interpretive/publication/policies/:publicationPolicyId/revoke', async (request, response) => {
         try {
             const result = revokeInterpretivePublicationPolicy(request, request.params.publicationPolicyId, request.body || {});
@@ -661,6 +672,15 @@ export async function init(router) {
     router.post('/interpretive/publication/execute', async (request, response) => {
         try {
             const result = executeInterpretivePublicationAuthorization(request, request.body || {});
+            return response.send(result);
+        } catch (error) {
+            return handleError(response, error);
+        }
+    });
+
+    router.post('/interpretive/candidates/:interpretationRevisionId/publication-publish', async (request, response) => {
+        try {
+            const result = publishInterpretiveMemory(request, request.params.interpretationRevisionId, request.body || {});
             return response.send(result);
         } catch (error) {
             return handleError(response, error);
