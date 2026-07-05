@@ -19,6 +19,17 @@ It exists to define the exact authority, durability, replay, and refusal rules b
 
 Do not implement publication writes, publication UI, continuity activation, automatic publication, or publication-side supersession behavior in this slice.
 
+Later productization of the ordinary operator path is explicitly owned by:
+
+- `docs/architectural-memory/PHASE_C0_6_4_5_PUBLICATION_POLICY_BOOTSTRAP_AND_GUIDED_OPERATOR_FLOW_BRIEF.md`
+
+That later slice chooses:
+
+- explicit one-click standard policy bootstrap
+- root publication unless corrected-child lineage is actually required
+- one human `Publish Memory` action with internal one-time authorization
+- human blocker projection with exact next lawful action
+
 ## Governing Finding
 
 `C0.6.3` completed the full pre-publication sovereignty loop:

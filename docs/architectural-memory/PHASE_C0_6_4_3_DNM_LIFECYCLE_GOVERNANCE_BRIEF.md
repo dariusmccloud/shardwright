@@ -30,6 +30,14 @@ Do not implement generalized memory deletion.
 
 Do not mutate structural authority.
 
+Ordinary operator setup and guided publication remain outside this slice and are now owned by:
+
+- `docs/architectural-memory/PHASE_C0_6_4_5_PUBLICATION_POLICY_BOOTSTRAP_AND_GUIDED_OPERATOR_FLOW_BRIEF.md`
+
+`C0.6.4-3` remains the backend lifecycle and replay contract.
+
+It does not imply that raw lifecycle governance is yet productized for ordinary host operators.
+
 ## Governing Finding
 
 `C0.6.4-2` proved that one approved interpretive revision can be:
