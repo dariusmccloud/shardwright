@@ -30,6 +30,14 @@ Notes:
   - policy route: `POST /interpretive/publication/policies`
   - proof/reference script: `tools/server-plugin/prove-c0-6-4-2.ps1`
   - candidate helper: `tools/server-plugin/seed-interpretive-candidate.ps1`
+  - smoke reset helper: `tools/server-plugin/reset-interpretive-smoke-storage.ps1`
+
+- The default seed target `scope_interpretive_smoke / character:jeep.png` is now protected against accidental reuse.
+- For a clean smoke run on the default Jeep line, seed with:
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File "tools/server-plugin/seed-interpretive-candidate.ps1" -HostName "<HostName>" -Port <Port> -ResetFirst -RestartHostAfterReset`
+- Reusing the dirty default Jeep line now requires an explicit override:
+  - `-AllowDirtyDefaultLine`
+- Scope changes alone do not isolate the Jeep publication line.
 
 ### Guided publication contract proof
 
@@ -152,6 +160,7 @@ Verified live evidence:
   - if the queue is empty, seed one governed candidate through the plugin route before continuing UI smoke
   - `C0.6.4-5` now defines in-app bootstrap/check/publish flow, but the updated host path still needs live UI proof on the served build
   - helper script: `tools/server-plugin/seed-interpretive-candidate.ps1`
+  - default smoke seeding should use `-ResetFirst -RestartHostAfterReset` unless you intentionally want to inspect dirty-state behavior
 
 - [ ] Verify saved evidence can feed proposal generation
 - [ ] Verify proposal record appears in interpretive review surfaces
@@ -215,6 +224,7 @@ Evidence to capture:
 - [ ] Open the Summary Sharder panel
 - [ ] If a host UI entry point exists, locate it for the saved shard / current memory candidate
 - [ ] If no host UI entry point exists, seed one governed candidate via `tools/server-plugin/seed-interpretive-candidate.ps1`
+- [ ] For the default Jeep smoke line, prefer `-ResetFirst -RestartHostAfterReset` to avoid revision/history/publication bleed between runs
 - [ ] Trigger proposal generation or seed creation
 - [ ] Confirm generation completes without host error
 

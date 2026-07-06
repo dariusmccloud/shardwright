@@ -4,7 +4,10 @@ param(
     [string]$MemoryScopeId = 'scope_interpretive_smoke',
     [string]$MemorySubjectId = 'character:jeep.png',
     [string]$Statement = 'Jeep evolved into the primary architectural authority for continuity and memory requirements within the shared architecture.',
-    [string[]]$AssertionDomains = @('ROLE', 'AUTHORITY', 'RELATIONSHIP')
+    [string[]]$AssertionDomains = @('ROLE', 'AUTHORITY', 'RELATIONSHIP'),
+    [switch]$ResetFirst,
+    [switch]$RestartHostAfterReset,
+    [switch]$AllowDirtyDefaultLine
 )
 
 $ErrorActionPreference = 'Stop'
@@ -15,16 +18,48 @@ $isDefaultSmokeLine = (
 )
 
 if ($isDefaultSmokeLine) {
-    Write-Warning @'
-This seed uses the default Jeep smoke line.
+    if (-not $ResetFirst -and -not $AllowDirtyDefaultLine) {
+        throw @"
+Refusing to seed the default Jeep smoke line without an explicit isolation choice.
+
 Repeated runs accumulate revisions, review history, and publication lifecycle state on:
   scope_interpretive_smoke / character:jeep.png
 
-For an isolated run, either:
-  - override -MemorySubjectId (scope changes alone do not isolate the Jeep publication line)
-  - or reset host storage first with:
-    tools/server-plugin/reset-interpretive-smoke-storage.ps1
+Choose one:
+  - isolated smoke reset first:
+      powershell -NoProfile -ExecutionPolicy Bypass -File "tools/server-plugin/seed-interpretive-candidate.ps1" -HostName $HostName -Port $Port -ResetFirst
+  - or intentionally allow reuse of the dirty default line:
+      powershell -NoProfile -ExecutionPolicy Bypass -File "tools/server-plugin/seed-interpretive-candidate.ps1" -HostName $HostName -Port $Port -AllowDirtyDefaultLine
+
+Scope changes alone do not isolate the Jeep publication line.
+"@
+    }
+
+    if ($ResetFirst) {
+        $resetScript = Join-Path $PSScriptRoot 'reset-interpretive-smoke-storage.ps1'
+        $resetArgs = @(
+            '-NoProfile',
+            '-ExecutionPolicy', 'Bypass',
+            '-File', $resetScript,
+            '-HostName', $HostName,
+            '-Force'
+        )
+        if ($RestartHostAfterReset) {
+            $resetArgs += '-RestartHost'
+        }
+        & powershell @resetArgs
+        if ($LASTEXITCODE -ne 0) {
+            throw "Smoke reset failed before seeding the default Jeep line."
+        }
+        if (-not $RestartHostAfterReset) {
+            Write-Warning 'Reset completed without -RestartHostAfterReset. Seed assumes the selected host is already running and healthy.'
+        }
+    } elseif ($AllowDirtyDefaultLine) {
+        Write-Warning @'
+Seeding the default Jeep smoke line without reset.
+This intentionally reuses existing publication/review state and may stack smoke artifacts.
 '@
+    }
 }
 
 function Get-CsrfSession([int]$TargetPort) {
@@ -123,6 +158,8 @@ $summary = [ordered]@{
     memoryScopeId = $MemoryScopeId
     memorySubjectId = $MemorySubjectId
     defaultSmokeLine = $isDefaultSmokeLine
+    resetFirst = [bool]$ResetFirst
+    dirtyDefaultLineAllowed = [bool]$AllowDirtyDefaultLine
     interpretationId = $result.interpretation.interpretationId
     interpretationRevisionId = $result.interpretation.interpretationRevisionId
     reviewState = $result.interpretation.reviewState
