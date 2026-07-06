@@ -7,7 +7,9 @@ import {
     checkBackendHealth,
     checkPluginAvailability,
     getActiveCollectionIds,
+    getCollectionQuerySettingsMap,
     getCollectionStats,
+    getCollectionMetadataMap,
     getWriteTargetCollectionId,
     hybridQuery,
     listChunks,
@@ -15,6 +17,8 @@ import {
     rerankDocuments,
     testEmbeddingConnection,
 } from '../../../core/rag/index.js';
+import { extension_settings } from '../../../../../../extensions.js';
+import { getActiveRagSettings } from '../../../core/settings.js';
 import {
     cosineSimilarity,
     getEmbeddingVector,
@@ -97,7 +101,7 @@ function renderInspectorItems(items) {
     return items.map(item => {
         const score = Number(item?.score);
         const hasScore = Number.isFinite(score);
-        const scoreSpan = hasScore ? `<span class="ss-rag-debug-item-score">score=${score.toFixed(4)}</span>` : '';
+        const scoreSpan = hasScore ? `<span class="ss-rag-debug-item-score">score = ${score.toFixed(4)}</span>` : '';
         const snippetClass = hasScore ? 'ss-rag-debug-item-snippet' : 'ss-rag-debug-item-snippet no-score';
         return `<details class="ss-rag-debug-item"><summary><span class="badge">${escapeHtml(getBehavior(item))}</span>${scoreSpan}<span class="${snippetClass}">${escapeHtml(truncate(item?.text || '', 140))}</span></summary><div class="ss-rag-debug-item-body"><div><strong>scene:</strong> ${escapeHtml(getScene(item))}</div><div><strong>importance:</strong> ${escapeHtml(String(item?.metadata?.importance ?? 'n/a'))}</div><pre>${escapeHtml(String(item?.text || ''))}</pre><pre>${escapeHtml(JSON.stringify(item?.metadata || {}, null, 2))}</pre></div></details>`;
     }).join('');
@@ -105,7 +109,7 @@ function renderInspectorItems(items) {
 
 function renderRawQueryResults(items) {
     if (!Array.isArray(items) || items.length === 0) return '<p class="ss-hint ss-rag-inline-hint">No raw vector results.</p>';
-    return `<h4>Raw Vector Results</h4>${items.map(item => `<div class="ss-rag-debug-row"><div>score=${Number(item?.score || 0).toFixed(4)}</div><div>${escapeHtml(truncate(item?.text || '', 180))}</div></div>`).join('')}`;
+    return `<h4>Raw Vector Results</h4>${items.map(item => `<div class="ss-rag-debug-row"><div>score = ${Number(item?.score || 0).toFixed(4)}</div><div>${escapeHtml(truncate(item?.text || '', 180))}</div></div>`).join('')}`;
 }
 
 function renderScoredQueryResults(items, breakdown, bm25Terms) {
@@ -126,7 +130,7 @@ function renderPipelineStages(stages) {
     return stages.map((stage, idx) => {
         const dropped = Array.isArray(stage?.metadata?.droppedReasons) ? stage.metadata.droppedReasons.length : 0;
         const sample = (stage?.results || []).slice(0, 8);
-        return `<details class="ss-rag-debug-stage" ${idx < 2 ? 'open' : ''}><summary><span class="badge">${idx + 1}</span><span>${escapeHtml(stage.stageName || 'stage')}</span><span>${Number(stage.durationMs || 0).toFixed(2)} ms</span><span>Input: ${stage.inputCount} -> Output: ${stage.outputCount}${dropped > 0 ? ` | Removed: ${dropped}` : ''}</span></summary><div class="ss-rag-debug-item-body"><pre>${escapeHtml(JSON.stringify(stage.metadata || {}, null, 2))}</pre>${sample.map(item => `<div class="ss-rag-debug-row"><div>score=${Number(item?.score || 0).toFixed(4)}</div><div>${escapeHtml(truncate(item?.text || '', 220))}</div></div>`).join('')}</div></details>`;
+        return `<details class="ss-rag-debug-stage" ${idx < 2 ? 'open' : ''}><summary><span class="badge">${idx + 1}</span><span>${escapeHtml(stage.stageName || 'stage')}</span><span>${Number(stage.durationMs || 0).toFixed(2)} ms</span><span>Input: ${stage.inputCount} -> Output: ${stage.outputCount}${dropped > 0 ? ` | Removed: ${dropped}` : ''}</span></summary><div class="ss-rag-debug-item-body"><pre>${escapeHtml(JSON.stringify(stage.metadata || {}, null, 2))}</pre>${sample.map(item => `<div class="ss-rag-debug-row"><div>score = ${Number(item?.score || 0).toFixed(4)}</div><div>${escapeHtml(truncate(item?.text || '', 220))}</div></div>`).join('')}</div></details>`;
     }).join('');
 }
 
@@ -141,6 +145,42 @@ function downloadJson(filename, payload) {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 }
+
+function resolveDebugContext(input) {
+    const liveSettings = extension_settings?.summary_sharder || {};
+    const hasSettingsShape = !!input && typeof input === 'object' && (
+        Object.prototype.hasOwnProperty.call(input, 'rag')
+        || Object.prototype.hasOwnProperty.call(input, 'ragStandard')
+        || Object.prototype.hasOwnProperty.call(input, 'sharderMode')
+        || Object.prototype.hasOwnProperty.call(input, 'collectionBindings')
+        || Object.prototype.hasOwnProperty.call(input, 'collectionAliases')
+    );
+
+    if (hasSettingsShape) {
+        const settings = { ...input };
+        return {
+            settings,
+            rag: { ...(getActiveRagSettings(settings) || {}) },
+        };
+    }
+
+    const settings = {
+        ...liveSettings,
+        rag: { ...(liveSettings.rag || {}) },
+        ragStandard: { ...(liveSettings.ragStandard || {}) },
+    };
+    const activeKey = settings?.sharderMode === true ? 'rag' : 'ragStandard';
+    settings[activeKey] = {
+        ...(settings[activeKey] || {}),
+        ...(input || {}),
+    };
+
+    return {
+        settings,
+        rag: { ...(getActiveRagSettings(settings) || {}) },
+    };
+}
+
 
 function renderModalHtml(state) {
     const tab = state.activeTab;
@@ -174,7 +214,7 @@ function renderModalHtml(state) {
                 <div id="ss-rag-debug-inspector-items" class="ss-rag-debug-list"></div>
             </div>
             <div class="ss-rag-debug-tab-panel ${tab === 'query' ? 'active' : ''}" data-tab-panel="query">
-                <div class="ss-rag-grid-two"><div class="ss-block"><label for="ss-rag-debug-query-text">Query Text</label><textarea id="ss-rag-debug-query-text" class="text_pole ss-rag-template"></textarea></div><div class="ss-rag-grid-two"><div class="ss-block"><label for="ss-rag-debug-query-topk">Top K</label><input id="ss-rag-debug-query-topk" class="text_pole" type="number" min="1" value="${Math.max(1, Number(state.rag.insertCount) || 5)}" /></div><div class="ss-block"><label for="ss-rag-debug-query-threshold">Threshold</label><input id="ss-rag-debug-query-threshold" class="text_pole" type="number" min="0" max="1" step="0.01" value="${Number(state.rag.scoreThreshold ?? 0.25)}" /></div></div></div>
+                <div class="ss-rag-grid-two"><div class="ss-block"><label for="ss-rag-debug-query-text">Query Text</label><textarea id="ss-rag-debug-query-text" class="text_pole ss-rag-template"></textarea></div><div class="ss-rag-grid-two"><div class="ss-block"><label for="ss-rag-debug-query-topk">Top K</label><input id="ss-rag-debug-query-topk" class="text_pole" type="number" min="1" value="${Math.max(1, Number(state.rag.insertCount) || 5)}" /></div><div class="ss-block"><label for="ss-rag-debug-query-threshold">Threshold</label><input id="ss-rag-debug-query-threshold" class="text_pole" type="number" min="0" max="1" step="0.01" value="${Number(state.rag.scoreThreshold ?? 0)}" /></div></div></div>
                 <div class="ss-rag-actions-row"><input id="ss-rag-debug-query-run" class="menu_button" type="button" value="Run Query" /></div>
                 <div class="ss-rag-debug-split"><div id="ss-rag-debug-query-raw" class="ss-rag-debug-block"></div><div id="ss-rag-debug-query-scored" class="ss-rag-debug-block"></div></div>
             </div>
@@ -194,16 +234,18 @@ function renderModalHtml(state) {
     `;
 }
 
-export async function openRagDebugModal(ragDraft) {
-    const writeTargetCollectionId = getWriteTargetCollectionId(null, ragDraft);
+export async function openRagDebugModal(settingsOrDraft) {
+    const { settings, rag } = resolveDebugContext(settingsOrDraft);
+    const writeTargetCollectionId = getWriteTargetCollectionId(null, settings);
     if (!writeTargetCollectionId) {
         toastr.error('Cannot open RAG debug modal: no active chat');
         return;
     }
-    const activeCollectionIds = getActiveCollectionIds(null, ragDraft);
+    const activeCollectionIds = getActiveCollectionIds(null, settings);
 
     const state = {
-        rag: { ...ragDraft },
+        settings,
+        rag,
         activeTab: 'health',
         writeTargetCollectionId,
         activeCollectionIds,
@@ -397,13 +439,18 @@ export async function openRagDebugModal(ragDraft) {
             dom.queryScored.innerHTML = '<p class="ss-hint ss-rag-inline-hint">Scoring...</p>';
 
             const topK = Math.max(1, Number(dom.queryTopK?.value) || Math.max(1, Number(state.rag.insertCount) || 5));
-            const threshold = Math.max(0, Math.min(1, Number(dom.queryThreshold?.value) || Number(state.rag.scoreThreshold ?? 0.25)));
+            const rawThreshold = String(dom.queryThreshold?.value ?? '').trim();
+            const parsedThreshold = rawThreshold === '' ? NaN : Number(rawThreshold);
+            const threshold = Number.isFinite(parsedThreshold)
+                ? Math.max(0, Math.min(1, parsedThreshold))
+                : Number(state.rag.scoreThreshold ?? 0);
             const wantsHybrid = state.rag.scoringMethod === 'hybrid';
             const useNativeHybrid = wantsHybrid && (state.rag.backend === 'qdrant' || state.rag.backend === 'milvus');
             const queryFn = useNativeHybrid ? hybridQuery : queryChunks;
 
+            const querySettingsByCollection = await getCollectionQuerySettingsMap(state.activeCollectionIds, state.rag);
             const querySettled = await Promise.allSettled(
-                state.activeCollectionIds.map(id => queryFn(id, queryText, topK, threshold, state.rag))
+                state.activeCollectionIds.map(id => queryFn(id, queryText, topK, threshold, querySettingsByCollection.get(id) || state.rag))
             );
             if (runId !== state.runIds.query) return;
 
@@ -425,6 +472,8 @@ export async function openRagDebugModal(ragDraft) {
             dom.pipelineStages.innerHTML = '<p class="ss-hint ss-rag-inline-hint">Running pipeline trace...</p>';
             dom.pipelineInjection.textContent = '';
             const result = await runDebugPipeline({
+                settings: state.settings,
+                rag: state.rag,
                 scoringMethod: dom.ovScoring?.value || state.rag.scoringMethod,
                 sceneExpansion: !!dom.ovScene?.checked,
             });
@@ -469,7 +518,27 @@ export async function openRagDebugModal(ragDraft) {
             }
 
             const ranked = Array.isArray(result.ranked) ? result.ranked : [];
-            dom.rerankerResult.innerHTML = `<div><strong>Latency:</strong> ${(performance.now() - t0).toFixed(1)} ms</div><div><strong>Mode:</strong> ${escapeHtml(result.mode || 'similharity')}</div><div class="ss-rag-debug-list">${ranked.map((row, idx) => `<div class="ss-rag-debug-row"><div>#${idx + 1} score=${Number(row?.score ?? 0).toFixed(4)}</div><div>${escapeHtml(truncate(row?.document || '', 260))}</div></div>`).join('')}</div>`;
+            const diagnostics = result?.diagnostics || {};
+            const payloadKeys = Array.isArray(diagnostics.payloadKeys) && diagnostics.payloadKeys.length > 0
+                ? diagnostics.payloadKeys.join(', ')
+                : '(none)';
+            const rawPreview = String(diagnostics.rawPreview || '').trim() || '(empty)';
+            dom.rerankerResult.innerHTML = `
+                <div><strong>Latency:</strong> ${(performance.now() - t0).toFixed(1)} ms</div>
+                <div><strong>Mode:</strong> ${escapeHtml(result.mode || 'similharity')}</div>
+                <div><strong>Target:</strong> ${escapeHtml(result.target || '(unknown)')}</div>
+                <div><strong>Provider payload keys:</strong> ${escapeHtml(payloadKeys)}</div>
+                <div><strong>Direct score array:</strong> ${diagnostics.hasDirectScores === true ? 'yes' : 'no'}</div>
+                <div><strong>Ranked entry count:</strong> ${Number(diagnostics.rankedEntryCount || 0)}</div>
+                <div><strong>Scored entry count:</strong> ${Number(diagnostics.scoredEntryCount || 0)}</div>
+                <details class="ss-rag-debug-item" open>
+                    <summary><span>Provider response preview</span></summary>
+                    <div class="ss-rag-debug-item-body"><pre>${escapeHtml(rawPreview)}</pre></div>
+                </details>
+                <div class="ss-rag-debug-list">
+                    ${ranked.map((row, idx) => `<div class="ss-rag-debug-row"><div>#${idx + 1} score = ${Number(row?.score ?? 0).toFixed(4)}</div><div>${escapeHtml(truncate(row?.document || '', 260))}</div></div>`).join('')}
+                </div>
+            `;
         });
 
         await refreshHealth();

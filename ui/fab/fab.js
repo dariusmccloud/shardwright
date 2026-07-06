@@ -120,6 +120,7 @@ export function initFab(settings, callbacks) {
     pendingPositionValue = null;
     cancelPendingPositionSaveFlush();
     cancelScheduledTogglePanels();
+    cleanupOrphanedPanelsDom();
 
     if (!settingsRef.fab) {
         settingsRef.fab = { enabled: true, position: { x: null, y: null } };
@@ -156,6 +157,14 @@ function createFabElement() {
         </button>
     `;
     document.body.appendChild(fabElement);
+}
+
+function cleanupOrphanedPanelsDom() {
+    document.querySelectorAll('.ss-fab-panels').forEach((root) => {
+        root.classList.remove('ss-fab-sheet-active');
+        root.setAttribute('aria-hidden', 'true');
+        root.remove();
+    });
 }
 
 function bindEvents() {
@@ -477,6 +486,7 @@ async function closePanels() {
         panelsController.destroy();
         panelsController = null;
     }
+    cleanupOrphanedPanelsDom();
 
     fabElement.classList.remove('ss-fab-open');
     getTrigger()?.setAttribute('aria-expanded', 'false');
@@ -509,6 +519,7 @@ function closePanelsImmediate() {
         panelsController.destroy();
         panelsController = null;
     }
+    cleanupOrphanedPanelsDom();
 
     fabElement.classList.remove('ss-fab-open');
     getTrigger().setAttribute('aria-expanded', 'false');

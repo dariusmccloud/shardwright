@@ -2093,8 +2093,13 @@ export async function openRagSettingsModal(settings) {
         });
 
         document.getElementById('ss-rag-open-debug')?.addEventListener('click', async () => {
-            const draft = readRagDraft(liveDraft, isSharder);
-            await openRagDebugModal(draft);
+            const browserSettings = {
+                ...settings,
+                rag: { ...(settings.rag || {}) },
+                ragStandard: { ...(settings.ragStandard || {}) },
+            };
+            applyRagSettings(browserSettings, readRagDraft(liveDraft, isSharder), ragBlockKey);
+            await openRagDebugModal(browserSettings);
             if (collectionId) await updateStats(readRagDraft(liveDraft, isSharder), collectionId);
         });
 

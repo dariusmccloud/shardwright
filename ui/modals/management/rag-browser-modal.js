@@ -1003,7 +1003,7 @@ async function runQuery(state, dom) {
         return `
             <li>
                 <strong>${item._collection}</strong>
-                score=${Number(item?.score || 0).toFixed(4)}${sceneCode}
+                score = ${Number(item?.score || 0).toFixed(4)}${sceneCode}
                 <div>${escapeHtml(truncate(item?.text || '', 180))}</div>
             </li>
         `;
