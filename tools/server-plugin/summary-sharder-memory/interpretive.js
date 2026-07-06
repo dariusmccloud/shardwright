@@ -1908,10 +1908,40 @@ function loadDnmPublicationRecordProjection(adapter, dnmRecordId) {
     };
 }
 
+function getLatestPublicationLifecycleMutationAt(records = []) {
+    let latest = 0;
+    for (const record of Array.isArray(records) ? records : []) {
+        latest = Math.max(
+            latest,
+            Number(record?.publishedAt || 0),
+            Number(record?.supersededAt || 0),
+            Number(record?.withdrawnAt || 0),
+            Number(record?.lifecycleMetadata?.updatedAt || 0),
+        );
+    }
+    return latest > 0 ? latest : null;
+}
+
+function isPublicationQualificationFreshForTarget(qualification, lifecycleMutationAt) {
+    if (!qualification || !lifecycleMutationAt) {
+        return true;
+    }
+    return Number(qualification.evaluatedAt || 0) >= Number(lifecycleMutationAt);
+}
+
+function isPublicationAuthorizationFreshForTarget(authorization, lifecycleMutationAt) {
+    if (!authorization || !lifecycleMutationAt) {
+        return true;
+    }
+    return Number(authorization.authorizedAt || 0) >= Number(lifecycleMutationAt);
+}
+
 function buildCandidatePublicationOperatorState(adapter, interpretation, continuityTargetId) {
     const matchingPolicies = loadInterpretivePublicationPoliciesForType(adapter, interpretation.type)
         .filter((policy) => policy.continuityTargetType === 'MEMORY_SUBJECT');
     const standardPolicy = loadEquivalentStandardInterpretivePublicationPolicy(adapter, interpretation.type);
+    const recordsForTarget = listPublishedRecordsForContinuityTarget(adapter, continuityTargetId);
+    const lifecycleMutationAt = getLatestPublicationLifecycleMutationAt(recordsForTarget);
     const qualifications = loadInterpretivePublicationQualificationsForRevision(
         adapter,
         interpretation.interpretationRevisionId,
@@ -1922,8 +1952,8 @@ function buildCandidatePublicationOperatorState(adapter, interpretation, continu
         interpretation.interpretationRevisionId,
         continuityTargetId,
     );
-    const latestQualification = qualifications[0] || null;
-    const latestAuthorization = authorizations[0] || null;
+    const latestQualification = qualifications.find((entry) => isPublicationQualificationFreshForTarget(entry, lifecycleMutationAt)) || null;
+    const latestAuthorization = authorizations.find((entry) => isPublicationAuthorizationFreshForTarget(entry, lifecycleMutationAt)) || null;
     const publishedRecordsForRevision = listPublishedRecordsForInterpretationRevision(adapter, interpretation.interpretationRevisionId);
 
     const availableActions = [];
@@ -1964,8 +1994,7 @@ function buildCandidatePublicationOperatorState(adapter, interpretation, continu
     const authorizationReasons = [];
     if (interpretation.publicationState === 'PUBLISHED') {
         authorizationReasons.push('INTERPRETATION_ALREADY_PUBLISHED');
-    }
-    if (!requiresExplicitPublicationAuthorization) {
+    } else if (!requiresExplicitPublicationAuthorization) {
         authorizationReasons.push('PUBLICATION_AUTHORIZATION_INTERNALIZED');
     } else if (!latestQualification) {
         authorizationReasons.push('PUBLICATION_QUALIFICATION_REQUIRED');
@@ -1981,8 +2010,7 @@ function buildCandidatePublicationOperatorState(adapter, interpretation, continu
     const executeReasons = [];
     if (interpretation.publicationState === 'PUBLISHED') {
         executeReasons.push('INTERPRETATION_ALREADY_PUBLISHED');
-    }
-    if (!requiresExplicitPublicationAuthorization) {
+    } else if (!requiresExplicitPublicationAuthorization) {
         executeReasons.push('PUBLICATION_AUTHORIZATION_INTERNALIZED');
     } else if (!latestAuthorization) {
         executeReasons.push('PUBLICATION_AUTHORIZATION_REQUIRED');
@@ -2035,7 +2063,7 @@ function buildDnmRecordOperatorState(record, currentActiveRecord) {
         blockingReasons.push(...normalizedReasons);
     };
 
-    if (record.lifecycleState === 'ACTIVE') {
+    if (['ACTIVE', 'DELTA_PENDING'].includes(record.lifecycleState)) {
         availableActions.push('WITHDRAW_DNM');
     } else {
         addBlockedAction('WITHDRAW_DNM', ['RECORD_NOT_ACTIVE_FOR_WITHDRAWAL']);
@@ -2292,6 +2320,16 @@ function loadCurrentActiveDnmRecordForTarget(adapter, continuityTargetId) {
         throw createError(500, `Multiple active DNM records exist for ${continuityTargetId}`, 'ARCH_DNM_ACTIVE_STATE_CONFLICT');
     }
     return loadDnmPublicationRecordProjection(adapter, rows[0].dnm_record_id);
+}
+
+function loadPendingDeltaDnmRecordsForTarget(adapter, continuityTargetId) {
+    return adapter.all(
+        `SELECT dnm_record_id
+         FROM dnm_publication_records
+         WHERE continuity_target_id = ? AND lifecycle_state = 'DELTA_PENDING'
+         ORDER BY published_at DESC, dnm_record_id DESC`,
+        [continuityTargetId],
+    ).map((row) => loadDnmPublicationRecordProjection(adapter, row.dnm_record_id));
 }
 
 function listPublishedRecordsForContinuityTarget(adapter, continuityTargetId) {
@@ -4506,6 +4544,9 @@ function evaluateInterpretivePublicationQualification(adapter, interpretation, p
     if (policy.subjectIdentityMode === 'EXACT_SUBJECT' && continuityTargetId !== interpretation.memorySubjectId) {
         refusalCodes.push('SUBJECT_IDENTITY_MISMATCH');
     }
+    if (loadPendingDeltaDnmRecordsForTarget(adapter, continuityTargetId).length > 0) {
+        refusalCodes.push('PENDING_REPLACEMENT_ALREADY_EXISTS');
+    }
     if (compareGroundingOutcomeLevel(
         groundingEnvelope.aggregateOutcome || 'UNSUPPORTED',
         policy.requiredGroundingOutcome,
@@ -6027,11 +6068,11 @@ export function withdrawDnmPublicationRecord(request, payload = {}) {
         if (!record) {
             throw createError(404, `DNM record ${dnmRecordId} was not found`, 'ARCH_DNM_RECORD_NOT_FOUND');
         }
-        if (record.lifecycleState !== 'ACTIVE') {
-            throw createError(409, 'DNM record is not currently active', 'ARCH_DNM_WITHDRAWAL_STALE');
+        if (!['ACTIVE', 'DELTA_PENDING'].includes(record.lifecycleState)) {
+            throw createError(409, 'DNM record is not in a withdrawable lifecycle state', 'ARCH_DNM_WITHDRAWAL_STALE');
         }
         const currentActive = loadCurrentActiveDnmRecordForTarget(adapter, record.continuityTargetId);
-        if (!currentActive || currentActive.dnmRecordId !== record.dnmRecordId) {
+        if (record.lifecycleState === 'ACTIVE' && (!currentActive || currentActive.dnmRecordId !== record.dnmRecordId)) {
             throw createError(409, 'Current active DNM record drifted before withdrawal', 'ARCH_DNM_WITHDRAWAL_STALE');
         }
         const dispositionOwnerId = payload?.dispositionOwnerId
@@ -6507,6 +6548,18 @@ export function executeInterpretivePublicationAuthorization(request, payload = {
         }
 
         const existingActiveRecord = loadCurrentActiveDnmRecordForTarget(adapter, authorization.continuityTargetId);
+        const existingPendingReplacementRecords = loadPendingDeltaDnmRecordsForTarget(adapter, authorization.continuityTargetId);
+        if (existingActiveRecord && existingPendingReplacementRecords.length > 0) {
+            throw createError(
+                409,
+                'A pending published replacement already exists for this memory line. Resolve or supersede the existing replacement before publishing another one.',
+                'ARCH_DNM_PENDING_REPLACEMENT_EXISTS',
+                {
+                    continuityTargetId: authorization.continuityTargetId,
+                    pendingReplacementDnmRecordIds: existingPendingReplacementRecords.map((record) => record.dnmRecordId),
+                },
+            );
+        }
         const initialLifecycleState = existingActiveRecord ? 'DELTA_PENDING' : 'ACTIVE';
         const record = buildPublicationExecutionRecord(
             authorization,

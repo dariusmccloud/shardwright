@@ -7,6 +7,7 @@ import { Popup, POPUP_RESULT, POPUP_TYPE } from '../../../../../../popup.js';
 import { escapeHtml } from '../../common/ui-utils.js';
 import { archiveToWarm } from '../../../core/rag/archive.js';
 import { log } from '../../../core/logger.js';
+import { getActiveRagSettings } from '../../../core/settings.js';
 import {
     ARCHITECTURAL_KEY_LEGEND_LINES,
     buildArchitecturalKeyLines,
@@ -2063,6 +2064,8 @@ function setupArchiveOptionHandlers(state) {
  * @returns {Promise<{confirmed:boolean, finalOutput:string, archiveOptions:Object, archivedItems:Array}>}
  */
 export async function openSharderReviewModal(pipelineResult, settings, regenFn = null) {
+    const activeRagSettings = getActiveRagSettings(settings);
+    const ragEnabled = activeRagSettings?.enabled === true;
     const sectionRegistry = getSharderSectionRegistry(
         pipelineResult.metadata?.sectionRegistry || pipelineResult.metadata?.profile || NARRATIVE_PROFILE
     );
@@ -2085,8 +2088,8 @@ export async function openSharderReviewModal(pipelineResult, settings, regenFn =
         },
         outputOverride: null,
         settings,
-        ragEnabled: settings?.rag?.enabled === true,
-        warmArchiveAvailable: isWarmArchiveEligible(sectionRegistry, settings?.rag?.enabled === true),
+        ragEnabled,
+        warmArchiveAvailable: isWarmArchiveEligible(sectionRegistry, ragEnabled),
         archivedItems: [],
         archiveOptions: {
             archiveWarm: false,

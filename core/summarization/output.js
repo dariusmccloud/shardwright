@@ -221,7 +221,7 @@ export async function handleSummaryResult(
         const skipWarmArchive = settings?.sharderMode === true
             && !isWarmArchiveEligible(settings?.sharderProfile, settings?.rag?.enabled === true);
         if (skipWarmArchive) {
-            ragLog.info('Warm archive skipped for Architectural Memory; architectural RAG support is deferred.');
+            ragLog.log('Warm archive skipped for Architectural Memory; architectural RAG support is deferred.');
         } else {
         const warmResult = await archiveToWarm(
             [{ text: summary, source: 'output-summary' }],

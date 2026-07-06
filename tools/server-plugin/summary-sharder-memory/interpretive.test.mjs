@@ -1666,6 +1666,228 @@ test('second publication for the same continuity target stays delta-pending unti
     assert.equal(current.currentActiveRecord.dnmRecordId, first.executed.publishedRecord.dnmRecordId);
 });
 
+test('third publication for the same continuity target is blocked while a delta-pending replacement already exists', () => {
+    const root = makeTempRoot();
+    const request = buildRequest(root);
+    upsertInterpretivePublicationPolicy(request, makePublicationPolicyPayload({
+        immutableChildRequiredForTypes: [],
+    }));
+
+    const first = publishGrantedRevision(request, {
+        interpretationId: 'interp_dnm_pending_guard_v1',
+        interpretationRevisionId: 'interprev_dnm_pending_guard_v1',
+        statement: 'Jeep became the primary continuity authority.',
+        nowBase: Date.parse('2026-06-26T04:20:00.000Z'),
+    });
+    const second = publishGrantedRevision(request, {
+        interpretationId: 'interp_dnm_pending_guard_v2',
+        interpretationRevisionId: 'interprev_dnm_pending_guard_v2',
+        statement: 'Jeep became the primary continuity authority within a shared architecture with Chris.',
+        nowBase: Date.parse('2026-06-26T04:30:00.000Z'),
+    });
+
+    assert.equal(first.executed.publishedRecord.lifecycleState, 'ACTIVE');
+    assert.equal(second.executed.publishedRecord.lifecycleState, 'DELTA_PENDING');
+
+    assert.throws(
+        () => publishGrantedRevision(request, {
+            interpretationId: 'interp_dnm_pending_guard_v3',
+            interpretationRevisionId: 'interprev_dnm_pending_guard_v3',
+            statement: 'Jeep became the primary continuity authority for continuity and memory requirements.',
+            nowBase: Date.parse('2026-06-26T04:40:00.000Z'),
+        }),
+        (error) => error?.code === 'ARCH_PUBLICATION_QUALIFICATION_INELIGIBLE',
+    );
+
+    const listed = listDnmPublicationRecords(request, {
+        continuityTargetId: 'character:jeep.png',
+    });
+    assert.equal(listed.records.length, 2);
+    assert.deepEqual(
+        listed.records.map((record) => record.lifecycleState),
+        ['ACTIVE', 'DELTA_PENDING'],
+    );
+});
+
+test('eligibility check is ineligible while a pending replacement already exists for the same memory line', () => {
+    const root = makeTempRoot();
+    const request = buildRequest(root);
+    upsertInterpretivePublicationPolicy(request, makePublicationPolicyPayload({
+        immutableChildRequiredForTypes: [],
+    }));
+
+    publishGrantedRevision(request, {
+        interpretationId: 'interp_dnm_pending_eligibility_v1',
+        interpretationRevisionId: 'interprev_dnm_pending_eligibility_v1',
+        statement: 'Jeep became the primary continuity authority.',
+        nowBase: Date.parse('2026-06-26T04:45:00.000Z'),
+    });
+    const second = publishGrantedRevision(request, {
+        interpretationId: 'interp_dnm_pending_eligibility_v2',
+        interpretationRevisionId: 'interprev_dnm_pending_eligibility_v2',
+        statement: 'Jeep became the primary continuity authority within a shared architecture with Chris.',
+        nowBase: Date.parse('2026-06-26T04:55:00.000Z'),
+    });
+
+    const created = createInterpretiveCandidate(request, makeBasePayload({
+        interpretationId: 'interp_dnm_pending_eligibility_v3',
+        interpretationRevisionId: 'interprev_dnm_pending_eligibility_v3',
+        statement: 'Jeep became the primary continuity authority for continuity and memory requirements.',
+        now: Date.parse('2026-06-26T05:05:00.000Z'),
+    }));
+    const subjectRequest = created.interpretation.reviewRequests.find((entry) => entry.reviewerRole === 'MEMORY_SUBJECT');
+    const participantRequest = created.interpretation.reviewRequests.find((entry) => entry.reviewerRole === 'RELATIONAL_PARTICIPANT');
+    submitInterpretiveReviewDisposition(request, subjectRequest.reviewRequestId, {
+        actorEntityId: 'character:jeep.png',
+        disposition: 'APPROVE',
+        reviewEnvelopeHash: created.interpretation.reviewEnvelopeHash,
+        now: Date.parse('2026-06-26T05:05:05.000Z'),
+    });
+    submitInterpretiveReviewDisposition(request, participantRequest.reviewRequestId, {
+        actorEntityId: 'user:Chris',
+        disposition: 'APPROVE',
+        reviewEnvelopeHash: created.interpretation.reviewEnvelopeHash,
+        now: Date.parse('2026-06-26T05:05:10.000Z'),
+    });
+    const granted = recordInterpretiveSubjectDisposition(request, 'interprev_dnm_pending_eligibility_v3', {
+        actorEntityId: 'character:jeep.png',
+        state: 'GRANTED',
+        reviewEnvelopeHash: created.interpretation.reviewEnvelopeHash,
+        now: Date.parse('2026-06-26T05:05:15.000Z'),
+    });
+
+    const qualification = qualifyInterpretivePublication(request, 'interprev_dnm_pending_eligibility_v3', {
+        publicationPolicyId: 'dnm-publication-v1',
+        continuityTargetId: 'character:jeep.png',
+        proposalContentHash: granted.interpretation.proposalContentHash,
+        reviewEnvelopeHash: granted.interpretation.reviewEnvelopeHash,
+        subjectDispositionRecordId: granted.subjectDisposition.subjectDispositionId,
+        now: Date.parse('2026-06-26T05:05:20.000Z'),
+    });
+
+    assert.equal(second.executed.publishedRecord.lifecycleState, 'DELTA_PENDING');
+    assert.equal(qualification.qualification.eligibilityVerdict, 'INELIGIBLE');
+    assert.equal(
+        qualification.qualification.refusalCodes.includes('PENDING_REPLACEMENT_ALREADY_EXISTS'),
+        true,
+    );
+});
+
+test('delta-pending replacement may be withdrawn without disturbing the current active record', () => {
+    const root = makeTempRoot();
+    const request = buildRequest(root);
+    upsertInterpretivePublicationPolicy(request, makePublicationPolicyPayload({
+        immutableChildRequiredForTypes: [],
+    }));
+
+    const first = publishGrantedRevision(request, {
+        interpretationId: 'interp_dnm_pending_withdraw_v1',
+        interpretationRevisionId: 'interprev_dnm_pending_withdraw_v1',
+        statement: 'Jeep became the primary continuity authority.',
+        nowBase: Date.parse('2026-06-26T04:50:00.000Z'),
+    });
+    const second = publishGrantedRevision(request, {
+        interpretationId: 'interp_dnm_pending_withdraw_v2',
+        interpretationRevisionId: 'interprev_dnm_pending_withdraw_v2',
+        statement: 'Jeep became the primary continuity authority within a shared architecture with Chris.',
+        nowBase: Date.parse('2026-06-26T05:00:00.000Z'),
+    });
+
+    const withdrawn = withdrawDnmPublicationRecord(request, {
+        dnmRecordId: second.executed.publishedRecord.dnmRecordId,
+        actorEntityId: 'character:jeep.png',
+        submissionMode: 'DIRECT_SUBJECT_ACTION',
+        reasonCodes: ['DUPLICATE_PENDING_REPAIR'],
+        commentary: 'Withdraw duplicate pending replacement after repeated test publication.',
+        now: Date.parse('2026-06-26T05:05:00.000Z'),
+    });
+
+    assert.equal(withdrawn.ok, true);
+    assert.equal(withdrawn.record.lifecycleState, 'WITHDRAWN');
+    assert.equal(withdrawn.currentActiveRecord.dnmRecordId, first.executed.publishedRecord.dnmRecordId);
+
+    const listed = listDnmPublicationRecords(request, {
+        continuityTargetId: 'character:jeep.png',
+    });
+    assert.deepEqual(
+        listed.records.map((record) => record.lifecycleState),
+        ['ACTIVE', 'WITHDRAWN'],
+    );
+});
+
+test('publication operator state ignores stale qualification and authorization after later lifecycle mutations', () => {
+    const root = makeTempRoot();
+    const request = buildRequest(root);
+    bootstrapStandardInterpretivePublicationPolicy(request, {
+        now: Date.parse('2026-06-26T05:09:00.000Z'),
+    });
+    upsertInterpretivePublicationPolicy(request, makePublicationPolicyPayload({
+        immutableChildRequiredForTypes: [],
+    }));
+
+    publishGrantedRevision(request, {
+        interpretationId: 'interp_stale_lifecycle_anchor_v1',
+        interpretationRevisionId: 'interprev_stale_lifecycle_anchor_v1',
+        statement: 'Jeep became the primary continuity authority.',
+        nowBase: Date.parse('2026-06-26T05:10:00.000Z'),
+    });
+
+    const created = createInterpretiveCandidate(request, makeBasePayload({
+        interpretationId: 'interp_stale_lifecycle_candidate_v2',
+        interpretationRevisionId: 'interprev_stale_lifecycle_candidate_v2',
+        statement: 'Jeep became the primary continuity authority for continuity and memory requirements.',
+        now: Date.parse('2026-06-26T05:20:00.000Z'),
+    }));
+    const subjectRequest = created.interpretation.reviewRequests.find((entry) => entry.reviewerRole === 'MEMORY_SUBJECT');
+    const participantRequest = created.interpretation.reviewRequests.find((entry) => entry.reviewerRole === 'RELATIONAL_PARTICIPANT');
+    submitInterpretiveReviewDisposition(request, subjectRequest.reviewRequestId, {
+        actorEntityId: 'character:jeep.png',
+        disposition: 'APPROVE',
+        reviewEnvelopeHash: created.interpretation.reviewEnvelopeHash,
+        now: Date.parse('2026-06-26T05:20:05.000Z'),
+    });
+    submitInterpretiveReviewDisposition(request, participantRequest.reviewRequestId, {
+        actorEntityId: 'user:Chris',
+        disposition: 'APPROVE',
+        reviewEnvelopeHash: created.interpretation.reviewEnvelopeHash,
+        now: Date.parse('2026-06-26T05:20:10.000Z'),
+    });
+    const granted = recordInterpretiveSubjectDisposition(request, 'interprev_stale_lifecycle_candidate_v2', {
+        actorEntityId: 'character:jeep.png',
+        state: 'GRANTED',
+        reviewEnvelopeHash: created.interpretation.reviewEnvelopeHash,
+        now: Date.parse('2026-06-26T05:20:15.000Z'),
+    });
+    const qualification = qualifyInterpretivePublication(request, 'interprev_stale_lifecycle_candidate_v2', {
+        publicationPolicyId: 'dnm-publication-v1',
+        continuityTargetId: 'character:jeep.png',
+        proposalContentHash: granted.interpretation.proposalContentHash,
+        reviewEnvelopeHash: granted.interpretation.reviewEnvelopeHash,
+        subjectDispositionRecordId: granted.subjectDisposition.subjectDispositionId,
+        now: Date.parse('2026-06-26T05:20:20.000Z'),
+    });
+    createInterpretivePublicationAuthorization(request, {
+        qualificationId: qualification.qualification.qualificationId,
+        authorizedBy: 'user:Chris',
+        expiresAt: Date.parse('2026-06-26T05:30:00.000Z'),
+        now: Date.parse('2026-06-26T05:20:25.000Z'),
+    });
+
+    const pendingReplacement = publishGrantedRevision(request, {
+        interpretationId: 'interp_stale_lifecycle_pending_v3',
+        interpretationRevisionId: 'interprev_stale_lifecycle_pending_v3',
+        statement: 'Jeep became the primary continuity authority within a shared architecture with Chris.',
+        nowBase: Date.parse('2026-06-26T05:25:00.000Z'),
+    });
+    assert.equal(pendingReplacement.executed.publishedRecord.lifecycleState, 'DELTA_PENDING');
+
+    const operatorState = getInterpretivePublicationOperatorState(request, 'interprev_stale_lifecycle_candidate_v2');
+    assert.equal(operatorState.operatorState.latestQualification, null);
+    assert.equal(operatorState.operatorState.latestAuthorization, null);
+    assert.equal(operatorState.operatorState.guidedFlow.status, 'READY_TO_CHECK');
+    assert.equal(operatorState.operatorState.guidedFlow.nextAction.action, 'CHECK_ELIGIBILITY');
+});
+
 test('publication operator state distinguishes qualified, authorized, published, and active DNM actions', () => {
     const root = makeTempRoot();
     const request = buildRequest(root);
@@ -1750,10 +1972,10 @@ test('publication operator state distinguishes qualified, authorized, published,
     );
     assert.deepEqual(
         postPublication.operatorState.blockedActions.find((entry) => entry.action === 'EXECUTE_PUBLICATION')?.blockingReasons,
-        ['INTERPRETATION_ALREADY_PUBLISHED', 'PUBLICATION_AUTHORIZATION_CONSUMED'],
+        ['INTERPRETATION_ALREADY_PUBLISHED'],
     );
     assert.equal(postPublication.operatorState.blockingReasons.includes('INTERPRETATION_ALREADY_PUBLISHED'), true);
-    assert.equal(postPublication.operatorState.blockingReasons.includes('PUBLICATION_AUTHORIZATION_CONSUMED'), true);
+    assert.equal(postPublication.operatorState.blockingReasons.includes('PUBLICATION_AUTHORIZATION_CONSUMED'), false);
 });
 
 test('publication operator state exposes supersession actions for delta-pending records without flattening lifecycle', () => {
@@ -1784,11 +2006,7 @@ test('publication operator state exposes supersession actions for delta-pending 
     assert.equal(deltaPendingRecord.lifecycleState, 'DELTA_PENDING');
     assert.equal(deltaPendingRecord.operatorState.availableActions.includes('SUPERSEDE_ACTIVE_WITH_RECORD'), true);
     assert.equal(deltaPendingRecord.operatorState.availableActions.includes('RECORD_DELTA_REVIEW'), true);
-    assert.equal(deltaPendingRecord.operatorState.blockingReasons.includes('RECORD_NOT_ACTIVE_FOR_WITHDRAWAL'), true);
-    assert.deepEqual(
-        deltaPendingRecord.operatorState.blockedActions.find((entry) => entry.action === 'WITHDRAW_DNM')?.blockingReasons,
-        ['RECORD_NOT_ACTIVE_FOR_WITHDRAWAL'],
-    );
+    assert.equal(deltaPendingRecord.operatorState.availableActions.includes('WITHDRAW_DNM'), true);
 });
 
 test('supersession, delta review, withdrawal, and replay preserve DNM lifecycle lineage', () => {
