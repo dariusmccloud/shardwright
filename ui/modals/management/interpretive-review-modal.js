@@ -1135,14 +1135,22 @@ function renderPublicationPolicyCards(policies) {
     `;
 }
 
-function renderQualificationCard(qualification) {
+function renderQualificationCard(qualification, options = {}) {
     if (!qualification) {
         return '<div class="ss-hint">No qualification has been recorded yet.</div>';
     }
+    const standardPolicyId = options.standardPolicy?.publicationPolicyId || null;
+    const standardPolicyVersion = options.standardPolicy?.policyVersion ?? null;
+    const continuityTargetId = options.continuityTargetId || null;
+    const matchesStandardPolicy = standardPolicyId
+        && qualification.publicationPolicyId === standardPolicyId
+        && Number(qualification.policyVersion) === Number(standardPolicyVersion)
+        && qualification.continuityTargetId === continuityTargetId;
     const refusalCodes = Array.isArray(qualification.refusalCodes) ? qualification.refusalCodes : [];
     return `
         <div class="ss-interpretive-review-card">
-            <strong>Latest eligibility check</strong>
+            <strong>${matchesStandardPolicy ? 'Latest eligibility check' : 'Previous eligibility check'}</strong>
+            ${matchesStandardPolicy ? '' : '<div class="ss-hint">This result was recorded for a different policy or memory line and does not control the next publication step.</div>'}
             ${renderKeyValueGrid([
                 { label: 'Verdict', value: renderBadge(qualification.eligibilityVerdict) },
                 { label: 'Policy', value: `<code>${escapeHtml(qualification.publicationPolicyId)}</code> v${escapeHtml(String(qualification.policyVersion))}` },
@@ -1188,18 +1196,11 @@ function renderPublicationGuidanceCard(guidedFlow) {
     if (!guidedFlow) {
         return '';
     }
-    const nextAction = guidedFlow.nextAction || null;
     const refusalCodes = Array.isArray(guidedFlow.technicalRefusalCodes) ? guidedFlow.technicalRefusalCodes : [];
     return `
         <div class="ss-interpretive-review-card">
             <strong>${escapeHtml(guidedFlow.headline || 'Publication guidance')}</strong>
             <div class="ss-interpretive-review-summary-note">${escapeHtml(guidedFlow.detail || '')}</div>
-            ${nextAction ? `
-                <div>
-                    <strong>Next lawful action</strong>
-                </div>
-                <div class="ss-interpretive-review-inline-meta">${renderBadge(nextAction.label || nextAction.action || 'Next action')}</div>
-            ` : ''}
             ${refusalCodes.length > 0 ? `
                 <div>
                     <strong>Technical refusal codes</strong>
@@ -1293,7 +1294,6 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
         ? operatorState.latestQualification
         : null;
     const canQualify = operatorState.availableActions?.includes('QUALIFY_PUBLICATION') === true;
-    const canWithdrawActive = activeRecord?.operatorState?.availableActions?.includes('WITHDRAW_DNM') === true;
     const governancePolicies = [...policiesById.values()];
     const operatorAvailableActions = getVisibleOperatorActions(interpretation, operatorState);
     const operatorBlockedActions = Array.isArray(operatorState.blockedActions) ? operatorState.blockedActions : [];
@@ -1376,7 +1376,7 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
         }));
     }
 
-    if (canWithdrawActive && activeRecord) {
+    if (activeRecord?.operatorState?.availableActions?.includes('WITHDRAW_DNM') === true) {
         actionForms.push(renderLifecycleGovernanceForm({
             formKind: 'dnm-withdraw',
             title: 'Withdraw Current Memory',
@@ -1393,6 +1393,9 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
             },
         }));
     }
+
+    const showGuidanceCard = actionForms.length === 0;
+    const primaryActionHeading = actionForms.length > 1 ? 'Lawful actions now' : 'Next step';
 
     return `
         ${renderStaticSection(
@@ -1419,13 +1422,19 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
                     { label: 'Current Active Memory', value: renderBadge(activeRecord?.lifecycleState || 'NONE') },
                     { label: 'Memory Line', value: renderCopyableCode(continuityTargetId, { emptyLabel: 'n/a' }) },
                 ])}
-                ${renderPublicationGuidanceCard(guidedFlow)}
-                ${renderQualificationCard(operatorState.latestQualification)}
+                ${actionForms.length > 0 ? `
+                    <div class="ss-interpretive-review-primary-action">
+                        <div><strong>${primaryActionHeading}</strong></div>
+                        <div class="ss-interpretive-review-list">${actionForms.join('')}</div>
+                    </div>
+                ` : ''}
+                ${showGuidanceCard ? renderPublicationGuidanceCard(guidedFlow) : ''}
+                ${renderQualificationCard(operatorState.latestQualification, {
+                    standardPolicy,
+                    continuityTargetId,
+                })}
                 ${guidedFlow?.nextAction?.action === 'PUBLISH_MEMORY' ? '' : renderAuthorizationCard(operatorState.latestAuthorization)}
-                ${actionForms.length > 0 ? '<div><strong>Lawful actions now</strong></div>' : ''}
-                ${actionForms.length > 0
-                    ? `<div class="ss-interpretive-review-list">${actionForms.join('')}</div>`
-                    : '<div class="ss-hint">No lifecycle actions are currently lawful for this memory.</div>'}
+                ${actionForms.length === 0 ? '<div class="ss-hint">No lifecycle actions are currently lawful for this memory.</div>' : ''}
                 ${operatorBlockedActions.length > 0 || operatorBlockingReasons.length > 0 ? renderCollapsibleSection(
                     'Why other steps are unavailable',
                     'Hidden by default to keep only actionable lifecycle work in the main path.',
@@ -1448,13 +1457,30 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
         ${renderStaticSection(
             'Publication History',
             'Shows eligibility, authorization, publication, supersession, and withdrawal over time.',
-            (activeRecord || lineageRecords.length > 0) ? `
+            lineageRecords.length > 0 ? `
                 <div class="ss-interpretive-review-list">
-                    ${[activeRecord, ...lineageRecords]
+                    ${lineageRecords
                         .filter(Boolean)
                         .sort((left, right) => Number(right?.publishedAt || 0) - Number(left?.publishedAt || 0))
                         .map((record) => `
                         ${renderDnmRecordCard(record, { compact: true })}
+                        ${record.operatorState?.availableActions?.includes('WITHDRAW_DNM') ? renderLifecycleGovernanceForm({
+                            formKind: 'dnm-withdraw',
+                            title: record.lifecycleState === 'DELTA_PENDING' ? 'Withdraw pending replacement' : 'Withdraw current memory',
+                            description: record.lifecycleState === 'DELTA_PENDING'
+                                ? 'Withdraw this pending published replacement without changing the current active memory.'
+                                : 'Withdraw this current published memory from the memory line.',
+                            actionKind: 'DNM_WITHDRAWAL',
+                            ownerId: interpretation.memorySubjectId,
+                            interpretation,
+                            currentActorId: options.currentActorId,
+                            policies: governancePolicies,
+                            actionStatus: options.actionStatus,
+                            submitLabel: record.lifecycleState === 'DELTA_PENDING' ? 'Withdraw pending replacement' : 'Withdraw current memory',
+                            dataset: {
+                                dnmRecordId: record.dnmRecordId,
+                            },
+                        }) : ''}
                         ${record.operatorState?.availableActions?.includes('SUPERSEDE_ACTIVE_WITH_RECORD') ? renderLifecycleGovernanceForm({
                             formKind: 'dnm-supersede',
                             title: 'Replace current memory with this one',
@@ -1473,7 +1499,9 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
                         }) : ''}
                     `).join('')}
                 </div>
-            ` : '<div class="ss-hint">No publication events have been recorded for this memory line.</div>',
+            ` : `<div class="ss-hint">${activeRecord
+                ? 'No earlier publication events have been recorded for this memory line.'
+                : 'No publication events have been recorded for this memory line.'}</div>`,
             { extraClass: 'ss-interpretive-review-lifecycle-section' },
         )}
 
@@ -1612,8 +1640,8 @@ function renderDetailTabs(selectedView) {
     const views = [
         { id: 'review', label: 'Review' },
         { id: 'history', label: 'History' },
-        { id: 'technical', label: 'Technical Details' },
         { id: 'lifecycle', label: 'Publication Lifecycle' },
+        { id: 'technical', label: 'Technical Details' },
     ];
     return `
         <div class="ss-interpretive-review-detail-tabs" role="tablist" aria-label="Memory review views">
@@ -1746,10 +1774,11 @@ function formatLifecycleBlockingReason(value) {
         PUBLICATION_AUTHORIZATION_REQUIRED: 'Publication authorization is still required',
         PUBLICATION_AUTHORIZATION_CONSUMED: 'The existing publication authorization has already been used',
         INTERPRETATION_ALREADY_PUBLISHED: 'This memory is already published',
-        RECORD_NOT_ACTIVE_FOR_WITHDRAWAL: 'Only the current published memory can be withdrawn',
+        RECORD_NOT_ACTIVE_FOR_WITHDRAWAL: 'Only an active or pending published memory can be withdrawn',
         RECORD_NOT_DELTA_PENDING_FOR_SUPERSESSION: 'Only a pending replacement can take over as current memory',
         NO_CURRENT_ACTIVE_RECORD_TO_SUPERSEDE: 'There is no current published memory to replace',
         RECORD_ALREADY_ACTIVE: 'This memory is already the current published memory',
+        PENDING_REPLACEMENT_ALREADY_EXISTS: 'A pending published replacement already exists for this memory line',
     };
     return map[normalized] || formatSubmissionModeLabel(normalized);
 }
@@ -1771,13 +1800,20 @@ function getRevisionFilterStatus(interpretationLike) {
         || String(interpretationLike?.reviewState || '').trim().toUpperCase();
     const subjectState = String(interpretationLike?.subjectDispositionState || '').trim().toUpperCase() || 'PENDING';
     const publicationState = String(interpretationLike?.publicationState || '').trim().toUpperCase();
+    const guidedFlowStatus = String(interpretationLike?.operatorState?.guidedFlow?.status || '').trim().toUpperCase();
 
     if (reviewWorkflow === 'PENDING') return 'PENDING_APPROVAL';
     if (reviewWorkflow === 'CONTESTED') return 'CONTESTED';
     if (reviewWorkflow === 'DEFERRED') return 'DEFERRED';
     if (reviewWorkflow === 'REJECTED') return 'REJECTED';
     if (reviewWorkflow === 'COMPLETE' && subjectState === 'PENDING') return 'PENDING_DECISION';
-    if (subjectState === 'GRANTED' && publicationState !== 'PUBLISHED') return 'READY_FOR_PUBLICATION';
+    if (subjectState === 'GRANTED' && publicationState !== 'PUBLISHED') {
+        if (!guidedFlowStatus) return 'READY_FOR_PUBLICATION';
+        if (['SETUP_REQUIRED', 'READY_TO_CHECK', 'READY_TO_PUBLISH'].includes(guidedFlowStatus)) {
+            return 'READY_FOR_PUBLICATION';
+        }
+        return '';
+    }
     if (subjectState === 'DENIED') return 'REJECTED';
     return '';
 }
