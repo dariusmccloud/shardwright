@@ -7,7 +7,7 @@ import { setExtensionPrompt } from '../../../../../../script.js';
 import { extension_settings } from '../../../../../extensions.js';
 import { getActiveCollectionIds, getWriteTargetCollectionId, getShardCollectionId, getStandardCollectionId } from './collection-manager.js';
 import { rerankDocuments } from './reranker-client.js';
-import { hybridQuery, listChunks, queryChunks } from './vector-client.js';
+import { getCollectionMetadataMap, getCollectionQuerySettingsMap, hybridQuery, listChunks, queryChunks } from './vector-client.js';
 import { keywordBoost, runClientHybridFusion, scoreAndRank } from './scoring.js';
 import { getActiveRagSettings } from '../settings.js';
 import { ragLog } from '../logger.js';
@@ -96,13 +96,9 @@ function buildScopedMetadataFilter(origin, base = {}) {
     return filter;
 }
 
+
 export function filterResultsForOrigin(results, origin) {
-    return filterResultsByOriginBoundary(results, {
-        ...origin,
-        ownCollectionId: origin?.ownCollectionId,
-        collectionId: origin?.collectionId,
-        chatId: origin?.chatId,
-    });
+    return filterResultsByOriginBoundary(results);
 }
 
 /**
@@ -124,11 +120,11 @@ export function invalidateFallbackCache(collectionId = null) {
 
 /**
  * Internal helper to fetch with caching.
- * @param {string} collectionId 
- * @param {Object} rag 
- * @param {string} type 
- * @param {number} limit 
- * @param {Function} fetchFn 
+ * @param {string} collectionId
+ * @param {Object} rag
+ * @param {string} type
+ * @param {number} limit
+ * @param {Function} fetchFn
  * @returns {Promise<any>}
  */
 async function fetchWithFallbackCache(collectionId, rag, type, limit, fetchFn, cacheScope = '') {
@@ -305,7 +301,7 @@ export async function fetchLatestRolling(collectionId, rag, limit = 50, origin =
         } catch (error) {
             ragLog.warn('Fallback rolling fetch failed:', error?.message || error);
             return {
-                items: [], 
+                items: [],
                 fetchedCount: 0,
                 hasMore: false,
             };
@@ -836,12 +832,11 @@ export async function rearrangeChat(chat, contextSize, abort, type) {
         }
 
         const wantsHybrid = rag.scoringMethod === 'hybrid';
-        const useNativeHybrid = wantsHybrid && (rag.backend === 'qdrant' || rag.backend === 'milvus');
-        const useClientHybrid = wantsHybrid && !useNativeHybrid;
+        const useClientHybrid = wantsHybrid && !(rag.backend === 'qdrant' || rag.backend === 'milvus');
 
         const overfetchMultiplier = Math.max(1, Number(rag.hybridOverfetchMultiplier) || 4);
         const topK = Math.max(1, (Number(rag.insertCount) || 5) * (wantsHybrid ? overfetchMultiplier : 4));
-        const threshold = Math.max(0, Math.min(1, Number(rag.scoreThreshold) || 0.25));
+        const threshold = Math.max(0, Math.min(1, Number(rag.scoreThreshold) || 0));
 
         // Multi-collection: query all bound collections in parallel, deduplicate results.
         // writeTargetCollectionId is used for continuity-style fallback fetches
@@ -853,13 +848,18 @@ export async function rearrangeChat(chat, contextSize, abort, type) {
             collectionId: writeTargetCollectionId,
         };
 
-        const queryFn = useNativeHybrid ? hybridQuery : queryChunks;
-
+        const querySettingsByCollection = await getCollectionQuerySettingsMap(collectionIds, rag);
         const querySettled = await Promise.allSettled(
-            collectionIds.map(async (id) => ({
-                collectionId: id,
-                response: await queryFn(id, queryText, topK, threshold, rag),
-            }))
+            collectionIds.map(async (id) => {
+                const collectionSettings = querySettingsByCollection.get(id) || rag;
+                const collectionQueryFn = wantsHybrid && (collectionSettings.backend === 'qdrant' || collectionSettings.backend === 'milvus')
+                    ? hybridQuery
+                    : queryChunks;
+                return {
+                    collectionId: id,
+                    response: await collectionQueryFn(id, queryText, topK, threshold, collectionSettings),
+                };
+            })
         );
         const shardResults = querySettled.flatMap((result) => {
             if (result.status !== 'fulfilled' || !Array.isArray(result.value?.response?.results)) {
@@ -997,11 +997,11 @@ export async function rearrangeChat(chat, contextSize, abort, type) {
                 const candidates = [...merged].sort((a, b) => getFreshnessEndIndex(b) - getFreshnessEndIndex(a));
                 const recent = candidates.slice(0, recentCount);
                 const recentHashes = new Set(recent.map(r => r.hash || r.text));
-                
+
                 // Fill remaining slots with the best remaining relevance results
                 const remainingCount = insertCount - recent.length;
                 const relevant = merged.filter(m => !recentHashes.has(m.hash || m.text)).slice(0, remainingCount);
-                
+
                 merged = [...recent, ...relevant];
             } else {
                 merged = [...superseding, ...others].slice(0, insertCount);
@@ -1032,6 +1032,9 @@ export async function rearrangeChat(chat, contextSize, abort, type) {
 
         lastInjectionData = {
             timestamp: Date.now(),
+            queryText,
+            collectionIds: [...collectionIds],
+            writeTargetCollectionId,
             entries: merged.map(item => ({
                 text: item?.text || '',
                 score: item?.score ?? null,
@@ -1045,6 +1048,7 @@ export async function rearrangeChat(chat, contextSize, abort, type) {
             template: rag.template || 'Recalled memories:\n{{text}}',
             injectionText: injection,
             scoringMethod: rag.scoringMethod || 'keyword',
+            threshold,
             backend: rag.backend,
             rerankerApplied: !!rerankMeta.metadata?.applied,
             rerankerMode: rerankMeta.metadata?.mode || 'none',

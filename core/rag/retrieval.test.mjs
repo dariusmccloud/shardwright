@@ -23,23 +23,19 @@ test('primary-query style results exclude architectural chunks while keeping nar
     assert.deepEqual(filtered.map((item) => item.hash), ['narrative', 'legacy']);
 });
 
-test('fallback-style origin filtering also excludes architectural chunks', () => {
+test('fallback-style filtering excludes architectural chunks without blocking narrative shared reads', () => {
     const results = [
         makeChunk('arch-fallback', { shardProfile: 'architectural', originChatId: 'chat-a' }),
-        makeChunk('narrative-fallback', { shardProfile: 'narrative', originChatId: 'chat-a' }),
-        makeChunk('legacy-fallback', { originChatId: 'chat-a' }),
+        makeChunk('narrative-fallback', { shardProfile: 'narrative', originChatId: 'chat-b' }),
+        makeChunk('legacy-fallback', { originChatId: 'chat-b' }),
     ];
 
-    const filtered = filterResultsByOriginBoundary(results, {
-        chatId: 'chat-a',
-        ownCollectionId: 'own-a',
-        collectionId: 'shared-a',
-    });
+    const filtered = filterResultsByOriginBoundary(results);
 
     assert.deepEqual(filtered.map((item) => item.hash), ['narrative-fallback', 'legacy-fallback']);
 });
 
-test('mixed collections cannot inject architectural chunks into narrative retrieval', () => {
+test('shared collections can inject narrative chunks across chats but never architectural chunks', () => {
     const results = [
         makeChunk('wrong-chat', { shardProfile: 'narrative', originChatId: 'chat-b' }),
         makeChunk('arch-right-chat', { shardProfile: 'architectural', originChatId: 'chat-a' }),
@@ -47,11 +43,7 @@ test('mixed collections cannot inject architectural chunks into narrative retrie
         makeChunk('legacy-right-chat', { originChatId: 'chat-a' }),
     ];
 
-    const filtered = filterResultsByOriginBoundary(results, {
-        chatId: 'chat-a',
-        ownCollectionId: 'own-a',
-        collectionId: 'shared-a',
-    });
+    const filtered = filterResultsByOriginBoundary(results);
 
-    assert.deepEqual(filtered.map((item) => item.hash), ['narrative-right-chat', 'legacy-right-chat']);
+    assert.deepEqual(filtered.map((item) => item.hash), ['wrong-chat', 'narrative-right-chat', 'legacy-right-chat']);
 });

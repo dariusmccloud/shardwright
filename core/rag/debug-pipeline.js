@@ -9,8 +9,9 @@ import { getActiveCollectionIds, getWriteTargetCollectionId } from './collection
 import { bm25Score, keywordBoost, runClientHybridFusion, scoreAndRank } from './scoring.js';
 import { resolveRagEmbeddingApiKey } from './rag-secrets.js';
 import { rerankDocuments } from './reranker-client.js';
-import { hybridQuery, listChunks, queryChunks } from './vector-client.js';
+import { getCollectionQuerySettingsMap, getCollectionMetadataMap, hybridQuery, listChunks, queryChunks } from './vector-client.js';
 import { ragLog } from '../logger.js';
+import { getActiveRagSettings } from '../settings.js';
 import {
     ANCHORS_SECTION_KEY,
     ANCHORS_SECTION_LABEL,
@@ -45,6 +46,7 @@ import {
 import { tokenizeAndStem } from './stemmer.js';
 
 const DEBUG_VERSION = 1;
+
 
 /**
  * @param {Array<Object>} results
@@ -465,7 +467,7 @@ function buildConfigSnapshot(rag, overrides, chat, queryText) {
         scoringMethod: rag?.scoringMethod || 'keyword',
         insertCount: Math.max(1, Number(rag?.insertCount) || 5),
         queryCount: Math.max(1, Number(rag?.queryCount) || 2),
-        threshold: Math.max(0, Math.min(1, Number(rag?.scoreThreshold) || 0.25)),
+        threshold: Math.max(0, Math.min(1, Number(rag?.scoreThreshold) || 0)),
         sceneExpansion: rag?.sceneExpansion !== false,
         rerankerEnabled: !!rag?.reranker?.enabled,
         rerankerMode: String(rag?.reranker?.mode || 'similharity'),
@@ -748,8 +750,8 @@ async function fetchLatestAnchors(collectionId, rag, limit = 50) {
  * @returns {Promise<Object>}
  */
 export async function runDebugPipeline(overrides = {}) {
-    const settings = extension_settings?.summary_sharder || {};
-    const ragBase = settings?.rag || {};
+    const settings = overrides.settings || extension_settings?.summary_sharder || {};
+    const ragBase = getActiveRagSettings(settings) || {};
     const isSharder = settings?.sharderMode === true;
     const context = SillyTavern.getContext?.() || {};
     const chat = Array.isArray(overrides.chat) ? overrides.chat : (Array.isArray(context.chat) ? context.chat : []);
@@ -813,12 +815,18 @@ export async function runDebugPipeline(overrides = {}) {
     const useClientHybrid = wantsHybrid && !useNativeHybrid;
     const overfetchMultiplier = Math.max(1, Number(rag.hybridOverfetchMultiplier) || 4);
     const topK = Math.max(1, (Number(rag.insertCount) || 5) * (wantsHybrid ? overfetchMultiplier : 4));
-    const threshold = Math.max(0, Math.min(1, Number(rag.scoreThreshold) || 0.25));
-    const queryFn = useNativeHybrid ? hybridQuery : queryChunks;
+    const threshold = Math.max(0, Math.min(1, Number(rag.scoreThreshold) || 0));
 
     sourceResults = await runStage(stages, 'vectorQuery', [], async () => {
+        const querySettingsByCollection = await getCollectionQuerySettingsMap(activeCollectionIds, rag);
         const querySettled = await Promise.allSettled(
-            activeCollectionIds.map(id => queryFn(id, queryText, topK, threshold, rag))
+            activeCollectionIds.map((id) => {
+                const collectionSettings = querySettingsByCollection.get(id) || rag;
+                const collectionQueryFn = wantsHybrid && (collectionSettings.backend === 'qdrant' || collectionSettings.backend === 'milvus')
+                    ? hybridQuery
+                    : queryChunks;
+                return collectionQueryFn(id, queryText, topK, threshold, collectionSettings);
+            })
         );
         const shardResults = querySettled.flatMap(r =>
             r.status === 'fulfilled' && Array.isArray(r.value?.results) ? r.value.results : []
@@ -832,6 +840,15 @@ export async function runDebugPipeline(overrides = {}) {
                 useNativeHybrid,
                 useClientHybrid,
                 collectionIds: activeCollectionIds,
+                collectionQuerySettings: activeCollectionIds.map(id => {
+                    const collectionSettings = querySettingsByCollection.get(id) || rag;
+                    return {
+                        collectionId: id,
+                        backend: collectionSettings.backend || '',
+                        source: collectionSettings.source || '',
+                        model: collectionSettings.model || '',
+                    };
+                }),
             },
         };
     }, baseMeta);
