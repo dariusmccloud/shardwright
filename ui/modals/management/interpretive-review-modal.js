@@ -1396,6 +1396,12 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
 
     const showGuidanceCard = actionForms.length === 0;
     const primaryActionHeading = actionForms.length > 1 ? 'Lawful actions now' : 'Next step';
+    const latestQualificationCard = operatorState.latestQualification
+        ? renderQualificationCard(operatorState.latestQualification, {
+            standardPolicy,
+            continuityTargetId,
+        })
+        : '';
 
     return `
         ${renderStaticSection(
@@ -1414,6 +1420,13 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
             'Publication Readiness',
             'Shows only lawful publication and active-memory lifecycle operations.',
             `
+                ${actionForms.length > 0 ? `
+                    <div class="ss-interpretive-review-primary-action">
+                        <div><strong>${primaryActionHeading}</strong></div>
+                        <div class="ss-interpretive-review-list">${actionForms.join('')}</div>
+                    </div>
+                ` : ''}
+                ${showGuidanceCard ? renderPublicationGuidanceCard(guidedFlow) : ''}
                 ${renderAuditTable([
                     { label: 'Granted', value: renderBadge(interpretation.subjectDispositionState || 'NONE') },
                     { label: 'Qualified', value: renderBadge(operatorState.latestQualification?.eligibilityVerdict || 'UNQUALIFIED') },
@@ -1422,18 +1435,7 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
                     { label: 'Current Active Memory', value: renderBadge(activeRecord?.lifecycleState || 'NONE') },
                     { label: 'Memory Line', value: renderCopyableCode(continuityTargetId, { emptyLabel: 'n/a' }) },
                 ])}
-                ${actionForms.length > 0 ? `
-                    <div class="ss-interpretive-review-primary-action">
-                        <div><strong>${primaryActionHeading}</strong></div>
-                        <div class="ss-interpretive-review-list">${actionForms.join('')}</div>
-                    </div>
-                ` : ''}
-                ${showGuidanceCard ? renderPublicationGuidanceCard(guidedFlow) : ''}
-                ${renderQualificationCard(operatorState.latestQualification, {
-                    standardPolicy,
-                    continuityTargetId,
-                })}
-                ${guidedFlow?.nextAction?.action === 'PUBLISH_MEMORY' ? '' : renderAuthorizationCard(operatorState.latestAuthorization)}
+                ${latestQualificationCard}
                 ${actionForms.length === 0 ? '<div class="ss-hint">No lifecycle actions are currently lawful for this memory.</div>' : ''}
                 ${operatorBlockedActions.length > 0 || operatorBlockingReasons.length > 0 ? renderCollapsibleSection(
                     'Why other steps are unavailable',
@@ -1462,42 +1464,8 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
                     ${lineageRecords
                         .filter(Boolean)
                         .sort((left, right) => Number(right?.publishedAt || 0) - Number(left?.publishedAt || 0))
-                        .map((record) => `
-                        ${renderDnmRecordCard(record, { compact: true })}
-                        ${record.operatorState?.availableActions?.includes('WITHDRAW_DNM') ? renderLifecycleGovernanceForm({
-                            formKind: 'dnm-withdraw',
-                            title: record.lifecycleState === 'DELTA_PENDING' ? 'Withdraw pending replacement' : 'Withdraw current memory',
-                            description: record.lifecycleState === 'DELTA_PENDING'
-                                ? 'Withdraw this pending published replacement without changing the current active memory.'
-                                : 'Withdraw this current published memory from the memory line.',
-                            actionKind: 'DNM_WITHDRAWAL',
-                            ownerId: interpretation.memorySubjectId,
-                            interpretation,
-                            currentActorId: options.currentActorId,
-                            policies: governancePolicies,
-                            actionStatus: options.actionStatus,
-                            submitLabel: record.lifecycleState === 'DELTA_PENDING' ? 'Withdraw pending replacement' : 'Withdraw current memory',
-                            dataset: {
-                                dnmRecordId: record.dnmRecordId,
-                            },
-                        }) : ''}
-                        ${record.operatorState?.availableActions?.includes('SUPERSEDE_ACTIVE_WITH_RECORD') ? renderLifecycleGovernanceForm({
-                            formKind: 'dnm-supersede',
-                            title: 'Replace current memory with this one',
-                            description: 'Promote this published replacement into the current active memory while keeping the prior history intact.',
-                            actionKind: 'DNM_SUPERSESSION',
-                            ownerId: interpretation.memorySubjectId,
-                            interpretation,
-                            currentActorId: options.currentActorId,
-                            policies: governancePolicies,
-                            actionStatus: options.actionStatus,
-                            submitLabel: 'Replace active record',
-                            dataset: {
-                                priorDnmRecordId: activeRecord?.dnmRecordId || '',
-                                replacementDnmRecordId: record.dnmRecordId,
-                            },
-                        }) : ''}
-                    `).join('')}
+                        .map((record) => renderDnmRecordCard(record, { compact: true }))
+                        .join('')}
                 </div>
             ` : `<div class="ss-hint">${activeRecord
                 ? 'No earlier publication events have been recorded for this memory line.'
