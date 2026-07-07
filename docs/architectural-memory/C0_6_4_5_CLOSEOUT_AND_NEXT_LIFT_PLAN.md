@@ -112,6 +112,14 @@ Proof:
 3. Publish completes from child revision
 4. History and lifecycle identify the resulting publication correctly
 
+Current proof status:
+
+- verified on 2026-07-07 with `tools/server-plugin/prove-c0-6-4-5b.ps1`
+
+Reference proof command:
+
+- `powershell -NoProfile -ExecutionPolicy Bypass -File "tools/server-plugin/prove-c0-6-4-5b.ps1" -HostName "SillyTavern" -Port 8000`
+
 ### C0.6.4-5 Closeout C: Restart, Replay, And Cross-Host Proof
 
 Goal:

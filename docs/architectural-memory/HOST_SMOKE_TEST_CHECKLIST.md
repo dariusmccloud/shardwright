@@ -202,7 +202,6 @@ Authority now lives in:
 Remaining publication work is now:
 
 - publication data hygiene on the default smoke line
-- corrected-child publication proof
 - restart / replay / cross-host parity proof
 - only the UI tightening needed to support those proofs
 - evidence-finding compatibility is now covered by automated local proof, not open host semantics
@@ -211,6 +210,11 @@ Closeout A proof command:
 
 - `powershell -NoProfile -ExecutionPolicy Bypass -File "tools/server-plugin/prove-c0-6-4-5a.ps1" -HostName "SillyTavern" -Port 8000`
 - [x] Closeout A proof command now passes on the default Jeep smoke line after reset, with one publication record and one active published memory
+
+Closeout B proof command:
+
+- `powershell -NoProfile -ExecutionPolicy Bypass -File "tools/server-plugin/prove-c0-6-4-5b.ps1" -HostName "SillyTavern" -Port 8000`
+- [x] Closeout B proof command now passes on an isolated corrected-child line, with parent grant refusal, child eligibility, child publication, and one resulting active publication record
 
 ## Suggested execution order
 
