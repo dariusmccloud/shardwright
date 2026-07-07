@@ -138,6 +138,19 @@ export function schemaStatements() {
             grounding_outcome TEXT NOT NULL,
             evaluated_at INTEGER NOT NULL
         )`,
+        `CREATE TABLE IF NOT EXISTS interpretation_evidence_findings (
+            interpretation_revision_id TEXT NOT NULL,
+            finding_id TEXT NOT NULL,
+            finding_role TEXT NOT NULL,
+            summary_text TEXT NOT NULL,
+            basis_refs_json TEXT NOT NULL,
+            source_label TEXT NOT NULL,
+            domains_json TEXT NOT NULL,
+            support_level TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            PRIMARY KEY (interpretation_revision_id, finding_id)
+        )`,
         `CREATE TABLE IF NOT EXISTS interpretation_risk_classifications (
             interpretation_revision_id TEXT PRIMARY KEY,
             risk_class TEXT NOT NULL,

@@ -98,6 +98,24 @@ function makeBasePayload(overrides = {}) {
     };
 }
 
+function makeEvidenceFindings(overrides = {}) {
+    return [
+        {
+            findingId: 'evfind_jeep_authority_primary',
+            role: 'PRIMARY',
+            summary: 'Jeep established primary architectural authority over the extension design.',
+            basisRefs: [
+                'decision:architectural-sharder-fork',
+                'msg_alpha0000000000000000000000000',
+            ],
+            sourceLabel: 'Jeep, architectural memory record, June 2026',
+            domains: ['AUTHORITY', 'ROLE'],
+            supportLevel: 'SUPPORTED',
+            ...overrides,
+        },
+    ];
+}
+
 function comparableInterpretationProjection(value) {
     return {
         interpretationRevisionId: value.interpretationRevisionId,
@@ -122,6 +140,7 @@ function comparableInterpretationProjection(value) {
         proposalContentHash: value.proposalContentHash,
         reviewEnvelopeHash: value.reviewEnvelopeHash,
         groundingLinks: value.groundingLinks,
+        evidenceFindings: value.evidenceFindings || [],
         groundingAggregate: value.groundingAggregate,
         risk: value.risk,
         policyBinding: value.policyBinding,
@@ -349,6 +368,43 @@ test('prepareInterpretiveCandidate is deterministic for identical structured inp
     assert.equal(first.groundingOutcome, 'STRONGLY_SUPPORTED');
 });
 
+test('prepareInterpretiveCandidate normalizes evidence findings deterministically', () => {
+    const payload = makeBasePayload({
+        interpretationId: 'interp_findings_deterministic',
+        interpretationRevisionId: 'interprev_findings_deterministic_v1',
+        evidenceFindings: makeEvidenceFindings({
+            findingId: null,
+            basisRefs: [
+                'msg_alpha0000000000000000000000000',
+                'decision:architectural-sharder-fork',
+            ],
+            domains: ['ROLE', 'AUTHORITY'],
+        }),
+    });
+    const first = prepareInterpretiveCandidate(payload, payload.now);
+    const second = prepareInterpretiveCandidate(payload, payload.now);
+
+    assert.equal(first.candidate.evidenceFindings.length, 1);
+    assert.equal(first.candidate.evidenceFindings[0].findingId, second.candidate.evidenceFindings[0].findingId);
+    assert.deepEqual(
+        first.candidate.evidenceFindings[0],
+        {
+            findingId: first.candidate.evidenceFindings[0].findingId,
+            role: 'PRIMARY',
+            summary: 'Jeep established primary architectural authority over the extension design.',
+            basisRefs: [
+                'decision:architectural-sharder-fork',
+                'msg_alpha0000000000000000000000000',
+            ],
+            sourceLabel: 'Jeep, architectural memory record, June 2026',
+            domains: ['AUTHORITY', 'ROLE'],
+            supportLevel: 'SUPPORTED',
+        },
+    );
+    assert.equal(first.candidate.proposalContentHash, second.candidate.proposalContentHash);
+    assert.equal(first.candidate.reviewEnvelopeHash, second.candidate.reviewEnvelopeHash);
+});
+
 test('createInterpretiveCandidate stores durable shared-role candidate state without publication', () => {
     const root = makeTempRoot();
     const request = buildRequest(root);
@@ -413,12 +469,66 @@ test('createInterpretiveCandidate blocks unresolved relational participant routi
     assert.equal(result.interpretation.reviewRequests[0].reviewerRole, 'MEMORY_SUBJECT');
 });
 
+test('createInterpretiveCandidate persists evidence findings in the candidate projection', () => {
+    const root = makeTempRoot();
+    const request = buildRequest(root);
+    const result = createInterpretiveCandidate(request, makeBasePayload({
+        interpretationId: 'interp_findings_projection',
+        interpretationRevisionId: 'interprev_findings_projection_v1',
+        evidenceFindings: makeEvidenceFindings(),
+    }));
+
+    assert.equal(result.ok, true);
+    assert.equal(result.interpretation.evidenceFindings.length, 1);
+    assert.deepEqual(
+        result.interpretation.evidenceFindings[0],
+        {
+            findingId: 'evfind_jeep_authority_primary',
+            role: 'PRIMARY',
+            summary: 'Jeep established primary architectural authority over the extension design.',
+            basisRefs: [
+                'decision:architectural-sharder-fork',
+                'msg_alpha0000000000000000000000000',
+            ],
+            sourceLabel: 'Jeep, architectural memory record, June 2026',
+            domains: ['AUTHORITY', 'ROLE'],
+            supportLevel: 'SUPPORTED',
+            createdAt: result.interpretation.evidenceFindings[0].createdAt,
+            updatedAt: result.interpretation.evidenceFindings[0].updatedAt,
+        },
+    );
+
+    const loaded = getInterpretiveCandidate(request, 'interprev_findings_projection_v1');
+    assert.equal(loaded.interpretation.evidenceFindings.length, 1);
+    assert.deepEqual(
+        loaded.interpretation.evidenceFindings[0],
+        result.interpretation.evidenceFindings[0],
+    );
+});
+
+test('createInterpretiveCandidate rejects evidence findings whose basis refs are not grounded', () => {
+    const root = makeTempRoot();
+    const request = buildRequest(root);
+
+    assert.throws(
+        () => createInterpretiveCandidate(request, makeBasePayload({
+            interpretationId: 'interp_findings_invalid_basis',
+            interpretationRevisionId: 'interprev_findings_invalid_basis_v1',
+            evidenceFindings: makeEvidenceFindings({
+                basisRefs: ['decision:not-in-grounding-links'],
+            }),
+        })),
+        /unbound reference/u,
+    );
+});
+
 test('interpretive governance ledger replays into an identical projection and preserves both hashes', () => {
     const sourceRoot = makeTempRoot();
     const sourceRequest = buildRequest(sourceRoot);
     const created = createInterpretiveCandidate(sourceRequest, makeBasePayload({
         interpretationId: 'interp_replay_case',
         interpretationRevisionId: 'interprev_replay_case_v1',
+        evidenceFindings: makeEvidenceFindings(),
     }));
     const sourcePaths = getStoragePaths(sourceRoot);
     const targetRoot = makeTempRoot();

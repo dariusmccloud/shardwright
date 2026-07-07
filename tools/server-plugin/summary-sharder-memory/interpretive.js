@@ -118,6 +118,19 @@ const ALLOWED_PUBLICATION_POLICY_STATES = new Set([
     'REVOKED',
 ]);
 
+const ALLOWED_EVIDENCE_FINDING_ROLES = new Set([
+    'PRIMARY',
+    'SUPPORTING',
+    'COUNTEREVIDENCE',
+]);
+
+const ALLOWED_EVIDENCE_FINDING_SUPPORT_LEVELS = new Set([
+    'SUPPORTED',
+    'PARTIALLY_SUPPORTED',
+    'CONTRADICTED',
+    'NEUTRAL',
+]);
+
 const ALLOWED_CONTINUITY_TARGET_TYPES = new Set([
     'MEMORY_SUBJECT',
 ]);
@@ -1185,10 +1198,81 @@ function normalizeObligationsForEnvelopeHash(obligations) {
         .sort((left, right) => stableStringify(left).localeCompare(stableStringify(right)));
 }
 
-function buildReviewEnvelopeHash(proposalContentHash, groundingLinks, groundingOutcome, risk, policy, obligations) {
+function normalizeEvidenceFinding(finding, index, groundingLinks) {
+    if (!finding || Array.isArray(finding) || typeof finding !== 'object') {
+        throw createError(400, `evidenceFindings[${index}] must be an object`, 'ARCH_INVALID_PAYLOAD');
+    }
+    const role = normalizeEnumValue(finding.role, `evidenceFindings[${index}].role`, ALLOWED_EVIDENCE_FINDING_ROLES);
+    const summary = String(finding.summary || '').trim();
+    if (!summary) {
+        throw createError(400, `evidenceFindings[${index}].summary is required`, 'ARCH_INVALID_PAYLOAD');
+    }
+    const basisRefs = normalizeStringArrayAllowEmpty(finding.basisRefs, `evidenceFindings[${index}].basisRefs`, null)
+        .map((entry) => sanitizeIdentifier(entry, `evidenceFindings[${index}].basisRef`));
+    if (basisRefs.length === 0) {
+        throw createError(400, `evidenceFindings[${index}].basisRefs must not be empty`, 'ARCH_INVALID_PAYLOAD');
+    }
+    const allowedBasisRefs = new Set();
+    for (const link of groundingLinks) {
+        if (link.basisRecordId) {
+            allowedBasisRefs.add(link.basisRecordId);
+        }
+        if (link.messageId) {
+            allowedBasisRefs.add(link.messageId);
+        }
+    }
+    for (const basisRef of basisRefs) {
+        if (!allowedBasisRefs.has(basisRef)) {
+            throw createError(400, `evidenceFindings[${index}].basisRefs contains unbound reference ${basisRef}`, 'ARCH_INVALID_PAYLOAD');
+        }
+    }
+    const sourceLabel = String(finding.sourceLabel || '').trim();
+    if (!sourceLabel) {
+        throw createError(400, `evidenceFindings[${index}].sourceLabel is required`, 'ARCH_INVALID_PAYLOAD');
+    }
+    const domains = normalizeStringArray(finding.domains, `evidenceFindings[${index}].domains`, ALLOWED_ASSERTION_DOMAINS);
+    const supportLevel = normalizeEnumValue(
+        finding.supportLevel,
+        `evidenceFindings[${index}].supportLevel`,
+        ALLOWED_EVIDENCE_FINDING_SUPPORT_LEVELS,
+    );
+    const semanticPayload = {
+        role,
+        summary,
+        basisRefs,
+        sourceLabel,
+        domains,
+        supportLevel,
+    };
+    const derivedFindingId = `evfind_${hashCanonical(semanticPayload).hash.slice('sha256:'.length, 'sha256:'.length + 24)}`;
+    const findingId = finding.findingId
+        ? sanitizeIdentifier(finding.findingId, `evidenceFindings[${index}].findingId`)
+        : derivedFindingId;
+    return {
+        findingId,
+        ...semanticPayload,
+    };
+}
+
+function normalizeEvidenceFindingsForEnvelopeHash(evidenceFindings) {
+    return evidenceFindings
+        .map((entry) => ({
+            findingId: entry.findingId,
+            role: entry.role,
+            summary: entry.summary,
+            basisRefs: entry.basisRefs,
+            sourceLabel: entry.sourceLabel,
+            domains: entry.domains,
+            supportLevel: entry.supportLevel,
+        }))
+        .sort((left, right) => stableStringify(left).localeCompare(stableStringify(right)));
+}
+
+function buildReviewEnvelopeHash(proposalContentHash, groundingLinks, evidenceFindings, groundingOutcome, risk, policy, obligations) {
     return hashCanonical({
         proposalContentHash,
         groundingLinks: normalizeGroundingLinksForEnvelopeHash(groundingLinks),
+        evidenceFindings: normalizeEvidenceFindingsForEnvelopeHash(evidenceFindings),
         groundingOutcome,
         riskClass: risk.riskClass,
         riskReasons: risk.riskReasons,
@@ -1262,6 +1346,9 @@ export function prepareInterpretiveCandidate(payload, timestamp = nowTimestamp(p
     if (groundingLinks.length === 0) {
         throw createError(400, 'groundingLinks must not be empty', 'ARCH_INVALID_PAYLOAD');
     }
+    const evidenceFindings = Array.isArray(payload?.evidenceFindings)
+        ? payload.evidenceFindings.map((entry, index) => normalizeEvidenceFinding(entry, index, groundingLinks))
+        : [];
     const proposalContentHash = hashCanonical({
         interpretationId,
         interpretationRevisionId,
@@ -1292,6 +1379,7 @@ export function prepareInterpretiveCandidate(payload, timestamp = nowTimestamp(p
         personalMeaningAsserted,
         materialParticipantEntityIds,
         groundingLinks,
+        evidenceFindings,
         proposalContentHash,
         revisionCreationProvenance: payload?.revisionCreationProvenance
             ? cloneJson(payload.revisionCreationProvenance)
@@ -1309,6 +1397,7 @@ export function prepareInterpretiveCandidate(payload, timestamp = nowTimestamp(p
     const reviewEnvelopeHash = buildReviewEnvelopeHash(
         proposalContentHash,
         groundingLinks,
+        evidenceFindings,
         groundingOutcome,
         risk,
         policy,
@@ -1364,6 +1453,17 @@ function createLedgerEvents(prepared, timestamp) {
             interpretationId: prepared.candidate.interpretationId,
             interpretationRevisionId: prepared.candidate.interpretationRevisionId,
             payload: cloneJson(link),
+        });
+    }
+    for (const finding of prepared.candidate.evidenceFindings) {
+        events.push({
+            eventId: createId('iglevent'),
+            eventType: 'EVIDENCE_FINDING_RECORDED',
+            occurredAt: timestamp,
+            memoryScopeId: prepared.candidate.memoryScopeId,
+            interpretationId: prepared.candidate.interpretationId,
+            interpretationRevisionId: prepared.candidate.interpretationRevisionId,
+            payload: cloneJson(finding),
         });
     }
     events.push({
@@ -1577,6 +1677,7 @@ function appendLedgerEvents(ledgerPath, events) {
 const INTERPRETIVE_PROJECTION_TABLES = Object.freeze([
     'interpretation_action_provenance',
     'interpretation_delegation_policies',
+    'interpretation_evidence_findings',
     'interpretation_review_dispositions',
     'interpretation_review_requests',
     'interpretation_review_obligations',
@@ -3295,6 +3396,7 @@ function carryForwardPreparedReviewerApproval(prepared, reviewerRole, reviewerEn
     const reviewEnvelopeHash = buildReviewEnvelopeHash(
         prepared.candidate.proposalContentHash,
         prepared.candidate.groundingLinks,
+        prepared.candidate.evidenceFindings || [],
         prepared.groundingOutcome,
         prepared.risk,
         prepared.policy,
@@ -3369,6 +3471,10 @@ function buildPreparedFromLedgerEvents(events) {
         .filter((entry) => entry.eventType === 'GROUNDING_LINK_ATTACHED')
         .map((entry) => cloneJson(entry.payload))
         .sort((a, b) => String(a.groundingLinkId).localeCompare(String(b.groundingLinkId)));
+    const evidenceFindings = events
+        .filter((entry) => entry.eventType === 'EVIDENCE_FINDING_RECORDED')
+        .map((entry) => cloneJson(entry.payload))
+        .sort((a, b) => String(a.findingId).localeCompare(String(b.findingId)));
     const obligations = events
         .filter((entry) => entry.eventType === 'REVIEW_OBLIGATION_CREATED')
         .map((entry) => cloneJson(entry.payload))
@@ -3382,6 +3488,7 @@ function buildPreparedFromLedgerEvents(events) {
     const reviewEnvelopeHash = buildReviewEnvelopeHash(
         proposed.proposalContentHash,
         groundingLinks,
+        evidenceFindings,
         groundingOutcomeEvent.payload.groundingOutcome,
         riskEvent.payload,
         policyEvent.payload,
@@ -3406,6 +3513,7 @@ function buildPreparedFromLedgerEvents(events) {
                 ? cloneJson(proposed.revisionCreationProvenance)
                 : null,
             groundingLinks,
+            evidenceFindings,
             candidateState: lifecycle.candidateState,
             groundingState: lifecycle.groundingState,
             reviewState: lifecycle.reviewState,
@@ -4168,6 +4276,26 @@ function persistPreparedCandidateRows(adapter, prepared, timestamp) {
                 ],
         );
     }
+    for (const finding of prepared.candidate.evidenceFindings) {
+        adapter.run(
+            `INSERT INTO interpretation_evidence_findings (
+                interpretation_revision_id, finding_id, finding_role, summary_text,
+                basis_refs_json, source_label, domains_json, support_level, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                prepared.candidate.interpretationRevisionId,
+                finding.findingId,
+                finding.role,
+                finding.summary,
+                stableStringify(finding.basisRefs),
+                finding.sourceLabel,
+                stableStringify(finding.domains),
+                finding.supportLevel,
+                timestamp,
+                timestamp,
+            ],
+        );
+    }
     adapter.run(
             `INSERT INTO interpretation_grounding_aggregates (
                 interpretation_revision_id, grounding_outcome, evaluated_at
@@ -4278,6 +4406,10 @@ export function loadInterpretiveCandidateProjection(adapter, interpretationRevis
         'SELECT * FROM interpretation_grounding_aggregates WHERE interpretation_revision_id = ?',
         [interpretationRevisionId],
     );
+    const evidenceFindings = adapter.all(
+        'SELECT * FROM interpretation_evidence_findings WHERE interpretation_revision_id = ? ORDER BY finding_id',
+        [interpretationRevisionId],
+    );
     const risk = adapter.get(
         'SELECT * FROM interpretation_risk_classifications WHERE interpretation_revision_id = ?',
         [interpretationRevisionId],
@@ -4350,6 +4482,17 @@ export function loadInterpretiveCandidateProjection(adapter, interpretationRevis
             groundingRole: entry.grounding_role,
             groundingAssessment: entry.grounding_assessment,
             details: JSON.parse(entry.details_json),
+        })),
+        evidenceFindings: evidenceFindings.map((entry) => ({
+            findingId: entry.finding_id,
+            role: entry.finding_role,
+            summary: entry.summary_text,
+            basisRefs: JSON.parse(entry.basis_refs_json),
+            sourceLabel: entry.source_label,
+            domains: JSON.parse(entry.domains_json),
+            supportLevel: entry.support_level,
+            createdAt: Number(entry.created_at),
+            updatedAt: Number(entry.updated_at),
         })),
         groundingAggregate: groundingAggregate ? {
             groundingOutcome: groundingAggregate.grounding_outcome,
