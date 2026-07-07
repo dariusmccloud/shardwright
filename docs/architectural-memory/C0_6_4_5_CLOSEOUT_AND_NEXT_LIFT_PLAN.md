@@ -1,6 +1,6 @@
 # C0.6.4-5 Closeout And Next Lift Plan
 
-Last updated: 2026-07-06
+Last updated: 2026-07-07
 
 Status: active implementation plan
 
@@ -35,6 +35,7 @@ The following boundary is treated as closed enough to stop redesign churn:
    - policy bootstrap
    - eligibility check
    - publish
+6. Closeout A proof now verifies a clean reset -> seed -> bootstrap -> qualify -> publish path on the default Jeep smoke line.
 
 This does not mean the whole publication domain is finished.
 It means the surface is now coherent enough to support focused closeout work instead of broad UI surgery.
@@ -82,6 +83,14 @@ Proof:
 1. Fresh reset -> seed -> approve -> grant -> bootstrap -> qualify -> publish
 2. Resulting line shows one current published memory and one coherent lifecycle history entry set
 3. No phantom duplicate actions or stale replacement/withdrawal blockers
+
+Current proof status:
+
+- verified on 2026-07-07 with `tools/server-plugin/prove-c0-6-4-5a.ps1`
+
+Reference proof command:
+
+- `powershell -NoProfile -ExecutionPolicy Bypass -File "tools/server-plugin/prove-c0-6-4-5a.ps1" -HostName "SillyTavern" -Port 8000`
 
 ### C0.6.4-5 Closeout B: Corrected-Child Publication Proof
 

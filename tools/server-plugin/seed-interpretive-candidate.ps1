@@ -47,7 +47,7 @@ Scope changes alone do not isolate the Jeep publication line.
         if ($RestartHostAfterReset) {
             $resetArgs += '-RestartHost'
         }
-        & powershell @resetArgs
+        & powershell @resetArgs | Out-Null
         if ($LASTEXITCODE -ne 0) {
             throw "Smoke reset failed before seeding the default Jeep line."
         }
