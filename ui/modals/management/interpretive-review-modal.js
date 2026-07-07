@@ -516,6 +516,31 @@ function normalizeHistoryCommentary(commentary, dispositionLabel) {
     return text;
 }
 
+function formatHistoryEventTitle(actorLabel, stateLabel, options = {}) {
+    const actor = String(actorLabel || '').trim() || 'Review';
+    const state = String(stateLabel || '').trim().toLowerCase();
+    const kind = String(options.kind || 'review').trim().toLowerCase();
+
+    if (!state) {
+        return actor;
+    }
+
+    if (kind === 'decision') {
+        if (state === 'granted') return `${actor} granted publication`;
+        if (state === 'denied') return `${actor} denied publication`;
+        if (state === 'deferred') return `${actor} deferred publication`;
+        if (state === 'contested') return `${actor} contested publication`;
+        return `${actor} decision recorded`;
+    }
+
+    if (state === 'approved') return `${actor} approved`;
+    if (state === 'rejected') return `${actor} rejected`;
+    if (state === 'deferred') return `${actor} deferred`;
+    if (state === 'contested') return `${actor} contested`;
+    if (state === 'pending') return `${actor} pending`;
+    return `${actor} ${state}`;
+}
+
 function renderHistoryActionCard({
     title,
     dispositionLabel,
@@ -1328,9 +1353,9 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
     const matchingPolicies = Array.isArray(operatorState.matchingPolicies) ? operatorState.matchingPolicies : [];
     const recordsForTarget = Array.isArray(operatorState.recordsForTarget) ? operatorState.recordsForTarget : [];
     const activeRecord = operatorState.currentActiveRecord || null;
-    const lineageRecords = activeRecord
-        ? recordsForTarget.filter((record) => record.dnmRecordId !== activeRecord.dnmRecordId)
-        : recordsForTarget;
+    const publicationHistoryRecords = [...recordsForTarget, activeRecord]
+        .filter(Boolean)
+        .filter((record, index, records) => records.findIndex((candidate) => candidate?.dnmRecordId === record?.dnmRecordId) === index);
     const continuityTargetId = operatorState.continuityTargetId || interpretation.memorySubjectId;
     const guidedFlow = operatorState.guidedFlow || null;
     const standardPolicy = operatorState.standardPolicy || null;
@@ -1344,6 +1369,7 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
     const operatorBlockingReasons = Array.isArray(operatorState.blockingReasons) ? operatorState.blockingReasons : [];
     const actionForms = [];
     const guidanceStatus = String(guidedFlow?.status || '').trim().toUpperCase();
+    const isPublishedRevision = String(interpretation.publicationState || '').trim().toUpperCase() === 'PUBLISHED';
 
     if (guidedFlow?.nextAction?.action === 'BOOTSTRAP_STANDARD_PUBLICATION_POLICY') {
         actionForms.push(renderPublicationActionForm({
@@ -1439,10 +1465,10 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
         }));
     }
 
-    const showGuidanceCard = actionForms.length === 0;
-    const suppressPublishedRedundancy = guidanceStatus === 'ALREADY_PUBLISHED' && showGuidanceCard;
+    const suppressPublishedRedundancy = guidanceStatus === 'ALREADY_PUBLISHED' && isPublishedRevision;
+    const showGuidanceCard = actionForms.length === 0 && !suppressPublishedRedundancy;
     const primaryActionHeading = actionForms.length > 1 ? 'Lawful actions now' : 'Next step';
-    const latestQualificationCard = operatorState.latestQualification
+    const latestQualificationCard = !isPublishedRevision && operatorState.latestQualification
         ? renderQualificationCard(operatorState.latestQualification, {
             standardPolicy,
             continuityTargetId,
@@ -1468,8 +1494,10 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
             `
                 ${renderStatusMatrix([
                     { label: 'Granted', value: renderBadge(interpretation.subjectDispositionState || 'NONE') },
-                    { label: 'Qualified', value: renderBadge(operatorState.latestQualification?.eligibilityVerdict || 'UNQUALIFIED') },
-                    { label: 'Authorized', value: renderBadge(operatorState.latestAuthorization?.status || 'UNAUTHORIZED') },
+                    ...(!isPublishedRevision ? [
+                        { label: 'Qualified', value: renderBadge(operatorState.latestQualification?.eligibilityVerdict || 'UNQUALIFIED') },
+                        { label: 'Authorized', value: renderBadge(operatorState.latestAuthorization?.status || 'UNAUTHORIZED') },
+                    ] : []),
                     { label: 'Published', value: renderBadge(interpretation.publicationState || 'NOT_PUBLISHED') },
                     { label: 'Current Active Memory', value: renderBadge(activeRecord?.lifecycleState || 'NONE') },
                 ])}
@@ -1516,9 +1544,9 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
         ${renderStaticSection(
             'Publication History',
             'Shows eligibility, authorization, publication, supersession, and withdrawal over time.',
-            lineageRecords.length > 0 ? `
+            publicationHistoryRecords.length > 0 ? `
                 <div class="ss-interpretive-review-list">
-                    ${lineageRecords
+                    ${publicationHistoryRecords
                         .filter(Boolean)
                         .sort((left, right) => Number(right?.publishedAt || 0) - Number(left?.publishedAt || 0))
                         .map((record) => renderDnmRecordCard(record, { compact: true }))
@@ -2022,13 +2050,14 @@ function renderSelectedReviewerSummary(interpretation, selectedReviewRequestId) 
     );
     const disposition = dispositionsByRequestId.get(selectedRequest.reviewRequestId) || null;
     const commentary = String(disposition?.commentary || '').trim();
+    const reviewerLabel = formatHumanEntityLabel(selectedRequest.reviewerEntityId || '');
     const contextLine = disposition
-        ? 'Recorded'
-        : 'Pending';
+        ? `${formatHumanStateLabel(disposition.disposition)} by ${reviewerLabel}.`
+        : `Pending response from ${reviewerLabel}.`;
     return `
         <div class="ss-interpretive-review-card ss-interpretive-review-status-card">
             <div class="ss-interpretive-review-summary-note">
-                <strong>Review response:</strong> ${escapeHtml(contextLine.toLowerCase())}
+                <strong>Review response:</strong> ${escapeHtml(contextLine)}
             </div>
             ${commentary ? `<div class="ss-interpretive-review-summary-note">${escapeHtml(commentary)}</div>` : ''}
         </div>
@@ -2296,7 +2325,7 @@ function renderReviewResponseSummary(interpretation, selectedReviewRequestId = '
                     : formatHumanStateLabel(request.status);
                 const isPending = !disposition && String(request.status || '').trim().toUpperCase() === 'PENDING';
                 return renderHistoryActionCard({
-                    title: reviewerLabel,
+                    title: formatHistoryEventTitle(reviewerLabel, statusLabel),
                     dispositionLabel: statusLabel,
                     roleLabel,
                     timestamp: disposition?.submittedAt || request.createdAt,
@@ -2336,25 +2365,31 @@ function renderSubmittedActionsHistory(interpretation, policiesById = new Map(),
                 const request = requestMap.get(disposition.reviewRequestId) || null;
                 const reviewerName = formatHumanEntityLabel(request?.reviewerEntityId || disposition?.provenance?.dispositionOwnerId || '');
                 return renderHistoryActionCard({
-                    title: `${reviewerName} review`,
+                    title: `${reviewerName} review submitted`,
                     dispositionLabel: formatHumanStateLabel(disposition.disposition),
                     reasonCodes: disposition.reasonCodes,
                     commentary: disposition.commentary,
                     provenance: disposition.provenance,
                     timestamp: disposition.submittedAt,
                     bodyHtml: renderHistorySubmissionDetails(disposition.provenance, policiesById),
+                    contextLabel: 'How it was recorded',
+                    commentaryLabel: 'Recorded note',
                 });
             }).join('')}
             ${subjectDisposition ? renderHistoryActionCard({
-                title: `${formatHumanEntityLabel(interpretation.memorySubjectId)} decision`,
+                title: formatHistoryEventTitle(
+                    formatHumanEntityLabel(interpretation.memorySubjectId),
+                    formatHumanStateLabel(subjectDisposition.state),
+                    { kind: 'decision' },
+                ),
                 dispositionLabel: formatHumanStateLabel(subjectDisposition.state),
                 reasonCodes: subjectDisposition.reasonCodes,
                 commentary: subjectDisposition.commentary,
                 provenance: subjectDisposition.provenance,
                 timestamp: subjectDisposition.recordedAt,
                 bodyHtml: renderHistorySubmissionDetails(subjectDisposition.provenance, policiesById),
-                contextLabel: 'Decision context',
-                commentaryLabel: 'Decision comment',
+                contextLabel: 'How it was recorded',
+                commentaryLabel: 'Decision note',
             }) : ''}
         </div>
     `;
