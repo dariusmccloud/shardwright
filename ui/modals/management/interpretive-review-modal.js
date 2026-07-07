@@ -36,9 +36,11 @@ const REVIEW_STATUS_OPTIONS = Object.freeze([
     { value: '', label: 'All statuses' },
     { value: 'PENDING_APPROVAL', label: 'Pending approval' },
     { value: 'PENDING_DECISION', label: 'Pending decision' },
+    { value: 'APPROVED', label: 'Approved' },
     { value: 'APPROVE_WITH_EDIT', label: 'Approved with changes' },
     { value: 'APPROVE_FOR_SCOPE_ONLY', label: 'Approved for scope only' },
     { value: 'READY_FOR_PUBLICATION', label: 'Ready for publication' },
+    { value: 'PUBLISHED', label: 'Published' },
     { value: 'CONTESTED', label: 'Contested' },
     { value: 'DEFERRED', label: 'Deferred' },
     { value: 'REJECTED', label: 'Rejected' },
@@ -1871,20 +1873,22 @@ function getRevisionFilterStatus(interpretationLike) {
     const subjectState = String(interpretationLike?.subjectDispositionState || '').trim().toUpperCase() || 'PENDING';
     const publicationState = String(interpretationLike?.publicationState || '').trim().toUpperCase();
     const guidedFlowStatus = String(interpretationLike?.operatorState?.guidedFlow?.status || '').trim().toUpperCase();
+    const latestEligibilityVerdict = String(interpretationLike?.operatorState?.latestQualification?.eligibilityVerdict || '').trim().toUpperCase();
 
     if (reviewWorkflow === 'PENDING') return 'PENDING_APPROVAL';
     if (reviewWorkflow === 'CONTESTED') return 'CONTESTED';
     if (reviewWorkflow === 'DEFERRED') return 'DEFERRED';
     if (reviewWorkflow === 'REJECTED') return 'REJECTED';
+    if (publicationState === 'PUBLISHED') return 'PUBLISHED';
     if (reviewWorkflow === 'COMPLETE' && subjectState === 'PENDING') return 'PENDING_DECISION';
     if (subjectState === 'GRANTED' && publicationState !== 'PUBLISHED') {
-        if (!guidedFlowStatus) return 'READY_FOR_PUBLICATION';
-        if (['SETUP_REQUIRED', 'READY_TO_CHECK', 'READY_TO_PUBLISH'].includes(guidedFlowStatus)) {
+        if (latestEligibilityVerdict === 'ELIGIBLE' || guidedFlowStatus === 'READY_TO_PUBLISH') {
             return 'READY_FOR_PUBLICATION';
         }
-        return '';
+        return 'APPROVED';
     }
     if (subjectState === 'DENIED') return 'REJECTED';
+    if (reviewWorkflow === 'COMPLETE') return 'APPROVED';
     return '';
 }
 
@@ -1988,6 +1992,7 @@ function buildPrimaryWorkflowStatus(interpretation, operatorState) {
     const subjectState = String(interpretation?.subjectDispositionState || '').trim().toUpperCase() || 'PENDING';
     const publicationState = String(interpretation?.publicationState || '').trim().toUpperCase();
     const lifecycleStatus = getRevisionLifecycleStatus(interpretation, operatorState);
+    const latestEligibilityVerdict = String(operatorState?.latestQualification?.eligibilityVerdict || '').trim().toUpperCase();
 
     if (reviewWorkflow === 'PENDING') return 'Pending approval';
     if (reviewWorkflow === 'CONTESTED') return 'Contested';
@@ -1997,8 +2002,12 @@ function buildPrimaryWorkflowStatus(interpretation, operatorState) {
     if (lifecycleStatus === 'SUPERSEDED') return 'Superseded';
     if (publicationState === 'PUBLISHED') return lifecycleStatus === 'ACTIVE' ? 'Published' : 'Published';
     if (reviewWorkflow === 'COMPLETE' && subjectState === 'PENDING') return 'Pending decision';
-    if (subjectState === 'GRANTED') return 'Ready for publication';
+    if (subjectState === 'GRANTED') {
+        if (latestEligibilityVerdict === 'ELIGIBLE') return 'Ready for publication';
+        return 'Approved';
+    }
     if (subjectState === 'DENIED') return 'Decision denied';
+    if (reviewWorkflow === 'COMPLETE') return 'Approved';
     return formatHumanStateLabel(reviewWorkflow || subjectState || 'PENDING');
 }
 
