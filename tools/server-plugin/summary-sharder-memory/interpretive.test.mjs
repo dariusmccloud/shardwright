@@ -1310,6 +1310,32 @@ test('publishInterpretiveMemory bootstraps the standard policy and publishes an 
 
     const current = getCurrentActiveDnmRecord(request, 'character:jeep.png');
     assert.equal(current.currentActiveRecord.dnmRecordId, published.publishedRecord.dnmRecordId);
+
+    const operatorState = getInterpretivePublicationOperatorState(request, 'interprev_publish_guided_case_v1');
+    assert.equal(operatorState.operatorState.guidedFlow.status, 'ALREADY_PUBLISHED');
+    assert.equal(operatorState.operatorState.guidedFlow.nextAction, null);
+    assert.deepEqual(operatorState.operatorState.availableActions, []);
+    assert.equal(
+        operatorState.operatorState.blockedActions.some((entry) => (
+            entry.action === 'QUALIFY_PUBLICATION'
+            && entry.blockingReasons.includes('INTERPRETATION_ALREADY_PUBLISHED')
+        )),
+        true,
+    );
+    assert.equal(
+        operatorState.operatorState.blockedActions.some((entry) => (
+            entry.action === 'AUTHORIZE_PUBLICATION'
+            && entry.blockingReasons.includes('INTERPRETATION_ALREADY_PUBLISHED')
+        )),
+        true,
+    );
+    assert.equal(
+        operatorState.operatorState.blockedActions.some((entry) => (
+            entry.action === 'EXECUTE_PUBLICATION'
+            && entry.blockingReasons.includes('INTERPRETATION_ALREADY_PUBLISHED')
+        )),
+        true,
+    );
 });
 
 test('guided publication replay restores the identical published state after restart', () => {
@@ -1384,6 +1410,7 @@ test('guided publication replay restores the identical published state after res
     const replayedOperatorState = getInterpretivePublicationOperatorState(targetRequest, 'interprev_publish_guided_replay_case_v1');
     assert.equal(replayedOperatorState.operatorState.guidedFlow.status, 'ALREADY_PUBLISHED');
     assert.equal(replayedOperatorState.operatorState.guidedFlow.nextAction, null);
+    assert.deepEqual(replayedOperatorState.operatorState.availableActions, []);
 });
 
 test('publication qualification binds exact current child-revision state without enabling publication', () => {
