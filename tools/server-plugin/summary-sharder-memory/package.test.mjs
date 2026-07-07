@@ -210,6 +210,23 @@ function buildPluginRequest(userRoot) {
     };
 }
 
+function makePackagedEvidenceFindings() {
+    return [
+        {
+            findingId: 'evfind_packaged_authority_primary',
+            role: 'PRIMARY',
+            summary: 'Jeep established primary architectural authority over the packaged publication path.',
+            basisRefs: [
+                'decision:packaged-publication-proof',
+                'msg_packagedpublication0000000000',
+            ],
+            sourceLabel: 'Jeep, packaged publication proof, June 2026',
+            domains: ['AUTHORITY', 'ROLE'],
+            supportLevel: 'SUPPORTED',
+        },
+    ];
+}
+
 function makePackagedPublicationPayload(overrides = {}) {
     return {
         interpretationId: 'interp_packaged_publication',
@@ -335,6 +352,84 @@ console.log(JSON.stringify({
     assert.equal(payload.ok, true);
     assert.equal(payload.status, 'success');
     assert.equal(typeof payload.hash, 'string');
+});
+
+test('packaged interpretive evidence findings remain semantically identical under Node and Bun', async () => {
+    const staged = stagePackagedPlugin();
+    const { userRoot } = await writeSmokeChat(
+        staged.pluginRoot,
+        'scope.packaged.evidence.parity',
+        'chat.packaged.evidence.parity',
+        'Packaged Evidence Parity',
+    );
+    const interpretiveModule = await import(pathToFileURL(path.join(staged.pluginRoot, 'interpretive.js')).href);
+    const request = buildPluginRequest(userRoot);
+
+    const nodeCreated = interpretiveModule.createInterpretiveCandidate(request, makePackagedPublicationPayload({
+        interpretationId: 'interp_packaged_evidence_node',
+        interpretationRevisionId: 'interprev_packaged_evidence_node_v1',
+        memoryScopeId: 'scope.packaged.evidence.parity',
+        evidenceFindings: makePackagedEvidenceFindings(),
+        now: Date.parse('2026-06-26T01:00:05.000Z'),
+    }));
+
+    assert.equal(nodeCreated.ok, true);
+    assert.equal(nodeCreated.interpretation.evidenceFindingState, 'AVAILABLE');
+    assert.equal(nodeCreated.interpretation.evidenceFindings.length, 1);
+    assert.equal(
+        nodeCreated.interpretation.evidenceFindings[0].summary,
+        'Jeep established primary architectural authority over the packaged publication path.',
+    );
+
+    const helperPath = path.join(staged.tempRoot, 'run-bun-evidence-parity.mjs');
+    fs.writeFileSync(helperPath, `
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+const pluginRoot = ${JSON.stringify(staged.pluginRoot)};
+const userRoot = ${JSON.stringify(userRoot)};
+const interpretiveModule = await import(pathToFileURL(path.join(pluginRoot, 'interpretive.js')).href);
+const request = {
+  user: {
+    directories: {
+      root: userRoot,
+      chats: path.join(userRoot, 'chats'),
+      groupChats: path.join(userRoot, 'group chats'),
+    },
+  },
+};
+const payload = ${JSON.stringify(makePackagedPublicationPayload({
+        interpretationId: 'interp_packaged_evidence_bun',
+        interpretationRevisionId: 'interprev_packaged_evidence_bun_v1',
+        memoryScopeId: 'scope.packaged.evidence.parity',
+        evidenceFindings: makePackagedEvidenceFindings(),
+        now: Date.parse('2026-06-26T01:00:06.000Z'),
+    }))};
+const created = interpretiveModule.createInterpretiveCandidate(request, payload);
+console.log(JSON.stringify({
+  ok: created.ok,
+  state: created.interpretation.evidenceFindingState,
+  count: created.interpretation.evidenceFindings.length,
+  summary: created.interpretation.evidenceFindings[0]?.summary || null,
+}, null, 2));
+`, 'utf8');
+
+    const bunResult = spawnSync('bun', [helperPath], {
+        cwd: staged.tempRoot,
+        encoding: 'utf8',
+    });
+
+    assert.equal(bunResult.status, 0, bunResult.stderr || bunResult.stdout);
+    const bunPayload = JSON.parse(bunResult.stdout);
+    assert.deepEqual(
+        bunPayload,
+        {
+            ok: true,
+            state: 'AVAILABLE',
+            count: 1,
+            summary: 'Jeep established primary architectural authority over the packaged publication path.',
+        },
+    );
 });
 
 test('packaged interpretive publication flow succeeds under Node from staged payload only', async () => {

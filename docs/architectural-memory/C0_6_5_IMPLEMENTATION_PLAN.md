@@ -33,9 +33,9 @@ Completed on this branch:
 
 What remains open for this phase:
 
-1. `C0.6.5D` historical / compatibility strategy,
-2. mixed-generation proof across restart and replay,
-3. final closeout evidence showing that missing findings remain truthful for older records.
+1. document closeout evidence from the implemented compatibility behavior,
+2. keep the host smoke checklist aligned with the finished contract,
+3. choose the next post-`C0.6.5` lift without widening back into redesign.
 
 ## Boundary Entering This Phase
 
@@ -167,18 +167,18 @@ Proof gate:
 
 ### C0.6.5D: Historical / Compatibility Strategy
 
-Status: next major lift
+Status: complete
 
 Goal:
 
 Keep older artifacts stable while allowing newer records to render persisted findings.
 
-Required work:
+Implemented:
 
-1. Define how historical candidates with no findings are loaded.
-2. Define whether older records remain fallback-only or receive a later migration.
-3. Make compatibility behavior explicit when old and new records coexist.
-4. Keep replay deterministic across mixed generations of records.
+1. historical rows with non-canonical persisted finding state now reopen through the truthful fallback path.
+2. mixed-generation records now replay with stable evidence-finding semantics after restart.
+3. packaged Node and Bun paths now prove identical evidence-finding semantics for finding-bearing candidates.
+4. no destructive migration is required for ordinary host use.
 
 Primary repo touchpoints:
 
@@ -196,34 +196,43 @@ Proof gate:
 
 ## Next Major Lift
 
-The next major lift is `C0.6.5D`.
+`C0.6.5` should now move into closeout, not another internal contract slice.
 
-This branch should now stop widening the live review surface and instead close the compatibility boundary around persisted findings.
+The recommended next major lift after `C0.6.5` is:
+
+```text
+End-to-end host closeout for governed interpretive publication
+```
+
+Reason:
+
+The evidence-finding contract is now implemented and compatibility-proofed locally.
+The remaining risk is operational, not semantic:
+
+1. corrected-child publication behavior still needs explicit host proof,
+2. restart / replay / cross-host parity still needs one bounded closeout pass,
+3. the review and publication surfaces should now be exercised as an operator workflow rather than widened again.
 
 Implementation target:
 
 ```text
-old records stay truthful
-new records stay rich
-mixed history stays deterministic
+prove the governed path end to end
+without reopening contract design
 ```
 
 Concrete work order:
 
-1. classify historical records into:
-   - records with persisted findings,
-   - records with bound evidence but no findings,
-   - malformed or partial finding payloads;
-2. define the exact load/replay behavior for each class;
-3. prove that restart and replay preserve the same rendered meaning or fallback path;
-4. decide whether migration remains deferred or whether a bounded backfill tool is required later.
+1. prove clean-root publication in the host with the standard policy bootstrap already in place;
+2. prove corrected-child publication and parent refusal on a real host path;
+3. prove restart / replay / cross-host parity for review, publication, and evidence-finding projection;
+4. decide whether any bounded admin cleanup tooling is still required before `v1.0`.
 
 Completion standard for the next lift:
 
-1. a pre-finding historical record renders the truthful fallback,
-2. a newer record renders persisted findings without browser invention,
-3. both can coexist in the same host after restart,
-4. Node and Bun produce the same semantic outcome.
+1. the ordinary operator path is usable without scripts after seeding/bootstrap,
+2. corrected-child publication behaves according to immutable revision lineage,
+3. restart and replay preserve the same publication and evidence meaning across supported hosts,
+4. remaining issues are product decisions, not unresolved contract ambiguity.
 
 ## Implementation Order Inside Each Slice
 
@@ -294,6 +303,12 @@ Expected:
 3. fallback behavior matches,
 4. proof results remain equivalent across supported packaged hosts.
 
+Status:
+
+1. legacy-state fallback proved in `interpretive.test.mjs`,
+2. mixed-generation replay proved in `interpretive.test.mjs`,
+3. packaged Node / Bun parity proved in `package.test.mjs`.
+
 ## Out Of Scope During C0.6.5
 
 Do not widen this phase into:
@@ -316,12 +331,12 @@ Until then, the brief and this implementation plan are the authority.
 
 ## Recommended Next Action
 
-Begin with `C0.6.5D`.
+Close `C0.6.5` as implemented and shift branch effort to the host-proof lift above.
 
 Reason:
 
-The schema, storage, and review projection path are now in place.
-The remaining risk is no longer browser invention during fresh review; it is mixed-generation correctness during load, replay, and historical viewing.
+The schema, storage, review projection, and compatibility boundary are now in place.
+The remaining risk is operational proof and cross-host stability, not missing evidence-finding semantics.
 
 ## Working Rule
 

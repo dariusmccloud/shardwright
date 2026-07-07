@@ -526,6 +526,31 @@ test('createInterpretiveCandidate persists explicit unavailable finding state wh
     assert.deepEqual(loaded.interpretation.evidenceFindings, []);
 });
 
+test('legacy interpretive rows without persisted finding state load the truthful fallback path', () => {
+    const root = makeTempRoot();
+    const request = buildRequest(root);
+    createInterpretiveCandidate(request, makeBasePayload({
+        interpretationId: 'interp_findings_legacy',
+        interpretationRevisionId: 'interprev_findings_legacy_v1',
+    }));
+
+    const adapter = openOperationalDatabase(getStoragePaths(root));
+    try {
+        adapter.run(
+            `UPDATE interpretation_revisions
+                SET evidence_finding_state = ?, updated_at = ?
+              WHERE interpretation_revision_id = ?`,
+            ['LEGACY_UNSPECIFIED', Date.parse('2026-06-25T12:00:30.000Z'), 'interprev_findings_legacy_v1'],
+        );
+    } finally {
+        adapter.close();
+    }
+
+    const loaded = getInterpretiveCandidate(request, 'interprev_findings_legacy_v1');
+    assert.equal(loaded.interpretation.evidenceFindingState, 'UNAVAILABLE');
+    assert.deepEqual(loaded.interpretation.evidenceFindings, []);
+});
+
 test('createInterpretiveCandidate rejects evidence findings whose basis refs are not grounded', () => {
     const root = makeTempRoot();
     const request = buildRequest(root);
@@ -568,6 +593,57 @@ test('interpretive governance ledger replays into an identical projection and pr
 
     const reopened = getInterpretiveCandidate(buildRequest(targetRoot), 'interprev_replay_case_v1');
     assert.deepEqual(comparableInterpretationProjection(reopened.interpretation), sourceProjection);
+});
+
+test('mixed-generation interpretive records replay with stable finding semantics after restart', () => {
+    const sourceRoot = makeTempRoot();
+    const sourceRequest = buildRequest(sourceRoot);
+    createInterpretiveCandidate(sourceRequest, makeBasePayload({
+        interpretationId: 'interp_mixed_generation_legacy',
+        interpretationRevisionId: 'interprev_mixed_generation_legacy_v1',
+        now: Date.parse('2026-06-25T12:01:00.000Z'),
+    }));
+    createInterpretiveCandidate(sourceRequest, makeBasePayload({
+        interpretationId: 'interp_mixed_generation_rich',
+        interpretationRevisionId: 'interprev_mixed_generation_rich_v1',
+        evidenceFindings: makeEvidenceFindings(),
+        now: Date.parse('2026-06-25T12:02:00.000Z'),
+    }));
+
+    const sourcePaths = getStoragePaths(sourceRoot);
+    const targetRoot = makeTempRoot();
+    const targetPaths = getStoragePaths(targetRoot);
+    fs.mkdirSync(targetPaths.storageRoot, { recursive: true });
+    fs.copyFileSync(sourcePaths.interpretiveGovernanceLedgerPath, targetPaths.interpretiveGovernanceLedgerPath);
+
+    const replayed = replayInterpretiveLedger(buildRequest(targetRoot));
+    assert.equal(replayed.ok, true);
+    assert.equal(replayed.replayedInterpretations.length, 2);
+
+    const legacy = getInterpretiveCandidate(buildRequest(targetRoot), 'interprev_mixed_generation_legacy_v1');
+    assert.equal(legacy.interpretation.evidenceFindingState, 'UNAVAILABLE');
+    assert.deepEqual(legacy.interpretation.evidenceFindings, []);
+
+    const rich = getInterpretiveCandidate(buildRequest(targetRoot), 'interprev_mixed_generation_rich_v1');
+    assert.equal(rich.interpretation.evidenceFindingState, 'AVAILABLE');
+    assert.equal(rich.interpretation.evidenceFindings.length, 1);
+    assert.deepEqual(
+        rich.interpretation.evidenceFindings[0],
+        {
+            findingId: 'evfind_jeep_authority_primary',
+            role: 'PRIMARY',
+            summary: 'Jeep established primary architectural authority over the extension design.',
+            basisRefs: [
+                'decision:architectural-sharder-fork',
+                'msg_alpha0000000000000000000000000',
+            ],
+            sourceLabel: 'Jeep, architectural memory record, June 2026',
+            domains: ['AUTHORITY', 'ROLE'],
+            supportLevel: 'SUPPORTED',
+            createdAt: rich.interpretation.evidenceFindings[0].createdAt,
+            updatedAt: rich.interpretation.evidenceFindings[0].updatedAt,
+        },
+    );
 });
 
 test('listInterpretivePolicyDefinitions exposes immutable seeded policy definitions', () => {

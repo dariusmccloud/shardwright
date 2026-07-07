@@ -20,7 +20,7 @@ Implementation status on the current branch:
 1. `C0.6.5A` canonical schema is implemented,
 2. `C0.6.5B` candidate assembly and persistence are implemented,
 3. `C0.6.5C` review-surface rendering from persisted findings is implemented,
-4. `C0.6.5D` historical / compatibility strategy remains open.
+4. `C0.6.5D` historical / compatibility strategy is now covered by automated compatibility proof.
 
 This phase does not exist to improve visual polish.
 It exists to stop the UI from choosing between two bad outcomes:
@@ -255,6 +255,12 @@ Proof:
 1. old records remain readable and stable,
 2. new records show findings,
 3. the fallback path is truthful and non-destructive.
+
+Current branch proof:
+
+1. legacy/non-canonical persisted finding state reopens through the truthful fallback path,
+2. mixed-generation records replay with stable finding semantics after restart,
+3. packaged Node and Bun preserve identical evidence-finding semantics for finding-bearing candidates.
 
 ## Required Proof Matrix
 

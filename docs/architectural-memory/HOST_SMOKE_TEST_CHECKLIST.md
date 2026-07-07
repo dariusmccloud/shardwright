@@ -205,6 +205,7 @@ Remaining publication work is now:
 - corrected-child publication proof
 - restart / replay / cross-host parity proof
 - only the UI tightening needed to support those proofs
+- evidence-finding compatibility is now covered by automated local proof, not open host semantics
 
 ## Suggested execution order
 
@@ -215,6 +216,7 @@ Remaining publication work is now:
 5. Corrected-child publication proof
 6. Restart / replay / cross-host parity
 7. Server-plugin persistence cross-check
+8. Evidence-finding host closeout only after the publication proofs above stay stable
 
 ## Operator script: proposal -> review -> lifecycle
 
