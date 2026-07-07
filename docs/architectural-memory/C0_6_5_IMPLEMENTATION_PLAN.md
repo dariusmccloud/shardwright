@@ -196,43 +196,33 @@ Proof gate:
 
 ## Next Major Lift
 
-`C0.6.5` should now move into closeout, not another internal contract slice.
+`C0.6.5` should now move into closeout, not another evidence-contract slice.
 
-The recommended next major lift after `C0.6.5` is:
+The next major lift after `C0.6.5` is:
 
 ```text
-End-to-end host closeout for governed interpretive publication
+C0.6.6 Operator Flow And Revision Ergonomics
+```
+
+See:
+
+```text
+docs/architectural-memory/C0_6_6_OPERATOR_FLOW_AND_REVISION_ERGONOMICS_PLAN.md
 ```
 
 Reason:
 
 The evidence-finding contract is now implemented and compatibility-proofed locally.
-The remaining risk is operational, not semantic:
+The remaining primary product risk is no longer persisted meaning.
+It is operator flow:
 
-1. corrected-child publication behavior still needs explicit host proof,
-2. restart / replay / cross-host parity still needs one bounded closeout pass,
-3. the review and publication surfaces should now be exercised as an operator workflow rather than widened again.
+1. queue semantics,
+2. completed-state wording,
+3. revision-from-published-memory ergonomics,
+4. readable lifecycle history,
+5. safe replacement / withdrawal navigation.
 
-Implementation target:
-
-```text
-prove the governed path end to end
-without reopening contract design
-```
-
-Concrete work order:
-
-1. prove clean-root publication in the host with the standard policy bootstrap already in place;
-2. prove corrected-child publication and parent refusal on a real host path;
-3. prove restart / replay / cross-host parity for review, publication, and evidence-finding projection;
-4. decide whether any bounded admin cleanup tooling is still required before `v1.0`.
-
-Completion standard for the next lift:
-
-1. the ordinary operator path is usable without scripts after seeding/bootstrap,
-2. corrected-child publication behaves according to immutable revision lineage,
-3. restart and replay preserve the same publication and evidence meaning across supported hosts,
-4. remaining issues are product decisions, not unresolved contract ambiguity.
+That work should now be handled as a bounded product-flow lift rather than as another publication-contract redesign.
 
 ## Implementation Order Inside Each Slice
 
