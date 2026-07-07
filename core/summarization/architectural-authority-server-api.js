@@ -182,6 +182,17 @@ export async function getInterpretiveCandidate(interpretationRevisionId) {
     return await fetchJson(`/interpretive/candidates/${encodeURIComponent(normalizedId)}`);
 }
 
+export async function createInterpretiveRevision(interpretationRevisionId, payload) {
+    const normalizedId = String(interpretationRevisionId || '').trim();
+    if (!normalizedId) {
+        throw new Error('interpretationRevisionId is required');
+    }
+    return await fetchJson(`/interpretive/candidates/${encodeURIComponent(normalizedId)}/revisions`, {
+        method: 'POST',
+        body: payload || {},
+    });
+}
+
 export async function getInterpretivePublicationOperatorState(interpretationRevisionId, filters = {}) {
     const normalizedId = String(interpretationRevisionId || '').trim();
     if (!normalizedId) {

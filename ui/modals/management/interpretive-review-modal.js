@@ -1,6 +1,7 @@
 import { Popup, POPUP_RESULT, POPUP_TYPE } from '../../../../../../popup.js';
 import {
     bootstrapStandardInterpretivePublicationPolicy,
+    createInterpretiveRevision,
     createInterpretivePublicationAuthorization,
     executeInterpretivePublicationAuthorization,
     getInterpretiveCandidate,
@@ -1403,6 +1404,27 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
         }));
     }
 
+    if (guidedFlow?.nextAction?.action === 'OPEN_CHILD_REVISION') {
+        const childRevisionId = String(guidedFlow?.nextAction?.interpretationRevisionId || '').trim();
+        actionForms.push(renderPublicationActionForm({
+            formKind: 'open-child-revision',
+            title: 'Revision required',
+            description: 'A newer child revision exists. Open the latest revision to continue review and publication from the current wording.',
+            actionStatus: options.actionStatus,
+            submitLabel: 'Open Latest Revision',
+            disabled: !childRevisionId,
+            dataset: {
+                interpretationRevisionId: childRevisionId,
+            },
+            fieldsHtml: childRevisionId ? `
+                <label class="ss-interpretive-review-field">
+                    <span>Latest revision</span>
+                    <input class="text_pole" type="text" value="${escapeHtml(childRevisionId)}" readonly />
+                </label>
+            ` : '',
+        }));
+    }
+
     if (guidedFlow?.nextAction?.action === 'PUBLISH_MEMORY' && latestEligibleQualification) {
         actionForms.push(renderPublicationActionForm({
             formKind: 'publication-publish',
@@ -1431,6 +1453,32 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
                 <label class="ss-interpretive-review-field">
                     <span>Published by</span>
                     <input class="text_pole" type="text" value="${escapeHtml(options.currentActorId || '')}" readonly />
+                </label>
+            `,
+        }));
+    }
+
+    if (isPublishedRevision && guidedFlow?.nextAction?.action !== 'OPEN_CHILD_REVISION') {
+        actionForms.push(renderLifecycleGovernanceForm({
+            formKind: 'subject-revision',
+            title: 'Create Revision',
+            description: 'Create a new governed child revision from this published memory when the wording needs to change.',
+            actionKind: 'SUBJECT_REVISION',
+            ownerId: interpretation.memorySubjectId,
+            interpretation,
+            currentActorId: options.currentActorId,
+            policies: governancePolicies,
+            actionStatus: options.actionStatus,
+            submitLabel: 'Create Revision',
+            dataset: {
+                interpretationRevisionId: interpretation.interpretationRevisionId,
+                parentStatement: interpretation.statement || '',
+            },
+            extraFieldsHtml: `
+                <label class="ss-interpretive-review-field" data-field="revisedCandidate">
+                    <span>Revised statement</span>
+                    <textarea class="text_pole" rows="5" name="revisedStatement" placeholder="Enter the revised published statement.">${escapeHtml(interpretation.statement || '')}</textarea>
+                    <span class="ss-hint">The new revision keeps the current statement as parent context and records only the updated wording.</span>
                 </label>
             `,
         }));
@@ -1790,6 +1838,7 @@ function formatLifecycleActionLabel(value) {
         QUALIFY_PUBLICATION: 'Check publication readiness',
         AUTHORIZE_PUBLICATION: 'Authorize publication',
         EXECUTE_PUBLICATION: 'Publish approved memory',
+        OPEN_CHILD_REVISION: 'Open latest revision',
         WITHDRAW_DNM: 'Withdraw current memory',
         SUPERSEDE_ACTIVE_WITH_RECORD: 'Replace current memory',
         RECORD_DNM_DELTA_REVIEW: 'Record follow-up review',
@@ -2734,6 +2783,30 @@ export async function openInterpretiveReviewModal() {
             renderCurrentDetail();
         };
 
+        const focusInterpretationRevision = async (interpretationRevisionId, options = {}) => {
+            const normalizedId = String(interpretationRevisionId || '').trim();
+            const preferredRequestStatuses = Array.isArray(options.preferredRequestStatuses)
+                ? options.preferredRequestStatuses.map((value) => String(value || '').trim()).filter(Boolean)
+                : ['PENDING', 'DEFERRED'];
+            if (!normalizedId) {
+                await loadInterpretationByRevision('');
+                state.selectedReviewRequestId = null;
+                return;
+            }
+
+            await loadInterpretationByRevision(normalizedId);
+            const reviewRequests = Array.isArray(state.activeInterpretation?.reviewRequests)
+                ? state.activeInterpretation.reviewRequests
+                : [];
+            const preferredRequest = reviewRequests.find((entry) => preferredRequestStatuses.includes(String(entry?.status || '').trim()));
+            state.selectedReviewRequestId = preferredRequest?.reviewRequestId || reviewRequests[0]?.reviewRequestId || null;
+            if (options.detailView) {
+                state.detailView = options.detailView;
+            }
+            renderQueue();
+            renderCurrentDetail();
+        };
+
         const selectReview = async (reviewRequestId) => {
             state.actionStatus = null;
             state.selectedReviewRequestId = reviewRequestId;
@@ -3055,12 +3128,14 @@ export async function openInterpretiveReviewModal() {
                 }
                 if (childInterpretation?.interpretationRevisionId) {
                     invalidateInterpretationCaches(childInterpretation.interpretationRevisionId, childInterpretation.memorySubjectId);
-                    state.selectedInterpretationRevisionId = childInterpretation.interpretationRevisionId;
-                    const nextPendingRequest = (Array.isArray(childInterpretation.reviewRequests) ? childInterpretation.reviewRequests : [])
-                        .find((entry) => entry.status === 'PENDING' || entry.status === 'DEFERRED');
-                    state.selectedReviewRequestId = nextPendingRequest?.reviewRequestId || null;
                 }
                 await refreshReviews({ preserveDetail: true });
+                if (childInterpretation?.interpretationRevisionId) {
+                    await focusInterpretationRevision(childInterpretation.interpretationRevisionId, {
+                        preferredRequestStatuses: ['PENDING', 'DEFERRED'],
+                        detailView: 'review',
+                    });
+                }
             } catch (error) {
                 setInlineFormStatus(form, 'error', error?.message || String(error));
             } finally {
@@ -3252,6 +3327,86 @@ export async function openInterpretiveReviewModal() {
                     message: `Published memory record ${response?.publishedRecord?.dnmRecordId || ''}.`.trim(),
                 };
                 await refreshReviews({ preserveDetail: true });
+            } catch (error) {
+                setInlineFormStatus(form, 'error', error?.message || String(error));
+            } finally {
+                setFormBusy(form, false);
+            }
+        }
+
+        async function handleOpenChildRevisionSubmit(form) {
+            const interpretationRevisionId = String(form.dataset.interpretationRevisionId || '').trim();
+            if (!interpretationRevisionId) {
+                setInlineFormStatus(form, 'error', 'No child revision was provided by the server.');
+                return;
+            }
+
+            setFormBusy(form, true);
+            setInlineFormStatus(form, 'info', 'Opening latest revision...');
+            try {
+                state.actionStatus = {
+                    kind: 'open-child-revision',
+                    tone: 'success',
+                    message: `Opened child revision ${interpretationRevisionId}.`,
+                };
+                await focusInterpretationRevision(interpretationRevisionId, {
+                    preferredRequestStatuses: ['PENDING', 'DEFERRED'],
+                    detailView: 'review',
+                });
+            } catch (error) {
+                setInlineFormStatus(form, 'error', error?.message || String(error));
+            } finally {
+                setFormBusy(form, false);
+            }
+        }
+
+        async function handleSubjectRevisionSubmit(form) {
+            const interpretationRevisionId = String(form.dataset.interpretationRevisionId || '').trim();
+            if (!interpretationRevisionId) {
+                setInlineFormStatus(form, 'error', 'No interpretation revision is available to revise.');
+                return;
+            }
+
+            const payload = buildLifecyclePayload(form);
+            const validationError = validateGovernedSubmissionPayload(form, payload);
+            if (validationError) {
+                setInlineFormStatus(form, 'error', validationError);
+                return;
+            }
+
+            const revisedPayload = buildInterpretiveRevisedCandidatePayload({
+                parentStatement: String(form.dataset.parentStatement || '').trim(),
+                revisedStatement: form.querySelector('[name="revisedStatement"]')?.value || '',
+            });
+            if (revisedPayload.error) {
+                setInlineFormStatus(form, 'error', revisedPayload.error);
+                return;
+            }
+
+            setFormBusy(form, true);
+            setInlineFormStatus(form, 'info', 'Creating governed child revision...');
+            try {
+                const response = await createInterpretiveRevision(interpretationRevisionId, {
+                    ...payload,
+                    revisedCandidate: revisedPayload.revisedCandidate,
+                });
+                const childInterpretation = response?.interpretation || null;
+                if (!childInterpretation?.interpretationRevisionId) {
+                    throw new Error('Child revision was not returned by the server.');
+                }
+                state.currentActorId = payload.actorEntityId || state.currentActorId;
+                invalidateInterpretationCaches(interpretationRevisionId, state.activeInterpretation?.memorySubjectId);
+                invalidateInterpretationCaches(childInterpretation.interpretationRevisionId, childInterpretation.memorySubjectId);
+                state.actionStatus = {
+                    kind: 'subject-revision',
+                    tone: 'success',
+                    message: `Created child revision ${childInterpretation.interpretationRevisionId}.`,
+                };
+                await refreshReviews({ preserveDetail: true });
+                await focusInterpretationRevision(childInterpretation.interpretationRevisionId, {
+                    preferredRequestStatuses: ['PENDING', 'DEFERRED'],
+                    detailView: 'review',
+                });
             } catch (error) {
                 setInlineFormStatus(form, 'error', error?.message || String(error));
             } finally {
@@ -3532,12 +3687,20 @@ export async function openInterpretiveReviewModal() {
                 await handlePublicationQualificationSubmit(form);
                 return;
             }
+            if (form.dataset.formKind === 'open-child-revision') {
+                await handleOpenChildRevisionSubmit(form);
+                return;
+            }
             if (form.dataset.formKind === 'publication-authorize') {
                 await handlePublicationAuthorizationSubmit(form);
                 return;
             }
             if (form.dataset.formKind === 'publication-publish') {
                 await handlePublicationPublishSubmit(form);
+                return;
+            }
+            if (form.dataset.formKind === 'subject-revision') {
+                await handleSubjectRevisionSubmit(form);
                 return;
             }
             if (form.dataset.formKind === 'publication-execute') {
