@@ -202,7 +202,7 @@ Authority now lives in:
 Remaining publication work is now:
 
 - publication data hygiene on the default smoke line
-- restart / replay / cross-host parity proof
+- only the remaining host UX tightening that supports ordinary operator flow
 - only the UI tightening needed to support those proofs
 - evidence-finding compatibility is now covered by automated local proof, not open host semantics
 
@@ -216,6 +216,13 @@ Closeout B proof command:
 - `powershell -NoProfile -ExecutionPolicy Bypass -File "tools/server-plugin/prove-c0-6-4-5b.ps1" -HostName "SillyTavern" -Port 8000`
 - [x] Closeout B proof command now passes on an isolated corrected-child line, with parent grant refusal, child eligibility, child publication, and one resulting active publication record
 
+Closeout C proof commands:
+
+- `node --test --test-name-pattern "guided publication replay restores the identical published state after restart" tools/server-plugin/summary-sharder-memory/interpretive.test.mjs`
+- `node --test --test-name-pattern "packaged interpretive publication flow succeeds under Node from staged payload only|packaged interpretive publication flow succeeds under Bun from staged payload only" tools/server-plugin/summary-sharder-memory/package.test.mjs`
+- `powershell -NoProfile -ExecutionPolicy Bypass -File "tools/server-plugin/prove-c0-6-4-5c.ps1" -HostName "SillyTavern" -Port 8000`
+- [x] Closeout C proof commands now pass with live restart/replay publication parity on SillyTavern plus packaged Node/Bun parity for the publication flow
+
 ## Suggested execution order
 
 1. Architectural boundary confirmation
@@ -223,9 +230,8 @@ Closeout B proof command:
 3. RAG retrieval and reranker
 4. Guided publication clean-root proof
 5. Corrected-child publication proof
-6. Restart / replay / cross-host parity
-7. Server-plugin persistence cross-check
-8. Evidence-finding host closeout only after the publication proofs above stay stable
+6. Server-plugin persistence cross-check
+7. Evidence-finding host closeout only after the publication proofs above stay stable
 
 ## Operator script: proposal -> review -> lifecycle
 

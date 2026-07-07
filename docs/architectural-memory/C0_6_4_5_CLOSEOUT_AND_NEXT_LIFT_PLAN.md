@@ -140,6 +140,29 @@ Proof:
 3. Node and Bun behavior remain semantically aligned
 4. No raw script or DB intervention is required in the ordinary path
 
+Status:
+
+Closed for the current phase boundary.
+
+Verified commands:
+
+1. `node --test --test-name-pattern "guided publication replay restores the identical published state after restart" tools/server-plugin/summary-sharder-memory/interpretive.test.mjs`
+2. `node --test --test-name-pattern "packaged interpretive publication flow succeeds under Node from staged payload only|packaged interpretive publication flow succeeds under Bun from staged payload only" tools/server-plugin/summary-sharder-memory/package.test.mjs`
+3. `powershell -NoProfile -ExecutionPolicy Bypass -File "tools/server-plugin/prove-c0-6-4-5c.ps1" -HostName "SillyTavern" -Port 8000`
+
+Verified result:
+
+1. Clean-root publication remains semantically identical after host restart.
+2. The restarted host returns the same guided lifecycle state: `ALREADY_PUBLISHED`.
+3. The same published record remains current after replay.
+4. Packaged server-plugin publication flow remains green under both Node and Bun.
+5. No operator step in the proved path required manual DB or ledger intervention.
+
+Scope note:
+
+The live restart/replay proof was executed against the SillyTavern host path.
+Cross-runtime parity for the packaged publication path was covered by the Node/Bun package tests above.
+
 ### C0.6.4-5 Closeout D: Surface Tightening Only Where It Supports Proof
 
 Goal:
