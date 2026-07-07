@@ -108,6 +108,7 @@ export function schemaStatements() {
             material_participant_entity_ids_json TEXT NOT NULL,
             candidate_state TEXT NOT NULL,
             grounding_state TEXT NOT NULL,
+            evidence_finding_state TEXT NOT NULL DEFAULT 'UNAVAILABLE',
             review_state TEXT NOT NULL,
             subject_disposition_state TEXT NOT NULL,
             publication_state TEXT NOT NULL,

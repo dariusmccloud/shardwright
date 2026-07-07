@@ -133,6 +133,7 @@ function comparableInterpretationProjection(value) {
         materialParticipantEntityIds: value.materialParticipantEntityIds,
         candidateState: value.candidateState,
         groundingState: value.groundingState,
+        evidenceFindingState: value.evidenceFindingState,
         reviewState: value.reviewState,
         subjectDispositionState: value.subjectDispositionState,
         publicationState: value.publicationState,
@@ -479,6 +480,7 @@ test('createInterpretiveCandidate persists evidence findings in the candidate pr
     }));
 
     assert.equal(result.ok, true);
+    assert.equal(result.interpretation.evidenceFindingState, 'AVAILABLE');
     assert.equal(result.interpretation.evidenceFindings.length, 1);
     assert.deepEqual(
         result.interpretation.evidenceFindings[0],
@@ -499,11 +501,29 @@ test('createInterpretiveCandidate persists evidence findings in the candidate pr
     );
 
     const loaded = getInterpretiveCandidate(request, 'interprev_findings_projection_v1');
+    assert.equal(loaded.interpretation.evidenceFindingState, 'AVAILABLE');
     assert.equal(loaded.interpretation.evidenceFindings.length, 1);
     assert.deepEqual(
         loaded.interpretation.evidenceFindings[0],
         result.interpretation.evidenceFindings[0],
     );
+});
+
+test('createInterpretiveCandidate persists explicit unavailable finding state when no evidence findings are present', () => {
+    const root = makeTempRoot();
+    const request = buildRequest(root);
+    const result = createInterpretiveCandidate(request, makeBasePayload({
+        interpretationId: 'interp_findings_unavailable',
+        interpretationRevisionId: 'interprev_findings_unavailable_v1',
+    }));
+
+    assert.equal(result.ok, true);
+    assert.equal(result.interpretation.evidenceFindingState, 'UNAVAILABLE');
+    assert.deepEqual(result.interpretation.evidenceFindings, []);
+
+    const loaded = getInterpretiveCandidate(request, 'interprev_findings_unavailable_v1');
+    assert.equal(loaded.interpretation.evidenceFindingState, 'UNAVAILABLE');
+    assert.deepEqual(loaded.interpretation.evidenceFindings, []);
 });
 
 test('createInterpretiveCandidate rejects evidence findings whose basis refs are not grounded', () => {
@@ -1116,6 +1136,7 @@ test('listInterpretiveReviews returns pending and completed review state with di
 
     assert.equal(result.ok, true);
     assert.equal(result.reviews.length, 2);
+    assert.equal(result.reviews.every((entry) => entry.evidenceFindingState === 'UNAVAILABLE'), true);
     assert.equal(result.reviews.some((entry) => entry.status === 'APPROVED' && entry.disposition?.disposition === 'APPROVE'), true);
     assert.equal(result.reviews.some((entry) => entry.status === 'PENDING' && entry.disposition === null), true);
 });

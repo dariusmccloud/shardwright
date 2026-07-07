@@ -312,6 +312,14 @@ export function initializeDatabase(adapter, now = Date.now()) {
         adapter.exec(statement);
     }
 
+    ensureColumnExists(
+        adapter,
+        'interpretation_revisions',
+        'evidence_finding_state',
+        `ALTER TABLE interpretation_revisions
+         ADD COLUMN evidence_finding_state TEXT NOT NULL DEFAULT 'UNAVAILABLE'`,
+    );
+
     adapter.exec(`PRAGMA journal_mode=${JOURNAL_MODE}`);
     const manifest = adapter.get('SELECT * FROM manifest WHERE id = 1');
     if (!manifest) {
@@ -335,6 +343,14 @@ export function initializeDatabase(adapter, now = Date.now()) {
         );
     } else if (Number(manifest.schema_version) !== SCHEMA_VERSION) {
         throw createError(500, `Unsupported schema version ${manifest.schema_version}`, 'ARCH_SCHEMA_VERSION_UNSUPPORTED');
+    }
+}
+
+function ensureColumnExists(adapter, tableName, columnName, alterStatement) {
+    const columns = adapter.all(`PRAGMA table_info(${tableName})`);
+    const hasColumn = columns.some((entry) => String(entry.name || '').trim() === columnName);
+    if (!hasColumn) {
+        adapter.exec(alterStatement);
     }
 }
 

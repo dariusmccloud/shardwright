@@ -70,7 +70,23 @@ test('getInterpretiveCandidate fetches encoded revision path', async () => {
         return {
             ok: true,
             async json() {
-                return { interpretation: { interpretationRevisionId: 'interprev:test/value' } };
+                return {
+                    interpretation: {
+                        interpretationRevisionId: 'interprev:test/value',
+                        evidenceFindingState: 'AVAILABLE',
+                        evidenceFindings: [
+                            {
+                                findingId: 'evfind_demo_01',
+                                role: 'PRIMARY',
+                                summary: 'Demo finding.',
+                                basisRefs: ['msg_alpha0000000000000000000000000'],
+                                sourceLabel: 'Demo source label',
+                                domains: ['ROLE'],
+                                supportLevel: 'SUPPORTED',
+                            },
+                        ],
+                    },
+                };
             },
         };
     };
@@ -82,6 +98,8 @@ test('getInterpretiveCandidate fetches encoded revision path', async () => {
         '/api/plugins/summary-sharder-memory/interpretive/candidates/interprev%3Atest%2Fvalue',
     );
     assert.equal(response.interpretation.interpretationRevisionId, 'interprev:test/value');
+    assert.equal(response.interpretation.evidenceFindingState, 'AVAILABLE');
+    assert.equal(response.interpretation.evidenceFindings.length, 1);
 });
 
 test('submitInterpretiveReviewDisposition requires a review request id', async () => {

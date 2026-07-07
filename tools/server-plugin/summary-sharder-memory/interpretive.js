@@ -131,6 +131,11 @@ const ALLOWED_EVIDENCE_FINDING_SUPPORT_LEVELS = new Set([
     'NEUTRAL',
 ]);
 
+const ALLOWED_EVIDENCE_FINDING_STATES = new Set([
+    'AVAILABLE',
+    'UNAVAILABLE',
+]);
+
 const ALLOWED_CONTINUITY_TARGET_TYPES = new Set([
     'MEMORY_SUBJECT',
 ]);
@@ -1309,6 +1314,12 @@ function deriveLifecycleStates(groundingOutcome, obligations) {
     };
 }
 
+function deriveEvidenceFindingState(evidenceFindings) {
+    return Array.isArray(evidenceFindings) && evidenceFindings.length > 0
+        ? 'AVAILABLE'
+        : 'UNAVAILABLE';
+}
+
 export function prepareInterpretiveCandidate(payload, timestamp = nowTimestamp(payload?.now)) {
     const interpretationId = sanitizeIdentifier(payload?.interpretationId || createId('interp'), 'interpretationId');
     const interpretationRevisionId = sanitizeIdentifier(payload?.interpretationRevisionId || createId('interprev'), 'interpretationRevisionId');
@@ -1386,6 +1397,7 @@ export function prepareInterpretiveCandidate(payload, timestamp = nowTimestamp(p
             : null,
         createdAt: timestamp,
         updatedAt: timestamp,
+        evidenceFindingState: deriveEvidenceFindingState(evidenceFindings),
     };
     const groundingOutcome = payload?.groundingOutcomeOverride
         ? String(payload.groundingOutcomeOverride).trim()
@@ -3516,6 +3528,7 @@ function buildPreparedFromLedgerEvents(events) {
             evidenceFindings,
             candidateState: lifecycle.candidateState,
             groundingState: lifecycle.groundingState,
+            evidenceFindingState: deriveEvidenceFindingState(evidenceFindings),
             reviewState: lifecycle.reviewState,
             subjectDispositionState: lifecycle.subjectDispositionState,
             publicationState: lifecycle.publicationState,
@@ -4219,10 +4232,10 @@ function persistPreparedCandidateRows(adapter, prepared, timestamp) {
                 interpretation_revision_id, interpretation_id, parent_revision_id, created_from_disposition_id,
                 revision_reason, memory_scope_id, memory_subject_id, interpretation_type, statement_text,
                 assertion_domains_json, shared_relationship_asserted, personal_meaning_asserted,
-                material_participant_entity_ids_json, candidate_state, grounding_state, review_state,
+                material_participant_entity_ids_json, candidate_state, grounding_state, evidence_finding_state, review_state,
                 subject_disposition_state, publication_state, authority_effect, proposal_content_hash,
                 review_envelope_hash, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 prepared.candidate.interpretationRevisionId,
                 prepared.candidate.interpretationId,
@@ -4239,6 +4252,7 @@ function persistPreparedCandidateRows(adapter, prepared, timestamp) {
                 stableStringify(prepared.candidate.materialParticipantEntityIds),
                 prepared.candidate.candidateState,
                 prepared.candidate.groundingState,
+                prepared.candidate.evidenceFindingState,
                 prepared.candidate.reviewState,
                 prepared.candidate.subjectDispositionState,
                 prepared.candidate.publicationState,
@@ -4461,6 +4475,9 @@ export function loadInterpretiveCandidateProjection(adapter, interpretationRevis
         materialParticipantEntityIds: JSON.parse(candidate.material_participant_entity_ids_json),
         candidateState: candidate.candidate_state,
         groundingState: candidate.grounding_state,
+        evidenceFindingState: ALLOWED_EVIDENCE_FINDING_STATES.has(String(candidate.evidence_finding_state || '').trim())
+            ? candidate.evidence_finding_state
+            : deriveEvidenceFindingState(evidenceFindings),
         reviewState: candidate.review_state,
         subjectDispositionState: candidate.subject_disposition_state,
         publicationState: candidate.publication_state,
@@ -5718,6 +5735,7 @@ export function listInterpretiveReviews(request, filters = {}) {
                 ir.review_state,
                 ir.subject_disposition_state,
                 ir.publication_state,
+                ir.evidence_finding_state,
                 o.obligation_state,
                 o.blocking_reason,
                 d.review_disposition_id,
@@ -5760,6 +5778,9 @@ export function listInterpretiveReviews(request, filters = {}) {
                 reviewState: row.review_state,
                 subjectDispositionState: row.subject_disposition_state,
                 publicationState: row.publication_state,
+                evidenceFindingState: ALLOWED_EVIDENCE_FINDING_STATES.has(String(row.evidence_finding_state || '').trim())
+                    ? row.evidence_finding_state
+                    : 'UNAVAILABLE',
                 obligationState: row.obligation_state,
                 blockingReason: row.blocking_reason,
                 disposition: row.review_disposition_id ? {
