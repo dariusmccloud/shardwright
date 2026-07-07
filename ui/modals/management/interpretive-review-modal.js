@@ -40,6 +40,11 @@ import {
     groupMatchesStatusFilter,
     summarizeReviewWorkflowCode,
 } from './interpretive-review-queue-state.js';
+import {
+    buildDecisionHistoryEntries,
+    buildPublicationHistoryEntries,
+    buildReviewHistoryEntries,
+} from './interpretive-review-history-state.js';
 
 const REVIEW_STATUS_OPTIONS = Object.freeze([
     { value: '', label: 'All statuses' },
@@ -523,31 +528,6 @@ function normalizeHistoryCommentary(commentary, dispositionLabel) {
         return '';
     }
     return text;
-}
-
-function formatHistoryEventTitle(actorLabel, stateLabel, options = {}) {
-    const actor = String(actorLabel || '').trim() || 'Review';
-    const state = String(stateLabel || '').trim().toLowerCase();
-    const kind = String(options.kind || 'review').trim().toLowerCase();
-
-    if (!state) {
-        return actor;
-    }
-
-    if (kind === 'decision') {
-        if (state === 'granted') return `${actor} granted publication`;
-        if (state === 'denied') return `${actor} denied publication`;
-        if (state === 'deferred') return `${actor} deferred publication`;
-        if (state === 'contested') return `${actor} contested publication`;
-        return `${actor} decision recorded`;
-    }
-
-    if (state === 'approved') return `${actor} approved`;
-    if (state === 'rejected') return `${actor} rejected`;
-    if (state === 'deferred') return `${actor} deferred`;
-    if (state === 'contested') return `${actor} contested`;
-    if (state === 'pending') return `${actor} pending`;
-    return `${actor} ${state}`;
 }
 
 function renderHistoryActionCard({
@@ -1555,10 +1535,8 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
             'Shows eligibility, authorization, publication, supersession, and withdrawal over time.',
             publicationHistoryRecords.length > 0 ? `
                 <div class="ss-interpretive-review-list">
-                    ${publicationHistoryRecords
-                        .filter(Boolean)
-                        .sort((left, right) => Number(right?.publishedAt || 0) - Number(left?.publishedAt || 0))
-                        .map((record) => renderDnmRecordCard(record, { compact: true }))
+                    ${buildPublicationHistoryEntries(recordsForTarget, activeRecord)
+                        .map((entry) => renderDnmRecordCard(entry.record, { compact: true }))
                         .join('')}
                 </div>
             ` : `<div class="ss-hint">${activeRecord
@@ -2151,96 +2129,29 @@ function getVisibleOperatorActions(interpretation, operatorState) {
 }
 
 function renderReviewResponseSummary(interpretation, selectedReviewRequestId = '') {
-    const requests = Array.isArray(interpretation.reviewRequests) ? interpretation.reviewRequests : [];
-    const dispositionsByRequestId = new Map(
-        (Array.isArray(interpretation.reviewDispositions) ? interpretation.reviewDispositions : [])
-            .map((entry) => [entry.reviewRequestId, entry]),
-    );
-    if (requests.length === 0) {
+    const entries = buildReviewHistoryEntries(interpretation, selectedReviewRequestId);
+    if (entries.length === 0) {
         return '<div class="ss-hint">No reviews yet.</div>';
     }
-    const orderedRequests = [...requests].sort((left, right) => {
-        const leftSelected = left.reviewRequestId === selectedReviewRequestId ? 1 : 0;
-        const rightSelected = right.reviewRequestId === selectedReviewRequestId ? 1 : 0;
-        return rightSelected - leftSelected;
-    });
     return `
         <div class="ss-interpretive-review-list">
-            ${orderedRequests.map((request) => {
-                const disposition = dispositionsByRequestId.get(request.reviewRequestId) || null;
-                const reviewerLabel = formatHumanEntityLabel(request.reviewerEntityId);
-                const roleLabel = formatHumanRoleLabel(request.reviewerRole || 'REVIEWER');
-                const statusLabel = disposition
-                    ? formatHumanStateLabel(disposition.disposition)
-                    : formatHumanStateLabel(request.status);
-                const isPending = !disposition && String(request.status || '').trim().toUpperCase() === 'PENDING';
-                return renderHistoryActionCard({
-                    title: formatHistoryEventTitle(reviewerLabel, statusLabel),
-                    dispositionLabel: statusLabel,
-                    roleLabel,
-                    timestamp: disposition?.submittedAt || request.createdAt,
-                    extraLines: isPending ? ['Decision still required.'] : [],
-                    compact: true,
-                });
-            }).join('')}
+            ${entries.map((entry) => renderHistoryActionCard(entry)).join('')}
         </div>
     `;
 }
 
 function renderSubmittedActionsHistory(interpretation, policiesById = new Map(), selectedReviewRequestId = '') {
-    const reviewDispositions = Array.isArray(interpretation.reviewDispositions) ? interpretation.reviewDispositions : [];
-    const subjectDisposition = hasRecordedSubjectDisposition(interpretation.subjectDisposition)
-        ? interpretation.subjectDisposition
-        : null;
-    if (reviewDispositions.length === 0 && !subjectDisposition) {
+    const entries = buildDecisionHistoryEntries(interpretation, selectedReviewRequestId);
+    if (entries.length === 0) {
         return '<div class="ss-hint">No actions recorded yet.</div>';
     }
 
-    const requestMap = new Map(
-        (Array.isArray(interpretation.reviewRequests) ? interpretation.reviewRequests : [])
-            .map((request) => [request.reviewRequestId, request]),
-    );
-    const orderedReviewDispositions = [...reviewDispositions].sort((left, right) => {
-        const leftSelected = left.reviewRequestId === selectedReviewRequestId ? 1 : 0;
-        const rightSelected = right.reviewRequestId === selectedReviewRequestId ? 1 : 0;
-        if (leftSelected !== rightSelected) {
-            return rightSelected - leftSelected;
-        }
-        return Number(left.submittedAt || 0) - Number(right.submittedAt || 0);
-    });
-
     return `
         <div class="ss-interpretive-review-list">
-            ${orderedReviewDispositions.map((disposition) => {
-                const request = requestMap.get(disposition.reviewRequestId) || null;
-                const reviewerName = formatHumanEntityLabel(request?.reviewerEntityId || disposition?.provenance?.dispositionOwnerId || '');
-                return renderHistoryActionCard({
-                    title: `${reviewerName} review submitted`,
-                    dispositionLabel: formatHumanStateLabel(disposition.disposition),
-                    reasonCodes: disposition.reasonCodes,
-                    commentary: disposition.commentary,
-                    provenance: disposition.provenance,
-                    timestamp: disposition.submittedAt,
-                    bodyHtml: renderHistorySubmissionDetails(disposition.provenance, policiesById),
-                    contextLabel: 'How it was recorded',
-                    commentaryLabel: 'Recorded note',
-                });
-            }).join('')}
-            ${subjectDisposition ? renderHistoryActionCard({
-                title: formatHistoryEventTitle(
-                    formatHumanEntityLabel(interpretation.memorySubjectId),
-                    formatHumanStateLabel(subjectDisposition.state),
-                    { kind: 'decision' },
-                ),
-                dispositionLabel: formatHumanStateLabel(subjectDisposition.state),
-                reasonCodes: subjectDisposition.reasonCodes,
-                commentary: subjectDisposition.commentary,
-                provenance: subjectDisposition.provenance,
-                timestamp: subjectDisposition.recordedAt,
-                bodyHtml: renderHistorySubmissionDetails(subjectDisposition.provenance, policiesById),
-                contextLabel: 'How it was recorded',
-                commentaryLabel: 'Decision note',
-            }) : ''}
+            ${entries.map((entry) => renderHistoryActionCard({
+                ...entry,
+                bodyHtml: renderHistorySubmissionDetails(entry.provenance, policiesById),
+            })).join('')}
         </div>
     `;
 }
