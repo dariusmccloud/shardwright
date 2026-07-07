@@ -1606,6 +1606,7 @@ function renderQueueGroupItem(group, selectedReviewRequestId, selectedInterpreta
         return '';
     }
     const canonicalRevisionState = representativeReview?.canonicalRevisionState || null;
+    const publicationOperatorState = representativeReview?.operatorState || canonicalRevisionState?.operatorState || null;
     const createdAt = reviews.reduce((earliest, review) => {
         const created = Number(review?.createdAt || 0);
         if (!Number.isFinite(created) || created <= 0) {
@@ -1621,7 +1622,7 @@ function renderQueueGroupItem(group, selectedReviewRequestId, selectedInterpreta
         reviewState: canonicalRevisionState?.reviewState ?? representativeReview.reviewState,
         subjectDispositionState: canonicalRevisionState?.subjectDispositionState ?? representativeReview.subjectDispositionState,
         publicationState: canonicalRevisionState?.publicationState ?? representativeReview.publicationState,
-    }, null));
+    }, publicationOperatorState));
 
     return `
         <div
@@ -2676,21 +2677,42 @@ export async function openInterpretiveReviewModal() {
             }));
 
             const candidateByRevisionId = new Map(candidateEntries);
+            const operatorStateEntries = await Promise.all(candidateEntries.map(async ([revisionId, interpretation]) => {
+                const continuityTargetId = String(interpretation?.memorySubjectId || '').trim();
+                if (!revisionId || !continuityTargetId) {
+                    return [revisionId, null];
+                }
+                const cacheKey = `${revisionId}::${continuityTargetId}`;
+                let operatorState = state.publicationOperatorCache.get(cacheKey) || null;
+                if (!operatorState) {
+                    const response = await getInterpretivePublicationOperatorState(revisionId, { continuityTargetId });
+                    operatorState = response?.operatorState || null;
+                    if (operatorState) {
+                        state.publicationOperatorCache.set(cacheKey, operatorState);
+                    }
+                }
+                return [revisionId, operatorState];
+            }));
+            const operatorStateByRevisionId = new Map(operatorStateEntries);
             return reviewList.map((review) => {
-                const interpretation = candidateByRevisionId.get(String(review?.interpretationRevisionId || '').trim()) || null;
+                const revisionId = String(review?.interpretationRevisionId || '').trim();
+                const interpretation = candidateByRevisionId.get(revisionId) || null;
                 if (!interpretation) {
                     return review;
                 }
+                const operatorState = operatorStateByRevisionId.get(revisionId) || null;
                 const canonicalRevisionState = {
                     reviewState: interpretation.reviewState,
                     subjectDispositionState: interpretation.subjectDispositionState,
                     publicationState: interpretation.publicationState,
+                    operatorState,
                 };
                 return {
                     ...review,
                     reviewState: canonicalRevisionState.reviewState,
                     subjectDispositionState: canonicalRevisionState.subjectDispositionState,
                     publicationState: canonicalRevisionState.publicationState,
+                    operatorState,
                     canonicalRevisionState,
                 };
             });
