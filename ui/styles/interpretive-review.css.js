@@ -715,13 +715,13 @@ export const INTERPRETIVE_REVIEW_CSS = `
 
 .ss-interpretive-review-summary-note {
     font-size: 12px;
-    line-height: 1.45;
+    line-height: 1.55;
 }
 
 .ss-interpretive-review-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 10px;
+    gap: 12px;
 }
 
 .ss-interpretive-review-summary-grid {
@@ -813,11 +813,11 @@ export const INTERPRETIVE_REVIEW_CSS = `
 }
 
 .ss-interpretive-review-lifecycle-section .ss-interpretive-review-card {
-    padding: 12px 14px;
+    padding: 14px 16px;
 }
 
 .ss-interpretive-review-lifecycle-section .ss-interpretive-review-list {
-    gap: 10px;
+    gap: 12px;
 }
 
 .ss-interpretive-review-status-strip-cell {
@@ -856,7 +856,7 @@ export const INTERPRETIVE_REVIEW_CSS = `
 .ss-interpretive-review-policy-audit-card {
     display: grid;
     gap: 0;
-    margin-top: 4px;
+    margin-top: 6px;
     border: 1px solid color-mix(in srgb, var(--ss-border) 76%, transparent);
     border-radius: 12px;
     overflow: hidden;
@@ -866,8 +866,8 @@ export const INTERPRETIVE_REVIEW_CSS = `
 
 .ss-interpretive-review-policy-audit-row {
     display: grid;
-    gap: 10px;
-    padding: 12px 14px;
+    gap: 12px;
+    padding: 14px 16px;
     border-top: 1px solid color-mix(in srgb, var(--ss-border) 62%, transparent);
 }
 
@@ -881,8 +881,9 @@ export const INTERPRETIVE_REVIEW_CSS = `
     align-items: center;
     min-width: 0;
     flex-wrap: wrap;
-    gap: 6px 8px;
+    gap: 8px 10px;
     text-align: left;
+    line-height: 1.5;
 }
 
 .ss-interpretive-review-detail-view[data-detail-view-panel="review"] .ss-interpretive-review-card,
@@ -965,7 +966,7 @@ export const INTERPRETIVE_REVIEW_CSS = `
 .ss-interpretive-review-card strong,
 .ss-interpretive-review-list strong {
     display: block;
-    margin-bottom: 3px;
+    margin-bottom: 4px;
 }
 
 .ss-interpretive-action-card {
