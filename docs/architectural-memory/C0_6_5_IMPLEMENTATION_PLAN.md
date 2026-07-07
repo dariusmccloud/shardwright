@@ -23,6 +23,20 @@ This document answers the narrower question:
 What should be implemented next, in what order, and how will we prove it?
 ```
 
+## Current Progress Snapshot
+
+Completed on this branch:
+
+1. `C0.6.5A` canonical finding schema,
+2. `C0.6.5B` candidate assembly and persisted storage,
+3. `C0.6.5C` review-surface rendering from persisted findings.
+
+What remains open for this phase:
+
+1. `C0.6.5D` historical / compatibility strategy,
+2. mixed-generation proof across restart and replay,
+3. final closeout evidence showing that missing findings remain truthful for older records.
+
 ## Boundary Entering This Phase
 
 The current publication and review surface is now stable enough to support the next lift.
@@ -66,6 +80,8 @@ Implement `C0.6.5` in these bounded slices.
 
 ### C0.6.5A: Canonical Finding Schema
 
+Status: complete
+
 Goal:
 
 Lock the persisted evidence finding contract before changing candidate assembly or UI rendering.
@@ -92,6 +108,8 @@ Proof gate:
 3. Node and Bun preserve the same semantic payload.
 
 ### C0.6.5B: Candidate Assembly And Storage
+
+Status: complete
 
 Goal:
 
@@ -120,6 +138,8 @@ Proof gate:
 
 ### C0.6.5C: Review Surface Rendering
 
+Status: complete
+
 Goal:
 
 Render persisted findings in the `Review` tab while keeping technical bindings exact and separate.
@@ -147,6 +167,8 @@ Proof gate:
 
 ### C0.6.5D: Historical / Compatibility Strategy
 
+Status: next major lift
+
 Goal:
 
 Keep older artifacts stable while allowing newer records to render persisted findings.
@@ -171,6 +193,37 @@ Proof gate:
 2. new records render findings,
 3. mixed records remain stable after restart and replay,
 4. no destructive migration is required for ordinary host use.
+
+## Next Major Lift
+
+The next major lift is `C0.6.5D`.
+
+This branch should now stop widening the live review surface and instead close the compatibility boundary around persisted findings.
+
+Implementation target:
+
+```text
+old records stay truthful
+new records stay rich
+mixed history stays deterministic
+```
+
+Concrete work order:
+
+1. classify historical records into:
+   - records with persisted findings,
+   - records with bound evidence but no findings,
+   - malformed or partial finding payloads;
+2. define the exact load/replay behavior for each class;
+3. prove that restart and replay preserve the same rendered meaning or fallback path;
+4. decide whether migration remains deferred or whether a bounded backfill tool is required later.
+
+Completion standard for the next lift:
+
+1. a pre-finding historical record renders the truthful fallback,
+2. a newer record renders persisted findings without browser invention,
+3. both can coexist in the same host after restart,
+4. Node and Bun produce the same semantic outcome.
 
 ## Implementation Order Inside Each Slice
 
@@ -263,11 +316,12 @@ Until then, the brief and this implementation plan are the authority.
 
 ## Recommended Next Action
 
-Begin with `C0.6.5A`.
+Begin with `C0.6.5D`.
 
 Reason:
 
-If the finding schema is not locked first, candidate assembly and UI rendering will drift into ad hoc payload assumptions and the browser will quietly become the semantic authority again.
+The schema, storage, and review projection path are now in place.
+The remaining risk is no longer browser invention during fresh review; it is mixed-generation correctness during load, replay, and historical viewing.
 
 ## Working Rule
 

@@ -1,8 +1,8 @@
 # Phase C0.6.5: Evidence Finding Contract Brief
 
-Last updated: 2026-07-06
+Last updated: 2026-07-07
 
-Status: proposed implementation plan
+Status: active contract brief
 
 ## Purpose
 
@@ -14,6 +14,13 @@ but the review surface still cannot explain its meaning in human terms
 ```
 
 `C0.6.5` defines the contract for persisted, human-readable evidence findings.
+
+Implementation status on the current branch:
+
+1. `C0.6.5A` canonical schema is implemented,
+2. `C0.6.5B` candidate assembly and persistence are implemented,
+3. `C0.6.5C` review-surface rendering from persisted findings is implemented,
+4. `C0.6.5D` historical / compatibility strategy remains open.
 
 This phase does not exist to improve visual polish.
 It exists to stop the UI from choosing between two bad outcomes:
