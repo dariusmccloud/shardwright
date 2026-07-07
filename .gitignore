@@ -3,3 +3,4 @@ CLAUDE.md
 AGENTS.md
 GEMINI.md
 .gemini/settings.json
+tmp-architectural-memory-readonly.db
