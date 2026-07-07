@@ -1203,11 +1203,6 @@ function renderQualificationCard(qualification, options = {}) {
                 <div><strong>Why publication is blocked</strong></div>
                 <div>${renderServerReasonList(refusalCodes, 'No refusal codes.')}</div>
             ` : ''}
-            ${renderTechnicalDetailsSection([
-                { label: 'Qualification ID', value: `<code>${escapeHtml(qualification.qualificationId)}</code>` },
-                { label: 'Grounding Binding', value: renderBadge(qualification.binding?.groundingBindingMode || 'n/a') },
-                { label: 'Grounding Protocol', value: escapeHtml(String(qualification.binding?.groundingProtocolVersion ?? 'n/a')) },
-            ])}
         </div>
     `;
 }
@@ -1224,11 +1219,6 @@ function renderAuthorizationCard(authorization) {
                 { label: 'Authorized By', value: `<code>${escapeHtml(authorization.authorizedBy || 'n/a')}</code>` },
                 { label: 'Authorized At', value: escapeHtml(formatTimestamp(authorization.authorizedAt)) },
                 { label: 'Expires At', value: escapeHtml(formatTimestamp(authorization.expiresAt)) },
-            ])}
-            ${renderTechnicalDetailsSection([
-                { label: 'Authorization ID', value: `<code>${escapeHtml(authorization.publicationAuthorizationId)}</code>` },
-                { label: 'Nonce', value: `<code>${escapeHtml(authorization.authorizationNonce || 'n/a')}</code>` },
-                { label: 'Published Record', value: authorization.dnmRecordId ? `<code>${escapeHtml(authorization.dnmRecordId)}</code>` : '' },
             ])}
         </div>
     `;
@@ -1293,14 +1283,6 @@ function renderDnmRecordCard(record, options = {}) {
             ${renderKeyValueGrid(rows)}
             <div class="ss-hint">${escapeHtml(descriptor.summary)}</div>
             <div class="ss-interpretive-review-statement">${escapeHtml(record.publishedStatement || '(no statement)')}</div>
-            ${renderTechnicalDetailsSection([
-                { label: 'Published Record ID', value: `<code>${escapeHtml(record.dnmRecordId)}</code>` },
-                { label: 'Source Revision', value: `<code>${escapeHtml(record.sourceInterpretationRevisionId || 'n/a')}</code>` },
-                { label: 'Memory Line', value: options.showContinuityTarget ? `<code>${escapeHtml(record.continuityTargetId || 'n/a')}</code>` : '' },
-                { label: 'Supersedes', value: record.supersedesDnmRecordId ? `<code>${escapeHtml(record.supersedesDnmRecordId)}</code>` : '' },
-                { label: 'Superseded By', value: record.supersededByDnmRecordId ? `<code>${escapeHtml(record.supersededByDnmRecordId)}</code>` : '' },
-                { label: 'Authorization', value: options.showAuthorization ? `<code>${escapeHtml(record.publicationAuthorizationId || 'n/a')}</code>` : '' },
-            ])}
             ${options.showOperatorState && availableActions.length > 0 ? `
                 <div><strong>Lawful actions now</strong></div>
                 <div>${renderServerReasonList(availableActions, 'None')}</div>

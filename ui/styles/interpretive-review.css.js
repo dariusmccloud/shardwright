@@ -4,13 +4,13 @@ export const INTERPRETIVE_REVIEW_CSS = `
    ========================================================================== */
 
 .ss-interpretive-review-modal {
-    padding: 16px;
+    padding: 14px;
     width: min(1560px, 97vw);
     max-width: 100%;
     box-sizing: border-box;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
-    gap: 14px;
+    gap: 12px;
     min-width: 0;
     height: 100%;
     min-height: 0;
@@ -63,8 +63,8 @@ export const INTERPRETIVE_REVIEW_CSS = `
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    gap: 14px;
-    padding: 16px 18px;
+    gap: 12px;
+    padding: 14px 16px;
     border: 1px solid color-mix(in srgb, var(--ss-border) 78%, transparent);
     border-radius: 16px;
     background: linear-gradient(180deg, color-mix(in srgb, var(--ss-bg-primary) 92%, white 8%), color-mix(in srgb, var(--ss-bg-primary) 97%, black 3%));
@@ -195,7 +195,7 @@ export const INTERPRETIVE_REVIEW_CSS = `
 .ss-interpretive-review-layout {
     display: grid;
     grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
-    gap: 14px;
+    gap: 12px;
     min-width: 0;
     overflow: hidden;
 }
@@ -211,7 +211,7 @@ export const INTERPRETIVE_REVIEW_CSS = `
 .ss-interpretive-review-queue,
 .ss-interpretive-review-detail {
     border: 1px solid color-mix(in srgb, var(--ss-border) 82%, transparent);
-    border-radius: 16px;
+    border-radius: 14px;
     background: linear-gradient(180deg, color-mix(in srgb, var(--ss-bg-primary) 94%, white 6%), color-mix(in srgb, var(--ss-bg-primary) 98%, black 2%));
     overflow: hidden;
     display: grid;
@@ -230,7 +230,7 @@ export const INTERPRETIVE_REVIEW_CSS = `
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    padding: 12px 14px;
+    padding: 10px 12px;
     border-bottom: 1px solid color-mix(in srgb, var(--ss-border) 80%, transparent);
     background: linear-gradient(180deg, color-mix(in srgb, var(--ss-bg-primary) 88%, black 12%), color-mix(in srgb, var(--ss-bg-primary) 94%, white 6%));
 }
@@ -238,7 +238,7 @@ export const INTERPRETIVE_REVIEW_CSS = `
 .ss-interpretive-review-queue-controls {
     display: grid;
     gap: 6px;
-    padding: 12px 14px;
+    padding: 10px 12px;
     border-bottom: 1px solid color-mix(in srgb, var(--ss-border) 80%, transparent);
     background: color-mix(in srgb, var(--ss-bg-primary) 94%, white 6%);
 }
@@ -261,8 +261,8 @@ export const INTERPRETIVE_REVIEW_CSS = `
 
 .ss-interpretive-review-queue-list {
     display: grid;
-    gap: 8px;
-    padding: 8px;
+    gap: 6px;
+    padding: 6px;
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
@@ -276,13 +276,13 @@ export const INTERPRETIVE_REVIEW_CSS = `
 
 .ss-interpretive-review-item {
     display: grid;
-    gap: 6px;
+    gap: 4px;
     width: 100%;
     margin: 0;
-    padding: 12px 14px;
+    padding: 10px 12px;
     border: 1px solid color-mix(in srgb, var(--ss-border) 82%, transparent);
     border-left-width: 3px;
-    border-radius: 12px;
+    border-radius: 11px;
     background: color-mix(in srgb, var(--ss-bg-primary) 92%, white 8%);
     color: var(--ss-text-primary);
     text-align: left;
@@ -320,9 +320,9 @@ export const INTERPRETIVE_REVIEW_CSS = `
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: 8px;
     min-width: 0;
-    font-size: 14px;
+    font-size: 13px;
     line-height: 1.3;
 }
 
@@ -342,16 +342,16 @@ export const INTERPRETIVE_REVIEW_CSS = `
 
 .ss-interpretive-review-group-rows {
     display: grid;
-    gap: 8px;
-    margin-top: 4px;
+    gap: 6px;
+    margin-top: 2px;
 }
 
 .ss-interpretive-review-group-row {
     display: flex;
     align-items: start;
     justify-content: space-between;
-    gap: 8px;
-    padding-top: 8px;
+    gap: 6px;
+    padding-top: 6px;
     border-top: 1px solid color-mix(in srgb, var(--ss-border) 70%, transparent);
 }
 
@@ -359,9 +359,9 @@ export const INTERPRETIVE_REVIEW_CSS = `
     display: flex;
     align-items: start;
     justify-content: space-between;
-    gap: 8px;
+    gap: 6px;
     width: 100%;
-    padding: 8px 10px 0;
+    padding: 6px 9px;
     border: 1px solid color-mix(in srgb, var(--ss-border) 80%, transparent);
     border-radius: 10px;
     background: color-mix(in srgb, var(--ss-bg-primary) 90%, white 10%);
@@ -389,7 +389,7 @@ export const INTERPRETIVE_REVIEW_CSS = `
 
 .ss-interpretive-review-group-row-main {
     display: grid;
-    gap: 2px;
+    gap: 1px;
 }
 
 .ss-interpretive-review-group-name {
@@ -405,11 +405,11 @@ export const INTERPRETIVE_REVIEW_CSS = `
 }
 
 .ss-interpretive-review-detail-body {
-    padding: 14px;
+    padding: 12px;
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 14px;
+    gap: 12px;
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
@@ -468,7 +468,7 @@ export const INTERPRETIVE_REVIEW_CSS = `
 .ss-interpretive-review-detail-view.active {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
     min-width: 0;
 }
 
@@ -585,11 +585,11 @@ export const INTERPRETIVE_REVIEW_CSS = `
     display: block;
     flex: 0 0 auto;
     border: 1px var(--ss-review-section-border-style) var(--ss-border);
-    border-radius: 14px;
+    border-radius: 12px;
     background: linear-gradient(180deg, color-mix(in srgb, var(--ss-bg-primary) var(--ss-review-section-surface-mix), white 6%), color-mix(in srgb, var(--ss-bg-primary) 98%, black 2%));
     overflow: hidden;
     margin: 0;
-    box-shadow: 0 10px 22px color-mix(in srgb, black 10%, transparent);
+    box-shadow: 0 8px 18px color-mix(in srgb, black 9%, transparent);
 }
 
 .ss-review-section__header,
@@ -597,7 +597,7 @@ export const INTERPRETIVE_REVIEW_CSS = `
 .ss-interpretive-review-static-header {
     display: grid;
     gap: 4px;
-    padding: 12px 14px;
+    padding: 10px 12px;
     background: linear-gradient(180deg, color-mix(in srgb, var(--ss-bg-primary) var(--ss-review-section-header-mix), black 10%), color-mix(in srgb, var(--ss-bg-primary) 96%, white 4%));
 }
 
@@ -620,7 +620,7 @@ export const INTERPRETIVE_REVIEW_CSS = `
 
 .ss-review-section__body,
 .ss-interpretive-review-disclosure-body {
-    padding: 14px;
+    padding: 12px;
     text-align: left;
 }
 
@@ -687,16 +687,16 @@ export const INTERPRETIVE_REVIEW_CSS = `
 }
 
 .ss-interpretive-review-context {
-    padding: 20px 22px;
-    font-size: 18px;
-    line-height: 1.5;
+    padding: 16px 18px;
+    font-size: 17px;
+    line-height: 1.45;
     background: linear-gradient(180deg, color-mix(in srgb, var(--ss-bg-primary) 94%, white 6%), color-mix(in srgb, var(--ss-bg-primary) 98%, black 2%));
     border-top: 1px solid color-mix(in srgb, var(--ss-border) 80%, transparent);
     text-align: left;
 }
 
 .ss-interpretive-review-context-support {
-    padding: 14px 22px 18px;
+    padding: 12px 18px 14px;
     border-top: 1px solid color-mix(in srgb, var(--ss-border) 60%, transparent);
     background: color-mix(in srgb, var(--ss-bg-primary) 97%, white 3%);
     text-align: left;
@@ -714,8 +714,8 @@ export const INTERPRETIVE_REVIEW_CSS = `
 }
 
 .ss-interpretive-review-summary-note {
-    font-size: 13px;
-    line-height: 1.5;
+    font-size: 12px;
+    line-height: 1.45;
 }
 
 .ss-interpretive-review-grid {
@@ -731,7 +731,7 @@ export const INTERPRETIVE_REVIEW_CSS = `
 
 .ss-interpretive-review-review-column {
     display: grid;
-    gap: 14px;
+    gap: 12px;
     min-width: 0;
 }
 
@@ -745,7 +745,7 @@ export const INTERPRETIVE_REVIEW_CSS = `
 
 .ss-interpretive-review-review-main {
     display: grid;
-    gap: 14px;
+    gap: 12px;
     min-width: 0;
 }
 
@@ -775,8 +775,8 @@ export const INTERPRETIVE_REVIEW_CSS = `
 
 .ss-interpretive-review-card {
     border: 1px solid color-mix(in srgb, var(--ss-border) 82%, transparent);
-    border-radius: 12px;
-    padding: 12px;
+    border-radius: 11px;
+    padding: 10px;
     background: linear-gradient(180deg, color-mix(in srgb, var(--ss-bg-primary) 92%, white 8%), color-mix(in srgb, var(--ss-bg-primary) 97%, black 3%));
     text-align: left;
     box-shadow: 0 8px 18px color-mix(in srgb, black 8%, transparent);
@@ -801,7 +801,7 @@ export const INTERPRETIVE_REVIEW_CSS = `
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     gap: 0;
     border: 1px solid color-mix(in srgb, var(--ss-border) 76%, transparent);
-    border-radius: 14px;
+    border-radius: 12px;
     overflow: hidden;
     background: linear-gradient(180deg, color-mix(in srgb, var(--ss-bg-primary) 93%, white 7%), color-mix(in srgb, var(--ss-bg-primary) 97%, black 3%));
     box-shadow: 0 8px 18px color-mix(in srgb, black 8%, transparent);
@@ -809,15 +809,23 @@ export const INTERPRETIVE_REVIEW_CSS = `
 
 .ss-interpretive-review-lifecycle-section .ss-review-section__body {
     display: grid;
-    gap: 14px;
+    gap: 12px;
+}
+
+.ss-interpretive-review-lifecycle-section .ss-interpretive-review-card {
+    padding: 12px 14px;
+}
+
+.ss-interpretive-review-lifecycle-section .ss-interpretive-review-list {
+    gap: 10px;
 }
 
 .ss-interpretive-review-status-strip-cell {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    gap: 10px;
+    gap: 8px;
     align-items: center;
-    padding: 8px 12px;
+    padding: 7px 10px;
     border-left: 1px solid color-mix(in srgb, var(--ss-border) 62%, transparent);
 }
 
@@ -848,9 +856,9 @@ export const INTERPRETIVE_REVIEW_CSS = `
 .ss-interpretive-review-policy-audit-card {
     display: grid;
     gap: 0;
-    margin-top: 2px;
+    margin-top: 4px;
     border: 1px solid color-mix(in srgb, var(--ss-border) 76%, transparent);
-    border-radius: 14px;
+    border-radius: 12px;
     overflow: hidden;
     background: linear-gradient(180deg, color-mix(in srgb, var(--ss-bg-primary) 93%, white 7%), color-mix(in srgb, var(--ss-bg-primary) 97%, black 3%));
     box-shadow: 0 8px 18px color-mix(in srgb, black 8%, transparent);
@@ -858,8 +866,8 @@ export const INTERPRETIVE_REVIEW_CSS = `
 
 .ss-interpretive-review-policy-audit-row {
     display: grid;
-    gap: 8px;
-    padding: 14px 16px;
+    gap: 10px;
+    padding: 12px 14px;
     border-top: 1px solid color-mix(in srgb, var(--ss-border) 62%, transparent);
 }
 
@@ -873,13 +881,49 @@ export const INTERPRETIVE_REVIEW_CSS = `
     align-items: center;
     min-width: 0;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 6px 8px;
     text-align: left;
 }
 
 .ss-interpretive-review-detail-view[data-detail-view-panel="review"] .ss-interpretive-review-card,
 .ss-interpretive-review-detail-view[data-detail-view-panel="review"] .ss-interpretive-review-section {
     width: 100%;
+}
+
+.ss-interpretive-review-detail-view[data-detail-view-panel="technical"].active {
+    gap: 14px;
+}
+
+.ss-interpretive-review-detail-view[data-detail-view-panel="technical"] .ss-review-section__header,
+.ss-interpretive-review-detail-view[data-detail-view-panel="technical"] .ss-interpretive-review-static-header,
+.ss-interpretive-review-detail-view[data-detail-view-panel="technical"] .ss-interpretive-review-disclosure-summary {
+    padding: 12px 16px;
+}
+
+.ss-interpretive-review-detail-view[data-detail-view-panel="technical"] .ss-review-section__body,
+.ss-interpretive-review-detail-view[data-detail-view-panel="technical"] .ss-interpretive-review-disclosure-body {
+    padding: 16px 18px;
+}
+
+.ss-interpretive-review-detail-view[data-detail-view-panel="technical"] .ss-interpretive-review-card {
+    padding: 14px 16px;
+}
+
+.ss-interpretive-review-detail-view[data-detail-view-panel="technical"] .ss-interpretive-review-list {
+    gap: 10px;
+}
+
+.ss-interpretive-review-detail-view[data-detail-view-panel="technical"] .ss-interpretive-review-policy-audit-card {
+    margin-top: 8px;
+}
+
+.ss-interpretive-review-detail-view[data-detail-view-panel="technical"] .ss-interpretive-review-policy-audit-row {
+    gap: 12px;
+    padding: 14px 16px;
+}
+
+.ss-interpretive-review-detail-view[data-detail-view-panel="technical"] .ss-interpretive-review-policy-audit-value {
+    gap: 8px 10px;
 }
 
 .ss-interpretive-review-evidence-body {
@@ -891,7 +935,7 @@ export const INTERPRETIVE_REVIEW_CSS = `
 .ss-interpretive-review-evidence-note {
     display: grid;
     gap: 6px;
-    padding: 14px;
+    padding: 12px;
 }
 
 .ss-interpretive-review-evidence-note .ss-interpretive-review-inline-meta {
@@ -921,12 +965,12 @@ export const INTERPRETIVE_REVIEW_CSS = `
 .ss-interpretive-review-card strong,
 .ss-interpretive-review-list strong {
     display: block;
-    margin-bottom: 4px;
+    margin-bottom: 3px;
 }
 
 .ss-interpretive-action-card {
     display: grid;
-    gap: 10px;
+    gap: 8px;
     text-align: left;
     width: 100%;
     max-width: none;
@@ -934,17 +978,17 @@ export const INTERPRETIVE_REVIEW_CSS = `
 
 .ss-interpretive-action-form {
     display: grid;
-    gap: 12px;
+    gap: 10px;
     min-width: 0;
 }
 
 .ss-interpretive-review-list {
     display: grid;
-    gap: 8px;
+    gap: 6px;
 }
 
 .ss-interpretive-review-history-card {
-    gap: 8px;
+    gap: 6px;
 }
 
 .ss-interpretive-review-history-heading {
@@ -961,7 +1005,7 @@ export const INTERPRETIVE_REVIEW_CSS = `
 .ss-interpretive-review-history-block {
     display: grid;
     gap: 4px;
-    padding: 8px 10px;
+    padding: 7px 9px;
     border: 1px solid color-mix(in srgb, var(--ss-border) 75%, transparent);
     border-radius: 10px;
     background: color-mix(in srgb, var(--ss-bg-primary) 95%, white 5%);
@@ -1015,7 +1059,7 @@ export const INTERPRETIVE_REVIEW_CSS = `
 .ss-interpretive-review-form-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 12px;
+    gap: 10px;
 }
 
 .ss-interpretive-action-form .ss-interpretive-review-form-grid {
@@ -1048,9 +1092,9 @@ export const INTERPRETIVE_REVIEW_CSS = `
 
 .ss-interpretive-review-reason-groups {
     display: grid;
-    gap: 12px;
-    margin-top: 10px;
-    padding-top: 10px;
+    gap: 10px;
+    margin-top: 8px;
+    padding-top: 8px;
     border-top: 1px solid color-mix(in srgb, var(--ss-border) 70%, transparent);
 }
 
@@ -1072,8 +1116,8 @@ export const INTERPRETIVE_REVIEW_CSS = `
 }
 
 .ss-interpretive-review-comment-field {
-    margin-top: 10px;
-    padding-top: 10px;
+    margin-top: 8px;
+    padding-top: 8px;
     border-top: 1px solid color-mix(in srgb, var(--ss-border) 70%, transparent);
 }
 
@@ -1092,7 +1136,7 @@ export const INTERPRETIVE_REVIEW_CSS = `
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
+    gap: 10px;
     max-height: min(70vh, 980px);
     overflow-y: auto;
     overflow-x: hidden;
@@ -1106,7 +1150,7 @@ export const INTERPRETIVE_REVIEW_CSS = `
 .ss-interpretive-review-primary-action {
     display: grid;
     gap: 10px;
-    padding: 14px;
+    padding: 12px;
     border: 1px solid color-mix(in srgb, var(--ss-primary) 36%, var(--ss-border));
     border-radius: 14px;
     background: linear-gradient(180deg, color-mix(in srgb, var(--ss-bg-primary) 88%, var(--ss-primary) 12%), color-mix(in srgb, var(--ss-bg-primary) 94%, white 6%));
@@ -1279,7 +1323,7 @@ export const INTERPRETIVE_REVIEW_CSS = `
 
     .ss-interpretive-review-column + .ss-interpretive-review-column,
     .ss-interpretive-review-queue + .ss-interpretive-review-detail {
-        margin-top: 12px;
+        margin-top: 10px;
     }
 
     .ss-interpretive-review-queue-controls {
@@ -1303,16 +1347,16 @@ export const INTERPRETIVE_REVIEW_CSS = `
     }
 
     .ss-interpretive-review-review-column {
-        gap: 12px;
+        gap: 10px;
     }
 
     .ss-interpretive-review-context {
-        font-size: 17px;
-        padding: 16px;
+        font-size: 16px;
+        padding: 14px;
     }
 
     .ss-interpretive-review-context-support {
-        padding: 12px 16px 14px;
+        padding: 10px 14px 12px;
     }
 
     .ss-interpretive-action-form .ss-interpretive-review-form-grid {
