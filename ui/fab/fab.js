@@ -613,8 +613,7 @@ async function handleAction(action, button) {
                 await callbacksRef.onOpenChatManager?.();
                 break;
             case 'open-interpretive-review':
-                await closePanels();
-                await callbacksRef.onOpenInterpretiveReview?.();
+                await openInterpretiveReviewFromFab();
                 break;
             case 'open-visibility':
                 await closePanels();
@@ -632,6 +631,54 @@ async function handleAction(action, button) {
     } finally {
         withActionLock(button, false);
     }
+}
+
+async function openInterpretiveReviewFromFab() {
+    await closePanels();
+    await waitForFabActionHandoff();
+
+    const launcher = document.getElementById('ss-interpretive-reviews-btn');
+    if (launcher instanceof HTMLElement) {
+        launcher.click();
+        if (await waitForInterpretiveReviewModal()) {
+            return;
+        }
+    }
+
+    try {
+        await callbacksRef.onOpenInterpretiveReview?.();
+    } catch (error) {
+        log.warn('[FAB] Interpretive review callback failed, launcher fallback exhausted.', error);
+    }
+
+    if (await waitForInterpretiveReviewModal()) {
+        return;
+    }
+}
+
+async function waitForFabActionHandoff() {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await waitForNextFrame();
+    await waitForNextFrame();
+}
+
+async function waitForNextFrame() {
+    if (typeof window.requestAnimationFrame === 'function') {
+        await new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
+        return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 16));
+}
+
+async function waitForInterpretiveReviewModal(timeoutMs = 500) {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+        if (document.querySelector('.ss-interpretive-review-modal')) {
+            return true;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+    return !!document.querySelector('.ss-interpretive-review-modal');
 }
 
 function withActionLock(button, isLocked) {
