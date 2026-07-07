@@ -1680,6 +1680,16 @@ function renderSummaryFacts(rows) {
     `;
 }
 
+function formatHumanReadableEnumLabel(value) {
+    return String(value || '')
+        .trim()
+        .toLowerCase()
+        .split(/[_\s-]+/g)
+        .filter(Boolean)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ') || 'n/a';
+}
+
 function formatHumanEntityLabel(value) {
     const text = String(value || '').trim();
     if (!text) {
@@ -1692,6 +1702,57 @@ function formatHumanEntityLabel(value) {
         .filter(Boolean)
         .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
         .join(' ');
+}
+
+function formatEvidenceFindingRoleLabel(value) {
+    const normalized = String(value || '').trim().toUpperCase();
+    if (normalized === 'PRIMARY') return 'Primary evidence';
+    if (normalized === 'SUPPORTING') return 'Supporting evidence';
+    if (normalized === 'COUNTEREVIDENCE') return 'Contrary evidence';
+    return formatHumanReadableEnumLabel(normalized);
+}
+
+function formatEvidenceFindingSupportLabel(value) {
+    const normalized = String(value || '').trim().toUpperCase();
+    if (normalized === 'SUPPORTED') return 'Supported';
+    if (normalized === 'PARTIALLY_SUPPORTED') return 'Partially supported';
+    if (normalized === 'CONTRADICTED') return 'Contradicted';
+    if (normalized === 'NEUTRAL') return 'Neutral';
+    return formatHumanReadableEnumLabel(normalized);
+}
+
+function renderEvidenceFindingDomains(domains) {
+    if (!Array.isArray(domains) || domains.length === 0) {
+        return '';
+    }
+    return domains.map((domain) => renderBadge(formatHumanReadableEnumLabel(domain))).join('');
+}
+
+function renderEvidenceFindingCard(finding) {
+    const roleBadge = renderBadge(formatEvidenceFindingRoleLabel(finding?.role));
+    const supportBadge = renderBadge(formatEvidenceFindingSupportLabel(finding?.supportLevel));
+    const domainBadges = renderEvidenceFindingDomains(finding?.domains);
+    const basisRefs = Array.isArray(finding?.basisRefs) ? finding.basisRefs : [];
+    return `
+        <div class="ss-interpretive-review-card ss-interpretive-review-status-card ss-interpretive-review-evidence-finding">
+            <div class="ss-interpretive-review-inline-meta">
+                ${roleBadge}
+                ${supportBadge}
+                ${domainBadges}
+            </div>
+            <div class="ss-interpretive-review-summary-note">${escapeHtml(String(finding?.summary || '').trim() || 'No readable finding summary recorded.')}</div>
+            <div class="ss-interpretive-review-evidence-meta">
+                <div class="ss-interpretive-review-evidence-meta-row">
+                    <strong>Source</strong>
+                    <span>${escapeHtml(String(finding?.sourceLabel || '').trim() || 'n/a')}</span>
+                </div>
+                <div class="ss-interpretive-review-evidence-meta-row">
+                    <strong>Basis refs</strong>
+                    <span>${renderStringList(basisRefs, 'None recorded')}</span>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 function formatHumanRoleLabel(value) {
@@ -2083,8 +2144,23 @@ function buildNoActionSummary(interpretation, operatorState) {
 
 function renderHumanEvidenceSection(interpretation) {
     const groundingLinks = Array.isArray(interpretation?.groundingLinks) ? interpretation.groundingLinks : [];
+    const evidenceFindings = Array.isArray(interpretation?.evidenceFindings) ? interpretation.evidenceFindings : [];
+    const evidenceFindingState = String(interpretation?.evidenceFindingState || '').trim().toUpperCase();
     const boundCount = groundingLinks.length;
     const boundLabel = boundCount === 1 ? '1 bound source' : `${boundCount} bound sources`;
+    const findingCount = evidenceFindings.length;
+    const findingLabel = findingCount === 1 ? '1 readable finding' : `${findingCount} readable findings`;
+    const hasReadableFindings = evidenceFindingState === 'AVAILABLE' && findingCount > 0;
+    const summaryText = hasReadableFindings
+        ? `${findingLabel.charAt(0).toUpperCase()}${findingLabel.slice(1)} derived from ${boundLabel}.`
+        : (boundCount > 0
+            ? `${boundLabel.charAt(0).toUpperCase()}${boundLabel.slice(1)} are attached. Human-readable findings are not available for this candidate yet.`
+            : 'No bound evidence is available for this candidate yet.');
+    const hintText = hasReadableFindings
+        ? 'Open Technical Details to inspect the exact bound source records for each finding.'
+        : (boundCount > 0
+            ? 'Open Technical Details to inspect the exact bound source records.'
+            : 'See Technical Details for source information.');
     return `
         <div class="ss-interpretive-review-section ss-review-section ss-review-section--static">
             <div class="ss-review-section__header">
@@ -2092,17 +2168,14 @@ function renderHumanEvidenceSection(interpretation) {
             </div>
             <div class="ss-review-section__body ss-interpretive-review-evidence-body">
                 <div class="ss-interpretive-review-card ss-interpretive-review-status-card ss-interpretive-review-evidence-note">
-                    <div class="ss-interpretive-review-summary-note">
-                        ${boundCount > 0
-                            ? `${boundLabel.charAt(0).toUpperCase()}${boundLabel.slice(1)} are attached. Human-readable findings are not available yet.`
-                            : 'No bound evidence is available yet.'}
-                    </div>
-                    <div class="ss-hint">
-                        ${boundCount > 0
-                            ? 'Open Technical Details to inspect the exact bound source records.'
-                            : 'See Technical Details for source information.'}
-                    </div>
+                    <div class="ss-interpretive-review-summary-note">${escapeHtml(summaryText)}</div>
+                    <div class="ss-hint">${escapeHtml(hintText)}</div>
                 </div>
+                ${hasReadableFindings
+                    ? `<div class="ss-interpretive-review-list ss-interpretive-review-evidence-findings">
+                        ${evidenceFindings.map((finding) => renderEvidenceFindingCard(finding)).join('')}
+                    </div>`
+                    : ''}
             </div>
         </div>
     `;

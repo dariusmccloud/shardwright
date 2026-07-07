@@ -943,6 +943,32 @@ export const INTERPRETIVE_REVIEW_CSS = `
     min-height: 0;
 }
 
+.ss-interpretive-review-evidence-findings {
+    display: grid;
+    gap: 10px;
+}
+
+.ss-interpretive-review-evidence-finding {
+    gap: 10px;
+    padding: 12px;
+}
+
+.ss-interpretive-review-evidence-meta {
+    display: grid;
+    gap: 6px;
+}
+
+.ss-interpretive-review-evidence-meta-row {
+    display: grid;
+    gap: 3px;
+    justify-items: start;
+    text-align: left;
+}
+
+.ss-interpretive-review-evidence-meta-row strong {
+    margin-bottom: 0;
+}
+
 .ss-interpretive-review-lifecycle-section .ss-interpretive-review-inline-meta {
     gap: 4px 6px;
 }
