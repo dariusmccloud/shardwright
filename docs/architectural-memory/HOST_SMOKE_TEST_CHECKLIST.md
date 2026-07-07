@@ -1,13 +1,13 @@
 # Host Smoke Test Checklist
 
-Last updated: 2026-07-05
+Last updated: 2026-07-06
 
 Purpose: track live host verification across the restored Summary Sharder build so browser proof, persistence proof, and remaining gaps stay explicit.
 
 ## Current target
 
 - Host: local SillyTavern test instance
-- Extension copy: restored/recovered build now showing `Publication Lifecycle`
+- Extension copy: served build with guided publication flow, lifecycle UI overhaul, and FAB launcher fix
 - Active branch: `feature/architectural-persistence-schema`
 - Current profile under live test: `Architectural Memory`
 
@@ -47,6 +47,19 @@ Notes:
 - [x] Packaged publication path succeeds under Node
 - [x] Packaged publication path succeeds under Bun
 - [x] Standard publication contract no longer requires script, JSON body, raw policy field, or refusal-code knowledge for ordinary flow
+
+Additional live host proof:
+
+- [x] Guided publication now succeeds end-to-end through the served UI:
+  - `Set Up Standard Publication Policy`
+  - `Check Eligibility`
+  - `Publish Memory`
+- [x] Published state renders coherently across:
+  - request card status
+  - top-right status chip
+  - `Review`
+  - `Publication Lifecycle`
+- [x] `Publication Lifecycle` and `Technical Details` now read as distinct operator and diagnostic surfaces
 
 Evidence:
 
@@ -156,9 +169,8 @@ Verified live evidence:
 ### Proposal / interpretive pipeline
 
 - Current boundary:
-  - there is no confirmed host UI entry point yet for proposal generation
   - if the queue is empty, seed one governed candidate through the plugin route before continuing UI smoke
-  - `C0.6.4-5` now defines in-app bootstrap/check/publish flow, but the updated host path still needs live UI proof on the served build
+  - ordinary publication is now host-usable, but repeated smoke seeding can still leave noisy historical residue if the default line is reused without reset
   - helper script: `tools/server-plugin/seed-interpretive-candidate.ps1`
   - default smoke seeding should use `-ResetFirst -RestartHostAfterReset` unless you intentionally want to inspect dirty-state behavior
 
@@ -176,31 +188,33 @@ Verified live evidence:
 
 - [ ] Processing toast stays centered after the review popup appears; should dismiss or move off the center path
 
-## Open publication product gap
+## Publication closeout boundary
 
-This is no longer a smoke-only issue.
+The major product gap is no longer bootstrap or ordinary-path usability.
 
-Current host proof exposed a genuine product boundary:
+That boundary is now considered proven enough to move from product rescue into closeout proof.
 
-- ordinary publication still depends on pre-seeded policy records
-- the current lifecycle surface still exposes machine-shaped governance state
-- the ordinary operator path is not yet reduced to:
-  - setup standard policy
-  - check eligibility
-  - publish memory
+Authority now lives in:
 
-Authority for closing this gap now lives in:
+- contract: `docs/architectural-memory/PHASE_C0_6_4_5_PUBLICATION_POLICY_BOOTSTRAP_AND_GUIDED_OPERATOR_FLOW_BRIEF.md`
+- execution order: `docs/architectural-memory/C0_6_4_5_CLOSEOUT_AND_NEXT_LIFT_PLAN.md`
 
-- `docs/architectural-memory/PHASE_C0_6_4_5_PUBLICATION_POLICY_BOOTSTRAP_AND_GUIDED_OPERATOR_FLOW_BRIEF.md`
+Remaining publication work is now:
+
+- publication data hygiene on the default smoke line
+- corrected-child publication proof
+- restart / replay / cross-host parity proof
+- only the UI tightening needed to support those proofs
 
 ## Suggested execution order
 
 1. Architectural boundary confirmation
 2. Narrative warm archive save
 3. RAG retrieval and reranker
-4. Proposal generation
-5. Interpretive review queue / lifecycle updates
-6. Server-plugin persistence cross-check
+4. Guided publication clean-root proof
+5. Corrected-child publication proof
+6. Restart / replay / cross-host parity
+7. Server-plugin persistence cross-check
 
 ## Operator script: proposal -> review -> lifecycle
 
