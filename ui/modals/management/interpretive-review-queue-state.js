@@ -41,6 +41,19 @@ export function getQueueGroupRepresentativeReview(reviews) {
         || null;
 }
 
+export function isQueueGroupSelected(group, selectedReviewRequestId = '', selectedInterpretationRevisionId = '') {
+    const reviews = Array.isArray(group?.reviews) ? group.reviews : [];
+    const normalizedReviewRequestId = String(selectedReviewRequestId || '').trim();
+    if (normalizedReviewRequestId) {
+        return reviews.some((review) => String(review?.reviewRequestId || '').trim() === normalizedReviewRequestId);
+    }
+    const normalizedRevisionId = String(selectedInterpretationRevisionId || '').trim();
+    if (!normalizedRevisionId) {
+        return false;
+    }
+    return String(group?.interpretationRevisionId || '').trim() === normalizedRevisionId;
+}
+
 export function getRevisionLifecycleStatus(interpretation, operatorState) {
     const publicationState = String(interpretation?.publicationState || '').trim().toUpperCase();
     const recordsForTarget = Array.isArray(operatorState?.recordsForTarget) ? operatorState.recordsForTarget : [];

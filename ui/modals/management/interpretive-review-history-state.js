@@ -207,6 +207,7 @@ export function buildDecisionHistoryEntries(interpretation, selectedReviewReques
             timestamp: disposition.submittedAt || null,
             contextLabel: 'How it was recorded',
             commentaryLabel: 'Recorded note',
+            compact: true,
             selected: disposition.reviewRequestId === selectedReviewRequestId,
         };
     });
@@ -228,6 +229,7 @@ export function buildDecisionHistoryEntries(interpretation, selectedReviewReques
             timestamp: subjectDisposition.recordedAt || null,
             contextLabel: 'How it was recorded',
             commentaryLabel: 'Decision note',
+            compact: true,
             selected: false,
         });
     }

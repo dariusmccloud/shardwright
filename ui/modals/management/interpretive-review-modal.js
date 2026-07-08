@@ -39,6 +39,7 @@ import {
     getRevisionFilterStatus,
     getRevisionLifecycleStatus,
     groupMatchesStatusFilter,
+    isQueueGroupSelected,
     summarizeReviewWorkflowCode,
 } from './interpretive-review-queue-state.js';
 import {
@@ -577,7 +578,7 @@ function renderHistoryActionCard({
                 ${timestamp ? `<div class="ss-hint">${escapeHtml(formatTimestamp(timestamp))}</div>` : ''}
             </div>
             <div class="ss-interpretive-review-inline-meta${compact ? ' ss-interpretive-review-inline-meta--compact' : ''}">
-                ${compact ? renderBadge(dispositionLabel || 'Submitted') : ''}
+                ${compact ? '' : renderBadge(dispositionLabel || 'Submitted')}
                 ${roleLabel ? renderBadge(roleLabel) : ''}
             </div>
             ${historyContextLabel ? `
@@ -1635,8 +1636,7 @@ function renderQueueGroupItem(group, selectedReviewRequestId, selectedInterpreta
         return earliest === null ? created : Math.min(earliest, created);
     }, null);
 
-    const groupSelected = String(group.interpretationRevisionId || '') === String(selectedInterpretationRevisionId || '')
-        || reviews.some((review) => review.reviewRequestId === selectedReviewRequestId);
+    const groupSelected = isQueueGroupSelected(group, selectedReviewRequestId, selectedInterpretationRevisionId);
     const revisionWorkflowBadge = renderBadge(buildPrimaryWorkflowStatus({
         reviewRequests: reviews,
         reviewState: canonicalRevisionState?.reviewState ?? representativeReview.reviewState,

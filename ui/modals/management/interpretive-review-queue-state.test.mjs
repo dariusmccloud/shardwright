@@ -6,6 +6,7 @@ import {
     buildQueueGroups,
     getRevisionFilterStatus,
     groupMatchesStatusFilter,
+    isQueueGroupSelected,
 } from './interpretive-review-queue-state.js';
 
 function makeReview(overrides = {}) {
@@ -136,4 +137,20 @@ test('approve-with-edit remains filterable by reviewer disposition even when the
     ])[0];
 
     assert.equal(groupMatchesStatusFilter(group, 'APPROVE_WITH_EDIT'), true);
+});
+
+test('queue group selection prefers the selected review request over a stale revision selection', () => {
+    const [groupA, groupB] = buildQueueGroups([
+        makeReview({
+            reviewRequestId: 'req-a',
+            interpretationRevisionId: 'rev-a',
+        }),
+        makeReview({
+            reviewRequestId: 'req-b',
+            interpretationRevisionId: 'rev-b',
+        }),
+    ]);
+
+    assert.equal(isQueueGroupSelected(groupA, 'req-b', 'rev-a'), false);
+    assert.equal(isQueueGroupSelected(groupB, 'req-b', 'rev-a'), true);
 });

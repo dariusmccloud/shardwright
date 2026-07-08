@@ -69,8 +69,10 @@ test('decision history distinguishes recorded reviews from publication decisions
     assert.equal(entries.length, 2);
     assert.equal(entries[0].title, 'Review recorded: Jeep approved with changes');
     assert.equal(entries[0].commentaryLabel, 'Recorded note');
+    assert.equal(entries[0].compact, true);
     assert.equal(entries[1].title, 'Publication decision: Jeep granted');
     assert.equal(entries[1].commentaryLabel, 'Decision note');
+    assert.equal(entries[1].compact, true);
 });
 
 test('publication history includes the current active record and deduplicates duplicates', () => {
