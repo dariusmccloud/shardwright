@@ -46,6 +46,10 @@ import {
     buildPublicationHistoryEntries,
     buildReviewHistoryEntries,
 } from './interpretive-review-history-state.js';
+import {
+    getPublishedRevisionActionProjection,
+    getRevisionOrigin,
+} from './interpretive-review-revision-state.js';
 
 const REVIEW_STATUS_OPTIONS = Object.freeze([
     { value: '', label: 'All statuses' },
@@ -492,6 +496,21 @@ function renderProvenance(provenance, policiesById) {
             { label: 'Recorded on', value: escapeHtml(formatTimestamp(provenance.createdAt)) },
         ])}
         ${supportingRows.length > 0 ? renderKeyValueGrid(supportingRows) : ''}
+    `;
+}
+
+function renderRevisionOriginCard(origin) {
+    if (!origin) {
+        return '';
+    }
+    return `
+        <div class="ss-interpretive-review-card ss-interpretive-review-status-card">
+            <strong>Revision origin</strong>
+            <div class="ss-interpretive-review-badge-row">
+                ${renderBadge(origin.label)}
+            </div>
+            <div class="ss-interpretive-review-summary-note">${escapeHtml(origin.summary || '')}</div>
+        </div>
     `;
 }
 
@@ -1459,17 +1478,18 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
     }
 
     if (isPublishedRevision && guidedFlow?.nextAction?.action !== 'OPEN_CHILD_REVISION') {
+        const successorAction = getPublishedRevisionActionProjection();
         actionForms.push(renderLifecycleGovernanceForm({
             formKind: 'subject-revision',
-            title: 'Create Revision',
-            description: 'Create a new governed child revision from this published memory when the wording needs to change.',
+            title: successorAction.title,
+            description: successorAction.description,
             actionKind: 'SUBJECT_REVISION',
             ownerId: interpretation.memorySubjectId,
             interpretation,
             currentActorId: options.currentActorId,
             policies: governancePolicies,
             actionStatus: options.actionStatus,
-            submitLabel: 'Create Revision',
+            submitLabel: successorAction.submitLabel,
             dataset: {
                 interpretationRevisionId: interpretation.interpretationRevisionId,
                 parentStatement: interpretation.statement || '',
@@ -2307,6 +2327,10 @@ function renderCandidateDetail(interpretation, policiesById, options = {}) {
         interpretation,
         options.publicationOperatorState,
     );
+    const revisionOrigin = getRevisionOrigin(
+        interpretation,
+        options.publicationOperatorState,
+    );
     const reviewHeadingLabel = buildReviewHeadingLabel(
         interpretation,
         options.publicationOperatorState,
@@ -2385,7 +2409,10 @@ function renderCandidateDetail(interpretation, policiesById, options = {}) {
         ${(interpretation.revisionCreationProvenance && hasLineageHistory) ? renderCollapsibleSection(
             'How this revision was created',
             'Explains whether this revision was created directly, through delegation, or as a child after correction.',
-            renderProvenance(interpretation.revisionCreationProvenance, policiesById),
+            `
+                ${renderRevisionOriginCard(revisionOrigin)}
+                ${renderProvenance(interpretation.revisionCreationProvenance, policiesById)}
+            `,
             { open: true },
         ) : ''}
 
@@ -2403,9 +2430,9 @@ function renderCandidateDetail(interpretation, policiesById, options = {}) {
             [
                 { label: 'Subject', value: escapeHtml(formatHumanEntityLabel(interpretation.memorySubjectId)) },
                 { label: 'Revision', value: escapeHtml(formatRevisionLabel(interpretation.interpretationRevisionId)) },
+                { label: 'Origin', value: escapeHtml(revisionOrigin.label) },
                 { label: 'Memory Scope', value: renderCopyableCode(interpretation.memoryScopeId, { emptyLabel: 'n/a' }) },
                 { label: 'Parent Revision', value: renderCopyableCode(interpretation.parentRevisionId, { emptyLabel: 'None' }) },
-                { label: 'Revision Reason', value: escapeHtml(interpretation.revisionReason || 'n/a') },
                 { label: 'Created', value: escapeHtml(formatTimestamp(interpretation.createdAt)) },
                 { label: 'Updated', value: escapeHtml(formatTimestamp(interpretation.updatedAt)) },
             ],
@@ -2418,6 +2445,7 @@ function renderCandidateDetail(interpretation, policiesById, options = {}) {
                 { label: 'Interpretation ID', value: renderCopyableCode(interpretation.interpretationId, { emptyLabel: 'n/a' }) },
                 { label: 'Interpretation Revision ID', value: renderCopyableCode(interpretation.interpretationRevisionId, { emptyLabel: 'n/a' }) },
                 { label: 'Created From Disposition', value: renderCopyableCode(interpretation.createdFromDispositionId, { emptyLabel: 'None' }) },
+                { label: 'Revision Reason Raw', value: renderCopyableCode(interpretation.revisionReason, { emptyLabel: 'n/a' }) },
                 { label: 'Candidate State Raw', value: renderCopyableCode(interpretation.candidateState, { emptyLabel: 'n/a' }) },
                 { label: 'Authority Effect Raw', value: renderCopyableCode(interpretation.authorityEffect, { emptyLabel: 'n/a' }) },
             ],
@@ -2831,9 +2859,10 @@ export async function openInterpretiveReviewModal() {
 
         const selectReview = async (reviewRequestId) => {
             state.actionStatus = null;
-            state.selectedReviewRequestId = reviewRequestId;
-            renderQueue();
             const review = state.reviews.find((entry) => entry.reviewRequestId === reviewRequestId) || null;
+            state.selectedReviewRequestId = reviewRequestId;
+            state.selectedInterpretationRevisionId = review?.interpretationRevisionId || null;
+            renderQueue();
             if (!review) {
                 renderDetailError('Selected review request is no longer available.');
                 return;
