@@ -2,11 +2,13 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+    buildReviewSelectionKey,
     buildPrimaryWorkflowStatus,
     buildQueueGroups,
     getRevisionFilterStatus,
     groupMatchesStatusFilter,
     isQueueGroupSelected,
+    reviewMatchesSelection,
 } from './interpretive-review-queue-state.js';
 
 function makeReview(overrides = {}) {
@@ -171,4 +173,21 @@ test('queue group selection does not bleed across revisions when review request 
     assert.equal(isQueueGroupSelected(groupB, 'req-shared', 'rev-a', true), false);
     assert.equal(isQueueGroupSelected(groupA, 'req-shared', 'rev-b', true), false);
     assert.equal(isQueueGroupSelected(groupB, 'req-shared', 'rev-b', true), true);
+});
+
+test('review selection keys and matching stay revision-specific when request ids are reused', () => {
+    const reviewA = makeReview({
+        reviewRequestId: 'req-shared',
+        interpretationRevisionId: 'rev-a',
+    });
+    const reviewB = makeReview({
+        reviewRequestId: 'req-shared',
+        interpretationRevisionId: 'rev-b',
+    });
+
+    assert.equal(buildReviewSelectionKey('req-shared', 'rev-a'), 'req-shared::rev-a');
+    assert.equal(reviewMatchesSelection(reviewA, 'req-shared', 'rev-a'), true);
+    assert.equal(reviewMatchesSelection(reviewB, 'req-shared', 'rev-a'), false);
+    assert.equal(reviewMatchesSelection(reviewA, 'req-shared', 'rev-b'), false);
+    assert.equal(reviewMatchesSelection(reviewB, 'req-shared', 'rev-b'), true);
 });

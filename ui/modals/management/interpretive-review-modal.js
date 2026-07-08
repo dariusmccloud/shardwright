@@ -33,6 +33,7 @@ import {
     validateGovernedSubmissionPayload as validateGovernedSubmissionState,
 } from './interpretive-review-form-state.js';
 import {
+    buildReviewSelectionKey,
     buildPrimaryWorkflowStatus,
     buildQueueGroups,
     getQueueGroupRepresentativeReview,
@@ -40,6 +41,7 @@ import {
     getRevisionLifecycleStatus,
     groupMatchesStatusFilter,
     isQueueGroupSelected,
+    reviewMatchesSelection,
     summarizeReviewWorkflowCode,
 } from './interpretive-review-queue-state.js';
 import {
@@ -2757,6 +2759,10 @@ export async function openInterpretiveReviewModal() {
             }).join('');
         };
 
+        const findReviewBySelection = (reviewRequestId, interpretationRevisionId = '') => {
+            return state.reviews.find((entry) => reviewMatchesSelection(entry, reviewRequestId, interpretationRevisionId)) || null;
+        };
+
         const loadPoliciesForCandidate = async (interpretation) => {
             const scopeId = String(interpretation?.memoryScopeId || '').trim();
             if (!scopeId) {
@@ -2965,10 +2971,10 @@ export async function openInterpretiveReviewModal() {
             renderCurrentDetail();
         };
 
-        const selectReview = async (reviewRequestId) => {
+        const selectReview = async (reviewRequestId, interpretationRevisionId = '') => {
             state.actionStatus = null;
-            const review = state.reviews.find((entry) => entry.reviewRequestId === reviewRequestId) || null;
-            state.selectedReviewRequestId = reviewRequestId;
+            const review = findReviewBySelection(reviewRequestId, interpretationRevisionId);
+            state.selectedReviewRequestId = String(reviewRequestId || '').trim() || null;
             state.selectedInterpretationRevisionId = review?.interpretationRevisionId || null;
             renderQueue();
             if (!review) {
@@ -2999,15 +3005,22 @@ export async function openInterpretiveReviewModal() {
                 }
                 state.reviews = await enrichReviewsWithCandidateStates(rawReviews);
                 const filteredGroups = buildFilteredQueueGroups(state.reviews, state.filters.status);
-                const visibleReviewIds = new Set(
-                    filteredGroups.flatMap((group) => (Array.isArray(group.reviews) ? group.reviews : []).map((review) => review.reviewRequestId)),
+                const visibleSelectionKeys = new Set(
+                    filteredGroups.flatMap((group) => (Array.isArray(group.reviews) ? group.reviews : []).map((review) => (
+                        buildReviewSelectionKey(review?.reviewRequestId, review?.interpretationRevisionId)
+                    ))),
                 );
-                if (!visibleReviewIds.has(state.selectedReviewRequestId)) {
+                const selectedSelectionKey = buildReviewSelectionKey(
+                    state.selectedReviewRequestId,
+                    state.selectedInterpretationRevisionId,
+                );
+                if (!visibleSelectionKeys.has(selectedSelectionKey)) {
                     state.selectedReviewRequestId = filteredGroups[0]?.reviews?.[0]?.reviewRequestId || null;
+                    state.selectedInterpretationRevisionId = filteredGroups[0]?.interpretationRevisionId || null;
                 }
                 renderQueue();
                 if (state.selectedReviewRequestId) {
-                    await selectReview(state.selectedReviewRequestId);
+                    await selectReview(state.selectedReviewRequestId, state.selectedInterpretationRevisionId);
                     return;
                 }
                 if (preserveDetail && state.selectedInterpretationRevisionId) {
@@ -3824,8 +3837,15 @@ export async function openInterpretiveReviewModal() {
             const button = event.target.closest('[data-review-request-id]');
             if (!button) return;
             const reviewRequestId = String(button.getAttribute('data-review-request-id') || '').trim();
-            if (!reviewRequestId || reviewRequestId === state.selectedReviewRequestId) return;
-            await selectReview(reviewRequestId);
+            const interpretationRevisionId = String(button.getAttribute('data-interpretation-revision-id') || '').trim();
+            if (!reviewRequestId) return;
+            if (
+                reviewRequestId === String(state.selectedReviewRequestId || '').trim()
+                && interpretationRevisionId === String(state.selectedInterpretationRevisionId || '').trim()
+            ) {
+                return;
+            }
+            await selectReview(reviewRequestId, interpretationRevisionId);
         });
 
         detailRoot?.addEventListener('change', (event) => {

@@ -41,6 +41,33 @@ export function getQueueGroupRepresentativeReview(reviews) {
         || null;
 }
 
+export function buildReviewSelectionKey(reviewRequestId = '', interpretationRevisionId = '') {
+    const normalizedReviewRequestId = String(reviewRequestId || '').trim();
+    const normalizedRevisionId = String(interpretationRevisionId || '').trim();
+    if (!normalizedReviewRequestId && !normalizedRevisionId) {
+        return '';
+    }
+    return `${normalizedReviewRequestId}::${normalizedRevisionId}`;
+}
+
+export function reviewMatchesSelection(review, selectedReviewRequestId = '', selectedInterpretationRevisionId = '') {
+    const normalizedReviewRequestId = String(selectedReviewRequestId || '').trim();
+    const normalizedRevisionId = String(selectedInterpretationRevisionId || '').trim();
+    if (!normalizedReviewRequestId && !normalizedRevisionId) {
+        return false;
+    }
+
+    const reviewRequestId = String(review?.reviewRequestId || '').trim();
+    const interpretationRevisionId = String(review?.interpretationRevisionId || '').trim();
+    if (normalizedReviewRequestId && normalizedRevisionId) {
+        return reviewRequestId === normalizedReviewRequestId && interpretationRevisionId === normalizedRevisionId;
+    }
+    if (normalizedReviewRequestId) {
+        return reviewRequestId === normalizedReviewRequestId;
+    }
+    return interpretationRevisionId === normalizedRevisionId;
+}
+
 export function isQueueGroupSelected(group, selectedReviewRequestId = '', selectedInterpretationRevisionId = '', duplicateReviewRequestSelection = false) {
     const reviews = Array.isArray(group?.reviews) ? group.reviews : [];
     const normalizedReviewRequestId = String(selectedReviewRequestId || '').trim();
