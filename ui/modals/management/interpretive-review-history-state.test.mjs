@@ -103,5 +103,31 @@ test('publication history includes the current active record and deduplicates du
     assert.equal(entries[0].record.dnmRecordId, 'rec-active');
     assert.equal(entries[0].isCurrent, true);
     assert.equal(entries[0].title, 'Published and active');
+    assert.equal(entries[0].summary, 'This is the current published memory.');
     assert.equal(entries[1].title, 'Published and later withdrawn');
+    assert.equal(entries[1].summary, 'This published memory was later removed from active use.');
+});
+
+test('publication history labels pending published replacements separately from the active record', () => {
+    const activeRecord = {
+        dnmRecordId: 'rec-active',
+        lifecycleState: 'ACTIVE',
+        publicationState: 'PUBLISHED',
+        publishedAt: 500,
+    };
+    const records = [
+        {
+            dnmRecordId: 'rec-pending',
+            lifecycleState: 'DELTA_PENDING',
+            publicationState: 'PUBLISHED',
+            publishedAt: 600,
+        },
+    ];
+
+    const entries = buildPublicationHistoryEntries(records, activeRecord);
+
+    assert.equal(entries.length, 2);
+    assert.equal(entries[0].record.dnmRecordId, 'rec-pending');
+    assert.equal(entries[0].title, 'Published replacement pending');
+    assert.equal(entries[0].summary, 'This memory is published but is not yet the current active version.');
 });

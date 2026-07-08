@@ -1360,6 +1360,51 @@ function renderDnmRecordCard(record, options = {}) {
     `;
 }
 
+function renderPublicationHistoryCard(entry) {
+    const record = entry?.record;
+    if (!record) {
+        return '';
+    }
+    const statusBadges = [
+        renderBadge(record.publicationState),
+        renderBadge(record.lifecycleState),
+    ];
+    if (record.deltaReviewState && record.deltaReviewState !== 'NONE') {
+        statusBadges.push(renderBadge(record.deltaReviewState));
+    }
+    if (entry.isCurrent) {
+        statusBadges.push(renderBadge('Current active'));
+    }
+    return `
+        <div class="ss-interpretive-review-card ss-interpretive-review-history-card">
+            <div class="ss-interpretive-review-history-heading">
+                <strong>${escapeHtml(entry.title || 'Published memory')}</strong>
+                ${entry.timestamp ? `<div class="ss-hint">${escapeHtml(formatTimestamp(entry.timestamp))}</div>` : ''}
+            </div>
+            <div class="ss-interpretive-review-inline-meta ss-interpretive-review-inline-meta--compact">
+                ${statusBadges.join('')}
+            </div>
+            <div class="ss-interpretive-review-history-block">
+                <div class="ss-interpretive-review-history-block-label">Event summary</div>
+                <div class="ss-interpretive-review-summary-note">${escapeHtml(entry.summary || 'No publication summary available.')}</div>
+            </div>
+            <div class="ss-interpretive-review-history-block">
+                <div class="ss-interpretive-review-history-block-label">Published statement</div>
+                <div class="ss-interpretive-review-statement">${escapeHtml(record.publishedStatement || '(no statement)')}</div>
+            </div>
+            ${renderTechnicalDetailsSection([
+                { label: 'Published Record ID', value: renderCopyableCode(record.dnmRecordId, { emptyLabel: 'n/a' }) },
+                { label: 'Source Revision', value: renderCopyableCode(record.sourceInterpretationRevisionId, { emptyLabel: 'n/a' }) },
+                { label: 'Memory Line', value: renderCopyableCode(record.continuityTargetId, { emptyLabel: 'n/a' }) },
+                { label: 'Authorization', value: renderCopyableCode(record.authorizationId, { emptyLabel: 'n/a' }) },
+            ], {
+                title: 'Technical details',
+                extraClass: 'ss-interpretive-review-history-subdetails',
+            })}
+        </div>
+    `;
+}
+
 function renderPublicationOperatorSection(interpretation, operatorState, policiesById, options = {}) {
     if (!operatorState) {
         return '<div class="ss-hint">Lifecycle controls are unavailable for this memory.</div>';
@@ -1633,7 +1678,7 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
             publicationHistoryRecords.length > 0 ? `
                 <div class="ss-interpretive-review-list">
                     ${buildPublicationHistoryEntries(recordsForTarget, activeRecord)
-                        .map((entry) => renderDnmRecordCard(entry.record, { compact: true }))
+                        .map((entry) => renderPublicationHistoryCard(entry))
                         .join('')}
                 </div>
             ` : `<div class="ss-hint">${activeRecord
