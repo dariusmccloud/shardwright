@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+    getLifecycleNavigationActions,
     getPublishedRevisionActionProjection,
     getRevisionOrigin,
 } from './interpretive-review-revision-state.js';
@@ -52,4 +53,38 @@ test('published revision action copy uses successor wording', () => {
     assert.equal(projection.title, 'Create Successor Revision');
     assert.equal(projection.submitLabel, 'Create Successor Revision');
     assert.match(projection.description, /current published memory stays active/i);
+});
+
+test('lifecycle navigation offers current published memory when viewing older revision', () => {
+    const actions = getLifecycleNavigationActions({
+        interpretationRevisionId: 'interp_revision_v1',
+        currentActiveRecord: {
+            sourceInterpretationRevisionId: 'interp_revision_v3',
+        },
+    });
+
+    assert.deepEqual(
+        actions.map((action) => action.code),
+        ['OPEN_CURRENT_PUBLISHED_MEMORY'],
+    );
+    assert.equal(actions[0].interpretationRevisionId, 'interp_revision_v3');
+});
+
+test('lifecycle navigation omits current published memory when already on active revision', () => {
+    const actions = getLifecycleNavigationActions({
+        interpretationRevisionId: 'interp_revision_v3',
+        currentActiveRecord: {
+            sourceInterpretationRevisionId: 'interp_revision_v3',
+        },
+    });
+
+    assert.deepEqual(actions, []);
+});
+
+test('lifecycle navigation omits actions when there is no current published memory to open', () => {
+    const actions = getLifecycleNavigationActions({
+        interpretationRevisionId: 'interp_revision_v1',
+    });
+
+    assert.deepEqual(actions, []);
 });

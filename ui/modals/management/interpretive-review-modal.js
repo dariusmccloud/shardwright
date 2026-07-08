@@ -48,6 +48,7 @@ import {
     buildReviewHistoryEntries,
 } from './interpretive-review-history-state.js';
 import {
+    getLifecycleNavigationActions,
     getPublishedRevisionActionProjection,
     getRevisionOrigin,
 } from './interpretive-review-revision-state.js';
@@ -161,8 +162,12 @@ function renderCollapsibleSection(title, description, content, options = {}) {
 
 function renderStaticSection(title, description, content, options = {}) {
     const extraClass = String(options.extraClass || '').trim();
+    const sectionKey = String(options.sectionKey || '').trim();
     return `
-        <div class="ss-interpretive-review-section ss-review-section ss-review-section--static ss-interpretive-review-static-section${extraClass ? ` ${escapeHtml(extraClass)}` : ''}">
+        <div
+            class="ss-interpretive-review-section ss-review-section ss-review-section--static ss-interpretive-review-static-section${extraClass ? ` ${escapeHtml(extraClass)}` : ''}"
+            ${sectionKey ? `data-review-section="${escapeHtml(sectionKey)}"` : ''}
+        >
             <div class="ss-review-section__header ss-interpretive-review-static-header">
                 <div class="ss-review-section__title">${escapeHtml(title)}</div>
                 ${description ? `<div class="ss-review-section__description">${escapeHtml(description)}</div>` : ''}
@@ -1523,6 +1528,23 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
         }));
     }
 
+    const lifecycleNavigationActions = getLifecycleNavigationActions({
+        interpretationRevisionId: interpretation.interpretationRevisionId,
+        currentActiveRecord: activeRecord,
+    });
+    const lifecycleNavigationForms = lifecycleNavigationActions.map((action) => renderPublicationActionForm({
+        formKind: 'open-current-published-memory',
+        title: action.title,
+        description: action.description,
+        actionStatus: options.actionStatus,
+        submitLabel: action.submitLabel,
+        disabled: !action.interpretationRevisionId,
+        dataset: {
+            interpretationRevisionId: action.interpretationRevisionId || '',
+        },
+        fieldsHtml: '',
+    }));
+
     const suppressPublishedRedundancy = guidanceStatus === 'ALREADY_PUBLISHED' && isPublishedRevision;
     const showGuidanceCard = actionForms.length === 0 && !suppressPublishedRedundancy;
     const primaryActionHeading = actionForms.length > 1 ? 'Lawful actions now' : 'Next step';
@@ -1543,7 +1565,7 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
                     showAuthorization: true,
                 })}
             ` : '<div class="ss-hint">No published memory exists yet for this memory line.</div>',
-            { extraClass: 'ss-interpretive-review-lifecycle-section' },
+            { extraClass: 'ss-interpretive-review-lifecycle-section', sectionKey: 'current-published-memory' },
         )}
 
         ${renderStaticSection(
@@ -1566,6 +1588,12 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
                     <div class="ss-interpretive-review-primary-action">
                         <div><strong>${primaryActionHeading}</strong></div>
                         <div class="ss-interpretive-review-list">${actionForms.join('')}</div>
+                    </div>
+                ` : ''}
+                ${lifecycleNavigationForms.length > 0 ? `
+                    <div class="ss-interpretive-review-primary-action">
+                        <div><strong>Navigation</strong></div>
+                        <div class="ss-interpretive-review-list">${lifecycleNavigationForms.join('')}</div>
                     </div>
                 ` : ''}
                 ${showGuidanceCard ? renderPublicationGuidanceCard(guidedFlow) : ''}
@@ -1611,7 +1639,7 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
             ` : `<div class="ss-hint">${activeRecord
                 ? 'No earlier publication events have been recorded for this memory line.'
                 : 'No publication events have been recorded for this memory line.'}</div>`,
-            { extraClass: 'ss-interpretive-review-lifecycle-section' },
+            { extraClass: 'ss-interpretive-review-lifecycle-section', sectionKey: 'publication-history' },
         )}
     `;
 }
@@ -2614,6 +2642,7 @@ export async function openInterpretiveReviewModal() {
         selectedReviewRequestId: null,
         selectedInterpretationRevisionId: null,
         detailView: 'review',
+        pendingDetailSectionKey: null,
         candidateCache: new Map(),
         publicationOperatorCache: new Map(),
         policiesByScopeId: new Map(),
@@ -2746,6 +2775,15 @@ export async function openInterpretiveReviewModal() {
             });
         };
 
+        const scrollToDetailSection = (sectionKey) => {
+            const normalizedSectionKey = String(sectionKey || '').trim();
+            if (!normalizedSectionKey || !detailRoot) return;
+            requestAnimationFrame(() => {
+                const selector = `[data-review-section="${CSS.escape(normalizedSectionKey)}"]`;
+                detailRoot.querySelector(selector)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            });
+        };
+
         const renderCurrentDetail = () => {
             if (!detailRoot) return;
             if (!state.activeInterpretation) {
@@ -2760,8 +2798,13 @@ export async function openInterpretiveReviewModal() {
                 publicationOperatorState: state.activePublicationOperatorState,
                 detailView: state.detailView,
             });
+            const pendingSectionKey = String(state.pendingDetailSectionKey || '').trim();
+            state.pendingDetailSectionKey = null;
             syncActionForms();
             updateExpandToggle();
+            if (pendingSectionKey) {
+                scrollToDetailSection(pendingSectionKey);
+            }
         };
 
         const loadPublicationOperatorState = async (interpretation) => {
@@ -2852,6 +2895,9 @@ export async function openInterpretiveReviewModal() {
             state.selectedReviewRequestId = preferredRequest?.reviewRequestId || reviewRequests[0]?.reviewRequestId || null;
             if (options.detailView) {
                 state.detailView = options.detailView;
+            }
+            if (options.focusSectionKey) {
+                state.pendingDetailSectionKey = String(options.focusSectionKey || '').trim();
             }
             renderQueue();
             renderCurrentDetail();
@@ -3411,6 +3457,33 @@ export async function openInterpretiveReviewModal() {
             }
         }
 
+        async function handleOpenCurrentPublishedMemorySubmit(form) {
+            const interpretationRevisionId = String(form.dataset.interpretationRevisionId || '').trim();
+            if (!interpretationRevisionId) {
+                setInlineFormStatus(form, 'error', 'No current published memory was provided by the server.');
+                return;
+            }
+
+            setFormBusy(form, true);
+            setInlineFormStatus(form, 'info', 'Opening current published memory...');
+            try {
+                state.actionStatus = {
+                    kind: 'open-current-published-memory',
+                    tone: 'success',
+                    message: `Opened current published memory ${interpretationRevisionId}.`,
+                };
+                await focusInterpretationRevision(interpretationRevisionId, {
+                    preferredRequestStatuses: ['PENDING', 'DEFERRED', 'APPROVED', 'PUBLISHED'],
+                    detailView: 'lifecycle',
+                    focusSectionKey: 'current-published-memory',
+                });
+            } catch (error) {
+                setInlineFormStatus(form, 'error', error?.message || String(error));
+            } finally {
+                setFormBusy(form, false);
+            }
+        }
+
         async function handleSubjectRevisionSubmit(form) {
             const interpretationRevisionId = String(form.dataset.interpretationRevisionId || '').trim();
             if (!interpretationRevisionId) {
@@ -3740,6 +3813,10 @@ export async function openInterpretiveReviewModal() {
             }
             if (form.dataset.formKind === 'open-child-revision') {
                 await handleOpenChildRevisionSubmit(form);
+                return;
+            }
+            if (form.dataset.formKind === 'open-current-published-memory') {
+                await handleOpenCurrentPublishedMemorySubmit(form);
                 return;
             }
             if (form.dataset.formKind === 'publication-authorize') {

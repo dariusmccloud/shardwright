@@ -66,3 +66,24 @@ export function getPublishedRevisionActionProjection() {
         submitLabel: 'Create Successor Revision',
     };
 }
+
+export function getLifecycleNavigationActions({
+    interpretationRevisionId,
+    currentActiveRecord = null,
+} = {}) {
+    const normalizedRevisionId = String(interpretationRevisionId || '').trim();
+    const activeRevisionId = String(currentActiveRecord?.sourceInterpretationRevisionId || '').trim();
+    const actions = [];
+
+    if (normalizedRevisionId && activeRevisionId && activeRevisionId !== normalizedRevisionId) {
+        actions.push({
+            code: 'OPEN_CURRENT_PUBLISHED_MEMORY',
+            interpretationRevisionId: activeRevisionId,
+            title: 'Current published memory',
+            description: 'Open the current published memory on this line to inspect the active wording before continuing here.',
+            submitLabel: 'Open Current Published Memory',
+        });
+    }
+
+    return actions;
+}
