@@ -154,3 +154,21 @@ test('queue group selection prefers the selected review request over a stale rev
     assert.equal(isQueueGroupSelected(groupA, 'req-b', 'rev-a'), false);
     assert.equal(isQueueGroupSelected(groupB, 'req-b', 'rev-a'), true);
 });
+
+test('queue group selection does not bleed across revisions when review request ids are reused', () => {
+    const [groupA, groupB] = buildQueueGroups([
+        makeReview({
+            reviewRequestId: 'req-shared',
+            interpretationRevisionId: 'rev-a',
+        }),
+        makeReview({
+            reviewRequestId: 'req-shared',
+            interpretationRevisionId: 'rev-b',
+        }),
+    ]);
+
+    assert.equal(isQueueGroupSelected(groupA, 'req-shared', 'rev-a', true), true);
+    assert.equal(isQueueGroupSelected(groupB, 'req-shared', 'rev-a', true), false);
+    assert.equal(isQueueGroupSelected(groupA, 'req-shared', 'rev-b', true), false);
+    assert.equal(isQueueGroupSelected(groupB, 'req-shared', 'rev-b', true), true);
+});

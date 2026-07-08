@@ -41,13 +41,20 @@ export function getQueueGroupRepresentativeReview(reviews) {
         || null;
 }
 
-export function isQueueGroupSelected(group, selectedReviewRequestId = '', selectedInterpretationRevisionId = '') {
+export function isQueueGroupSelected(group, selectedReviewRequestId = '', selectedInterpretationRevisionId = '', duplicateReviewRequestSelection = false) {
     const reviews = Array.isArray(group?.reviews) ? group.reviews : [];
     const normalizedReviewRequestId = String(selectedReviewRequestId || '').trim();
-    if (normalizedReviewRequestId) {
-        return reviews.some((review) => String(review?.reviewRequestId || '').trim() === normalizedReviewRequestId);
-    }
     const normalizedRevisionId = String(selectedInterpretationRevisionId || '').trim();
+    if (normalizedReviewRequestId) {
+        const reviewRequestMatches = reviews.some((review) => String(review?.reviewRequestId || '').trim() === normalizedReviewRequestId);
+        if (!reviewRequestMatches) {
+            return false;
+        }
+        if (!duplicateReviewRequestSelection || !normalizedRevisionId) {
+            return true;
+        }
+        return String(group?.interpretationRevisionId || '').trim() === normalizedRevisionId;
+    }
     if (!normalizedRevisionId) {
         return false;
     }

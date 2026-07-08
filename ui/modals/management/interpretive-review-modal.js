@@ -1648,7 +1648,7 @@ function buildFilteredQueueGroups(reviews, statusFilter = '') {
     return buildQueueGroups(reviews).filter((group) => groupMatchesStatusFilter(group, statusFilter));
 }
 
-function renderQueueGroupItem(group, selectedReviewRequestId, selectedInterpretationRevisionId) {
+function renderQueueGroupItem(group, selectedReviewRequestId, selectedInterpretationRevisionId, duplicateReviewRequestSelection = false) {
     const reviews = Array.isArray(group?.reviews) ? group.reviews : [];
     const representativeReview = getQueueGroupRepresentativeReview(reviews);
     if (!representativeReview) {
@@ -1664,7 +1664,9 @@ function renderQueueGroupItem(group, selectedReviewRequestId, selectedInterpreta
         return earliest === null ? created : Math.min(earliest, created);
     }, null);
 
-    const groupSelected = isQueueGroupSelected(group, selectedReviewRequestId, selectedInterpretationRevisionId);
+    const groupSelected = isQueueGroupSelected(group, selectedReviewRequestId, selectedInterpretationRevisionId, duplicateReviewRequestSelection);
+    const normalizedSelectedReviewRequestId = String(selectedReviewRequestId || '').trim();
+    const normalizedSelectedRevisionId = String(selectedInterpretationRevisionId || '').trim();
     const revisionWorkflowBadge = renderBadge(buildPrimaryWorkflowStatus({
         reviewRequests: reviews,
         reviewState: canonicalRevisionState?.reviewState ?? representativeReview.reviewState,
@@ -1683,9 +1685,15 @@ function renderQueueGroupItem(group, selectedReviewRequestId, selectedInterpreta
             ${createdAt ? `<div class="ss-hint">${escapeHtml(formatTimestamp(createdAt))}</div>` : ''}
             <div class="ss-interpretive-review-group-rows">
                 ${reviews.map((review) => `
+                    ${(() => {
+                        const reviewRequestId = String(review?.reviewRequestId || '').trim();
+                        const rowSelected = reviewRequestId
+                            && reviewRequestId === normalizedSelectedReviewRequestId
+                            && (!duplicateReviewRequestSelection || !normalizedSelectedRevisionId || normalizedSelectedRevisionId === group.interpretationRevisionId);
+                        return `
                     <button
                         type="button"
-                        class="ss-interpretive-review-group-row-button${review.reviewRequestId === selectedReviewRequestId ? ' active' : ''}"
+                        class="ss-interpretive-review-group-row-button${rowSelected ? ' active' : ''}"
                         data-review-request-id="${escapeHtml(review.reviewRequestId)}"
                         data-interpretation-revision-id="${escapeHtml(group.interpretationRevisionId)}">
                         <div class="ss-interpretive-review-group-row-main">
@@ -1696,6 +1704,8 @@ function renderQueueGroupItem(group, selectedReviewRequestId, selectedInterpreta
                             ${renderBadge(formatHumanStateLabel(review.status))}
                         </div>
                     </button>
+                `;
+                    })()}
                 `).join('')}
             </div>
         </div>
@@ -2686,11 +2696,18 @@ export async function openInterpretiveReviewModal() {
                 queueList.innerHTML = '<div class="ss-interpretive-review-queue-empty ss-hint">No revisions matched the current filter.</div>';
                 return;
             }
+            const normalizedSelectedReviewRequestId = String(state.selectedReviewRequestId || '').trim();
+            const duplicateReviewRequestSelection = !!normalizedSelectedReviewRequestId
+                && groups.filter((group) => {
+                    const reviews = Array.isArray(group?.reviews) ? group.reviews : [];
+                    return reviews.some((review) => String(review?.reviewRequestId || '').trim() === normalizedSelectedReviewRequestId);
+                }).length > 1;
             queueList.innerHTML = groups.map((group) => {
                 return renderQueueGroupItem(
                     group,
                     state.selectedReviewRequestId,
                     state.selectedInterpretationRevisionId,
+                    duplicateReviewRequestSelection,
                 );
             }).join('');
         };
