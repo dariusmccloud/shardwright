@@ -200,7 +200,7 @@ async function callSillyTavernAPICompatibility(messages, options) {
     } = options || {};
 
     if (main_api !== 'openai') {
-        throw new Error(`Compatibility retry is only available for main_api=openai (current: ${main_api || 'unknown'})`);
+        throw new Error(`Compatibility request is only available for main_api=openai (current: ${main_api || 'unknown'})`);
     }
 
     const compatSettings = cloneOaiSettings();
@@ -225,26 +225,14 @@ async function callSillyTavernAPICompatibility(messages, options) {
     const hasStops = Array.isArray(defaultBody.stop) && defaultBody.stop.length > 0;
     const noStopBody = hasStops ? { ...defaultBody, stop: [] } : defaultBody;
 
-    const attempts = [];
-    if (removeStopStrings && hasStops) {
-        attempts.push({ label: 'no-stop', body: noStopBody });
-    } else {
-        attempts.push({ label: 'default-stop', body: defaultBody });
+    const attemptLabel = (removeStopStrings && hasStops) ? 'no-stop' : 'default-stop';
+    const attemptBody = (removeStopStrings && hasStops) ? noStopBody : defaultBody;
+
+    try {
+        return await runCompatibilityAttempt(attemptLabel, attemptBody, signal);
+    } catch (error) {
+        throw toError(error, `${attemptLabel} compatibility request failed`);
     }
-
-    const errors = [];
-    for (let i = 0; i < attempts.length; i++) {
-        const attempt = attempts[i];
-        try {
-            return await runCompatibilityAttempt(attempt.label, attempt.body, signal);
-        } catch (error) {
-            const normalizedError = toError(error, `${attempt.label} compatibility request failed`);
-            errors.push(normalizedError.message);
-
-        }
-    }
-
-    throw new Error(errors.join('. ') || 'Compatibility retry failed');
 }
 
 /**
