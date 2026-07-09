@@ -328,6 +328,34 @@ Queue semantics, completed-state cleanup, and most history work are already land
 The remaining risk is no longer label instability.
 It is repeated live-use proof around successor and replacement ergonomics.
 
+## Next Major Lift After C0.6.6
+
+`C0.6.6` should not roll directly into a vague `v1.0` closeout.
+
+The next explicit boundary after `C0.6.6` is:
+
+```text
+C0.6.7 Upgrade, Replay, And Release Hardening
+```
+
+See:
+
+```text
+docs/architectural-memory/PHASE_C0_6_7_UPGRADE_REPLAY_AND_RELEASE_HARDENING_BRIEF.md
+docs/architectural-memory/C0_6_7_UPGRADE_REPLAY_AND_RELEASE_HARDENING_PLAN.md
+```
+
+Reason:
+
+Once operator flow is stable, the main remaining release risk is no longer ordinary review usability.
+It is release resilience:
+
+1. upgrade safety,
+2. replay correctness,
+3. projection rebuild stability,
+4. restart / packaged-host parity,
+5. explicit capability freeze before `v1.0`.
+
 ## Exit Standard
 
 `C0.6.6` is complete when:
