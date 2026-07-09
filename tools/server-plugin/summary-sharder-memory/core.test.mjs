@@ -5,6 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 
 import {
+    createAdapter,
+    getUpgradeReplayPreflight,
     JOURNAL_MODE,
     MESSAGE_IDENTITY_SCAN_SCHEMA,
     readOperationalStateMarker,
@@ -186,6 +188,61 @@ test('missing operational database and snapshot fail closed after adoption', () 
         () => openOperationalDatabase(paths),
         /requires rebuild/i,
     );
+});
+
+test('upgrade preflight reports ready for a fresh host', () => {
+    const root = makeTempRoot();
+    const paths = getStoragePaths(root);
+
+    const preflight = getUpgradeReplayPreflight(paths);
+    assert.equal(preflight.status, 'READY_TO_UPGRADE');
+    assert.equal(preflight.canMutate, true);
+    assert.match(preflight.summary, /fresh governed-memory install/i);
+});
+
+test('upgrade preflight requires backup when a live projection exists without a managed snapshot', () => {
+    const root = makeTempRoot();
+    const paths = getStoragePaths(root);
+    const adapter = openOperationalDatabase(paths);
+    adapter.close();
+
+    const preflight = getUpgradeReplayPreflight(paths);
+    assert.equal(preflight.status, 'BACKUP_REQUIRED');
+    assert.equal(preflight.canMutate, false);
+    assert.deepEqual(preflight.technicalCodes, ['ARCH_BACKUP_REQUIRED']);
+});
+
+test('upgrade preflight reports unsupported version when the operational manifest is newer than runtime', () => {
+    const root = makeTempRoot();
+    const paths = getStoragePaths(root);
+    const adapter = openOperationalDatabase(paths);
+    adapter.close();
+
+    const direct = createAdapter(paths.dbPath);
+    try {
+        direct.run('UPDATE manifest SET schema_version = ? WHERE id = 1', [SCHEMA_VERSION + 1]);
+    } finally {
+        direct.close();
+    }
+
+    const preflight = getUpgradeReplayPreflight(paths);
+    assert.equal(preflight.status, 'UNSUPPORTED_VERSION');
+    assert.deepEqual(preflight.technicalCodes, ['ARCH_SCHEMA_VERSION_UNSUPPORTED']);
+});
+
+test('upgrade preflight reports a reference gap when the live authority DB pointer is missing', () => {
+    const root = makeTempRoot();
+    const paths = getStoragePaths(root);
+    writeOperationalStateMarkerDescriptor(paths, {
+        liveAuthority: {
+            generationId: 'livegen_missing',
+            dbRelativePath: 'generations/architectural-memory.live.livegen_missing.db',
+        },
+    });
+
+    const preflight = getUpgradeReplayPreflight(paths);
+    assert.equal(preflight.status, 'REFERENCE_GAP');
+    assert.deepEqual(preflight.technicalCodes, ['ARCH_LIVE_AUTHORITY_DB_MISSING']);
 });
 
 test('persisted chat metadata scan summarizes namespaced message state without mutation', () => {

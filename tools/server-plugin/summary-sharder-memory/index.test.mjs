@@ -5,7 +5,12 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { buildManagedShardManifest } from './lib/core/summarization/shard-integrity-core.js';
-import { writeOperationalStateMarkerDescriptor, readOperationalStateMarker, getStoragePaths } from './core.js';
+import {
+    writeOperationalStateMarkerDescriptor,
+    readOperationalStateMarker,
+    getStoragePaths,
+    openOperationalDatabase,
+} from './core.js';
 import { init } from './index.js';
 import { initCandidateRebuildRun, runCandidateRebuild } from './rebuild.js';
 import { createPromotionAuthorization, executePromotionAuthorization } from './promotion.js';
@@ -216,6 +221,7 @@ test('route surface exposes candidate lifecycle routes and separate promotion ro
     const router = createMockRouter();
     await init(router);
 
+    assert.equal(router.routes.get.has('/upgrade/preflight'), true);
     assert.equal(router.routes.get.has('/rebuild/candidate/report/:reconstructionRunId'), true);
     assert.equal(router.routes.get.has('/rebuild/candidate/runs/:memoryScopeId'), true);
     assert.equal(router.routes.post.has('/rebuild/candidate/init'), true);
@@ -285,6 +291,8 @@ test('capabilities and candidate lifecycle routes report no promotion and suppor
     assert.equal(capabilities.payload.capabilities.c0_6_4.publicationAuthorizationAvailable, true);
     assert.equal(capabilities.payload.capabilities.c0_6_4.continuityPublicationAvailable, true);
     assert.equal(capabilities.payload.capabilities.c0_6_4.liveContinuityMutation, true);
+    assert.equal(capabilities.payload.capabilities.c0_6_7.upgradeReplayPreflight, true);
+    assert.equal(capabilities.payload.capabilities.c0_6_7.failClosedUpgradeBoundary, true);
 
     const initResult = await invoke(
         router.routes.post.get('/rebuild/candidate/init'),
@@ -359,6 +367,24 @@ test('capabilities and candidate lifecycle routes report no promotion and suppor
     assert.equal(cleanupResult.statusCode, 200);
     assert.deepEqual(cleanupResult.payload.removedRunIds, []);
     assert.equal(cleanupResult.payload.promotionAvailable, false);
+});
+
+test('upgrade preflight route reports backup required when a live operational projection has no managed snapshot', async () => {
+    const root = makeTempRoot();
+    const router = createMockRouter();
+    await init(router);
+
+    const paths = getStoragePaths(root);
+    const adapter = openOperationalDatabase(paths);
+    adapter.close();
+
+    const preflightResult = await invoke(
+        router.routes.get.get('/upgrade/preflight'),
+        buildRequest(root),
+    );
+    assert.equal(preflightResult.statusCode, 200);
+    assert.equal(preflightResult.payload.status, 'BACKUP_REQUIRED');
+    assert.deepEqual(preflightResult.payload.technicalCodes, ['ARCH_BACKUP_REQUIRED']);
 });
 
 test('scope commit route does not bump scope version or run counters on an identical no-op commit', async () => {

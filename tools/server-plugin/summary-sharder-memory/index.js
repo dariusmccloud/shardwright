@@ -10,6 +10,7 @@ import {
     createId,
     getAuthenticatedUserRoot,
     getStoragePaths,
+    getUpgradeReplayPreflight,
     handleError,
     hydrateDecisionRecord,
     loadManifest,
@@ -101,6 +102,16 @@ export async function init(router) {
             schemaVersion: SCHEMA_VERSION,
             capabilities: CAPABILITIES,
         });
+    });
+
+    router.get('/upgrade/preflight', async (request, response) => {
+        try {
+            const paths = getStoragePaths(getAuthenticatedUserRoot(request));
+            const preflight = getUpgradeReplayPreflight(paths);
+            return response.send(preflight);
+        } catch (error) {
+            return handleError(response, error);
+        }
     });
 
     router.get('/c0-25a/schema', async (_request, response) => {

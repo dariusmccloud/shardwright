@@ -98,6 +98,12 @@ export const CAPABILITIES = Object.freeze({
         deltaReviewAvailable: true,
         currentActiveResolutionAvailable: true,
     }),
+    c0_6_7: Object.freeze({
+        upgradeReplayPreflight: true,
+        additiveMigrationOnly: true,
+        deterministicReplayRequired: true,
+        failClosedUpgradeBoundary: true,
+    }),
     c0_5: false,
     c1: false,
     c2: false,
@@ -292,6 +298,363 @@ export function resolveOperationalDbPath(paths, stateMarker = readOperationalSta
         throw createError(500, 'Resolved live DB path escaped storage root', 'ARCH_LIVE_DB_PATH_INVALID');
     }
     return resolved;
+}
+
+function inspectStateMarker(paths) {
+    if (!fs.existsSync(paths.statePath)) {
+        return {
+            exists: false,
+            ok: true,
+            marker: null,
+            technicalCode: null,
+        };
+    }
+
+    try {
+        const marker = JSON.parse(fs.readFileSync(paths.statePath, 'utf8'));
+        return {
+            exists: true,
+            ok: true,
+            marker,
+            technicalCode: null,
+        };
+    } catch {
+        return {
+            exists: true,
+            ok: false,
+            marker: null,
+            technicalCode: 'ARCH_STATE_MARKER_INVALID',
+        };
+    }
+}
+
+function tableExists(adapter, tableName) {
+    return Number(adapter.scalar(
+        `SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?`,
+        [tableName],
+    ) || 0) > 0;
+}
+
+function countRows(adapter, tableName) {
+    if (!tableExists(adapter, tableName)) {
+        return 0;
+    }
+    return Number(adapter.scalar(`SELECT COUNT(*) FROM ${tableName}`) || 0);
+}
+
+function inspectProjectionDb(dbPath) {
+    if (!fs.existsSync(dbPath)) {
+        return {
+            exists: false,
+            ok: true,
+            manifest: null,
+            domainActivity: {
+                interpretiveGovernance: false,
+                dnmPublication: false,
+            },
+            technicalCode: null,
+        };
+    }
+
+    const adapter = createAdapter(dbPath);
+    try {
+        if (!adapter.verifyIntegrity()) {
+            return {
+                exists: true,
+                ok: false,
+                manifest: null,
+                domainActivity: {
+                    interpretiveGovernance: false,
+                    dnmPublication: false,
+                },
+                technicalCode: 'ARCH_SQLITE_INTEGRITY_FAILED',
+            };
+        }
+        if (!tableExists(adapter, 'manifest')) {
+            return {
+                exists: true,
+                ok: false,
+                manifest: null,
+                domainActivity: {
+                    interpretiveGovernance: false,
+                    dnmPublication: false,
+                },
+                technicalCode: 'ARCH_MANIFEST_MISSING',
+            };
+        }
+
+        const row = adapter.get('SELECT * FROM manifest WHERE id = 1');
+        if (!row) {
+            return {
+                exists: true,
+                ok: false,
+                manifest: null,
+                domainActivity: {
+                    interpretiveGovernance: false,
+                    dnmPublication: false,
+                },
+                technicalCode: 'ARCH_MANIFEST_MISSING',
+            };
+        }
+
+        const manifest = {
+            schemaVersion: Number(row.schema_version),
+            serviceVersion: String(row.service_version),
+            runtimeAdapter: String(row.runtime_adapter),
+            journalMode: String(row.journal_mode),
+            migrationState: String(row.migration_state),
+            rebuildState: String(row.rebuild_state),
+            createdAt: Number(row.created_at),
+            updatedAt: Number(row.updated_at),
+        };
+
+        const domainActivity = {
+            interpretiveGovernance: (
+                countRows(adapter, 'interpretation_revisions')
+                + countRows(adapter, 'interpretation_review_dispositions')
+                + countRows(adapter, 'interpretation_subject_dispositions')
+                + countRows(adapter, 'interpretation_delegation_policies')
+                + countRows(adapter, 'interpretation_synthesis_runs')
+            ) > 0,
+            dnmPublication: (
+                countRows(adapter, 'interpretation_publication_policies')
+                + countRows(adapter, 'interpretation_publication_qualifications')
+                + countRows(adapter, 'interpretation_publication_authorizations')
+                + countRows(adapter, 'dnm_publication_records')
+                + countRows(adapter, 'dnm_delta_reviews')
+            ) > 0,
+        };
+
+        return {
+            exists: true,
+            ok: true,
+            manifest,
+            domainActivity,
+            technicalCode: null,
+        };
+    } catch (error) {
+        return {
+            exists: true,
+            ok: false,
+            manifest: null,
+            domainActivity: {
+                interpretiveGovernance: false,
+                dnmPublication: false,
+            },
+            technicalCode: String(error?.code || 'ARCH_SQLITE_OPEN_FAILED'),
+        };
+    } finally {
+        adapter.close();
+    }
+}
+
+function summarizePreflight(status, summary, technicalCodes, nextAction, extra = {}) {
+    return {
+        ok: true,
+        status,
+        canMutate: status === 'READY_TO_UPGRADE',
+        summary,
+        nextAction,
+        technicalCodes: [...new Set(technicalCodes.filter(Boolean))],
+        ...extra,
+    };
+}
+
+export function getUpgradeReplayPreflight(paths) {
+    const state = inspectStateMarker(paths);
+    const storageRootExists = fs.existsSync(paths.storageRoot);
+    const ledgers = {
+        interpretiveGovernance: {
+            exists: fs.existsSync(paths.interpretiveGovernanceLedgerPath),
+            path: paths.interpretiveGovernanceLedgerPath,
+        },
+        dnmPublication: {
+            exists: fs.existsSync(paths.dnmPublicationLedgerPath),
+            path: paths.dnmPublicationLedgerPath,
+        },
+        promotionJournal: {
+            exists: fs.existsSync(paths.promotionJournalPath),
+            path: paths.promotionJournalPath,
+        },
+    };
+
+    const operationalDbPath = (() => {
+        if (!state.ok) {
+            return paths.dbPath;
+        }
+        try {
+            return resolveOperationalDbPath(paths, state.marker);
+        } catch {
+            return null;
+        }
+    })();
+    const db = operationalDbPath ? inspectProjectionDb(operationalDbPath) : {
+        exists: false,
+        ok: false,
+        manifest: null,
+        domainActivity: {
+            interpretiveGovernance: false,
+            dnmPublication: false,
+        },
+        technicalCode: 'ARCH_LIVE_DB_PATH_INVALID',
+    };
+    const snapshot = inspectProjectionDb(paths.snapshotPath);
+
+    const artifactsPresent = storageRootExists || state.exists || db.exists || snapshot.exists
+        || ledgers.interpretiveGovernance.exists || ledgers.dnmPublication.exists || ledgers.promotionJournal.exists;
+
+    const stateSchemaVersion = Number(state.marker?.schemaVersion);
+    const dbSchemaVersion = Number(db.manifest?.schemaVersion);
+    const snapshotSchemaVersion = Number(snapshot.manifest?.schemaVersion);
+    const supportedVersion = SCHEMA_VERSION;
+
+    const sharedDetails = {
+        storage: {
+            storageRootExists,
+            operationalDbPath: operationalDbPath || paths.dbPath,
+            snapshotPath: paths.snapshotPath,
+        },
+        stateMarker: {
+            exists: state.exists,
+            ok: state.ok,
+            schemaVersion: Number.isFinite(stateSchemaVersion) ? stateSchemaVersion : null,
+            liveAuthority: cloneJson(state.marker?.liveAuthority || null),
+            technicalCode: state.technicalCode,
+        },
+        ledgers,
+        projections: {
+            operationalDb: db,
+            snapshot,
+        },
+    };
+
+    if (!state.ok) {
+        return summarizePreflight(
+            'BLOCKED_FROM_UPGRADE',
+            'The runtime state marker is unreadable and must be repaired before upgrade or replay.',
+            [state.technicalCode],
+            'Repair or remove the invalid state marker, then rerun preflight.',
+            sharedDetails,
+        );
+    }
+
+    if (!operationalDbPath) {
+        return summarizePreflight(
+            'REFERENCE_GAP',
+            'The runtime state marker points outside the governed storage root.',
+            ['ARCH_LIVE_DB_PATH_INVALID'],
+            'Repair the live-authority database pointer before upgrade or replay.',
+            sharedDetails,
+        );
+    }
+
+    const unsupportedCode = [stateSchemaVersion, dbSchemaVersion, snapshotSchemaVersion]
+        .find((value) => Number.isFinite(value) && value > supportedVersion);
+    if (unsupportedCode !== undefined) {
+        return summarizePreflight(
+            'UNSUPPORTED_VERSION',
+            'Stored governed-memory data is newer than this runtime can safely interpret.',
+            ['ARCH_SCHEMA_VERSION_UNSUPPORTED'],
+            'Resume with a runtime that supports the stored schema version or restore a compatible snapshot.',
+            sharedDetails,
+        );
+    }
+
+    const schemaVersions = [stateSchemaVersion, dbSchemaVersion, snapshotSchemaVersion].filter((value) => Number.isFinite(value));
+    if (schemaVersions.length > 1 && new Set(schemaVersions).size > 1) {
+        return summarizePreflight(
+            'SCHEMA_MISMATCH',
+            'Stored governed-memory artifacts disagree about schema version and cannot be upgraded safely yet.',
+            ['ARCH_SCHEMA_MISMATCH'],
+            'Repair the mismatched projection or snapshot before upgrade or replay.',
+            sharedDetails,
+        );
+    }
+
+    if (!db.ok) {
+        const isRecoverableProjectionGap = !db.exists && snapshot.exists && snapshot.ok;
+        if (isRecoverableProjectionGap) {
+            return summarizePreflight(
+                'PROJECTION_STALE',
+                'The live operational projection is missing, but a verified snapshot is available for rebuild or restore.',
+                ['ARCH_PROJECTION_STALE'],
+                'Restore or rebuild the operational projection before upgrade or replay.',
+                sharedDetails,
+            );
+        }
+        return summarizePreflight(
+            'BLOCKED_FROM_UPGRADE',
+            'The operational projection is unreadable or corrupt and cannot be upgraded safely.',
+            [db.technicalCode],
+            'Repair or rebuild the operational projection before upgrade or replay.',
+            sharedDetails,
+        );
+    }
+
+    if (state.marker?.liveAuthority?.dbRelativePath && !db.exists) {
+        return summarizePreflight(
+            'REFERENCE_GAP',
+            'The runtime state marker points to a missing live-authority database.',
+            ['ARCH_LIVE_AUTHORITY_DB_MISSING'],
+            'Repair the missing live-authority projection or reset the state marker before upgrade or replay.',
+            sharedDetails,
+        );
+    }
+
+    if (db.manifest && (db.manifest.migrationState !== 'ready' || db.manifest.rebuildState !== 'idle')) {
+        return summarizePreflight(
+            'PROJECTION_STALE',
+            'The operational projection is mid-migration or mid-rebuild and should not be upgraded yet.',
+            ['ARCH_PROJECTION_STALE'],
+            'Finish or discard the stale projection work before upgrade or replay.',
+            sharedDetails,
+        );
+    }
+
+    const missingLedgers = [];
+    if (db.domainActivity.interpretiveGovernance && !ledgers.interpretiveGovernance.exists) {
+        missingLedgers.push('interpretive-governance-ledger.jsonl');
+    }
+    if (db.domainActivity.dnmPublication && !ledgers.dnmPublication.exists) {
+        missingLedgers.push('dnm-publication-ledger.jsonl');
+    }
+    if (state.marker?.promotionJournal && !ledgers.promotionJournal.exists) {
+        missingLedgers.push('promotions/promotion-journal.jsonl');
+    }
+    if (missingLedgers.length > 0) {
+        return summarizePreflight(
+            'LEDGER_MISSING',
+            `Authoritative governed-memory ledgers are missing: ${missingLedgers.join(', ')}.`,
+            ['ARCH_LEDGER_MISSING'],
+            'Restore the missing ledger files before upgrade or replay.',
+            {
+                ...sharedDetails,
+                missingLedgers,
+            },
+        );
+    }
+
+    if (artifactsPresent && db.exists && !snapshot.exists) {
+        return summarizePreflight(
+            'BACKUP_REQUIRED',
+            'A managed snapshot is required before upgrade because a live governed-memory projection already exists.',
+            ['ARCH_BACKUP_REQUIRED'],
+            'Create or refresh the managed snapshot before upgrade or replay.',
+            sharedDetails,
+        );
+    }
+
+    return summarizePreflight(
+        'READY_TO_UPGRADE',
+        artifactsPresent
+            ? 'Governed-memory storage passed upgrade and replay preflight.'
+            : 'No governed-memory artifacts were found. The host is ready for a fresh governed-memory install.',
+        [],
+        artifactsPresent
+            ? 'Proceed with upgrade or replay.'
+            : 'Proceed with fresh initialization or first-run bootstrap.',
+        sharedDetails,
+    );
 }
 
 export function createAdapter(dbPath) {
