@@ -1087,9 +1087,12 @@ function buildDatasetAttributes(dataset = {}) {
         .join(' ');
 }
 
-function renderReviewRecords(interpretation, policiesById, selectedReviewRequestId, currentActorId, actionStatus) {
+function renderReviewRecords(interpretation, policiesById, selectedReviewRequestId, selectedInterpretationRevisionId, currentActorId, actionStatus) {
     const requests = Array.isArray(interpretation.reviewRequests) ? interpretation.reviewRequests : [];
     const policies = [...policiesById.values()];
+    const interpretationRevisionId = String(interpretation?.interpretationRevisionId || '').trim();
+    const normalizedSelectedRevisionId = String(selectedInterpretationRevisionId || '').trim();
+    const revisionMatchesSelection = !normalizedSelectedRevisionId || normalizedSelectedRevisionId === interpretationRevisionId;
     const dispositionsByRequestId = new Map(
         (Array.isArray(interpretation.reviewDispositions) ? interpretation.reviewDispositions : [])
             .map((entry) => [entry.reviewRequestId, entry]),
@@ -1101,7 +1104,9 @@ function renderReviewRecords(interpretation, policiesById, selectedReviewRequest
         <div class="ss-interpretive-review-list">
             ${requests.map((request) => {
                 const disposition = dispositionsByRequestId.get(request.reviewRequestId) || null;
-                const showForm = request.reviewRequestId === selectedReviewRequestId && request.status === 'PENDING';
+                const showForm = revisionMatchesSelection
+                    && request.reviewRequestId === selectedReviewRequestId
+                    && request.status === 'PENDING';
                 const ownerRoleLabel = request.reviewerEntityId === interpretation.memorySubjectId
                     ? 'Context owner'
                     : 'Relational participant';
@@ -2056,15 +2061,25 @@ function formatStructuralAuthorityLabel(value) {
     return map[normalized] || formatHumanStateLabel(normalized || 'UNKNOWN');
 }
 
-function getSelectedReviewRequest(interpretation, selectedReviewRequestId) {
+function getSelectedReviewRequest(interpretation, selectedReviewRequestId, selectedInterpretationRevisionId = '') {
     const requests = Array.isArray(interpretation?.reviewRequests) ? interpretation.reviewRequests : [];
+    const interpretationRevisionId = String(interpretation?.interpretationRevisionId || '').trim();
+    const normalizedSelectedRevisionId = String(selectedInterpretationRevisionId || '').trim();
+    const revisionMatchesSelection = !normalizedSelectedRevisionId || normalizedSelectedRevisionId === interpretationRevisionId;
+    if (!revisionMatchesSelection) {
+        return requests[0] || null;
+    }
     return requests.find((entry) => entry.reviewRequestId === selectedReviewRequestId)
         || requests[0]
         || null;
 }
 
-function renderSelectedReviewerSummary(interpretation, selectedReviewRequestId) {
-    const selectedRequest = getSelectedReviewRequest(interpretation, selectedReviewRequestId);
+function renderSelectedReviewerSummary(interpretation, selectedReviewRequestId, selectedInterpretationRevisionId = '') {
+    const selectedRequest = getSelectedReviewRequest(
+        interpretation,
+        selectedReviewRequestId,
+        selectedInterpretationRevisionId,
+    );
     if (!selectedRequest) {
         return '';
     }
@@ -2283,8 +2298,12 @@ function getVisibleOperatorActions(interpretation, operatorState) {
     });
 }
 
-function renderReviewResponseSummary(interpretation, selectedReviewRequestId = '') {
-    const entries = buildReviewHistoryEntries(interpretation, selectedReviewRequestId);
+function renderReviewResponseSummary(interpretation, selectedReviewRequestId = '', selectedInterpretationRevisionId = '') {
+    const entries = buildReviewHistoryEntries(
+        interpretation,
+        selectedReviewRequestId,
+        selectedInterpretationRevisionId,
+    );
     if (entries.length === 0) {
         return '<div class="ss-hint">No reviews yet.</div>';
     }
@@ -2295,8 +2314,17 @@ function renderReviewResponseSummary(interpretation, selectedReviewRequestId = '
     `;
 }
 
-function renderSubmittedActionsHistory(interpretation, policiesById = new Map(), selectedReviewRequestId = '') {
-    const entries = buildDecisionHistoryEntries(interpretation, selectedReviewRequestId);
+function renderSubmittedActionsHistory(
+    interpretation,
+    policiesById = new Map(),
+    selectedReviewRequestId = '',
+    selectedInterpretationRevisionId = '',
+) {
+    const entries = buildDecisionHistoryEntries(
+        interpretation,
+        selectedReviewRequestId,
+        selectedInterpretationRevisionId,
+    );
     if (entries.length === 0) {
         return '<div class="ss-hint">No actions recorded yet.</div>';
     }
@@ -2313,7 +2341,11 @@ function renderSubmittedActionsHistory(interpretation, policiesById = new Map(),
 
 function renderCurrentActionSurface(interpretation, policiesById, options = {}) {
     const requests = Array.isArray(interpretation.reviewRequests) ? interpretation.reviewRequests : [];
-    const selectedRequest = requests.find((entry) => entry.reviewRequestId === options.selectedReviewRequestId) || null;
+    const selectedRequest = getSelectedReviewRequest(
+        interpretation,
+        options.selectedReviewRequestId,
+        options.selectedInterpretationRevisionId,
+    );
     const pendingRequest = selectedRequest?.status === 'PENDING'
         ? selectedRequest
         : requests.find((entry) => entry.status === 'PENDING') || null;
@@ -2392,7 +2424,11 @@ function renderCandidateDetail(interpretation, policiesById, options = {}) {
     const selectedView = allowedViews.has(String(options.detailView || '').trim())
         ? String(options.detailView || '').trim()
         : 'review';
-    const selectedReviewRequest = getSelectedReviewRequest(interpretation, options.selectedReviewRequestId);
+    const selectedReviewRequest = getSelectedReviewRequest(
+        interpretation,
+        options.selectedReviewRequestId,
+        options.selectedInterpretationRevisionId,
+    );
     const participantLabels = Array.isArray(interpretation.materialParticipantEntityIds)
         ? interpretation.materialParticipantEntityIds
             .filter((id) => id && id !== interpretation.memorySubjectId)
@@ -2447,7 +2483,11 @@ function renderCandidateDetail(interpretation, policiesById, options = {}) {
 
             <div class="ss-interpretive-review-review-main">
                 ${evidenceSection}
-                ${renderSelectedReviewerSummary(interpretation, options.selectedReviewRequestId)}
+                ${renderSelectedReviewerSummary(
+                    interpretation,
+                    options.selectedReviewRequestId,
+                    options.selectedInterpretationRevisionId,
+                )}
             </div>
         </div>
 
@@ -2480,14 +2520,23 @@ function renderCandidateDetail(interpretation, policiesById, options = {}) {
         ${hasReviewHistory ? renderCollapsibleSection(
             'Review history',
             'Shows who responded and when.',
-            renderReviewResponseSummary(interpretation, options.selectedReviewRequestId),
+            renderReviewResponseSummary(
+                interpretation,
+                options.selectedReviewRequestId,
+                options.selectedInterpretationRevisionId,
+            ),
             { open: true },
         ) : ''}
 
         ${(hasReviewHistory || hasSubjectHistory) ? renderCollapsibleSection(
             'Decision history',
             'Shows the recorded actions in compact human-readable form.',
-            renderSubmittedActionsHistory(interpretation, policiesById, options.selectedReviewRequestId),
+            renderSubmittedActionsHistory(
+                interpretation,
+                policiesById,
+                options.selectedReviewRequestId,
+                options.selectedInterpretationRevisionId,
+            ),
             { open: true },
         ) : ''}
 

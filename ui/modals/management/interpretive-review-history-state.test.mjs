@@ -63,6 +63,30 @@ test('review history entries keep selected reviewer first and show pending copy'
     assert.equal(entries[1].title, 'Jeep approved with changes');
 });
 
+test('review history selection does not bleed across revisions when request ids are reused', () => {
+    const entries = buildReviewHistoryEntries(
+        makeInterpretation({
+            interpretationRevisionId: 'rev-a',
+            reviewRequests: [
+                {
+                    reviewRequestId: 'req-shared',
+                    reviewerEntityId: 'character:jeep.png',
+                    reviewerRole: 'MEMORY_SUBJECT',
+                    status: 'PENDING',
+                    createdAt: 100,
+                },
+            ],
+            reviewDispositions: [],
+            subjectDisposition: null,
+        }),
+        'req-shared',
+        'rev-b',
+    );
+
+    assert.equal(entries.length, 1);
+    assert.equal(entries[0].selected, false);
+});
+
 test('decision history distinguishes recorded reviews from publication decisions', () => {
     const entries = buildDecisionHistoryEntries(makeInterpretation(), 'req-jeep');
 
@@ -73,6 +97,42 @@ test('decision history distinguishes recorded reviews from publication decisions
     assert.equal(entries[1].title, 'Publication decision: Jeep granted');
     assert.equal(entries[1].commentaryLabel, 'Decision note');
     assert.equal(entries[1].compact, true);
+});
+
+test('decision history selection does not bleed across revisions when request ids are reused', () => {
+    const entries = buildDecisionHistoryEntries(
+        makeInterpretation({
+            interpretationRevisionId: 'rev-a',
+            reviewRequests: [
+                {
+                    reviewRequestId: 'req-shared',
+                    reviewerEntityId: 'character:jeep.png',
+                    reviewerRole: 'MEMORY_SUBJECT',
+                    status: 'APPROVED',
+                    createdAt: 100,
+                },
+            ],
+            reviewDispositions: [
+                {
+                    reviewRequestId: 'req-shared',
+                    disposition: 'APPROVED',
+                    commentary: 'Recorded on the parent.',
+                    submittedAt: 200,
+                    provenance: {
+                        submissionMode: 'SUBJECT_EXPRESSED_AND_RECORDED',
+                        submittedByActorId: 'user:Chris',
+                        dispositionOwnerId: 'character:jeep.png',
+                    },
+                },
+            ],
+            subjectDisposition: null,
+        }),
+        'req-shared',
+        'rev-b',
+    );
+
+    assert.equal(entries.length, 1);
+    assert.equal(entries[0].selected, false);
 });
 
 test('publication history includes the current active record and deduplicates duplicates', () => {

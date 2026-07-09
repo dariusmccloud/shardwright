@@ -139,8 +139,11 @@ function hasRecordedSubjectDisposition(subjectDisposition) {
     return hasTimestamp || hasCommentary || hasReasons || hasProvenance;
 }
 
-export function buildReviewHistoryEntries(interpretation, selectedReviewRequestId = '') {
+export function buildReviewHistoryEntries(interpretation, selectedReviewRequestId = '', selectedInterpretationRevisionId = '') {
     const requests = Array.isArray(interpretation?.reviewRequests) ? interpretation.reviewRequests : [];
+    const interpretationRevisionId = String(interpretation?.interpretationRevisionId || '').trim();
+    const normalizedSelectedRevisionId = String(selectedInterpretationRevisionId || '').trim();
+    const revisionMatchesSelection = !normalizedSelectedRevisionId || normalizedSelectedRevisionId === interpretationRevisionId;
     const dispositionsByRequestId = new Map(
         (Array.isArray(interpretation?.reviewDispositions) ? interpretation.reviewDispositions : [])
             .map((entry) => [entry.reviewRequestId, entry]),
@@ -163,7 +166,7 @@ export function buildReviewHistoryEntries(interpretation, selectedReviewRequestI
                 timestamp: disposition?.submittedAt || request.createdAt || null,
                 extraLines: isPending ? ['Decision still required.'] : [],
                 compact: true,
-                selected: request.reviewRequestId === selectedReviewRequestId,
+                selected: revisionMatchesSelection && request.reviewRequestId === selectedReviewRequestId,
             };
         })
         .sort((left, right) => {
@@ -176,8 +179,11 @@ export function buildReviewHistoryEntries(interpretation, selectedReviewRequestI
         });
 }
 
-export function buildDecisionHistoryEntries(interpretation, selectedReviewRequestId = '') {
+export function buildDecisionHistoryEntries(interpretation, selectedReviewRequestId = '', selectedInterpretationRevisionId = '') {
     const reviewDispositions = Array.isArray(interpretation?.reviewDispositions) ? interpretation.reviewDispositions : [];
+    const interpretationRevisionId = String(interpretation?.interpretationRevisionId || '').trim();
+    const normalizedSelectedRevisionId = String(selectedInterpretationRevisionId || '').trim();
+    const revisionMatchesSelection = !normalizedSelectedRevisionId || normalizedSelectedRevisionId === interpretationRevisionId;
     const subjectDisposition = hasRecordedSubjectDisposition(interpretation?.subjectDisposition)
         ? interpretation.subjectDisposition
         : null;
@@ -208,7 +214,7 @@ export function buildDecisionHistoryEntries(interpretation, selectedReviewReques
             contextLabel: 'How it was recorded',
             commentaryLabel: 'Recorded note',
             compact: true,
-            selected: disposition.reviewRequestId === selectedReviewRequestId,
+            selected: revisionMatchesSelection && disposition.reviewRequestId === selectedReviewRequestId,
         };
     });
 
