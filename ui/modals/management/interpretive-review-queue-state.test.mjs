@@ -70,6 +70,44 @@ test('published revisions classify as Published instead of stale pending states'
     assert.equal(buildPrimaryWorkflowStatus(review, review.operatorState), 'Published');
 });
 
+test('superseded revisions classify by terminal lifecycle state instead of stale published state', () => {
+    const review = makeReview({
+        subjectDispositionState: 'GRANTED',
+        publicationState: 'PUBLISHED',
+        operatorState: {
+            recordsForTarget: [
+                {
+                    sourceInterpretationRevisionId: 'rev-1',
+                    supersededByDnmRecordId: 'dnmrec-next',
+                    publishedAt: 100,
+                },
+            ],
+        },
+    });
+
+    assert.equal(getRevisionFilterStatus(review), 'SUPERSEDED');
+    assert.equal(buildPrimaryWorkflowStatus(review, review.operatorState), 'Superseded');
+});
+
+test('withdrawn revisions classify by terminal lifecycle state instead of stale published state', () => {
+    const review = makeReview({
+        subjectDispositionState: 'GRANTED',
+        publicationState: 'PUBLISHED',
+        operatorState: {
+            recordsForTarget: [
+                {
+                    sourceInterpretationRevisionId: 'rev-1',
+                    lifecycleState: 'WITHDRAWN',
+                    publishedAt: 100,
+                },
+            ],
+        },
+    });
+
+    assert.equal(getRevisionFilterStatus(review), 'WITHDRAWN');
+    assert.equal(buildPrimaryWorkflowStatus(review, review.operatorState), 'Withdrawn');
+});
+
 test('queue filters distinguish approved, publishable, and published revisions', () => {
     const reviews = [
         makeReview({
@@ -123,6 +161,29 @@ test('queue filters distinguish approved, publishable, and published revisions',
     assert.equal(groupMatchesStatusFilter(publishedGroup, 'APPROVED'), false);
     assert.equal(groupMatchesStatusFilter(publishedGroup, 'READY_FOR_PUBLICATION'), false);
     assert.equal(groupMatchesStatusFilter(publishedGroup, 'PUBLISHED'), true);
+});
+
+test('queue filters do not keep superseded revisions under Published', () => {
+    const group = buildQueueGroups([
+        makeReview({
+            reviewRequestId: 'superseded-1',
+            interpretationRevisionId: 'rev-superseded',
+            subjectDispositionState: 'GRANTED',
+            publicationState: 'PUBLISHED',
+            operatorState: {
+                recordsForTarget: [
+                    {
+                        sourceInterpretationRevisionId: 'rev-superseded',
+                        supersededByDnmRecordId: 'dnmrec-next',
+                        publishedAt: 100,
+                    },
+                ],
+            },
+        }),
+    ])[0];
+
+    assert.equal(groupMatchesStatusFilter(group, 'PUBLISHED'), false);
+    assert.equal(groupMatchesStatusFilter(group, 'SUPERSEDED'), true);
 });
 
 test('approve-with-edit remains filterable by reviewer disposition even when the revision state is broader', () => {

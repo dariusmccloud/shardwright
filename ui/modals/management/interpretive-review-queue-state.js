@@ -129,12 +129,15 @@ export function getRevisionFilterStatus(interpretationLike) {
     const publicationState = String(interpretationLike?.publicationState || '').trim().toUpperCase();
     const guidedFlowStatus = String(interpretationLike?.operatorState?.guidedFlow?.status || '').trim().toUpperCase();
     const latestEligibilityVerdict = String(interpretationLike?.operatorState?.latestQualification?.eligibilityVerdict || '').trim().toUpperCase();
+    const lifecycleStatus = getRevisionLifecycleStatus(interpretationLike, interpretationLike?.operatorState || null);
 
     if (reviewWorkflow === 'PENDING') return 'PENDING_APPROVAL';
     if (reviewWorkflow === 'CONTESTED') return 'CONTESTED';
     if (reviewWorkflow === 'DEFERRED') return 'DEFERRED';
     if (reviewWorkflow === 'REJECTED') return 'REJECTED';
-    if (publicationState === 'PUBLISHED') return 'PUBLISHED';
+    if (lifecycleStatus === 'WITHDRAWN') return 'WITHDRAWN';
+    if (lifecycleStatus === 'SUPERSEDED') return 'SUPERSEDED';
+    if (lifecycleStatus === 'ACTIVE' || publicationState === 'PUBLISHED') return 'PUBLISHED';
     if (reviewWorkflow === 'COMPLETE' && subjectState === 'PENDING') return 'PENDING_DECISION';
     if (subjectState === 'GRANTED' && publicationState !== 'PUBLISHED') {
         if (latestEligibilityVerdict === 'ELIGIBLE' || guidedFlowStatus === 'READY_TO_PUBLISH') {
@@ -159,6 +162,7 @@ export function groupMatchesStatusFilter(group, statusFilter = '') {
     }
     const canonicalRevisionState = representativeReview?.canonicalRevisionState || null;
     const revisionStatus = getRevisionFilterStatus({
+        interpretationRevisionId: String(group?.interpretationRevisionId || '').trim(),
         reviewRequests: reviews,
         reviewState: canonicalRevisionState?.reviewState ?? representativeReview.reviewState,
         subjectDispositionState: canonicalRevisionState?.subjectDispositionState ?? representativeReview.subjectDispositionState,
@@ -188,7 +192,7 @@ export function buildPrimaryWorkflowStatus(interpretation, operatorState) {
     if (reviewWorkflow === 'REJECTED') return 'Rejected';
     if (lifecycleStatus === 'WITHDRAWN') return 'Withdrawn';
     if (lifecycleStatus === 'SUPERSEDED') return 'Superseded';
-    if (publicationState === 'PUBLISHED') return 'Published';
+    if (lifecycleStatus === 'ACTIVE' || publicationState === 'PUBLISHED') return 'Published';
     if (reviewWorkflow === 'COMPLETE' && subjectState === 'PENDING') return 'Pending decision';
     if (subjectState === 'GRANTED') {
         if (latestEligibilityVerdict === 'ELIGIBLE') return 'Ready for publication';

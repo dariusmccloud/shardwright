@@ -64,6 +64,8 @@ const REVIEW_STATUS_OPTIONS = Object.freeze([
     { value: 'APPROVE_FOR_SCOPE_ONLY', label: 'Approved for scope only' },
     { value: 'READY_FOR_PUBLICATION', label: 'Ready for publication' },
     { value: 'PUBLISHED', label: 'Published' },
+    { value: 'SUPERSEDED', label: 'Superseded' },
+    { value: 'WITHDRAWN', label: 'Withdrawn' },
     { value: 'CONTESTED', label: 'Contested' },
     { value: 'DEFERRED', label: 'Deferred' },
     { value: 'REJECTED', label: 'Rejected' },
@@ -1720,6 +1722,7 @@ function renderQueueGroupItem(group, selectedReviewRequestId, selectedInterpreta
     const normalizedSelectedReviewRequestId = String(selectedReviewRequestId || '').trim();
     const normalizedSelectedRevisionId = String(selectedInterpretationRevisionId || '').trim();
     const revisionWorkflowBadge = renderBadge(buildPrimaryWorkflowStatus({
+        interpretationRevisionId: String(group?.interpretationRevisionId || '').trim(),
         reviewRequests: reviews,
         reviewState: canonicalRevisionState?.reviewState ?? representativeReview.reviewState,
         subjectDispositionState: canonicalRevisionState?.subjectDispositionState ?? representativeReview.subjectDispositionState,
