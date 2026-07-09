@@ -68,19 +68,18 @@ export function reviewMatchesSelection(review, selectedReviewRequestId = '', sel
     return interpretationRevisionId === normalizedRevisionId;
 }
 
-export function isQueueGroupSelected(group, selectedReviewRequestId = '', selectedInterpretationRevisionId = '', duplicateReviewRequestSelection = false) {
+export function isQueueGroupSelected(group, selectedReviewRequestId = '', selectedInterpretationRevisionId = '') {
     const reviews = Array.isArray(group?.reviews) ? group.reviews : [];
     const normalizedReviewRequestId = String(selectedReviewRequestId || '').trim();
     const normalizedRevisionId = String(selectedInterpretationRevisionId || '').trim();
     if (normalizedReviewRequestId) {
-        const reviewRequestMatches = reviews.some((review) => String(review?.reviewRequestId || '').trim() === normalizedReviewRequestId);
-        if (!reviewRequestMatches) {
-            return false;
+        if (normalizedRevisionId) {
+            return reviews.some((review) => (
+                String(review?.reviewRequestId || '').trim() === normalizedReviewRequestId
+                && String(review?.interpretationRevisionId || '').trim() === normalizedRevisionId
+            ));
         }
-        if (!duplicateReviewRequestSelection || !normalizedRevisionId) {
-            return true;
-        }
-        return String(group?.interpretationRevisionId || '').trim() === normalizedRevisionId;
+        return reviews.some((review) => String(review?.reviewRequestId || '').trim() === normalizedReviewRequestId);
     }
     if (!normalizedRevisionId) {
         return false;

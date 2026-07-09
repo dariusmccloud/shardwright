@@ -1700,7 +1700,7 @@ function buildFilteredQueueGroups(reviews, statusFilter = '') {
     return buildQueueGroups(reviews).filter((group) => groupMatchesStatusFilter(group, statusFilter));
 }
 
-function renderQueueGroupItem(group, selectedReviewRequestId, selectedInterpretationRevisionId, duplicateReviewRequestSelection = false) {
+function renderQueueGroupItem(group, selectedReviewRequestId, selectedInterpretationRevisionId) {
     const reviews = Array.isArray(group?.reviews) ? group.reviews : [];
     const representativeReview = getQueueGroupRepresentativeReview(reviews);
     if (!representativeReview) {
@@ -1716,7 +1716,7 @@ function renderQueueGroupItem(group, selectedReviewRequestId, selectedInterpreta
         return earliest === null ? created : Math.min(earliest, created);
     }, null);
 
-    const groupSelected = isQueueGroupSelected(group, selectedReviewRequestId, selectedInterpretationRevisionId, duplicateReviewRequestSelection);
+    const groupSelected = isQueueGroupSelected(group, selectedReviewRequestId, selectedInterpretationRevisionId);
     const normalizedSelectedReviewRequestId = String(selectedReviewRequestId || '').trim();
     const normalizedSelectedRevisionId = String(selectedInterpretationRevisionId || '').trim();
     const revisionWorkflowBadge = renderBadge(buildPrimaryWorkflowStatus({
@@ -1741,7 +1741,7 @@ function renderQueueGroupItem(group, selectedReviewRequestId, selectedInterpreta
                         const reviewRequestId = String(review?.reviewRequestId || '').trim();
                         const rowSelected = reviewRequestId
                             && reviewRequestId === normalizedSelectedReviewRequestId
-                            && (!duplicateReviewRequestSelection || !normalizedSelectedRevisionId || normalizedSelectedRevisionId === group.interpretationRevisionId);
+                            && (!normalizedSelectedRevisionId || normalizedSelectedRevisionId === group.interpretationRevisionId);
                         return `
                     <button
                         type="button"
@@ -2792,18 +2792,11 @@ export async function openInterpretiveReviewModal() {
                 queueList.innerHTML = '<div class="ss-interpretive-review-queue-empty ss-hint">No revisions matched the current filter.</div>';
                 return;
             }
-            const normalizedSelectedReviewRequestId = String(state.selectedReviewRequestId || '').trim();
-            const duplicateReviewRequestSelection = !!normalizedSelectedReviewRequestId
-                && groups.filter((group) => {
-                    const reviews = Array.isArray(group?.reviews) ? group.reviews : [];
-                    return reviews.some((review) => String(review?.reviewRequestId || '').trim() === normalizedSelectedReviewRequestId);
-                }).length > 1;
             queueList.innerHTML = groups.map((group) => {
                 return renderQueueGroupItem(
                     group,
                     state.selectedReviewRequestId,
                     state.selectedInterpretationRevisionId,
-                    duplicateReviewRequestSelection,
                 );
             }).join('');
         };
