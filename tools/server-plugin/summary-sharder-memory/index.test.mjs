@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { buildManagedShardManifest } from '../../../core/summarization/shard-integrity-core.js';
+import { buildManagedShardManifest } from './lib/core/summarization/shard-integrity-core.js';
 import { writeOperationalStateMarkerDescriptor, readOperationalStateMarker, getStoragePaths } from './core.js';
 import { init } from './index.js';
 import { initCandidateRebuildRun, runCandidateRebuild } from './rebuild.js';
@@ -434,6 +434,51 @@ test('scope commit route does not bump scope version or run counters on an ident
     assert.equal(secondCommit.payload.registry.scopeVersion, 2);
     assert.equal(secondCommit.payload.registry.currentScopeRun, 1);
     assert.equal(secondCommit.payload.projectionState['noop-boundary'].currentRecordVersion, 1);
+});
+
+test('scope commit route rejects expected decision versions for missing decisions', async () => {
+    const root = makeTempRoot();
+    const router = createMockRouter();
+    await init(router);
+
+    const result = await invoke(
+        router.routes.post.get('/scopes/:memoryScopeId/commit'),
+        buildRequest(root, {
+            params: {
+                memoryScopeId: 'scope_missing_decision_conflict',
+            },
+            body: {
+                scopeAlias: 'missing-decision-conflict',
+                sourceChatInstanceId: 'chat_alpha',
+                expectedDecisionVersionsById: {
+                    'missing-boundary': 1,
+                },
+                decisions: [{
+                    decisionId: 'missing-boundary',
+                    status: 'ACCEPTED',
+                    sourceRef: 'S1:1',
+                    content: 'Keep browser-local projection state non-authoritative.',
+                    fields: {
+                        STATUS: 'ACCEPTED',
+                        DECISION: 'Keep browser-local projection state non-authoritative.',
+                    },
+                    semanticPayload: 'missing-boundary semantic payload',
+                    canonicalHash: 'sha256:missing-boundary-v1',
+                    canonicalHashVersion: 1,
+                    hashAlgorithm: 'SHA-256',
+                    parserErrors: [],
+                    parserWarnings: [],
+                }],
+                now: Date.parse('2026-06-27T00:00:00.000Z'),
+            },
+        }),
+    );
+
+    assert.equal(result.statusCode, 409);
+    assert.equal(result.payload?.code, 'ARCH_DECISION_VERSION_CONFLICT');
+    assert.equal(result.payload?.recordId, 'missing-boundary');
+    assert.equal(result.payload?.expectedRecordVersion, 1);
+    assert.equal(result.payload?.currentRecordVersion, null);
 });
 
 test('publication policy, qualification, authorization, and execute routes enforce governed DNM publication', async () => {

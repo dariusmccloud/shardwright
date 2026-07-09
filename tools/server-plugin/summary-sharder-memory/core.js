@@ -778,10 +778,14 @@ export function scanPersistedChatMetadata(request, locator = {}) {
 
 export function handleError(response, error) {
     const status = Number(error?.status) || 500;
+    const extra = Object.fromEntries(
+        Object.entries(error || {}).filter(([key]) => !['status', 'code', 'message', 'stack', 'cause'].includes(key)),
+    );
     console.error(`[${PLUGIN_ID}]`, error);
     return response.status(status).send({
         ok: false,
         code: String(error?.code || 'ARCH_INTERNAL_ERROR'),
         error: String(error?.message || 'Internal error'),
+        ...extra,
     });
 }
