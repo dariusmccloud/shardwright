@@ -246,7 +246,9 @@ The current branch already proves the first bounded replay-hardening slice:
 1. governed replay can restore published / active truth from authoritative ledgers without relying on a live projection,
 2. replay order now consumes the governed streams needed to reconstruct publication state deterministically,
 3. the `/upgrade/replay` route fails closed when a required cross-ledger dependency is missing,
-4. incomplete publication replay now surfaces `ARCH_PUBLICATION_LEDGER_INCOMPLETE` instead of manufacturing false state.
+4. incomplete publication replay now surfaces `ARCH_PUBLICATION_LEDGER_INCOMPLETE` instead of manufacturing false state,
+5. replay now restores the pre-replay governed storage root if a later replay domain fails after an earlier one succeeded,
+6. missing live-authority DB references now preserve `REFERENCE_GAP / ARCH_LIVE_AUTHORITY_DB_MISSING` instead of collapsing into generic `PROJECTION_STALE`.
 
 Current automated proof:
 
@@ -614,11 +616,15 @@ Current closure artifact:
 
 ## C0.6.7D: Capability Freeze And Release Closeout
 
-Status: pending
+Status: active contract
 
 ### Goal
 
 Freeze what `v1.0` supports and what it intentionally does not support.
+
+Primary closeout artifact:
+
+- `docs/architectural-memory/C0_6_7D_CAPABILITY_FREEZE_AND_RELEASE_CLOSEOUT.md`
 
 ### Required Work
 
@@ -653,11 +659,15 @@ Candidate examples:
 3. record review response,
 4. record context-owner decision,
 5. approve with changes,
-6. publish approved memory,
-7. create successor revision,
-8. publish replacement,
-9. view current memory,
-10. view publication history.
+6. bootstrap the standard publication policy when absent,
+7. check publication readiness,
+8. publish approved memory,
+9. create successor revision,
+10. publish replacement,
+11. withdraw a pending replacement,
+12. view current memory,
+13. view publication history,
+14. inspect Technical Details for audit/reference state.
 
 ### Admin / Proof Flows
 
@@ -665,12 +675,12 @@ These may be productized but are not ordinary daily actions.
 
 Candidate examples:
 
-1. standard policy bootstrap,
-2. packaged verification,
-3. replay report,
-4. recovery report,
-5. technical detail inspection,
-6. proof matrix execution.
+1. packaged verification,
+2. replay report,
+3. recovery report,
+4. proof matrix execution,
+5. seeded smoke/reset workflows,
+6. admin recovery and replay operations outside the ordinary host path.
 
 ### Developer-Only Flows
 
@@ -720,6 +730,12 @@ v1.0 authorized with documented limitations
 ```
 
 The decision must cite the proof matrix and capability posture.
+
+Current closeout target:
+
+```text
+v1.0 authorized with documented limitations
+```
 
 ### Proof Gate
 

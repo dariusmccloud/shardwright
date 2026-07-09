@@ -70,7 +70,9 @@ Evidence:
 
 - [x] Governed replay restores published / active truth from authoritative ledgers without a live projection
 - [x] `/upgrade/replay` fails closed when publication replay is restored without the required governance ledger
+- [x] `/upgrade/replay` restores the pre-replay governed storage root when a later replay domain fails after an earlier one succeeded
 - [x] Incomplete replay surfaces `ARCH_PUBLICATION_LEDGER_INCOMPLETE` instead of manufacturing false publication state
+- [x] Missing live-authority DB references still surface `REFERENCE_GAP / ARCH_LIVE_AUTHORITY_DB_MISSING` even when authoritative ledgers are present
 - [x] Bundled `C0.6.7C` proof entry point now wraps fresh-install bootstrap, host restart parity, replay hardening, and packaged parity in one command
 
 Evidence:
@@ -94,6 +96,7 @@ Current bundled `C0.6.7C` coverage:
 - [x] live restart/replay publication parity
 - [x] corrected-child replay/restart publication parity
 - [x] replay rebuild from governed ledgers without a live projection
+- [x] replay rollback after mid-sequence failure preserves pre-replay governed state
 - [x] governed pre-v1.0 carried-host upgrade proof
 - [x] backup-required fail-closed refusal
 - [x] unsupported-schema fail-closed refusal
@@ -225,22 +228,22 @@ Verified live evidence:
   - helper script: `tools/server-plugin/seed-interpretive-candidate.ps1`
   - default smoke seeding should use `-ResetFirst -RestartHostAfterReset` unless you intentionally want to inspect dirty-state behavior
 
-- [ ] Verify saved evidence can feed proposal generation
-- [ ] Verify proposal record appears in interpretive review surfaces
-- [ ] Verify review submission path updates the corresponding runtime state
-- [ ] Verify publication lifecycle actions reflect the resulting review state
+- [ ] Deferred from `v1.0` ordinary-path closeout: verify saved evidence can feed proposal generation through a host-only operator path with no seed/proof fallback
+- [x] Proposal record appears in interpretive review surfaces
+- [x] Review submission path updates the corresponding runtime state
+- [x] Publication lifecycle actions reflect the resulting review state
 
 ### Operator-flow closeout
 
-- [ ] Prove successor revision creation end-to-end from a currently published memory on a clean isolated line
-- [ ] Prove replacement publication from that successor revision on the same isolated line
-- [ ] Prove pending replacement withdrawal on a clean isolated line without legacy duplicate residue
+- [x] Prove successor revision creation end-to-end from a currently published memory on a clean isolated line
+- [x] Prove replacement publication from that successor revision on the same isolated line
+- [x] Prove pending replacement withdrawal on a clean isolated line without legacy duplicate residue
 - [ ] Recheck selected-card highlight behavior after cross-tab navigation when multiple revisions from the same memory line are visible
 
 ### Server-plugin / persistence proof
 
-- [ ] Confirm server-plugin DB movement for proposal-side records
-- [ ] Confirm no divergence between client metadata state and server-plugin projection state
+- [x] Confirm server-plugin DB movement for proposal-side records
+- [x] Confirm no divergence between client metadata state and server-plugin projection state
 
 ## Known minor UX issues
 
@@ -263,6 +266,7 @@ Remaining publication work is now:
 - only the remaining host UX tightening that supports ordinary operator flow
 - only the UI tightening needed to support those proofs
 - evidence-finding compatibility is now covered by automated local proof, not open host semantics
+- host-only saved-evidence proposal creation remains intentionally outside the `v1.0` ordinary-path claim and is tracked as the next major lift rather than as a release blocker
 
 Closeout A proof command:
 
