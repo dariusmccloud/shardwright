@@ -224,12 +224,13 @@ export async function persistArchitecturalAuthorityProjection(summary, options =
         })] = projectionMetadata;
         await saveMetadata();
 
+        const commitRegistry = authorityCommit?.registry || {};
         recordArchitecturalIntegrationEvent('AUTHORITY_ADOPTION_COMMITTED', {
             profile: ARCHITECTURAL_PROFILE,
             mode,
             memoryScopeId: binding.memoryScopeId,
-            scopeVersion: authorityCommit.registry.scopeVersion,
-            currentScopeRun: authorityCommit.registry.currentScopeRun,
+            scopeVersion: commitRegistry.scopeVersion ?? null,
+            currentScopeRun: commitRegistry.currentScopeRun ?? null,
             decisionIds: projectionMetadata.decisionIds,
             outputUID,
         });

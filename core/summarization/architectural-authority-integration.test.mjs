@@ -54,6 +54,29 @@ test('integration trace resets and records ordered events', () => {
     }
 });
 
+test('integration trace preserves core fields when metadata repeats reserved names', () => {
+    const originalSessionStorage = globalThis.sessionStorage;
+    const storage = createStorage();
+    globalThis.sessionStorage = storage;
+
+    try {
+        clearArchitecturalIntegrationTrace();
+        const entry = recordArchitecturalIntegrationEvent('HOST_SAVE_CONFIRMED', {
+            type: 'OVERRIDE',
+            sequence: 999,
+            timestamp: 123,
+            outputUID: 'uid-1',
+        });
+
+        assert.equal(entry.type, 'HOST_SAVE_CONFIRMED');
+        assert.equal(entry.sequence, 1);
+        assert.notEqual(entry.timestamp, 123);
+        assert.equal(entry.outputUID, 'uid-1');
+    } finally {
+        globalThis.sessionStorage = originalSessionStorage;
+    }
+});
+
 test('debug host save failure is consumed once and mode filtered', () => {
     const originalSessionStorage = globalThis.sessionStorage;
     const storage = createStorage();

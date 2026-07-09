@@ -947,6 +947,14 @@ function commitAuthorityUpdate(adapter, options) {
             });
         }
 
+        if (!currentPointer && expectedDecisionVersion !== null) {
+            throw createError(409, `Decision ${decision.decisionId} version conflict`, 'ARCH_DECISION_VERSION_CONFLICT', {
+                recordId: decision.decisionId,
+                currentRecordVersion: null,
+                expectedRecordVersion: expectedDecisionVersion,
+            });
+        }
+
         let nextRecordVersion = currentPointer?.currentRecordVersion || 0;
         let pointerPayload = currentPointer;
         if (!currentRecord) {

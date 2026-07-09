@@ -5,6 +5,7 @@
 
 import { getRequestHeaders } from '../../../../../../script.js';
 import { extension_settings } from '../../../../../extensions.js';
+import { excludeArchitecturalResults } from './architectural-rag-boundary.js';
 import { getActiveCollectionIds, getWriteTargetCollectionId } from './collection-manager.js';
 import { bm25Score, keywordBoost, runClientHybridFusion, scoreAndRank } from './scoring.js';
 import { resolveRagEmbeddingApiKey } from './rag-secrets.js';
@@ -828,9 +829,10 @@ export async function runDebugPipeline(overrides = {}) {
                 return collectionQueryFn(id, queryText, topK, threshold, collectionSettings);
             })
         );
-        const shardResults = querySettled.flatMap(r =>
+        const rawResults = querySettled.flatMap(r =>
             r.status === 'fulfilled' && Array.isArray(r.value?.results) ? r.value.results : []
         );
+        const shardResults = excludeArchitecturalResults(rawResults);
         return {
             results: shardResults,
             metadata: {
@@ -840,6 +842,7 @@ export async function runDebugPipeline(overrides = {}) {
                 useNativeHybrid,
                 useClientHybrid,
                 collectionIds: activeCollectionIds,
+                architecturalExcluded: rawResults.length - shardResults.length,
                 collectionQuerySettings: activeCollectionIds.map(id => {
                     const collectionSettings = querySettingsByCollection.get(id) || rag;
                     return {

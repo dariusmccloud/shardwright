@@ -31,7 +31,11 @@ export function archiveMessage(message, options = {}) {
     const ss = ensureSummarySharderRoot(message);
     const previousArchive = getMessageArchiveMetadata(message);
     const nextPromptVisibility = previousArchive?.promptVisibilityBeforeArchive || getPromptVisibilityState(message);
-    const nextArchivedAt = String(options.archivedAt || new Date(Number.isFinite(options.now) ? options.now : Date.now()).toISOString());
+    const nextArchivedAt = String(
+        previousArchive?.archivedAt
+        || options.archivedAt
+        || new Date(Number.isFinite(options.now) ? options.now : Date.now()).toISOString()
+    );
     const nextArchive = {
         isArchived: true,
         archivedAt: nextArchivedAt,
@@ -40,7 +44,6 @@ export function archiveMessage(message, options = {}) {
 
     const changed = !previousArchive
         || previousArchive.isArchived !== true
-        || previousArchive.archivedAt !== nextArchive.archivedAt
         || previousArchive.promptVisibilityBeforeArchive !== nextArchive.promptVisibilityBeforeArchive
         || message.is_system !== true;
 

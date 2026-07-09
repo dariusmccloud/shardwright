@@ -12,6 +12,9 @@ $packager = Join-Path $PSScriptRoot 'package-summary-sharder-memory.mjs'
 $payloadManifestPath = Join-Path $source 'payload-manifest.json'
 
 node $packager | Out-Host
+if ($LASTEXITCODE -ne 0) {
+    throw "Packaging summary-sharder-memory failed with exit code $LASTEXITCODE"
+}
 
 if (-not (Test-Path -LiteralPath $payloadManifestPath)) {
     throw "Payload manifest was not generated at $payloadManifestPath"

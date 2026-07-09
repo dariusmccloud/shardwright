@@ -330,7 +330,7 @@ function formatStructuredField(fieldName, value) {
 }
 
 function formatThreadField(fieldName, value) {
-    return `${fieldName}: ${String(value ?? '').trim()}`;
+    return `${fieldName}: ${escapeArchitecturalFieldValue(String(value ?? '').trim())}`;
 }
 
 function reconstructArchitecturalDecisionContent(raw) {
@@ -423,6 +423,8 @@ function reconstructArchitecturalDevelopmentContent(raw) {
 }
 
 function reconstructArchitecturalCurrentContent(raw) {
-    const cells = splitPipeCells(raw).map(normalizePipeCell).filter(Boolean);
-    return formatPipeRow(cells);
+    return splitPipeCells(raw)
+        .map(normalizePipeCell)
+        .map((cell) => String(cell ?? '').trim())
+        .join(' | ');
 }

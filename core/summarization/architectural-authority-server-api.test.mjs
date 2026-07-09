@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
     getInterpretiveCandidate,
+    healthcheckArchitecturalAuthorityServer,
     listInterpretiveDelegationPolicies,
     listInterpretiveReviews,
     recordInterpretiveSubjectDisposition,
@@ -174,4 +175,59 @@ test('recordInterpretiveSubjectDisposition posts encoded path', async () => {
     assert.equal(calls[1].options.method, 'POST');
     assert.equal('x-csrf-token' in calls[1].options.headers, false);
     assert.deepEqual(JSON.parse(calls[1].options.body), { state: 'GRANTED' });
+});
+
+test('csrf token fetch failures do not poison later requests', async () => {
+    const calls = [];
+    let csrfAttempts = 0;
+    global.fetch = async (url, options = {}) => {
+        calls.push({ url, options });
+        if (url === '/csrf-token') {
+            csrfAttempts += 1;
+            if (csrfAttempts === 1) {
+                throw new Error('temporary csrf failure');
+            }
+            return {
+                ok: true,
+                async json() {
+                    return { token: 'csrf-recovered-token' };
+                },
+            };
+        }
+        return {
+            ok: true,
+            async json() {
+                return { ok: true };
+            },
+        };
+    };
+
+    await submitInterpretiveReviewDisposition('review:req/01', {
+        disposition: 'APPROVE',
+    });
+    await submitInterpretiveReviewDisposition('review:req/02', {
+        disposition: 'APPROVE',
+    });
+
+    assert.equal(calls[1].options.headers['x-csrf-token'], undefined);
+    assert.equal(calls[3].options.headers['x-csrf-token'], 'csrf-recovered-token');
+});
+
+test('healthcheckArchitecturalAuthorityServer attaches an abortable signal', async () => {
+    const calls = [];
+    global.fetch = async (url, options = {}) => {
+        calls.push({ url, options });
+        return {
+            ok: true,
+            async json() {
+                return { ok: true };
+            },
+        };
+    };
+
+    const response = await healthcheckArchitecturalAuthorityServer();
+
+    assert.deepEqual(response, { ok: true });
+    assert.equal(calls[0].url, '/api/plugins/summary-sharder-memory/health');
+    assert.equal(typeof calls[0].options.signal?.aborted, 'boolean');
 });

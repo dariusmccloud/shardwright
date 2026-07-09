@@ -509,6 +509,15 @@ export async function commitArchitecturalScopeAuthorityUpdate(options = {}) {
             throw error;
         }
 
+        if (!currentPointer && expectedDecisionVersion !== null) {
+            const error = new Error(`Decision ${decision.decisionId} version conflict`);
+            error.code = 'ARCH_DECISION_VERSION_CONFLICT';
+            error.recordId = decision.decisionId;
+            error.expectedRecordVersion = expectedDecisionVersion;
+            error.currentRecordVersion = null;
+            throw error;
+        }
+
         let nextRecordVersion = currentPointer?.currentRecordVersion || 0;
         let nextPointer = currentPointer;
         let nextRecord = currentRecord;

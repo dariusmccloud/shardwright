@@ -117,6 +117,24 @@ test('stale expected version blocks authority overwrite', async () => {
     );
 });
 
+test('expected decision version blocks creation when no authority exists yet', async () => {
+    await assert.rejects(
+        commitArchitecturalScopeAuthorityUpdate({
+            memoryScopeId: 'scope-a',
+            expectedDecisionVersionsById: { alpha: 1 },
+            decisions: [decisionContent('alpha')],
+            sourceChatId: 'chat-a',
+        }),
+        (error) => {
+            assert.equal(error?.code, 'ARCH_DECISION_VERSION_CONFLICT');
+            assert.equal(error?.recordId, 'alpha');
+            assert.equal(error?.expectedRecordVersion, 1);
+            assert.equal(error?.currentRecordVersion, null);
+            return true;
+        }
+    );
+});
+
 test('stale chat projection loads current scope authority and is marked stale', async () => {
     const created = await commitArchitecturalScopeAuthorityUpdate({
         memoryScopeId: 'scope-a',

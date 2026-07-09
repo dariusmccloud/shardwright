@@ -156,21 +156,18 @@ export async function runSharderPipeline(chatText, settings, context) {
         sceneCodeFixes,
         fixedCodes,
     } = sanitizeSinglePassSections(parsed, { ...context, inheritedPrefixes });
-    const mergedSections = sectionRegistry.profile === ARCHITECTURAL_PROFILE
-        ? {
-            ...sanitizedSections,
-            decisions: mergeArchitecturalDecisionLedger(
-                sanitizedSections?.decisions || [],
-                architecturalBaseline.ledger || architecturalBaseline.decisions
-            ).items,
-        }
-        : sanitizedSections;
     const decisionLedger = sectionRegistry.profile === ARCHITECTURAL_PROFILE
         ? mergeArchitecturalDecisionLedger(
             sanitizedSections?.decisions || [],
             architecturalBaseline.ledger || architecturalBaseline.decisions
         )
         : null;
+    const mergedSections = sectionRegistry.profile === ARCHITECTURAL_PROFILE
+        ? {
+            ...sanitizedSections,
+            decisions: decisionLedger.items,
+        }
+        : sanitizedSections;
 
     const structure = validateSinglePassOutput(mergedSections, {
         ...context,

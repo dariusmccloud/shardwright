@@ -330,7 +330,7 @@ function formatStructuredField(fieldName, value) {
 }
 
 function formatThreadField(fieldName, value) {
-    return `${fieldName}: ${String(value ?? '').trim()}`;
+    return `${fieldName}: ${escapeArchitecturalFieldValue(String(value ?? '').trim())}`;
 }
 
 function reconstructArchitecturalDecisionContent(raw) {

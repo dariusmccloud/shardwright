@@ -33,6 +33,11 @@ function makeMessage(index, overrides = {}) {
     };
 }
 
+function estimateTestTokens(text) {
+    const words = String(text || '').trim().split(/\s+/u).filter(Boolean).length;
+    return words > 0 ? Math.round(words * 1.3) : 0;
+}
+
 test('parseManagedOutputWrapper recognizes system shard wrappers', () => {
     assert.deepEqual(
         parseManagedOutputWrapper('[MEMORY SHARD: Messages 10-20]\n\nBody'),
@@ -70,6 +75,43 @@ test('buildManagedShardManifest records identity-backed source coverage', async 
     assert.equal(manifest.promptPolicy, SHARD_PROMPT_POLICY_VALUES.REPLACE_SOURCE);
     assert.match(manifest.sourceIdentityHash, /^sha256:/u);
     assert.match(manifest.sourceRevisionHash, /^sha256:/u);
+});
+
+test('buildManagedShardManifest falls back when secure Web Crypto is unavailable', async () => {
+    const messages = [
+        makeMessage(0),
+        makeMessage(1),
+        makeMessage(2, { mes: '[SUMMARY: Messages 0-1]\n\nSummary body', send_date: '2026-06-24T00:00:09.000Z' }),
+    ];
+
+    const manifest = await buildManagedShardManifest(messages, {
+        artifactKind: SHARD_ARTIFACT_KINDS.SYSTEM_SUMMARY,
+        outputUID: '2026-06-24T00:00:09.000Z',
+        startIndex: 0,
+        endIndex: 1,
+        cryptoApi: {},
+    });
+
+    assert.ok(manifest);
+    assert.match(manifest.sourceIdentityHash, /^sha256:[0-9a-f]{64}$/u);
+    assert.match(manifest.sourceRevisionHash, /^sha256:[0-9a-f]{64}$/u);
+});
+
+test('buildManagedShardManifest rejects truncated contiguous source coverage', async () => {
+    const messages = [
+        makeMessage(0),
+        makeMessage(1),
+        makeMessage(2, { mes: '[SUMMARY: Messages 0-3]\n\nSummary body', send_date: '2026-06-24T00:00:09.000Z' }),
+    ];
+
+    const manifest = await buildManagedShardManifest(messages, {
+        artifactKind: SHARD_ARTIFACT_KINDS.SYSTEM_SUMMARY,
+        outputUID: '2026-06-24T00:00:09.000Z',
+        startIndex: 0,
+        endIndex: 3,
+    });
+
+    assert.equal(manifest, null);
 });
 
 test('validateShardManifest reports INTACT when source ids and hash still match', async () => {
@@ -175,6 +217,33 @@ test('validateShardManifest splits intact content from replace-source exposure c
     assert.equal(result.exposureHealth, SHARD_EXPOSURE_HEALTH_VALUES.SOURCE_AND_ARTIFACT_VISIBLE);
     assert.ok(result.diagnostics.some((entry) => entry.code === 'DOUBLE_CONTEXT_INCLUSION'));
     assert.ok(result.diagnostics.some((entry) => entry.code === 'PROMPT_SIZE_ESTIMATED_WARNING'));
+});
+
+test('validateShardManifest estimates duplicated prompt size from prompt-visible source messages only', async () => {
+    const visibleText = 'visible '.repeat(400).trim();
+    const hiddenText = 'hidden '.repeat(400).trim();
+    const messages = [
+        makeMessage(0, { mes: visibleText }),
+        makeMessage(1, { mes: hiddenText, is_system: true }),
+        makeMessage(2, {
+            mes: `[SUMMARY: Messages 0-1]\n\n${visibleText}`,
+            send_date: '2026-06-24T00:00:09.000Z',
+            is_system: false,
+        }),
+    ];
+
+    const manifest = await buildManagedShardManifest(messages, {
+        artifactKind: SHARD_ARTIFACT_KINDS.SYSTEM_SUMMARY,
+        outputUID: '2026-06-24T00:00:09.000Z',
+        startIndex: 0,
+        endIndex: 1,
+    });
+
+    const result = await validateShardManifest(manifest, messages);
+    const expected = estimateTestTokens(visibleText) + estimateTestTokens(messages[2].mes);
+
+    assert.equal(result.promptExposure.sourcePromptVisibleCount, 1);
+    assert.equal(result.promptExposure.duplicatedPromptTokenEstimate, expected);
 });
 
 test('validateShardManifest does not infer double inclusion for unknown legacy policy', async () => {

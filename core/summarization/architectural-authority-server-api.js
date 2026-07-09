@@ -4,42 +4,89 @@ let csrfTokenPromise = null;
 let initPromise = null;
 let manifestCache = null;
 
+function createRequestSignal(timeoutMs, externalSignal) {
+    const controller = new AbortController();
+    const listeners = [];
+    let timeoutId = null;
+
+    if (externalSignal) {
+        const relayAbort = () => controller.abort(externalSignal.reason);
+        if (externalSignal.aborted) {
+            relayAbort();
+        } else {
+            externalSignal.addEventListener('abort', relayAbort, { once: true });
+            listeners.push(() => externalSignal.removeEventListener('abort', relayAbort));
+        }
+    }
+
+    if (Number.isFinite(timeoutMs) && timeoutMs > 0) {
+        timeoutId = setTimeout(() => controller.abort(new Error('Architectural server request timed out')), timeoutMs);
+    }
+
+    return {
+        signal: controller.signal,
+        cleanup() {
+            if (timeoutId !== null) {
+                clearTimeout(timeoutId);
+            }
+            listeners.forEach((dispose) => dispose());
+        },
+        timedOut() {
+            return controller.signal.aborted && !externalSignal?.aborted;
+        },
+    };
+}
+
 async function fetchJson(path, options = {}) {
     const method = options.method || 'GET';
     const headers = {
         'Content-Type': 'application/json',
         ...(options.headers || {}),
     };
+    const requestSignal = createRequestSignal(options.timeoutMs ?? 15000, options.signal);
 
-    if (method !== 'GET') {
-        const token = await getCsrfToken();
-        if (token && token !== 'disabled') {
-            headers['x-csrf-token'] = token;
-        }
-    }
-
-    const response = await fetch(`${BASE}${path}`, {
-        method,
-        headers,
-        body: options.body ? JSON.stringify(options.body) : undefined,
-    });
-
-    let data = null;
     try {
-        data = await response.json();
-    } catch {
-        data = null;
-    }
+        if (method !== 'GET') {
+            const token = await getCsrfToken();
+            if (token && token !== 'disabled') {
+                headers['x-csrf-token'] = token;
+            }
+        }
 
-    if (!response.ok) {
-        const error = new Error(data?.error || `Architectural server request failed: ${response.status}`);
-        error.status = response.status;
-        error.code = data?.code || 'ARCH_SERVER_REQUEST_FAILED';
-        error.data = data;
+        const response = await fetch(`${BASE}${path}`, {
+            method,
+            headers,
+            body: options.body ? JSON.stringify(options.body) : undefined,
+            signal: requestSignal.signal,
+        });
+
+        let data = null;
+        try {
+            data = await response.json();
+        } catch {
+            data = null;
+        }
+
+        if (!response.ok) {
+            const error = new Error(data?.error || `Architectural server request failed: ${response.status}`);
+            error.status = response.status;
+            error.code = data?.code || 'ARCH_SERVER_REQUEST_FAILED';
+            error.data = data;
+            throw error;
+        }
+
+        return data;
+    } catch (error) {
+        if (requestSignal.timedOut()) {
+            const timeoutError = new Error(`Architectural server request timed out for ${method} ${path}`);
+            timeoutError.code = 'ARCH_SERVER_TIMEOUT';
+            timeoutError.cause = error;
+            throw timeoutError;
+        }
         throw error;
+    } finally {
+        requestSignal.cleanup();
     }
-
-    return data;
 }
 
 function buildQueryString(filters = {}) {
@@ -64,7 +111,10 @@ export async function getCsrfToken() {
         })
             .then((response) => response.json())
             .then((data) => data?.token || 'disabled')
-            .catch(() => 'disabled');
+            .catch(() => {
+                csrfTokenPromise = null;
+                return 'disabled';
+            });
     }
     return csrfTokenPromise;
 }

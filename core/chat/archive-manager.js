@@ -39,6 +39,19 @@ function shouldHideArchivedRow(message, settings = {}) {
     return isArchivedMessage(message) && !settings.showArchivedMessages;
 }
 
+function cloneMessageSnapshot(message) {
+    if (message === undefined) {
+        return undefined;
+    }
+    if (message === null) {
+        return null;
+    }
+    if (typeof structuredClone === 'function') {
+        return structuredClone(message);
+    }
+    return JSON.parse(JSON.stringify(message));
+}
+
 export function refreshArchiveDecorations(settings = {}) {
     const messageElements = document.querySelectorAll('#chat .mes');
     if (!messageElements.length) return;
@@ -75,11 +88,13 @@ async function mutateMessages(indices, mutator, settings = {}) {
 
     try {
         let changed = false;
+        const snapshots = new Map();
         for (const index of indices) {
             if (!Number.isInteger(index) || index < 0 || index >= chat.length) {
                 continue;
             }
             const message = chat[index];
+            snapshots.set(index, cloneMessageSnapshot(message));
             if (mutator(message, index)) {
                 changed = true;
             }
@@ -90,7 +105,23 @@ async function mutateMessages(indices, mutator, settings = {}) {
             return { changed: false };
         }
 
-        await saveChatConditional();
+        try {
+            await saveChatConditional();
+        } catch (error) {
+            for (const [index, snapshot] of snapshots.entries()) {
+                chat[index] = snapshot;
+            }
+            refreshArchiveDecorations(settings);
+            applyCollapseToHiddenMessages(settings);
+            expandUnhiddenMessages();
+            refreshSwipeButtons();
+            log.error('Archive mutation failed to save. Restored in-memory chat state.', error);
+            return {
+                changed: false,
+                error,
+            };
+        }
+
         refreshArchiveDecorations(settings);
         applyCollapseToHiddenMessages(settings);
         expandUnhiddenMessages();

@@ -249,6 +249,14 @@ test('standard summary admission accepts wrapped legacy memory shard', () => {
     assert.equal(candidate.endIndex, 42);
 });
 
+test('standard summary admission accepts wrapped summary with CRLF line endings and leading whitespace', () => {
+    const candidate = buildStandardSummaryCandidate(`\r\n  ${WRAPPED_NARRATIVE_SHARD.replace(/\n/g, '\r\n')}`);
+
+    assert.equal(candidate.kind, 'memory-shard-wrapper');
+    assert.equal(candidate.startIndex, 30);
+    assert.equal(candidate.endIndex, 32);
+});
+
 test('standard summary admission rejects wrapped architectural memory shard', () => {
     const candidate = buildStandardSummaryCandidate(WRAPPED_ARCHITECTURAL_SHARD);
 

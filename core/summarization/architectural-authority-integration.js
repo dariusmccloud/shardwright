@@ -82,10 +82,10 @@ export function recordArchitecturalIntegrationEvent(type, metadata = {}) {
         ? [...globalThis[TRACE_GLOBAL_KEY]]
         : readStoredTrace();
     const entry = {
+        ...cloneJson(metadata || {}),
         sequence: nextSequence(trace),
         type: String(type || '').trim(),
         timestamp: Date.now(),
-        ...cloneJson(metadata || {}),
     };
     trace.push(entry);
     setGlobalTrace(trace);

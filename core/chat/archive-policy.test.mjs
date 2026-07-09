@@ -43,6 +43,32 @@ test('archiveMessage preserves prior hidden visibility when archiving a hidden m
     assert.equal(message.extra.summary_sharder.archive.promptVisibilityBeforeArchive, ARCHIVE_PROMPT_VISIBILITY_HIDDEN);
 });
 
+test('archiveMessage is idempotent for already archived messages', () => {
+    const message = {
+        is_system: true,
+        extra: {
+            summary_sharder: {
+                archive: {
+                    isArchived: true,
+                    archivedAt: '2026-06-23T00:00:00.000Z',
+                    promptVisibilityBeforeArchive: ARCHIVE_PROMPT_VISIBILITY_SHOWN,
+                },
+            },
+        },
+    };
+
+    const changed = archiveMessage(message, {
+        archivedAt: '2026-06-24T00:00:00.000Z',
+    });
+
+    assert.equal(changed, false);
+    assert.deepEqual(message.extra.summary_sharder.archive, {
+        isArchived: true,
+        archivedAt: '2026-06-23T00:00:00.000Z',
+        promptVisibilityBeforeArchive: ARCHIVE_PROMPT_VISIBILITY_SHOWN,
+    });
+});
+
 test('restoreArchivedMessage clears archive metadata and restores shown state', () => {
     const message = {
         is_system: true,

@@ -721,7 +721,7 @@ export async function getCollectionQuerySettingsMap(collectionIds, rag) {
     for (const id of (collectionIds || [])) {
         resolved.set(id, { ...rag });
     }
-    if (!Array.isArray(collectionIds) || collectionIds.length <= 1) {
+    if (!Array.isArray(collectionIds) || collectionIds.length === 0) {
         return resolved;
     }
 

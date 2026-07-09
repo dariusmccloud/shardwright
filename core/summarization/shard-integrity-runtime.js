@@ -145,6 +145,11 @@ export async function syncCurrentChatShardIntegrity(options = {}) {
     const report = await validateShardManifestSet(nextManifests, messages, {
         cryptoApi: options.cryptoApi,
     });
+    const currentChatId = getNormalizedChatId(context);
+    const previousReport = currentChatId && currentChatId === lastRuntimeState.chatId
+        ? lastRuntimeState.report
+        : null;
+    const reportChanged = shardIntegrityReportChanged(previousReport || null, report || null);
     const runtimeState = setRuntimeState(context, report, now);
 
     const manifestsChanged = shardIntegrityReportChanged(ss.shardManifests || [], nextManifests);
@@ -162,9 +167,9 @@ export async function syncCurrentChatShardIntegrity(options = {}) {
     }
 
     return {
-        changed: manifestsChanged,
+        changed: manifestsChanged || reportChanged,
         manifestsChanged,
-        reportChanged: false,
+        reportChanged,
         manifestsAdded: additions.length,
         manifestCount: nextManifests.length,
         report,

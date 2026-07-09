@@ -243,3 +243,43 @@ test('architectural renderer canonicalizes decision, event, and thread structure
     assert.equal(output.includes('[S11:4] Letters: confirmed (Chris correspondence inventory stabilized)'), true);
     assert.equal(output.includes('Project | Current State: active | Focus | Pending: follow-up | Blocked By: none | Next Action: ship'), true);
 });
+
+test('architectural renderer escapes thread field quotes and pipes during reconstruction', () => {
+    const output = reconstructArchitecturalExtraction({
+        _metadata: {
+            keyLines: ['Sources: Messages 15-16'],
+        },
+        timeline: [],
+        decisions: [],
+        events: [],
+        developments: [],
+        dialogue: [],
+        threads: [{
+            content: '[S15:1] quoted subject | STATUS: ACTIVE | INTRO: S15:0 | LAST: S15:1 | Speaker said "hold | resume"',
+            selected: true,
+        }],
+        current: [{ content: 'Project|State|Focus|Pending|Blocked|Next', selected: true }],
+    }, registry);
+
+    assert.equal(
+        output.includes('[S15:1] quoted subject | STATUS: ACTIVE | INTRO: S15:0 | LAST: S15:1 | Speaker said \\"hold \\| resume\\"'),
+        true,
+    );
+});
+
+test('architectural renderer preserves empty CURRENT cells', () => {
+    const output = reconstructArchitecturalExtraction({
+        _metadata: {
+            keyLines: ['Sources: Messages 13-14'],
+        },
+        timeline: [],
+        decisions: [],
+        events: [],
+        developments: [],
+        dialogue: [],
+        threads: [],
+        current: [{ content: 'Project |  | Focus | Pending: follow-up |  | Next Action: ship', selected: true }],
+    }, registry);
+
+    assert.equal(output.includes('Project |  | Focus | Pending: follow-up |  | Next Action: ship'), true);
+});

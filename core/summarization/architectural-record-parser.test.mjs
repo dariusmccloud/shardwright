@@ -44,6 +44,16 @@ test('field escaping round-trips deterministic literal pipes', () => {
     assert.equal(parsed.fields.WHY, original);
 });
 
+test('field escaping round-trips embedded quotes without splitting fields', () => {
+    const original = 'say "alpha | beta" before review';
+    const escaped = escapeArchitecturalFieldValue(original);
+    const parsed = splitArchitecturalPipeFields(`WHY:${escaped}|SCOPE:test`);
+
+    assert.equal(escaped, 'say \\"alpha \\| beta\\" before review');
+    assert.equal(parsed.fields.WHY, original);
+    assert.equal(parsed.fields.SCOPE, 'test');
+});
+
 test('source reference parser accepts bracket and paren forms and rejects malformed refs', () => {
     assert.deepEqual(parseArchitecturalSourceReference('(S0:1)'), {
         ok: true,

@@ -82,6 +82,7 @@ function unescapeArchitecturalFieldValue(value) {
 export function escapeArchitecturalFieldValue(value) {
     return String(value ?? '')
         .replace(/\\/g, '\\\\')
+        .replace(/"/g, '\\"')
         .replace(/\|/g, '\\|');
 }
 

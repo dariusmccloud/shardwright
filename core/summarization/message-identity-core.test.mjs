@@ -167,6 +167,31 @@ test('reconcileMessageIdentityState preserves lastReconciledAt when semantic ide
     assert.equal(chatMetadata.summary_sharder.messageIdentity.lastReconciledAt, 1782210204120);
 });
 
+test('reconcileMessageIdentityState falls back when secure Web Crypto is unavailable', async () => {
+    const messages = [
+        {
+            name: 'Chris',
+            is_user: true,
+            is_system: false,
+            send_date: '2026-04-15T06:51:57.721Z',
+            mes: 'Hello?',
+        },
+    ];
+    const chatMetadata = {};
+
+    const result = await reconcileMessageIdentityState(messages, {
+        chatMetadata,
+        context: makeDirectContext(),
+        cryptoApi: {},
+    });
+
+    assert.equal(result.status, IDENTITY_STATUS_VALUES.COMPLETE);
+    assert.match(messages[0].extra.summary_sharder.messageIdentity.messageId, /^msg_[0-9a-f]{32}$/u);
+    assert.match(messages[0].extra.summary_sharder.messageIdentity.initFingerprint, /^sha256:[0-9a-f]{64}$/u);
+    assert.match(messages[0].extra.summary_sharder.messageIdentity.revisionHash, /^sha256:[0-9a-f]{64}$/u);
+    assert.match(chatMetadata.summary_sharder.messageIdentity.corpusRevisionHash, /^sha256:[0-9a-f]{64}$/u);
+});
+
 test('reconcileMessageIdentityState surfaces deterministic fingerprint collisions', async () => {
     const messages = [
         {

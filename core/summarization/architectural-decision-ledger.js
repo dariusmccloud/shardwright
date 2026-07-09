@@ -259,7 +259,10 @@ export function mergeArchitecturalDecisionLedger(generatedItems = [], baselineLe
     (Array.isArray(generatedItems) ? generatedItems : []).forEach((item, itemIndex) => {
         const parsed = parseDecisionItem(item, 'generated-output');
         if (!parsed.valid || !parsed.id) {
-            passthroughItems.push(cloneItem(item));
+            if (!parsed.id || !baselineLedger.decisionsById[parsed.id]) {
+                passthroughItems.push(cloneItem(item));
+            }
+            // else: malformed update attempt for an existing ID — drop and surface a diagnostic instead of duplicating.
             return;
         }
 
@@ -273,7 +276,10 @@ export function mergeArchitecturalDecisionLedger(generatedItems = [], baselineLe
         const baseline = baselineLedger.decisionsById[parsed.id];
 
         if (baseline) {
-            mergedEntries.set(parsed.id, nextEntry);
+            mergedEntries.set(parsed.id, {
+                ...nextEntry,
+                authority: nextEntry.authority || baseline.authority || null,
+            });
             if (materiallyUpdatesDecision(baseline.record, parsed.record)) {
                 classificationById[parsed.id] = 'updated';
                 updatedIdsInOrder.push(parsed.id);

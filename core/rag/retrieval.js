@@ -832,7 +832,8 @@ export async function rearrangeChat(chat, contextSize, abort, type) {
         }
 
         const wantsHybrid = rag.scoringMethod === 'hybrid';
-        const useClientHybrid = wantsHybrid && !(rag.backend === 'qdrant' || rag.backend === 'milvus');
+        const useNativeHybrid = wantsHybrid && (rag.backend === 'qdrant' || rag.backend === 'milvus');
+        const useClientHybrid = wantsHybrid && !useNativeHybrid;
 
         const overfetchMultiplier = Math.max(1, Number(rag.hybridOverfetchMultiplier) || 4);
         const topK = Math.max(1, (Number(rag.insertCount) || 5) * (wantsHybrid ? overfetchMultiplier : 4));

@@ -13,18 +13,26 @@ function now() {
         : Date.now();
 }
 
-function sanitizeValue(value) {
+function sanitizeValue(value, seen = new WeakSet()) {
     if (value === null || value === undefined) {
         return value;
     }
     if (Array.isArray(value)) {
-        return value.map((entry) => sanitizeValue(entry));
+        if (seen.has(value)) {
+            return '[Circular]';
+        }
+        seen.add(value);
+        return value.map((entry) => sanitizeValue(entry, seen));
     }
     if (typeof value === 'object') {
+        if (seen.has(value)) {
+            return '[Circular]';
+        }
+        seen.add(value);
         const output = {};
         for (const [key, entry] of Object.entries(value)) {
             if (typeof entry === 'function') continue;
-            output[key] = sanitizeValue(entry);
+            output[key] = sanitizeValue(entry, seen);
         }
         return output;
     }
