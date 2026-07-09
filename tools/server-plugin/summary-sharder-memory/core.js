@@ -449,8 +449,9 @@ function inspectProjectionDb(dbPath) {
     }
 }
 
+export const replayableStatuses = new Set(['READY_TO_UPGRADE', 'PROJECTION_STALE']);
+
 function summarizePreflight(status, summary, technicalCodes, nextAction, extra = {}) {
-    const replayableStatuses = new Set(['READY_TO_UPGRADE', 'PROJECTION_STALE']);
     return {
         ok: true,
         status,
@@ -577,6 +578,16 @@ export function getUpgradeReplayPreflight(paths) {
         );
     }
 
+    if (state.marker?.liveAuthority?.dbRelativePath && !db.exists) {
+        return summarizePreflight(
+            'REFERENCE_GAP',
+            'The runtime state marker points to a missing live-authority database.',
+            ['ARCH_LIVE_AUTHORITY_DB_MISSING'],
+            'Repair the missing live-authority projection or reset the state marker before upgrade or replay.',
+            sharedDetails,
+        );
+    }
+
     if (!db.exists && authoritativeLedgersPresent) {
         return summarizePreflight(
             'PROJECTION_STALE',
@@ -605,16 +616,6 @@ export function getUpgradeReplayPreflight(paths) {
             'The operational projection is unreadable or corrupt and cannot be upgraded safely.',
             [db.technicalCode],
             'Repair or rebuild the operational projection before upgrade or replay.',
-            sharedDetails,
-        );
-    }
-
-    if (state.marker?.liveAuthority?.dbRelativePath && !db.exists) {
-        return summarizePreflight(
-            'REFERENCE_GAP',
-            'The runtime state marker points to a missing live-authority database.',
-            ['ARCH_LIVE_AUTHORITY_DB_MISSING'],
-            'Repair the missing live-authority projection or reset the state marker before upgrade or replay.',
             sharedDetails,
         );
     }

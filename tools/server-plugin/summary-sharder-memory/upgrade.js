@@ -1,13 +1,16 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
 import {
     createError,
     getAuthenticatedUserRoot,
     getStoragePaths,
     getUpgradeReplayPreflight,
+    replayableStatuses,
 } from './core.js';
 import { replayInterpretiveLedger, replayPublicationLedger } from './interpretive.js';
 import { recoverPromotionState } from './promotion.js';
-
-export const UPGRADE_REPLAY_ALLOWED_STATUSES = Object.freeze(['READY_TO_UPGRADE', 'PROJECTION_STALE']);
 
 export const UPGRADE_REPLAY_DOMAIN_ORDER = Object.freeze([
     'promotion-state',
@@ -63,11 +66,54 @@ function buildPublicationStep(replay) {
     });
 }
 
+function createReplayRollbackGuard(paths) {
+    const storageRootExisted = fs.existsSync(paths.storageRoot);
+    const backupRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'summary-sharder-replay-'));
+    const backupStorageRoot = path.join(backupRoot, path.basename(paths.storageRoot));
+    if (storageRootExisted) {
+        fs.cpSync(paths.storageRoot, backupStorageRoot, {
+            recursive: true,
+            force: true,
+            errorOnExist: false,
+        });
+    }
+
+    let cleaned = false;
+    const cleanup = () => {
+        if (cleaned) {
+            return;
+        }
+        cleaned = true;
+        fs.rmSync(backupRoot, { recursive: true, force: true });
+    };
+
+    return {
+        commit() {
+            cleanup();
+        },
+        rollback() {
+            try {
+                fs.rmSync(paths.storageRoot, { recursive: true, force: true });
+                if (storageRootExisted) {
+                    fs.mkdirSync(path.dirname(paths.storageRoot), { recursive: true });
+                    fs.cpSync(backupStorageRoot, paths.storageRoot, {
+                        recursive: true,
+                        force: true,
+                        errorOnExist: false,
+                    });
+                }
+            } finally {
+                cleanup();
+            }
+        },
+    };
+}
+
 export function replayGovernedMemoryState(request, options = {}) {
     const userRoot = getAuthenticatedUserRoot(request);
     const paths = getStoragePaths(userRoot);
     const preflight = options.preflight || getUpgradeReplayPreflight(paths);
-    if (!UPGRADE_REPLAY_ALLOWED_STATUSES.includes(preflight.status)) {
+    if (!replayableStatuses.has(preflight.status)) {
         throw createError(
             409,
             `Governed-memory replay is blocked: ${preflight.summary}`,
@@ -80,23 +126,42 @@ export function replayGovernedMemoryState(request, options = {}) {
     }
 
     const now = options.now;
-    const promotionRecovery = recoverPromotionState(request, { now });
-    const interpretiveReplay = replayInterpretiveLedger(request, { now });
-    const publicationReplay = replayPublicationLedger(request, { now });
+    const rollbackGuard = createReplayRollbackGuard(paths);
+    try {
+        const promotionRecovery = recoverPromotionState(request, { now });
+        const interpretiveReplay = replayInterpretiveLedger(request, { now });
+        const publicationReplay = replayPublicationLedger(request, { now });
+        rollbackGuard.commit();
 
-    return {
-        ok: true,
-        phase: 'c0.6.7',
-        preflightStatus: preflight.status,
-        preflightSummary: preflight.summary,
-        domainOrder: [...UPGRADE_REPLAY_DOMAIN_ORDER],
-        domains: [
-            buildPromotionStep(promotionRecovery),
-            buildInterpretiveStep(interpretiveReplay),
-            buildPublicationStep(publicationReplay),
-        ],
-        promotionRecovery,
-        interpretiveReplay,
-        publicationReplay,
-    };
+        return {
+            ok: true,
+            phase: 'c0.6.7',
+            preflightStatus: preflight.status,
+            preflightSummary: preflight.summary,
+            domainOrder: [...UPGRADE_REPLAY_DOMAIN_ORDER],
+            domains: [
+                buildPromotionStep(promotionRecovery),
+                buildInterpretiveStep(interpretiveReplay),
+                buildPublicationStep(publicationReplay),
+            ],
+            promotionRecovery,
+            interpretiveReplay,
+            publicationReplay,
+        };
+    } catch (error) {
+        try {
+            rollbackGuard.rollback();
+        } catch (rollbackError) {
+            throw createError(
+                500,
+                `Governed-memory replay failed and rollback did not complete: ${error?.message || 'unknown replay error'}. Rollback error: ${rollbackError?.message || 'unknown rollback error'}`,
+                'ARCH_UPGRADE_REPLAY_ROLLBACK_FAILED',
+                {
+                    causeErrorCode: error?.code || null,
+                    rollbackErrorCode: rollbackError?.code || null,
+                },
+            );
+        }
+        throw error;
+    }
 }

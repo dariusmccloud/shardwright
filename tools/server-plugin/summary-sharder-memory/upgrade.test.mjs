@@ -525,6 +525,9 @@ test('upgrade replay route fails closed when the publication ledger contains mal
     assert.equal(replayResult.payload.ok, false);
     assert.equal(replayResult.payload.code, 'ARCH_PUBLICATION_LEDGER_INVALID');
     assert.match(replayResult.payload.error, /Publication ledger line \d+ is not valid JSON/);
+    assert.equal(fs.existsSync(targetPaths.dbPath), false);
+    assert.equal(fs.existsSync(targetPaths.snapshotPath), false);
+    assert.equal(fs.existsSync(targetPaths.statePath), false);
 });
 
 test('upgrade replay route fails closed when publication ledger is restored without the governance ledger', async () => {
@@ -629,6 +632,8 @@ test('upgrade replay route refuses missing live-authority references before muta
     const root = makeTempRoot();
     const paths = getStoragePaths(root);
     fs.mkdirSync(paths.storageRoot, { recursive: true });
+    fs.writeFileSync(paths.interpretiveGovernanceLedgerPath, '');
+    fs.writeFileSync(paths.dnmPublicationLedgerPath, '');
     fs.writeFileSync(paths.statePath, JSON.stringify({
         schemaVersion: 1,
         updatedAt: Date.parse('2026-07-09T11:29:00.000Z'),
