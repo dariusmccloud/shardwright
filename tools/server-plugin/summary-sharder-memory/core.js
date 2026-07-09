@@ -288,7 +288,7 @@ export function resolveOperationalDbPath(paths, stateMarker = readOperationalSta
     }
     const resolved = path.resolve(paths.storageRoot, relativePath);
     const storageRoot = path.resolve(paths.storageRoot);
-    if (!resolved.startsWith(storageRoot)) {
+    if (resolved !== storageRoot && !resolved.startsWith(storageRoot + path.sep)) {
         throw createError(500, 'Resolved live DB path escaped storage root', 'ARCH_LIVE_DB_PATH_INVALID');
     }
     return resolved;

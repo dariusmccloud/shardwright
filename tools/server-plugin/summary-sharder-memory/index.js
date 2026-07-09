@@ -918,6 +918,7 @@ function commitAuthorityUpdate(adapter, options) {
     }
 
     const projectionState = {};
+    let mutated = false;
 
     for (const decision of options.decisions) {
         if (decision.parserErrors.length > 0) {
@@ -948,8 +949,6 @@ function commitAuthorityUpdate(adapter, options) {
 
         let nextRecordVersion = currentPointer?.currentRecordVersion || 0;
         let pointerPayload = currentPointer;
-        let changed = false;
-
         if (!currentRecord) {
             nextRecordVersion = 1;
             insertDecisionRecord(adapter, options.memoryScopeId, decision, {
@@ -973,7 +972,7 @@ function commitAuthorityUpdate(adapter, options) {
                 updatedAt: options.timestamp,
             };
             upsertCurrentDecision(adapter, pointerPayload);
-            changed = true;
+            mutated = true;
         } else if (currentRecord.canonicalHash !== decision.canonicalHash) {
             nextRecordVersion = Number(currentPointer.currentRecordVersion || currentRecord.recordVersion || 0) + 1;
             insertDecisionRecord(adapter, options.memoryScopeId, decision, {
@@ -996,7 +995,7 @@ function commitAuthorityUpdate(adapter, options) {
                 updatedAt: options.timestamp,
             };
             upsertCurrentDecision(adapter, pointerPayload);
-            changed = true;
+            mutated = true;
         }
 
         if (!pointerPayload) {
@@ -1012,23 +1011,21 @@ function commitAuthorityUpdate(adapter, options) {
             hashAlgorithm: pointerPayload.hashAlgorithm || decision.hashAlgorithm,
             authorityLocation: pointerPayload.authorityLocation || 'active',
         };
-
-        if (changed) {
-            // no-op branch; changed is retained for clarity
-        }
     }
 
-    adapter.run(
-        'UPDATE memory_scopes SET scope_alias = ?, scope_version = ?, current_scope_run = ?, updated_at = ? WHERE memory_scope_id = ?',
-        [
-            registry.scopeAlias || options.scopeAlias || '',
-            Number(registry.scopeVersion || 0) + 1,
-            Number(registry.currentScopeRun || 0) + 1,
-            options.timestamp,
-            options.memoryScopeId,
-        ],
-    );
-    touchManifest(adapter, options.timestamp);
+    if (mutated) {
+        adapter.run(
+            'UPDATE memory_scopes SET scope_alias = ?, scope_version = ?, current_scope_run = ?, updated_at = ? WHERE memory_scope_id = ?',
+            [
+                registry.scopeAlias || options.scopeAlias || '',
+                Number(registry.scopeVersion || 0) + 1,
+                Number(registry.currentScopeRun || 0) + 1,
+                options.timestamp,
+                options.memoryScopeId,
+            ],
+        );
+        touchManifest(adapter, options.timestamp);
+    }
 
     return {
         registry: loadScope(adapter, options.memoryScopeId),

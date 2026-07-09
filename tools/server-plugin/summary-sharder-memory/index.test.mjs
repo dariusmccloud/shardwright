@@ -361,6 +361,81 @@ test('capabilities and candidate lifecycle routes report no promotion and suppor
     assert.equal(cleanupResult.payload.promotionAvailable, false);
 });
 
+test('scope commit route does not bump scope version or run counters on an identical no-op commit', async () => {
+    const root = makeTempRoot();
+    const router = createMockRouter();
+    await init(router);
+
+    const firstCommit = await invoke(
+        router.routes.post.get('/scopes/:memoryScopeId/commit'),
+        buildRequest(root, {
+            params: {
+                memoryScopeId: 'scope_noop_commit',
+            },
+            body: {
+                scopeAlias: 'noop-scope',
+                sourceChatInstanceId: 'chat_alpha',
+                decisions: [{
+                    decisionId: 'noop-boundary',
+                    status: 'ACCEPTED',
+                    sourceRef: 'S1:1',
+                    content: 'Keep browser-local projection state non-authoritative.',
+                    fields: {
+                        STATUS: 'ACCEPTED',
+                        DECISION: 'Keep browser-local projection state non-authoritative.',
+                    },
+                    semanticPayload: 'noop-boundary semantic payload',
+                    canonicalHash: 'sha256:noop-boundary-v1',
+                    canonicalHashVersion: 1,
+                    hashAlgorithm: 'SHA-256',
+                    parserErrors: [],
+                    parserWarnings: [],
+                }],
+                now: Date.parse('2026-06-27T00:00:00.000Z'),
+            },
+        }),
+    );
+    assert.equal(firstCommit.statusCode, 200);
+    assert.equal(firstCommit.payload.registry.scopeVersion, 2);
+    assert.equal(firstCommit.payload.registry.currentScopeRun, 1);
+    assert.equal(firstCommit.payload.projectionState['noop-boundary'].currentRecordVersion, 1);
+
+    const secondCommit = await invoke(
+        router.routes.post.get('/scopes/:memoryScopeId/commit'),
+        buildRequest(root, {
+            params: {
+                memoryScopeId: 'scope_noop_commit',
+            },
+            body: {
+                scopeAlias: 'noop-scope',
+                sourceChatInstanceId: 'chat_alpha',
+                expectedScopeVersion: 2,
+                decisions: [{
+                    decisionId: 'noop-boundary',
+                    status: 'ACCEPTED',
+                    sourceRef: 'S1:1',
+                    content: 'Keep browser-local projection state non-authoritative.',
+                    fields: {
+                        STATUS: 'ACCEPTED',
+                        DECISION: 'Keep browser-local projection state non-authoritative.',
+                    },
+                    semanticPayload: 'noop-boundary semantic payload',
+                    canonicalHash: 'sha256:noop-boundary-v1',
+                    canonicalHashVersion: 1,
+                    hashAlgorithm: 'SHA-256',
+                    parserErrors: [],
+                    parserWarnings: [],
+                }],
+                now: Date.parse('2026-06-27T00:00:05.000Z'),
+            },
+        }),
+    );
+    assert.equal(secondCommit.statusCode, 200);
+    assert.equal(secondCommit.payload.registry.scopeVersion, 2);
+    assert.equal(secondCommit.payload.registry.currentScopeRun, 1);
+    assert.equal(secondCommit.payload.projectionState['noop-boundary'].currentRecordVersion, 1);
+});
+
 test('publication policy, qualification, authorization, and execute routes enforce governed DNM publication', async () => {
     const root = makeTempRoot();
     const router = createMockRouter();
@@ -1028,7 +1103,7 @@ test('publication operator route returns server-computed actions, blockers, and 
     assert.equal(operatorResult.payload.operatorState.availableActions.includes('EXECUTE_PUBLICATION'), false);
     assert.deepEqual(
         operatorResult.payload.operatorState.blockedActions.find((entry) => entry.action === 'EXECUTE_PUBLICATION')?.blockingReasons,
-        ['INTERPRETATION_ALREADY_PUBLISHED', 'PUBLICATION_AUTHORIZATION_CONSUMED'],
+        ['INTERPRETATION_ALREADY_PUBLISHED'],
     );
     assert.equal(operatorResult.payload.operatorState.blockingReasons.includes('INTERPRETATION_ALREADY_PUBLISHED'), true);
     const deltaPendingRecord = operatorResult.payload.operatorState.recordsForTarget.find(

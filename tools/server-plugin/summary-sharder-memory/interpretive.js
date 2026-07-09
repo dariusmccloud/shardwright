@@ -5309,12 +5309,12 @@ export function createInterpretiveCandidate(request, payload = {}) {
     const userRoot = getAuthenticatedUserRoot(request);
     const paths = getStoragePaths(userRoot);
     fs.mkdirSync(paths.storageRoot, { recursive: true });
-    const events = createLedgerEvents(prepared, timestamp);
-    appendLedgerEvents(paths.interpretiveGovernanceLedgerPath, events);
 
     const adapter = openOperationalDatabase(paths, { now: timestamp });
     try {
         persistPreparedCandidate(adapter, prepared, timestamp);
+        const events = createLedgerEvents(prepared, timestamp);
+        appendLedgerEvents(paths.interpretiveGovernanceLedgerPath, events);
         snapshotOperationalDatabase(adapter, paths);
         return {
             ok: true,
@@ -5688,9 +5688,9 @@ export function createInterpretiveRevision(request, interpretationRevisionId, pa
             createdAt: timestamp,
         });
         const prepared = prepareInterpretiveCandidate(childPayload, timestamp);
+        persistPreparedCandidate(adapter, prepared, timestamp);
         const events = createLedgerEvents(prepared, timestamp);
         appendLedgerEvents(paths.interpretiveGovernanceLedgerPath, events);
-        persistPreparedCandidate(adapter, prepared, timestamp);
         snapshotOperationalDatabase(adapter, paths);
         return {
             ok: true,

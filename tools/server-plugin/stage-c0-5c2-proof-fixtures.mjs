@@ -3,7 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
-import { buildManagedShardManifest } from '../../core/summarization/shard-integrity-core.js';
+import { buildManagedShardManifest } from './summary-sharder-memory/lib/core/summarization/shard-integrity-core.js';
 
 const DEFAULT_HOST_ROOTS = Object.freeze([
     'D:/AI/Projects/SillyTavern',

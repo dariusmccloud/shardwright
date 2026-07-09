@@ -67,6 +67,7 @@ const POSITION_SAVE_TIMEOUT_FALLBACK_MS = 64;
 const FAB_PERF_DEBUG = false;
 const FAB_PERF_SAMPLE_LIMIT = 120;
 const FAB_PERF_LOG_INTERVAL = 20;
+const INTERPRETIVE_REVIEW_MODAL_TIMEOUT_MS = 1200;
 
 function createRelocationState() {
     return {
@@ -640,9 +641,13 @@ async function openInterpretiveReviewFromFab() {
     const launcher = document.getElementById('ss-interpretive-reviews-btn');
     if (launcher instanceof HTMLElement) {
         launcher.click();
-        if (await waitForInterpretiveReviewModal()) {
+        if (await waitForInterpretiveReviewModal(INTERPRETIVE_REVIEW_MODAL_TIMEOUT_MS)) {
             return;
         }
+    }
+
+    if (hasInterpretiveReviewModal()) {
+        return;
     }
 
     try {
@@ -651,7 +656,7 @@ async function openInterpretiveReviewFromFab() {
         log.warn('[FAB] Interpretive review callback failed, launcher fallback exhausted.', error);
     }
 
-    if (await waitForInterpretiveReviewModal()) {
+    if (await waitForInterpretiveReviewModal(INTERPRETIVE_REVIEW_MODAL_TIMEOUT_MS)) {
         return;
     }
 }
@@ -670,15 +675,19 @@ async function waitForNextFrame() {
     await new Promise((resolve) => setTimeout(resolve, 16));
 }
 
-async function waitForInterpretiveReviewModal(timeoutMs = 500) {
+function hasInterpretiveReviewModal() {
+    return !!document.querySelector('.ss-interpretive-review-modal');
+}
+
+async function waitForInterpretiveReviewModal(timeoutMs = INTERPRETIVE_REVIEW_MODAL_TIMEOUT_MS) {
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
-        if (document.querySelector('.ss-interpretive-review-modal')) {
+        if (hasInterpretiveReviewModal()) {
             return true;
         }
         await new Promise((resolve) => setTimeout(resolve, 25));
     }
-    return !!document.querySelector('.ss-interpretive-review-modal');
+    return hasInterpretiveReviewModal();
 }
 
 function withActionLock(button, isLocked) {

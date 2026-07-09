@@ -81,6 +81,7 @@ function collectSharedDependencyClosure(repoRoot) {
     const visited = new Set();
     const output = new Set();
     const queue = [...RUNTIME_SHARED_ENTRYPOINTS.map((entry) => path.join(repoRoot, entry))];
+    const coreRoot = path.join(repoRoot, 'core');
 
     while (queue.length > 0) {
         const current = queue.pop();
@@ -89,14 +90,14 @@ function collectSharedDependencyClosure(repoRoot) {
             continue;
         }
         visited.add(normalized);
-        if (!normalized.startsWith(path.join(repoRoot, 'core'))) {
+        if (normalized !== coreRoot && !normalized.startsWith(coreRoot + path.sep)) {
             throw new Error(`Shared dependency escaped canonical core root: ${normalized}`);
         }
         output.add(normalized);
         const source = fs.readFileSync(normalized, 'utf8');
         for (const specifier of parseRelativeImports(source)) {
             const resolved = resolveModulePath(normalized, specifier);
-            if (resolved.startsWith(path.join(repoRoot, 'core'))) {
+            if (resolved === coreRoot || resolved.startsWith(coreRoot + path.sep)) {
                 queue.push(resolved);
             }
         }

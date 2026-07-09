@@ -428,7 +428,6 @@ export const RAG_CSS = `
 .ss-rag-collection-dropdown-menu,
 .ss-rag-collection-dropdown-search-wrap,
 .ss-rag-collection-dropdown-options,
-.ss-rag-collection-dropdown-item,
 .ss-rag-collection-dropdown-empty {
     --ss-rag-dropdown-bg: var(--ss-bg-secondary, rgba(18, 18, 18, 0.96));
     background: var(--ss-rag-dropdown-bg) !important;
@@ -466,12 +465,15 @@ export const RAG_CSS = `
 }
 
 .ss-rag-collection-dropdown-item {
+    --ss-rag-dropdown-bg: var(--ss-bg-secondary, rgba(18, 18, 18, 0.96));
     padding: 7px 10px;
     cursor: pointer;
     display: flex;
     flex-direction: column;
     gap: 2px;
     border-bottom: 1px solid var(--ss-border);
+    background: var(--ss-rag-dropdown-bg);
+    background-color: var(--ss-rag-dropdown-bg);
     opacity: 1 !important;
 }
 

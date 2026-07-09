@@ -1,6 +1,6 @@
 param(
     [string]$HostName = 'SillyTavern',
-    [int]$Port = 8000,
+    [Nullable[int]]$Port = $null,
     [string]$MemoryScopeId = 'scope_interpretive_smoke',
     [string]$MemorySubjectId = 'character:jeep.png',
     [string]$Statement = 'Jeep evolved into the primary architectural authority for continuity and memory requirements within the shared architecture.',
@@ -11,6 +11,19 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+
+$defaultPorts = @{
+    SillyTavern = 8000
+    SillyBunny = 4444
+}
+
+if (-not $Port.HasValue) {
+    $resolvedDefaultPort = $defaultPorts[$HostName]
+    if (-not $resolvedDefaultPort) {
+        throw "No default port is defined for host '$HostName'."
+    }
+    $Port = $resolvedDefaultPort
+}
 
 $isDefaultSmokeLine = (
     $MemoryScopeId -eq 'scope_interpretive_smoke' -and
@@ -111,8 +124,8 @@ function Invoke-JsonRequest {
 $stamp = Get-Date -Format 'yyyyMMddHHmmss'
 $interpretationId = "interp_seed_$stamp"
 $interpretationRevisionId = "interprev_seed_${stamp}_v1"
-$baseUri = "http://127.0.0.1:$Port/api/plugins/summary-sharder-memory"
-$csrf = Get-CsrfSession -TargetPort $Port
+$baseUri = "http://127.0.0.1:$($Port.Value)/api/plugins/summary-sharder-memory"
+$csrf = Get-CsrfSession -TargetPort $Port.Value
 $now = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
 
 $body = @{

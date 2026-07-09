@@ -52,16 +52,20 @@ function Wait-ForHealth([hashtable]$HostSpec, [int]$Attempts = 60) {
     throw "Host $($HostSpec.Name) did not become healthy on port $($HostSpec.Port)."
 }
 
-function Restart-Host([hashtable]$HostSpec) {
+function Stop-Host([hashtable]$HostSpec) {
     $before = Get-ListeningProcessInfo -Port $HostSpec.Port
     if ($before) {
         Stop-Process -Id $before.Id -Force -ErrorAction Stop
     }
+    return $before
+}
+
+function Start-Host([hashtable]$HostSpec, $before = $null) {
     Start-Process -FilePath $HostSpec.ProcessPath -ArgumentList $HostSpec.ProcessArgs -WorkingDirectory $HostSpec.Root -WindowStyle Hidden
     Wait-ForHealth -HostSpec $HostSpec
     $after = Get-ListeningProcessInfo -Port $HostSpec.Port
     if (-not $after) {
-        throw "Restart of $($HostSpec.Name) did not produce a listening process."
+        throw "Start of $($HostSpec.Name) did not produce a listening process."
     }
     return @{
         before = $before
@@ -112,13 +116,19 @@ $summary = [ordered]@{
     restarted = $false
 }
 
+$stoppedProcess = $null
+
+if ($RestartHost) {
+    $stoppedProcess = Stop-Host -HostSpec $hostSpec
+}
+
 if (Test-Path -LiteralPath $paths.storageRoot) {
     Remove-Item -LiteralPath $paths.storageRoot -Recurse -Force
     $summary.removed = $true
 }
 
 if ($RestartHost) {
-    $restart = Restart-Host -HostSpec $hostSpec
+    $restart = Start-Host -HostSpec $hostSpec -before $stoppedProcess
     $summary.restarted = $true
     $summary.restart = $restart
 }

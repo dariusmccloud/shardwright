@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { buildManagedShardManifest } from '../../../core/summarization/shard-integrity-core.js';
+import { buildManagedShardManifest } from './lib/core/summarization/shard-integrity-core.js';
 import {
     initCandidateRebuildRun,
     runCandidateRebuild,
