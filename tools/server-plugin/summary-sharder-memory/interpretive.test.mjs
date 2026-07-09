@@ -987,6 +987,44 @@ test('APPROVE_WITH_EDIT creates an immutable child revision and leaves publicati
     assert.equal(loadedChild.interpretation.statement, 'Jeep evolved into the primary architectural authority over continuity and memory requirements within a shared architecture with Chris.');
 });
 
+test('guided publication flow routes the parent revision to the latest child after APPROVE_WITH_EDIT', () => {
+    const root = makeTempRoot();
+    const request = buildRequest(root);
+    bootstrapStandardInterpretivePublicationPolicy(request, {
+        now: Date.parse('2026-06-25T12:06:00.000Z'),
+    });
+    const created = createInterpretiveCandidate(request, makeBasePayload({
+        interpretationId: 'interp_edit_guided_flow_case',
+        interpretationRevisionId: 'interprev_edit_guided_flow_case_v1',
+        now: Date.parse('2026-06-25T12:06:05.000Z'),
+    }));
+    const subjectRequest = created.interpretation.reviewRequests.find((entry) => entry.reviewerRole === 'MEMORY_SUBJECT');
+
+    submitInterpretiveReviewDisposition(request, subjectRequest.reviewRequestId, {
+        actorEntityId: 'character:jeep.png',
+        disposition: 'APPROVE_WITH_EDIT',
+        reviewEnvelopeHash: created.interpretation.reviewEnvelopeHash,
+        reasonCodes: ['SCOPE_TOO_BROAD'],
+        revisedCandidate: {
+            interpretationRevisionId: 'interprev_edit_guided_flow_case_v2',
+            statement: 'Jeep evolved into the primary architectural authority over continuity and memory requirements within a shared architecture with Chris.',
+        },
+        now: Date.parse('2026-06-25T12:06:10.000Z'),
+    });
+
+    const operatorState = getInterpretivePublicationOperatorState(request, 'interprev_edit_guided_flow_case_v1');
+    assert.equal(operatorState.operatorState.guidedFlow.status, 'REVISION_REQUIRED');
+    assert.equal(operatorState.operatorState.guidedFlow.nextAction.action, 'OPEN_CHILD_REVISION');
+    assert.equal(
+        operatorState.operatorState.guidedFlow.nextAction.interpretationRevisionId,
+        'interprev_edit_guided_flow_case_v2',
+    );
+    assert.equal(
+        operatorState.operatorState.blockingReasons.includes('INTERPRETATION_REVISION_NOT_LATEST_ELIGIBLE_CHILD'),
+        true,
+    );
+});
+
 test('trusted delegate may record the memory subject review edit and final grant while provenance remains distinct', () => {
     const root = makeTempRoot();
     const request = buildRequest(root);
@@ -1543,6 +1581,44 @@ test('publishInterpretiveMemory bootstraps the standard policy and publishes an 
         )),
         true,
     );
+});
+
+test('published revision may create a successor child revision without displacing the current active memory', () => {
+    const root = makeTempRoot();
+    const request = buildRequest(root);
+    upsertInterpretivePublicationPolicy(request, makePublicationPolicyPayload({
+        immutableChildRequiredForTypes: [],
+    }));
+
+    const published = publishGrantedRevision(request, {
+        interpretationId: 'interp_successor_revision_case',
+        interpretationRevisionId: 'interprev_successor_revision_case_v1',
+        statement: 'Jeep became the primary continuity authority.',
+        nowBase: Date.parse('2026-06-26T03:30:00.000Z'),
+    });
+
+    const successor = createInterpretiveRevision(request, 'interprev_successor_revision_case_v1', {
+        actorEntityId: 'character:jeep.png',
+        subjectEvidenceRefs: ['msg_alpha0000000000000000000000000'],
+        revisedCandidate: {
+            interpretationRevisionId: 'interprev_successor_revision_case_v2',
+            statement: 'Jeep became the primary continuity authority within a shared architecture with Chris.',
+        },
+        now: Date.parse('2026-06-26T03:31:00.000Z'),
+    });
+
+    assert.equal(successor.ok, true);
+    assert.equal(successor.interpretation.interpretationRevisionId, 'interprev_successor_revision_case_v2');
+    assert.equal(successor.interpretation.parentRevisionId, 'interprev_successor_revision_case_v1');
+    assert.equal(successor.interpretation.revisionReason, 'SUBJECT_EDIT');
+    assert.equal(successor.interpretation.publicationState, 'NOT_PUBLISHED');
+    assert.equal(successor.interpretation.revisionCreationProvenance.actionKind, 'SUBJECT_REVISION');
+
+    const current = getCurrentActiveDnmRecord(request, 'character:jeep.png');
+    assert.equal(current.currentActiveRecord.dnmRecordId, published.executed.publishedRecord.dnmRecordId);
+
+    const parent = getInterpretiveCandidate(request, 'interprev_successor_revision_case_v1');
+    assert.equal(parent.interpretation.childRevisionIds.includes('interprev_successor_revision_case_v2'), true);
 });
 
 test('guided publication replay restores the identical published state after restart', () => {

@@ -2085,6 +2085,9 @@ function buildCandidatePublicationOperatorState(adapter, interpretation, continu
     if (interpretation.publicationState === 'PUBLISHED') {
         qualificationReasons.push('INTERPRETATION_ALREADY_PUBLISHED');
     }
+    if (Array.isArray(interpretation.childRevisionIds) && interpretation.childRevisionIds.length > 0) {
+        qualificationReasons.push('INTERPRETATION_REVISION_NOT_LATEST_ELIGIBLE_CHILD');
+    }
     if (matchingPolicies.length === 0) {
         qualificationReasons.push('NO_ACTIVE_PUBLICATION_POLICY');
     }
