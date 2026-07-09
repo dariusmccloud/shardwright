@@ -3453,17 +3453,14 @@ function supersedeSiblingReviewRequestsAfterChild(adapter, interpretationRevisio
 }
 
 export function readInterpretiveLedgerEvents(ledgerPath) {
-    if (!fs.existsSync(ledgerPath)) {
-        return [];
-    }
-    return fs.readFileSync(ledgerPath, 'utf8')
-        .split(/\r?\n/u)
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .map((line) => JSON.parse(line));
+    return readJsonLedgerEvents(ledgerPath, 'Interpretive', 'ARCH_INTERPRETIVE_LEDGER_INVALID');
 }
 
 export function readPublicationLedgerEvents(ledgerPath) {
+    return readJsonLedgerEvents(ledgerPath, 'Publication', 'ARCH_PUBLICATION_LEDGER_INVALID');
+}
+
+function readJsonLedgerEvents(ledgerPath, domainLabel, errorCode) {
     if (!fs.existsSync(ledgerPath)) {
         return [];
     }
@@ -3471,7 +3468,18 @@ export function readPublicationLedgerEvents(ledgerPath) {
         .split(/\r?\n/u)
         .map((line) => line.trim())
         .filter(Boolean)
-        .map((line) => JSON.parse(line));
+        .map((line, index) => {
+            try {
+                return JSON.parse(line);
+            } catch (error) {
+                throw createError(
+                    500,
+                    `${domainLabel} ledger line ${index + 1} is not valid JSON`,
+                    errorCode,
+                    { cause: error },
+                );
+            }
+        });
 }
 
 function buildPreparedFromLedgerEvents(events) {

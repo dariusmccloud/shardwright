@@ -100,6 +100,7 @@ export const CAPABILITIES = Object.freeze({
     }),
     c0_6_7: Object.freeze({
         upgradeReplayPreflight: true,
+        upgradeReplayRoute: true,
         additiveMigrationOnly: true,
         deterministicReplayRequired: true,
         failClosedUpgradeBoundary: true,
@@ -449,10 +450,12 @@ function inspectProjectionDb(dbPath) {
 }
 
 function summarizePreflight(status, summary, technicalCodes, nextAction, extra = {}) {
+    const replayableStatuses = new Set(['READY_TO_UPGRADE', 'PROJECTION_STALE']);
     return {
         ok: true,
         status,
         canMutate: status === 'READY_TO_UPGRADE',
+        canReplay: replayableStatuses.has(status),
         summary,
         nextAction,
         technicalCodes: [...new Set(technicalCodes.filter(Boolean))],
@@ -527,6 +530,9 @@ export function getUpgradeReplayPreflight(paths) {
             snapshot,
         },
     };
+    const authoritativeLedgersPresent = ledgers.interpretiveGovernance.exists
+        || ledgers.dnmPublication.exists
+        || ledgers.promotionJournal.exists;
 
     if (!state.ok) {
         return summarizePreflight(
@@ -567,6 +573,18 @@ export function getUpgradeReplayPreflight(paths) {
             'Stored governed-memory artifacts disagree about schema version and cannot be upgraded safely yet.',
             ['ARCH_SCHEMA_MISMATCH'],
             'Repair the mismatched projection or snapshot before upgrade or replay.',
+            sharedDetails,
+        );
+    }
+
+    if (!db.exists && authoritativeLedgersPresent) {
+        return summarizePreflight(
+            'PROJECTION_STALE',
+            snapshot.exists && snapshot.ok
+                ? 'The live operational projection is missing, but a verified snapshot is available for rebuild or restore.'
+                : 'The live operational projection is missing, but authoritative governed-memory ledgers are available for deterministic replay.',
+            ['ARCH_PROJECTION_STALE'],
+            'Restore or rebuild the operational projection before upgrade or replay.',
             sharedDetails,
         );
     }

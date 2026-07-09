@@ -4,6 +4,7 @@ import {
     IDENTITY_STATUS_VALUES,
     MESSAGE_IDENTITY_SCHEMA_VERSION,
 } from './message-identity-schema.js';
+import { hashTextSha256Compat, makeRandomHexId } from './crypto-compat.js';
 
 export const MESSAGE_IDENTITY_HASH_ALGORITHM = 'SHA-256';
 export const MESSAGE_INIT_FINGERPRINT_VERSION = 1;
@@ -11,13 +12,6 @@ export const MESSAGE_REVISION_HASH_VERSION = 1;
 export const MESSAGE_CORPUS_REVISION_HASH_VERSION = 1;
 export const MESSAGE_TOMBSTONE_SCHEMA_VERSION = 1;
 export const MESSAGE_ID_PREFIX = 'msg_';
-
-function getCryptoApi(cryptoApi = globalThis.crypto) {
-    if (!cryptoApi?.subtle) {
-        throw new Error('Web Crypto API is unavailable for message identity hashing.');
-    }
-    return cryptoApi;
-}
 
 function stableStringify(value) {
     if (value === null || value === undefined) {
@@ -107,13 +101,7 @@ function getSelectedSwipeTimestamp(message) {
 }
 
 async function sha256Hex(text, cryptoApi = globalThis.crypto) {
-    const api = getCryptoApi(cryptoApi);
-    const buffer = new TextEncoder().encode(String(text || ''));
-    const digest = await api.subtle.digest(MESSAGE_IDENTITY_HASH_ALGORITHM, buffer);
-    const hex = Array.from(new Uint8Array(digest))
-        .map((value) => value.toString(16).padStart(2, '0'))
-        .join('');
-    return `sha256:${hex}`;
+    return await hashTextSha256Compat(text, cryptoApi);
 }
 
 async function hashSemanticPayload(payload, cryptoApi = globalThis.crypto) {
@@ -238,10 +226,7 @@ function buildChatIdentityStatus(status, identifiedCount, unidentifiedCount, cor
 }
 
 function makeRandomMessageId(cryptoApi = globalThis.crypto) {
-    if (typeof cryptoApi?.randomUUID === 'function') {
-        return `${MESSAGE_ID_PREFIX}${cryptoApi.randomUUID().replace(/-/gu, '').toLowerCase()}`;
-    }
-    throw new Error('Web Crypto randomUUID is unavailable for message identity generation.');
+    return `${MESSAGE_ID_PREFIX}${makeRandomHexId(16, cryptoApi)}`;
 }
 
 function pushDiagnostic(diagnostics, diagnostic) {

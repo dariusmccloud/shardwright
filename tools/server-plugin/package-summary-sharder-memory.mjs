@@ -16,6 +16,7 @@ const STATIC_PAYLOAD_FILES = Object.freeze([
     'interpretive.js',
     'promotion.js',
     'rebuild.js',
+    'upgrade.js',
     'schema.js',
     'sqlite-node.js',
     'sqlite-bun.js',

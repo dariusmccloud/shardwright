@@ -25,6 +25,8 @@ if (-not $Port.HasValue) {
     $Port = $resolvedDefaultPort
 }
 
+$resolvedPort = [int]$Port
+
 $isDefaultSmokeLine = (
     $MemoryScopeId -eq 'scope_interpretive_smoke' -and
     $MemorySubjectId -eq 'character:jeep.png'
@@ -85,6 +87,23 @@ function Get-CsrfSession([int]$TargetPort) {
     }
 }
 
+function Wait-ForCsrfSession {
+    param(
+        [int]$TargetPort,
+        [int]$Attempts = 30
+    )
+
+    for ($i = 0; $i -lt $Attempts; $i++) {
+        try {
+            return Get-CsrfSession -TargetPort $TargetPort
+        } catch {
+            Start-Sleep -Seconds 1
+        }
+    }
+
+    throw "Host on port $TargetPort did not become CSRF-ready."
+}
+
 function Invoke-JsonRequest {
     param(
         [string]$Method,
@@ -124,8 +143,12 @@ function Invoke-JsonRequest {
 $stamp = Get-Date -Format 'yyyyMMddHHmmss'
 $interpretationId = "interp_seed_$stamp"
 $interpretationRevisionId = "interprev_seed_${stamp}_v1"
-$baseUri = "http://127.0.0.1:$($Port.Value)/api/plugins/summary-sharder-memory"
-$csrf = Get-CsrfSession -TargetPort $Port.Value
+$baseUri = "http://127.0.0.1:$resolvedPort/api/plugins/summary-sharder-memory"
+$csrf = if ($RestartHostAfterReset) {
+    Wait-ForCsrfSession -TargetPort $resolvedPort
+} else {
+    Get-CsrfSession -TargetPort $resolvedPort
+}
 $now = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
 
 $body = @{

@@ -222,6 +222,7 @@ test('route surface exposes candidate lifecycle routes and separate promotion ro
     await init(router);
 
     assert.equal(router.routes.get.has('/upgrade/preflight'), true);
+    assert.equal(router.routes.post.has('/upgrade/replay'), true);
     assert.equal(router.routes.get.has('/rebuild/candidate/report/:reconstructionRunId'), true);
     assert.equal(router.routes.get.has('/rebuild/candidate/runs/:memoryScopeId'), true);
     assert.equal(router.routes.post.has('/rebuild/candidate/init'), true);
@@ -292,6 +293,7 @@ test('capabilities and candidate lifecycle routes report no promotion and suppor
     assert.equal(capabilities.payload.capabilities.c0_6_4.continuityPublicationAvailable, true);
     assert.equal(capabilities.payload.capabilities.c0_6_4.liveContinuityMutation, true);
     assert.equal(capabilities.payload.capabilities.c0_6_7.upgradeReplayPreflight, true);
+    assert.equal(capabilities.payload.capabilities.c0_6_7.upgradeReplayRoute, true);
     assert.equal(capabilities.payload.capabilities.c0_6_7.failClosedUpgradeBoundary, true);
 
     const initResult = await invoke(

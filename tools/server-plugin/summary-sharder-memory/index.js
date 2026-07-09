@@ -39,6 +39,7 @@ import {
     executePromotionAuthorization,
     recoverPromotionState,
 } from './promotion.js';
+import { replayGovernedMemoryState } from './upgrade.js';
 import {
     bootstrapStandardInterpretivePublicationPolicy,
     executeInterpretiveSynthesisRun,
@@ -109,6 +110,17 @@ export async function init(router) {
             const paths = getStoragePaths(getAuthenticatedUserRoot(request));
             const preflight = getUpgradeReplayPreflight(paths);
             return response.send(preflight);
+        } catch (error) {
+            return handleError(response, error);
+        }
+    });
+
+    router.post('/upgrade/replay', async (request, response) => {
+        try {
+            const result = replayGovernedMemoryState(request, {
+                now: request.body?.now,
+            });
+            return response.send(result);
         } catch (error) {
             return handleError(response, error);
         }

@@ -1,5 +1,6 @@
 import { isArchivedMessage } from '../chat/archive-policy.js';
 import { buildCorpusRevisionHash } from './message-identity-core.js';
+import { hashTextSha256Compat } from './crypto-compat.js';
 
 export const SHARD_MANIFEST_SCHEMA_VERSION = 2;
 export const SHARD_INTEGRITY_REPORT_SCHEMA_VERSION = 2;
@@ -122,15 +123,7 @@ function getSourceSlice(messages, startIndex, endIndex) {
 }
 
 async function sha256Hex(text, cryptoApi = globalThis.crypto) {
-    if (!cryptoApi?.subtle) {
-        throw new Error('Web Crypto API is unavailable for shard integrity hashing.');
-    }
-    const buffer = new TextEncoder().encode(String(text || ''));
-    const digest = await cryptoApi.subtle.digest('SHA-256', buffer);
-    const hex = Array.from(new Uint8Array(digest))
-        .map((value) => value.toString(16).padStart(2, '0'))
-        .join('');
-    return `sha256:${hex}`;
+    return await hashTextSha256Compat(text, cryptoApi);
 }
 
 async function buildSourceIdentityHashFromIds(messageIds, options = {}) {
@@ -355,7 +348,14 @@ export async function buildManagedShardManifest(messages, options = {}) {
     const endIndex = Number.parseInt(options.endIndex, 10);
     const artifactKind = trimString(options.artifactKind) || SHARD_ARTIFACT_KINDS.SYSTEM_SUMMARY;
     const sourceMessages = getSourceSlice(messages, startIndex, endIndex);
-    if (!Number.isInteger(startIndex) || !Number.isInteger(endIndex) || endIndex < startIndex || sourceMessages.length === 0) {
+    const expectedSourceCount = Number.isInteger(startIndex) && Number.isInteger(endIndex) && endIndex >= startIndex
+        ? (endIndex - startIndex + 1)
+        : 0;
+    if (!Number.isInteger(startIndex)
+        || !Number.isInteger(endIndex)
+        || endIndex < startIndex
+        || sourceMessages.length === 0
+        || sourceMessages.length !== expectedSourceCount) {
         return null;
     }
 
@@ -502,7 +502,9 @@ export async function validateShardManifest(manifest, messages = [], options = {
 
     const outputPromptVisible = isPromptVisible(outputMessage);
     const duplicatedPromptTokenEstimate = outputPromptVisible && sourcePromptVisibleCount > 0
-        ? sourceEntries.reduce((sum, entry) => sum + estimateTokenCount(entry.message?.mes), 0) + estimateTokenCount(outputMessage?.mes)
+        ? sourceEntries
+            .filter((entry) => isPromptVisible(entry.message))
+            .reduce((sum, entry) => sum + estimateTokenCount(entry.message?.mes), 0) + estimateTokenCount(outputMessage?.mes)
         : 0;
 
     if (sourceEntries.length > 0) {

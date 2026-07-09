@@ -423,6 +423,8 @@ function reconstructArchitecturalDevelopmentContent(raw) {
 }
 
 function reconstructArchitecturalCurrentContent(raw) {
-    const cells = splitPipeCells(raw).map(normalizePipeCell).filter(Boolean);
-    return formatPipeRow(cells);
+    return splitPipeCells(raw)
+        .map(normalizePipeCell)
+        .map((cell) => String(cell ?? '').trim())
+        .join(' | ');
 }

@@ -154,7 +154,7 @@ No UI route should imply a capability is product-ready when it remains developer
 
 ## C0.6.7A: Portability Inventory And Upgrade Contract
 
-Status: pending
+Status: active contract
 
 ### Goal
 
@@ -233,11 +233,29 @@ For every governed-memory artifact, define:
 
 ## C0.6.7B: Upgrade, Replay, And Rebuild Implementation
 
-Status: pending
+Status: active implementation
 
 ### Goal
 
 Implement or tighten the runtime behavior needed for additive migration, replay, projection rebuild, and safe refusal.
+
+### Verified progress now
+
+The current branch already proves the first bounded replay-hardening slice:
+
+1. governed replay can restore published / active truth from authoritative ledgers without relying on a live projection,
+2. replay order now consumes the governed streams needed to reconstruct publication state deterministically,
+3. the `/upgrade/replay` route fails closed when a required cross-ledger dependency is missing,
+4. incomplete publication replay now surfaces `ARCH_PUBLICATION_LEDGER_INCOMPLETE` instead of manufacturing false state.
+
+Current automated proof:
+
+- `node --test tools/server-plugin/summary-sharder-memory/upgrade.test.mjs`
+  - `upgrade replay route restores governed published state from ledgers without a live projection`
+  - `upgrade replay route fails closed when publication ledger is restored without the governance ledger`
+
+For this slice, the proof remains in focused Node tests rather than a dedicated PowerShell wrapper.
+The bundled host proof entry point belongs in `C0.6.7C`, where restart, replay, recovery, and cross-host parity are exercised as one release matrix instead of another narrow script.
 
 ### Required Work
 
@@ -328,11 +346,43 @@ No false available action.
 
 ## C0.6.7C: Release Proof Matrix
 
-Status: pending
+Status: active bundled proof slices
 
 ### Goal
 
 Prove the hard release paths instead of only the happy-path fresh install.
+
+### Verified progress now
+
+The bundled `C0.6.7C` proof entry points now exist:
+
+- `tools/server-plugin/prove-c0-6-7c.ps1`
+- `tools/server-plugin/prove-c0-6-7c-fresh-install.ps1`
+- `tools/server-plugin/prove-c0-6-7c-corrected-child.ps1`
+- `tools/server-plugin/prove-c0-6-7c-rollback-recovery.ps1`
+
+Current bundled proof coverage:
+
+1. true fresh-install matrix proof from an empty host,
+2. governed pre-`v1.0` carried-host upgrade proof,
+3. live host restart/replay publication parity through the served host path,
+4. corrected-child replay/restart publication parity through the served host path,
+5. replay rebuild from authoritative governed ledgers without relying on a live projection,
+6. fail-closed refusal on backup-required hosts,
+7. fail-closed refusal on unsupported schema versions,
+8. fail-closed refusal on missing live-authority references,
+9. fail-closed refusal on malformed interpretive ledgers,
+10. fail-closed refusal on malformed publication ledgers,
+11. fail-closed refusal on incomplete publication replay,
+12. packaged publication parity under both Node and Bun.
+
+Current bundled proof command:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File "tools/server-plugin/prove-c0-6-7c.ps1" -HostName "SillyTavern" -Port 8000
+```
+
+This does not close the full `6.7C` matrix. It closes the bundled fresh-install and release-proof slices and establishes one operator-facing entry point instead of leaving bootstrap, restart, replay, and parity proof scattered across unrelated commands.
 
 ### Required Work
 
@@ -345,6 +395,20 @@ Prove the hard release paths instead of only the happy-path fresh install.
 7. prove version-mismatch and fail-closed behavior,
 8. prove operator-visible state matches canonical replay state,
 9. prove bad-state handling does not mutate live authority silently.
+
+### Remaining matrix after the bundled fresh-install slice
+
+Still open after the current bundled proof entry points:
+
+1. no remaining open proof items; the operator-visible matrix is now closed by:
+   - `docs/architectural-memory/C0_6_7C_OPERATOR_VISIBLE_TRUTH_REPORT.md`
+
+### Recommended execution order from here
+
+The remaining work should stay bounded instead of reopening the completed release-proof matrix:
+
+1. closeout against the `v1.0` release boundary using the bundled proof plus:
+   - `docs/architectural-memory/C0_6_7C_OPERATOR_VISIBLE_TRUTH_REPORT.md`
 
 ### Required Proof Scenarios
 
@@ -532,6 +596,10 @@ Replay/restart must preserve:
 10. subject decision state.
 
 Proof must include screenshots or structured reports sufficient to verify the operator-visible truth.
+
+Current closure artifact:
+
+- `docs/architectural-memory/C0_6_7C_OPERATOR_VISIBLE_TRUTH_REPORT.md`
 
 ### Proof Gate
 

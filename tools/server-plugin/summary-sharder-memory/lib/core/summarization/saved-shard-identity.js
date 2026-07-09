@@ -321,8 +321,9 @@ export function buildStandardSummaryCandidate(content, options = {}) {
         comment = '',
     } = options;
 
+    const normalizedContent = normalizeText(content);
     const shardInfo = classifySavedShardText(content);
-    const wrapperSummaryMatch = String(content || '').match(/^\[SUMMARY:\s*Messages\s*(\d+)\s*[-–]\s*(\d+)\]\s*\n\n([\s\S]*)$/i);
+    const wrapperSummaryMatch = normalizedContent.match(/^\[SUMMARY:\s*Messages\s*(\d+)\s*[-–]\s*(\d+)\]\s*\n\n([\s\S]*)$/i);
     if (wrapperSummaryMatch) {
         return {
             kind: 'summary-wrapper',

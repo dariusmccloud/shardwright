@@ -10,6 +10,7 @@
     "interpretive.js",
     "promotion.js",
     "rebuild.js",
+    "upgrade.js",
     "schema.js",
     "sqlite-node.js",
     "sqlite-bun.js"
@@ -18,12 +19,12 @@
     {
       "canonicalRelativePath": "core/chat/archive-policy.js",
       "packagedRelativePath": "lib/core/chat/archive-policy.js",
-      "sha256": "910531c5210be53ecc7770ea71f26ad79f1c09f60af73f7bdf751b9915d714cc"
+      "sha256": "8cea40f22bba032fa828b546a50cec1646151017f579b09eb97a76905b724499"
     },
     {
       "canonicalRelativePath": "core/summarization/architectural-authority-store.js",
       "packagedRelativePath": "lib/core/summarization/architectural-authority-store.js",
-      "sha256": "9203f1a6f19d138d2ac06773f64f11fb5c6f3170845056f16b45b840ead7134d"
+      "sha256": "f174e251b9cbc7f19a4c763eead9c10ff484200f2d41e3c68f1fa5d41183bae5"
     },
     {
       "canonicalRelativePath": "core/summarization/architectural-dialogue-claim-extractor.js",
@@ -38,12 +39,12 @@
     {
       "canonicalRelativePath": "core/summarization/architectural-record-parser.js",
       "packagedRelativePath": "lib/core/summarization/architectural-record-parser.js",
-      "sha256": "7b49b8382d7a65e5037ad83cee4c4eb0806c91010cdf963c82c42650808dea70"
+      "sha256": "ffe88b9c4b91ddffce0bc27b4a881c1e6630244671fdf6c1735833c51a0fa44c"
     },
     {
       "canonicalRelativePath": "core/summarization/architectural-sharder-format.js",
       "packagedRelativePath": "lib/core/summarization/architectural-sharder-format.js",
-      "sha256": "357cdbcbbe3b04690603c0fa5108945b2939add429714447e9906a6d24b83140"
+      "sha256": "4c30afc82ed333f9a0d4dc4cabcf2af035919149e4428d2e845e36ad12acce1f"
     },
     {
       "canonicalRelativePath": "core/summarization/architectural-sharder-shell.js",
@@ -51,9 +52,14 @@
       "sha256": "81852c8275d5388daa525998a4fe42ccd2c6350226161de696563f946e60ef4c"
     },
     {
+      "canonicalRelativePath": "core/summarization/crypto-compat.js",
+      "packagedRelativePath": "lib/core/summarization/crypto-compat.js",
+      "sha256": "88116cd3728b494e0691aff5dcc1292e16c8ec9562f0b4cc47284e941289fd96"
+    },
+    {
       "canonicalRelativePath": "core/summarization/message-identity-core.js",
       "packagedRelativePath": "lib/core/summarization/message-identity-core.js",
-      "sha256": "535e3952897a6a2ac5a58e4f4e26f0a2d68f6f4942364406720ae80e3e0ab3dd"
+      "sha256": "d0ab876f672ab45c9ea7da1643edabe8dcc2458fb827a1fd0d3378abf90b9f1c"
     },
     {
       "canonicalRelativePath": "core/summarization/message-identity-schema.js",
@@ -63,12 +69,12 @@
     {
       "canonicalRelativePath": "core/summarization/saved-shard-identity.js",
       "packagedRelativePath": "lib/core/summarization/saved-shard-identity.js",
-      "sha256": "3dfc7cde386d0b2aa59213dfb87da07ed2352b6a7e1b2446499bdffd533802be"
+      "sha256": "227a7e3602dad98d0929e130d9468fb6598ac1f6ac4883bd0958ec908da8947e"
     },
     {
       "canonicalRelativePath": "core/summarization/shard-integrity-core.js",
       "packagedRelativePath": "lib/core/summarization/shard-integrity-core.js",
-      "sha256": "101a65750b675c24bb54efb8aa7744119683263232d1f9c26535aa0176d6d853"
+      "sha256": "0be3634043e23a8b186acb54ac95b821e573ef3ea9781d2b820698cc93034611"
     },
     {
       "canonicalRelativePath": "core/summarization/sharder-section-registry.js",
@@ -79,23 +85,23 @@
   "payloadFiles": [
     {
       "relativePath": "core.js",
-      "sha256": "5833fb3de9c9f1050f0ca4bae879fc26e96c8bd66e7e25f1fe493bbfb3d6b499"
+      "sha256": "a0aa733226f575aa7a5c0b76a740659c0f0c66bc1e34ee8733e8e25874e8ee17"
     },
     {
       "relativePath": "index.js",
-      "sha256": "2190c20ed608ee43624713029bf5045db15942f01fcbbe14923d42fedc970b14"
+      "sha256": "1e40ff91bce040d51ea87f28e07a4f0708ab4eb4aa84ea32b01934c333f9b631"
     },
     {
       "relativePath": "interpretive.js",
-      "sha256": "b0bbf0f06154f598c5974f638648d05a37066e0688319d8263d6050280b8005d"
+      "sha256": "a7aef7596dc04eece0a1e379a7f5c25356d8c77acd7707e046fa474fd2fc3fa5"
     },
     {
       "relativePath": "lib/core/chat/archive-policy.js",
-      "sha256": "910531c5210be53ecc7770ea71f26ad79f1c09f60af73f7bdf751b9915d714cc"
+      "sha256": "8cea40f22bba032fa828b546a50cec1646151017f579b09eb97a76905b724499"
     },
     {
       "relativePath": "lib/core/summarization/architectural-authority-store.js",
-      "sha256": "9203f1a6f19d138d2ac06773f64f11fb5c6f3170845056f16b45b840ead7134d"
+      "sha256": "f174e251b9cbc7f19a4c763eead9c10ff484200f2d41e3c68f1fa5d41183bae5"
     },
     {
       "relativePath": "lib/core/summarization/architectural-dialogue-claim-extractor.js",
@@ -107,19 +113,23 @@
     },
     {
       "relativePath": "lib/core/summarization/architectural-record-parser.js",
-      "sha256": "7b49b8382d7a65e5037ad83cee4c4eb0806c91010cdf963c82c42650808dea70"
+      "sha256": "ffe88b9c4b91ddffce0bc27b4a881c1e6630244671fdf6c1735833c51a0fa44c"
     },
     {
       "relativePath": "lib/core/summarization/architectural-sharder-format.js",
-      "sha256": "357cdbcbbe3b04690603c0fa5108945b2939add429714447e9906a6d24b83140"
+      "sha256": "4c30afc82ed333f9a0d4dc4cabcf2af035919149e4428d2e845e36ad12acce1f"
     },
     {
       "relativePath": "lib/core/summarization/architectural-sharder-shell.js",
       "sha256": "81852c8275d5388daa525998a4fe42ccd2c6350226161de696563f946e60ef4c"
     },
     {
+      "relativePath": "lib/core/summarization/crypto-compat.js",
+      "sha256": "88116cd3728b494e0691aff5dcc1292e16c8ec9562f0b4cc47284e941289fd96"
+    },
+    {
       "relativePath": "lib/core/summarization/message-identity-core.js",
-      "sha256": "535e3952897a6a2ac5a58e4f4e26f0a2d68f6f4942364406720ae80e3e0ab3dd"
+      "sha256": "d0ab876f672ab45c9ea7da1643edabe8dcc2458fb827a1fd0d3378abf90b9f1c"
     },
     {
       "relativePath": "lib/core/summarization/message-identity-schema.js",
@@ -127,11 +137,11 @@
     },
     {
       "relativePath": "lib/core/summarization/saved-shard-identity.js",
-      "sha256": "3dfc7cde386d0b2aa59213dfb87da07ed2352b6a7e1b2446499bdffd533802be"
+      "sha256": "227a7e3602dad98d0929e130d9468fb6598ac1f6ac4883bd0958ec908da8947e"
     },
     {
       "relativePath": "lib/core/summarization/shard-integrity-core.js",
-      "sha256": "101a65750b675c24bb54efb8aa7744119683263232d1f9c26535aa0176d6d853"
+      "sha256": "0be3634043e23a8b186acb54ac95b821e573ef3ea9781d2b820698cc93034611"
     },
     {
       "relativePath": "lib/core/summarization/sharder-section-registry.js",
@@ -139,7 +149,7 @@
     },
     {
       "relativePath": "lib/packaged-shared-manifest.json",
-      "sha256": "fd935ee1ae6d97d122b24aa1a6afd3b7df0673316b58d190e6ef5f36d86476d7"
+      "sha256": "30c32f76f26b400b5b2e5106e785ae8e12296c928b9b668cc257a292762ac98e"
     },
     {
       "relativePath": "package.json",
@@ -159,7 +169,7 @@
     },
     {
       "relativePath": "schema.js",
-      "sha256": "7f9f8344384de7e2cc39377a480b5f4ffc920ce3a2a7849b8138e88155a1a255"
+      "sha256": "74e3f7f527005b4e22cdabdaf962181d5e7a8783b3327bedd104707733765236"
     },
     {
       "relativePath": "sqlite-bun.js",
@@ -168,6 +178,10 @@
     {
       "relativePath": "sqlite-node.js",
       "sha256": "a861d2162aa6faefc4787a035b62b2d890c5d5d7130d6661bdcfec4c0db26c83"
+    },
+    {
+      "relativePath": "upgrade.js",
+      "sha256": "d5b3617d0da44a370a12bb38045497e2cbd963d6a143292267606fa4a1ec80f1"
     }
   ]
 }

@@ -212,6 +212,19 @@ test('upgrade preflight requires backup when a live projection exists without a 
     assert.deepEqual(preflight.technicalCodes, ['ARCH_BACKUP_REQUIRED']);
 });
 
+test('upgrade preflight reports a replayable stale projection when authoritative ledgers exist without a live projection', () => {
+    const root = makeTempRoot();
+    const paths = getStoragePaths(root);
+    fs.mkdirSync(paths.storageRoot, { recursive: true });
+    fs.writeFileSync(paths.interpretiveGovernanceLedgerPath, '', 'utf8');
+
+    const preflight = getUpgradeReplayPreflight(paths);
+    assert.equal(preflight.status, 'PROJECTION_STALE');
+    assert.equal(preflight.canMutate, false);
+    assert.equal(preflight.canReplay, true);
+    assert.deepEqual(preflight.technicalCodes, ['ARCH_PROJECTION_STALE']);
+});
+
 test('upgrade preflight reports unsupported version when the operational manifest is newer than runtime', () => {
     const root = makeTempRoot();
     const paths = getStoragePaths(root);

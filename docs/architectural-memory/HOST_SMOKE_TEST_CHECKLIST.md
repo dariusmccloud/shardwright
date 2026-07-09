@@ -1,6 +1,6 @@
 # Host Smoke Test Checklist
 
-Last updated: 2026-07-07
+Last updated: 2026-07-09
 
 Purpose: track live host verification across the restored Summary Sharder build so browser proof, persistence proof, and remaining gaps stay explicit.
 
@@ -65,6 +65,52 @@ Evidence:
 
 - automated proof: `tools/server-plugin/summary-sharder-memory/interpretive.test.mjs`
 - packaged runtime parity: `tools/server-plugin/summary-sharder-memory/package.test.mjs`
+
+### Replay hardening proof
+
+- [x] Governed replay restores published / active truth from authoritative ledgers without a live projection
+- [x] `/upgrade/replay` fails closed when publication replay is restored without the required governance ledger
+- [x] Incomplete replay surfaces `ARCH_PUBLICATION_LEDGER_INCOMPLETE` instead of manufacturing false publication state
+- [x] Bundled `C0.6.7C` proof entry point now wraps fresh-install bootstrap, host restart parity, replay hardening, and packaged parity in one command
+
+Evidence:
+
+- automated proof: `tools/server-plugin/summary-sharder-memory/upgrade.test.mjs`
+- bundled proof entry point: `tools/server-plugin/prove-c0-6-7c.ps1`
+- fresh-install proof entry point: `tools/server-plugin/prove-c0-6-7c-fresh-install.ps1`
+- corrected-child proof entry point: `tools/server-plugin/prove-c0-6-7c-corrected-child.ps1`
+- targeted commands:
+  - `node --test --test-name-pattern "upgrade replay route restores governed published state from ledgers without a live projection|upgrade replay route fails closed when publication ledger is restored without the governance ledger" tools/server-plugin/summary-sharder-memory/upgrade.test.mjs`
+  - `node --test --test-name-pattern "upgrade replay route preserves published truth from carried pre-v1 host data" tools/server-plugin/summary-sharder-memory/upgrade.test.mjs`
+  - `node --test --test-name-pattern "upgrade replay route preserves corrected-child published truth from carried pre-v1 host data" tools/server-plugin/summary-sharder-memory/upgrade.test.mjs`
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File "tools/server-plugin/prove-c0-6-7c-fresh-install.ps1" -HostName "SillyTavern" -Port 8000`
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File "tools/server-plugin/prove-c0-6-7c-corrected-child.ps1" -HostName "SillyTavern" -Port 8000`
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File "tools/server-plugin/prove-c0-6-7c-rollback-recovery.ps1" -HostName "SillyTavern" -Port 8000`
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File "tools/server-plugin/prove-c0-6-7c.ps1" -HostName "SillyTavern" -Port 8000`
+
+Current bundled `C0.6.7C` coverage:
+
+- [x] true fresh-install matrix proof from an empty host
+- [x] live restart/replay publication parity
+- [x] corrected-child replay/restart publication parity
+- [x] replay rebuild from governed ledgers without a live projection
+- [x] governed pre-v1.0 carried-host upgrade proof
+- [x] backup-required fail-closed refusal
+- [x] unsupported-schema fail-closed refusal
+- [x] missing live-authority reference fail-closed refusal
+- [x] malformed interpretive ledger fail-closed refusal
+- [x] malformed publication ledger fail-closed refusal
+- [x] incomplete publication replay fail-closed refusal
+- [x] rollback and recovery operator proof
+- [x] packaged publication parity under Node and Bun
+
+Still open in `C0.6.7C`:
+
+- [x] full operator-visible screenshot/report matrix
+
+Closure artifact:
+
+- `docs/architectural-memory/C0_6_7C_OPERATOR_VISIBLE_TRUTH_REPORT.md`
 
 ## Verified now
 
