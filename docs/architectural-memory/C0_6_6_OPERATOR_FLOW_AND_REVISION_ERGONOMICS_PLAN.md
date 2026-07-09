@@ -1,14 +1,19 @@
 # C0.6.6 Operator Flow And Revision Ergonomics Plan
 
-Last updated: 2026-07-07
+Last updated: 2026-07-09
 
-Status: planned
+Status: active implementation plan
 
 ## Purpose
 
 Translate the now-stable governed review and publication surface into an operator flow that is efficient, legible, and revision-safe in ordinary host use.
 
 This plan does not reopen the underlying review, publication, or evidence contracts.
+
+It follows two already-landed boundaries:
+
+1. `C0.6.4-5` guided publication is implemented and host-proven.
+2. `C0.6.5` evidence-finding persistence and review rendering are implemented on this branch.
 
 The modal now has four believable jurisdictions:
 
@@ -20,6 +25,24 @@ Technical Details
 ```
 
 The next lift is to make those jurisdictions work cleanly for repeated real use.
+
+## Current Progress Snapshot
+
+Implemented on this branch already:
+
+1. queue state projection now distinguishes `Pending approval`, `Pending decision`, `Approved`, `Ready for publication`, and `Published`,
+2. completed-state wording no longer leaves published records speaking like stalled gate states,
+3. history now separates review, decision, and publication event projections with provenance behind disclosure,
+4. current publication is included in publication history,
+5. parent revisions blocked by newer children now project direct `Open Latest Revision` navigation,
+6. published records now project `Create Revision` / successor-revision flow instead of implying in-place editing,
+7. duplicate selection bleed from reused request identifiers is covered by helper-layer tests.
+
+The remaining work is narrower than the original plan:
+
+1. finish end-to-end host proof for repeated published-memory successor / replacement / withdrawal flows on clean lines,
+2. close any remaining queue-selection or tab-navigation polish gaps that still surface in live use,
+3. keep lifecycle and technical surfaces dense but scannable without re-opening broad UI redesign.
 
 ## Why This Is Next
 
@@ -140,6 +163,8 @@ Ordinary operators must be able to:
 
 ### C0.6.6A: Queue Semantics And State Grammar
 
+Status: complete on this branch
+
 Goal:
 
 Make queue filters and top-line state labels match the real operator workflow.
@@ -159,6 +184,8 @@ Proof gate:
 4. no completed published record still renders as `Decision pending` or equivalent stale gate language.
 
 ### C0.6.6B: History Timeline Cleanup
+
+Status: complete on this branch
 
 Goal:
 
@@ -180,17 +207,19 @@ Proof gate:
 
 ### C0.6.6C: Revision Ergonomics And Navigation
 
+Status: active verification and host-proof cleanup
+
 Goal:
 
 Make post-review and post-publication correction paths explicit and usable.
 
 Required work:
 
-1. add `Create Revision` from a published memory,
+1. keep `Create Revision` from a published memory stable in live host use,
 2. preserve lineage into the new revision,
-3. expose `Open Latest Revision` when parent publication is blocked by a newer child,
-4. expose `Withdraw Pending Replacement` where lawful,
-5. add direct navigation hooks between current published memory, latest revision, and publication history.
+3. keep `Open Latest Revision` stable when parent publication is blocked by a newer child,
+4. keep `Withdraw Pending Replacement` stable where lawful,
+5. keep direct navigation hooks between current published memory, latest revision, and publication history context-aware and non-disruptive.
 
 Proof gate:
 
@@ -200,6 +229,8 @@ Proof gate:
 4. replacement publication can proceed from the corrected/latest actionable revision.
 
 ### C0.6.6D: Publication Lifecycle Completed-State Cleanup
+
+Status: complete on this branch
 
 Goal:
 
@@ -219,6 +250,16 @@ Proof gate:
 2. no duplicate setup / eligibility / publish forms render,
 3. policy content remains accessible but does not dominate completed-state reading,
 4. completed lifecycle state remains readable on a normal viewport without hunting through duplicate panels.
+
+## Remaining Real Gaps
+
+The remaining work inside `C0.6.6` is now:
+
+1. prove clean end-to-end successor-revision flow from a currently published memory,
+2. prove replacement and withdrawal behavior on clean isolated lines without legacy seeded residue,
+3. keep same-view navigation helpers helpful without causing jumpy or confusing viewport movement,
+4. tighten any remaining selected-card / selected-tab ambiguity that still appears in live host use,
+5. keep dense operator surfaces readable without re-widening into global redesign.
 
 ## Required Proof Matrix
 
@@ -277,15 +318,15 @@ Expected:
 
 ## Suggested Work Order
 
-1. `C0.6.6A` queue semantics and state grammar
-2. `C0.6.6D` completed-state cleanup
-3. `C0.6.6B` history timeline cleanup
-4. `C0.6.6C` revision ergonomics and navigation
-5. host proof across root, child, replacement, and withdrawal paths
+1. close remaining `C0.6.6C` host proof across root, child, replacement, and withdrawal paths
+2. close any residual lifecycle-navigation or queue-selection polish gaps surfaced by that proof
+3. document the completed operator-flow boundary before starting another major product lift
 
 Reason:
 
-Queue semantics and state grammar need to stabilize first so the later ergonomics work lands on honest operator states instead of inherited labels.
+Queue semantics, completed-state cleanup, and most history work are already landed.
+The remaining risk is no longer label instability.
+It is repeated live-use proof around successor and replacement ergonomics.
 
 ## Exit Standard
 

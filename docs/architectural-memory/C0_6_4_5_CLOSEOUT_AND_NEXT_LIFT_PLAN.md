@@ -1,6 +1,6 @@
 # C0.6.4-5 Closeout And Next Lift Plan
 
-Last updated: 2026-07-07
+Last updated: 2026-07-09
 
 Status: active implementation plan
 
@@ -183,39 +183,34 @@ Not allowed here:
 
 ## The Next Major Lift After C0.6.4-5 Closeout
 
-After the three proof slices above are finished, the next major lift should be:
+`C0.6.5 Evidence Finding Contract` is no longer the next lift.
+It is already implemented on this branch and has its own contract and implementation plan:
+
+1. `PHASE_C0_6_5_EVIDENCE_FINDING_CONTRACT_BRIEF.md`
+2. `C0_6_5_IMPLEMENTATION_PLAN.md`
+
+After the publication closeout slices above, the next major lift is:
 
 ```text
-Evidence Finding Contract
+C0.6.6 Operator Flow And Revision Ergonomics
+```
+
+See:
+
+```text
+docs/architectural-memory/C0_6_6_OPERATOR_FLOW_AND_REVISION_ERGONOMICS_PLAN.md
 ```
 
 Reason:
 
-The current review surface still says:
+The remaining product risk is no longer publication bootstrap or evidence-finding persistence.
+It is ordinary operator flow:
 
-```text
-Human-readable findings are not available yet.
-```
-
-That is now the biggest remaining product gap in interpretive review.
-
-The publication path is usable.
-The evidence explanation path is still machine-shaped.
-
-### Evidence Finding Contract Scope
-
-This next lift should define and implement:
-
-1. persisted human-readable findings
-2. exact basis references per finding
-3. stable source labels
-4. review-surface rendering that uses persisted meaning instead of deriving prose from raw domains
-
-It should not be solved by:
-
-1. client-side prose generation from `AUTHORITY`, `ROLE`, or `RELATIONSHIP`
-2. heuristic UI-only summarization
-3. hiding evidence meaning permanently behind technical records
+1. queue semantics and queue-state projection,
+2. completed-state wording,
+3. revision-from-published-memory ergonomics,
+4. readable lifecycle history,
+5. safe navigation between published memory, child revision, and publication history.
 
 ## Execution Order
 
@@ -225,9 +220,7 @@ Do the remaining work in this order:
 2. `C0.6.4-5 Closeout B` — corrected-child publication proof
 3. `C0.6.4-5 Closeout C` — restart, replay, and cross-host proof
 4. `C0.6.4-5 Closeout D` — only the UI tightening needed to support the proof
-5. Draft the Evidence Finding Contract brief
-6. Decide whether the Evidence Finding Contract is required before `v1.0`
-7. If yes, implement it as the next major lift
+5. move into `C0.6.6` operator flow and revision ergonomics
 
 ## Working Rule
 

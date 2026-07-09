@@ -74,6 +74,11 @@ Evidence:
 - [x] `Jeep` and `Chris` request buttons change focus correctly
 - [x] `History` tab renders distinct reviewer-specific content
 - [x] `Technical Details` and `Publication Lifecycle` are shared record views as expected for the same revision
+- [x] queue filters now distinguish `Published` and `Pending decision` in live host use
+- [x] published rows now project completed-state wording instead of stale gate-state wording
+- [x] `Publication Lifecycle` can project `Open Latest Revision` when a parent is blocked by a newer child revision
+- [x] published rows can project successor-revision creation from the lifecycle surface
+- [x] same-view publication-history navigation no longer performs the prior disruptive jump-to-top behavior
 
 ### FAB / launcher
 
@@ -178,6 +183,13 @@ Verified live evidence:
 - [ ] Verify proposal record appears in interpretive review surfaces
 - [ ] Verify review submission path updates the corresponding runtime state
 - [ ] Verify publication lifecycle actions reflect the resulting review state
+
+### Operator-flow closeout
+
+- [ ] Prove successor revision creation end-to-end from a currently published memory on a clean isolated line
+- [ ] Prove replacement publication from that successor revision on the same isolated line
+- [ ] Prove pending replacement withdrawal on a clean isolated line without legacy duplicate residue
+- [ ] Recheck selected-card highlight behavior after cross-tab navigation when multiple revisions from the same memory line are visible
 
 ### Server-plugin / persistence proof
 
