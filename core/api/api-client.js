@@ -16,6 +16,7 @@ import {
     getChatCompletionModel,
     oai_settings,
 } from '../../../../../openai.js';
+import { runCompatibilityFallback } from './compatibility-fallback.js';
 
 /**
  * Normalize API URL by removing endpoint-specific paths
@@ -225,13 +226,16 @@ async function callSillyTavernAPICompatibility(messages, options) {
     const hasStops = Array.isArray(defaultBody.stop) && defaultBody.stop.length > 0;
     const noStopBody = hasStops ? { ...defaultBody, stop: [] } : defaultBody;
 
-    const attemptLabel = (removeStopStrings && hasStops) ? 'no-stop' : 'default-stop';
-    const attemptBody = (removeStopStrings && hasStops) ? noStopBody : defaultBody;
-
     try {
-        return await runCompatibilityAttempt(attemptLabel, attemptBody, signal);
+        return await runCompatibilityFallback({
+            removeStopStrings,
+            hasStops,
+            defaultBody,
+            noStopBody,
+            runAttempt: (label, body) => runCompatibilityAttempt(label, body, signal),
+        });
     } catch (error) {
-        throw toError(error, `${attemptLabel} compatibility request failed`);
+        throw toError(error, 'Compatibility request failed');
     }
 }
 
