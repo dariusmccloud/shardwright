@@ -2744,7 +2744,7 @@ function renderModalHtml(state) {
     `;
 }
 
-export async function openInterpretiveReviewModal() {
+export async function openInterpretiveReviewModal(initialOptions = {}) {
     const state = {
         filters: { status: 'PENDING_APPROVAL' },
         reviews: [],
@@ -3974,6 +3974,26 @@ export async function openInterpretiveReviewModal() {
                 await handleDnmDeltaReviewSubmit(form);
             }
         });
+
+        const initialInterpretationRevisionId = String(initialOptions?.interpretationRevisionId || '').trim();
+        const initialDetailView = String(initialOptions?.detailView || '').trim();
+        const initialFocusSectionKey = String(initialOptions?.focusSectionKey || '').trim();
+        const initialPreferredRequestStatuses = Array.isArray(initialOptions?.preferredRequestStatuses)
+            ? initialOptions.preferredRequestStatuses
+            : undefined;
+
+        if (initialInterpretationRevisionId) {
+            void refreshReviews().then(() => (
+                focusInterpretationRevision(initialInterpretationRevisionId, {
+                    detailView: initialDetailView || 'review',
+                    focusSectionKey: initialFocusSectionKey || '',
+                    preferredRequestStatuses: initialPreferredRequestStatuses,
+                })
+            )).catch((error) => {
+                renderDetailError(`Could not load candidate details: ${error?.message || error}`);
+            });
+            return;
+        }
 
         void refreshReviews();
     });

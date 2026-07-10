@@ -79,7 +79,7 @@ async function writeArchitecturalChat(root, options = {}) {
             is_user: false,
             is_system: true,
             send_date: '2026-06-24T10:00:10.000Z',
-            mes: `[MEMORY SHARD: Messages 0-1]
+            mes: options.shardMessageText || `[MEMORY SHARD: Messages 0-1]
 
 [KEY]
 Profile: architectural-memory
@@ -140,7 +140,13 @@ Schema: architectural-memory/v1
 
     const lines = [JSON.stringify(header), ...messages.map((message) => JSON.stringify(message))];
     fs.writeFileSync(chatFilePath, `${lines.join('\n')}\n`, 'utf8');
-    return { memoryScopeId };
+    return {
+        memoryScopeId,
+        shardMessageId: messages[2].extra.summary_sharder.messageIdentity.messageId,
+        avatarUrl: 'Jeep.png',
+        chatLocator: 'Session A',
+        chatFilePath,
+    };
 }
 
 function buildRequest(root, overrides = {}) {
@@ -245,6 +251,7 @@ test('route surface exposes candidate lifecycle routes and separate promotion ro
     assert.equal(router.routes.get.has('/interpretive/reviews'), true);
     assert.equal(router.routes.post.has('/interpretive/synthesis/policies'), true);
     assert.equal(router.routes.post.has('/interpretive/synthesis/runs'), true);
+    assert.equal(router.routes.post.has('/interpretive/synthesis/from-architectural-shard'), true);
     assert.equal(router.routes.post.has('/interpretive/synthesis/runs/:synthesisRunId/generate'), true);
     assert.equal(router.routes.post.has('/interpretive/candidates'), true);
     assert.equal(router.routes.post.has('/interpretive/delegation-policies'), true);
@@ -1541,6 +1548,136 @@ test('interpretive synthesis generate route admits deterministic stub output int
     assert.equal(generateResult.payload.synthesisRun.proposals[0].groundingEvaluation.referentialStatus, 'VALID');
     assert.equal(generateResult.payload.synthesisRun.proposals[0].groundingEvaluation.scopeAssessment, 'TOO_BROAD');
     assert.equal(generateResult.payload.synthesisRun.proposals[0].groundingEvaluation.counterevidencePresent, true);
+});
+
+test('interpretive synthesis route creates proposal directly from one persisted architectural shard', async () => {
+    const root = makeTempRoot();
+    const { memoryScopeId, shardMessageId, avatarUrl, chatLocator } = await writeArchitecturalChat(root);
+    const router = createMockRouter();
+    await init(router);
+
+    const result = await invoke(
+        router.routes.post.get('/interpretive/synthesis/from-architectural-shard'),
+        buildRequest(root, {
+            body: {
+                avatarUrl,
+                chatLocator,
+                shardMessageId,
+                memoryScopeId,
+                memorySubjectId: 'character:jeep.png',
+                createdByEntityId: 'user:Chris',
+                synthesisRunId: 'synthrun_architectural_route_case',
+                interpretationId: 'interp_architectural_route_case',
+                interpretationRevisionId: 'interprev_architectural_route_case_v1',
+                synthesisProposalId: 'synthproposal_architectural_route_case',
+                now: Date.parse('2026-06-26T03:00:00.000Z'),
+            },
+        }),
+    );
+
+    assert.equal(result.statusCode, 200);
+    assert.equal(result.payload.ok, true);
+    assert.equal(result.payload.phase, 'c0.6.8');
+    assert.equal(result.payload.sourceKind, 'persisted-architectural-shard');
+    assert.equal(result.payload.admitted, true);
+    assert.equal(result.payload.quarantined, false);
+    assert.equal(result.payload.synthesisPolicy.enabled, true);
+    assert.equal(result.payload.synthesisRun.runStatus, 'COMPLETED_ADMITTED');
+    assert.equal(result.payload.interpretation.type, 'ROLE_EVOLUTION');
+    assert.equal(result.payload.interpretation.memoryScopeId, memoryScopeId);
+
+    const sourceEntries = result.payload.synthesisRun.sourceManifest?.sourceManifestEntries || [];
+    assert.equal(sourceEntries.length, 3);
+    assert.equal(sourceEntries[0].sourceClass, 'STRUCTURAL_RECORD');
+    assert.equal(sourceEntries[0].basisRecordId, 'decision:gain-modulation-boundary');
+    assert.equal(sourceEntries[1].sourceClass, 'SOURCE_OCCURRENCE');
+    assert.equal(sourceEntries[2].sourceClass, 'SOURCE_OCCURRENCE');
+    assert.equal(result.payload.synthesisRun.generatedCandidateIds[0], 'interprev_architectural_route_case_v1');
+});
+
+test('interpretive synthesis route emits one structural manifest entry per unique architectural decision id', async () => {
+    const root = makeTempRoot();
+    const { memoryScopeId, shardMessageId, avatarUrl, chatLocator } = await writeArchitecturalChat(root, {
+        shardMessageText: `[MEMORY SHARD: Messages 0-1]
+
+[KEY]
+Profile: architectural-memory
+Schema: architectural-memory/v1
+
+[DECISIONS]
+[S1:1] | STATUS: PROPOSED | ID: gain-modulation-boundary | DECISION: Keep browser-local state non-authoritative.
+[S1:2] | STATUS: PROPOSED | ID: authority-replay-guard | DECISION: Replay must refuse stale source evidence.
+[S1:3] | STATUS: PROPOSED | ID: gain-modulation-boundary | DECISION: Duplicate id should not create a duplicate structural entry.
+
+===END===`,
+    });
+    const router = createMockRouter();
+    await init(router);
+
+    const result = await invoke(
+        router.routes.post.get('/interpretive/synthesis/from-architectural-shard'),
+        buildRequest(root, {
+            body: {
+                avatarUrl,
+                chatLocator,
+                shardMessageId,
+                memoryScopeId,
+                memorySubjectId: 'character:jeep.png',
+                createdByEntityId: 'user:Chris',
+                synthesisRunId: 'synthrun_architectural_multi_decision_case',
+                interpretationId: 'interp_architectural_multi_decision_case',
+                interpretationRevisionId: 'interprev_architectural_multi_decision_case_v1',
+                synthesisProposalId: 'synthproposal_architectural_multi_decision_case',
+                now: Date.parse('2026-06-26T03:05:00.000Z'),
+            },
+        }),
+    );
+
+    assert.equal(result.statusCode, 200);
+    const sourceEntries = result.payload.synthesisRun.sourceManifest?.sourceManifestEntries || [];
+    const structuralEntries = sourceEntries.filter((entry) => entry.sourceClass === 'STRUCTURAL_RECORD');
+    const structuralIds = structuralEntries.map((entry) => entry.basisRecordId).sort();
+    const sourceOccurrenceEntries = sourceEntries.filter((entry) => entry.sourceClass === 'SOURCE_OCCURRENCE');
+
+    assert.deepEqual(structuralIds, [
+        'decision:authority-replay-guard',
+        'decision:gain-modulation-boundary',
+    ]);
+    assert.equal(sourceOccurrenceEntries.length, 2);
+});
+
+test('interpretive synthesis route rejects persisted architectural shards whose source range hash has gone stale', async () => {
+    const root = makeTempRoot();
+    const { memoryScopeId, shardMessageId, avatarUrl, chatLocator, chatFilePath } = await writeArchitecturalChat(root);
+    const lines = fs.readFileSync(chatFilePath, 'utf8').trimEnd().split('\n');
+    const records = lines.map((line) => JSON.parse(line));
+    records[1].extra.summary_sharder.messageIdentity.revisionHash = 'sha256:rev-a1-mutated';
+    fs.writeFileSync(chatFilePath, `${records.map((record) => JSON.stringify(record)).join('\n')}\n`, 'utf8');
+
+    const router = createMockRouter();
+    await init(router);
+
+    const result = await invoke(
+        router.routes.post.get('/interpretive/synthesis/from-architectural-shard'),
+        buildRequest(root, {
+            body: {
+                avatarUrl,
+                chatLocator,
+                shardMessageId,
+                memoryScopeId,
+                memorySubjectId: 'character:jeep.png',
+                createdByEntityId: 'user:Chris',
+                synthesisRunId: 'synthrun_architectural_stale_case',
+                interpretationId: 'interp_architectural_stale_case',
+                interpretationRevisionId: 'interprev_architectural_stale_case_v1',
+                synthesisProposalId: 'synthproposal_architectural_stale_case',
+                now: Date.parse('2026-06-26T03:10:00.000Z'),
+            },
+        }),
+    );
+
+    assert.equal(result.statusCode, 409);
+    assert.equal(result.payload?.code, 'ARCH_SHARD_SOURCE_RANGE_STALE');
 });
 
 test('health route reconciles verifying promotion state before opening live authority', async () => {

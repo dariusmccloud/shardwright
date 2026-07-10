@@ -9,10 +9,14 @@ import {
     getStoragePaths,
     nowTimestamp,
     openOperationalDatabase,
+    normalizeChatLocator,
+    parseJsonlRecords,
+    resolveChatJsonlPath,
     sanitizeIdentifier,
     snapshotOperationalDatabase,
     stableStringify,
 } from './core.js';
+import { buildCorpusRevisionHash } from './lib/core/summarization/message-identity-core.js';
 
 function hashCanonical(value) {
     const content = stableStringify(value);
@@ -3207,6 +3211,201 @@ function executeDeterministicStubSynthesizer(run, options = {}) {
                     messageId: entry.messageId,
                 }
         )),
+    };
+}
+
+function buildDefaultArchitecturalSynthesisPolicyPayload(memorySubjectId, now, synthesisPolicyId = null) {
+    return {
+        synthesisPolicyId: synthesisPolicyId || `architectural-shard-synthesis:${memorySubjectId}:v1`,
+        policyVersion: 1,
+        memorySubjectId,
+        enabled: true,
+        allowedTypes: ['ROLE_EVOLUTION', 'PROJECT_TRANSFORMATION', 'RELATIONAL_PROGRESSION'],
+        allowedAssertionDomains: ['ROLE', 'AUTHORITY', 'RELATIONSHIP'],
+        prohibitedDomains: [],
+        manualTriggerRequiredForHighRisk: true,
+        maxCandidatesPerRun: 3,
+        now,
+    };
+}
+
+async function readPersistedArchitecturalShardContext(request, payload = {}) {
+    const avatarUrl = String(payload?.avatarUrl || '').trim();
+    if (!avatarUrl) {
+        throw createError(400, 'avatarUrl is required', 'ARCH_INVALID_PAYLOAD');
+    }
+    const chatLocator = normalizeChatLocator(payload?.chatLocator);
+    if (!chatLocator) {
+        throw createError(400, 'chatLocator is required', 'ARCH_INVALID_PAYLOAD');
+    }
+    const shardMessageId = sanitizeIdentifier(payload?.shardMessageId, 'shardMessageId');
+    const resolution = resolveChatJsonlPath(request, {
+        isGroup: false,
+        avatarUrl,
+        chatLocator,
+    });
+    if (!fs.existsSync(resolution.chatFilePath)) {
+        throw createError(404, `Chat file was not found for ${chatLocator}`, 'ARCH_CHAT_FILE_NOT_FOUND');
+    }
+
+    const raw = fs.readFileSync(resolution.chatFilePath, 'utf8');
+    const { records, invalidLines } = parseJsonlRecords(raw);
+    if (invalidLines.length > 0) {
+        throw createError(409, 'Persisted chat contains malformed JSONL records', 'ARCH_CHAT_FILE_INVALID', {
+            invalidLines: cloneJson(invalidLines),
+        });
+    }
+    const header = records[0];
+    const summarySharder = header?.chat_metadata?.summary_sharder;
+    const binding = summarySharder?.architecturalMemoryBinding;
+    if (!binding?.memoryScopeId || !binding?.chatInstanceId) {
+        throw createError(409, 'Persisted chat is missing architectural memory binding metadata', 'ARCH_ARCHITECTURAL_BINDING_MISSING');
+    }
+    const manifests = Array.isArray(summarySharder?.shardManifests) ? summarySharder.shardManifests : [];
+    const messages = records.slice(1);
+    const shardMessage = messages.find((message) => (
+        String(message?.extra?.summary_sharder?.messageIdentity?.messageId || '').trim() === shardMessageId
+    ));
+    if (!shardMessage) {
+        throw createError(404, `Shard message ${shardMessageId} was not found in ${chatLocator}`, 'ARCH_SHARD_MESSAGE_NOT_FOUND');
+    }
+    const manifest = manifests.find((entry) => String(entry?.outputUID || '').trim() === String(shardMessage?.send_date || '').trim());
+    if (!manifest) {
+        throw createError(409, `Shard message ${shardMessageId} is missing a persisted shard manifest`, 'ARCH_SHARD_MANIFEST_MISSING');
+    }
+
+    const sourceStart = Number.parseInt(manifest.sourceStartPositionAtCreation, 10);
+    const sourceEnd = Number.parseInt(manifest.sourceEndPositionAtCreation, 10);
+    if (!Number.isInteger(sourceStart) || !Number.isInteger(sourceEnd) || sourceEnd < sourceStart) {
+        throw createError(409, `Shard message ${shardMessageId} has an invalid persisted source range`, 'ARCH_SHARD_SOURCE_RANGE_INVALID');
+    }
+    const sourceMessages = messages.slice(sourceStart, sourceEnd + 1);
+    if (sourceMessages.length !== (sourceEnd - sourceStart + 1)) {
+        throw createError(409, `Shard message ${shardMessageId} source range no longer resolves cleanly`, 'ARCH_SHARD_SOURCE_RANGE_STALE');
+    }
+    const currentSourceRevisionHash = await buildCorpusRevisionHash(sourceMessages);
+    if (String(currentSourceRevisionHash || '').trim() !== String(manifest.sourceRevisionHash || '').trim()) {
+        throw createError(409, `Shard message ${shardMessageId} source range no longer resolves cleanly`, 'ARCH_SHARD_SOURCE_RANGE_STALE');
+    }
+    return {
+        avatarUrl,
+        chatLocator,
+        shardMessageId,
+        memoryScopeId: String(binding.memoryScopeId).trim(),
+        chatInstanceId: String(binding.chatInstanceId).trim(),
+        shardMessage,
+        manifest,
+        sourceMessages,
+    };
+}
+
+function buildArchitecturalShardSourceManifestEntries(context, memorySubjectId) {
+    const decisionMatches = [...String(context.shardMessage?.mes || '').matchAll(/\bID:\s*([A-Za-z0-9._:-]+)/gu)];
+    const seenDecisionIds = new Set();
+    const structuralDecisionIds = [];
+    for (const match of decisionMatches) {
+        const rawDecisionId = String(match?.[1] || '').trim();
+        const normalizedDecisionId = rawDecisionId.replace(/^decision:/u, '');
+        if (!normalizedDecisionId || seenDecisionIds.has(normalizedDecisionId)) {
+            continue;
+        }
+        seenDecisionIds.add(normalizedDecisionId);
+        structuralDecisionIds.push(normalizedDecisionId);
+    }
+    if (structuralDecisionIds.length === 0) {
+        structuralDecisionIds.push(`arch-shard-${context.manifest.manifestId}`);
+    }
+    const entries = structuralDecisionIds.map((decisionId) => {
+        const structuralRecordId = `decision:${decisionId}`;
+        const structuralRecordHash = hashCanonical({
+            basisRecordId: structuralRecordId,
+            shardMessageId: context.shardMessageId,
+            sourceRevisionHash: context.manifest.sourceRevisionHash,
+        }).hash;
+        return {
+            sourceClass: 'STRUCTURAL_RECORD',
+            memoryScopeId: context.memoryScopeId,
+            basisRecordId: structuralRecordId,
+            basisRecordVersion: 1,
+            basisRecordHash: structuralRecordHash,
+            speakerEntityId: memorySubjectId,
+        };
+    });
+
+    for (const message of context.sourceMessages) {
+        const messageIdentity = message?.extra?.summary_sharder?.messageIdentity;
+        const speakerIdentity = message?.extra?.summary_sharder?.speakerIdentity;
+        const messageId = sanitizeIdentifier(messageIdentity?.messageId, 'persistedSourceMessageId');
+        const messageRevisionHash = String(messageIdentity?.revisionHash || '').trim();
+        if (!messageRevisionHash.startsWith('sha256:')) {
+            throw createError(409, `Persisted source message ${messageId} is missing revision identity`, 'ARCH_SOURCE_MESSAGE_IDENTITY_MISSING');
+        }
+        const speakerEntityId = String(speakerIdentity?.speakerEntityId || '').trim();
+        if (!speakerEntityId) {
+            throw createError(409, `Persisted source message ${messageId} is missing speaker identity`, 'ARCH_SOURCE_SPEAKER_IDENTITY_MISSING');
+        }
+        entries.push({
+            sourceClass: 'SOURCE_OCCURRENCE',
+            memoryScopeId: context.memoryScopeId,
+            chatInstanceId: context.chatInstanceId,
+            messageId,
+            messageRevisionHash,
+            speakerEntityId,
+        });
+    }
+
+    return entries;
+}
+
+export async function createInterpretiveProposalFromArchitecturalShard(request, payload = {}) {
+    const timestamp = nowTimestamp(payload?.now);
+    const memorySubjectId = sanitizeIdentifier(payload?.memorySubjectId, 'memorySubjectId');
+    const createdByEntityId = sanitizeIdentifier(payload?.createdByEntityId, 'createdByEntityId');
+    const context = await readPersistedArchitecturalShardContext(request, payload);
+    if (context.memoryScopeId !== sanitizeIdentifier(payload?.memoryScopeId || context.memoryScopeId, 'memoryScopeId')) {
+        throw createError(409, 'Persisted shard memory scope does not match the requested memory scope', 'ARCH_MEMORY_SCOPE_MISMATCH');
+    }
+    const sourceManifestEntries = buildArchitecturalShardSourceManifestEntries(context, memorySubjectId);
+    const policyPayload = buildDefaultArchitecturalSynthesisPolicyPayload(
+        memorySubjectId,
+        timestamp,
+        payload?.synthesisPolicyId ? sanitizeIdentifier(payload.synthesisPolicyId, 'synthesisPolicyId') : null,
+    );
+    const policyResult = upsertInterpretiveSynthesisPolicy(request, policyPayload);
+    const synthesisRunId = payload?.synthesisRunId
+        ? sanitizeIdentifier(payload.synthesisRunId, 'synthesisRunId')
+        : createId('synthrun');
+    const runResult = createInterpretiveSynthesisRun(request, {
+        synthesisRunId,
+        memoryScopeId: context.memoryScopeId,
+        memorySubjectId,
+        synthesisPolicyId: policyPayload.synthesisPolicyId,
+        requestedInterpretationTypes: ['ROLE_EVOLUTION'],
+        requestedAssertionDomains: ['ROLE', 'AUTHORITY', 'RELATIONSHIP'],
+        sharedRelationshipRequested: true,
+        personalMeaningRequested: true,
+        maxCandidatesRequested: 1,
+        manualTriggerAcknowledged: true,
+        createdByEntityId,
+        sourceManifestEntries,
+        now: timestamp,
+    });
+    const generateResult = executeInterpretiveSynthesisRun(request, synthesisRunId, {
+        adapterId: 'DETERMINISTIC_STUB_V1',
+        interpretationId: payload?.interpretationId ? sanitizeIdentifier(payload.interpretationId, 'interpretationId') : createId('interp'),
+        interpretationRevisionId: payload?.interpretationRevisionId ? sanitizeIdentifier(payload.interpretationRevisionId, 'interpretationRevisionId') : createId('interprev'),
+        synthesisProposalId: payload?.synthesisProposalId ? sanitizeIdentifier(payload.synthesisProposalId, 'synthesisProposalId') : createId('synthproposal'),
+        now: timestamp,
+    });
+    return {
+        ok: true,
+        phase: 'c0.6.8',
+        sourceKind: 'persisted-architectural-shard',
+        admitted: generateResult.admitted,
+        quarantined: generateResult.quarantined === true,
+        synthesisPolicy: policyResult.synthesisPolicy,
+        synthesisRun: generateResult.synthesisRun || runResult.synthesisRun,
+        interpretation: generateResult.interpretation || null,
     };
 }
 

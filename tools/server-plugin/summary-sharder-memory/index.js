@@ -42,6 +42,7 @@ import {
 import { replayGovernedMemoryState } from './upgrade.js';
 import {
     bootstrapStandardInterpretivePublicationPolicy,
+    createInterpretiveProposalFromArchitecturalShard,
     executeInterpretiveSynthesisRun,
     executeInterpretivePublicationAuthorization,
     createInterpretiveSynthesisRun,
@@ -619,6 +620,15 @@ export async function init(router) {
     router.post('/interpretive/synthesis/runs', async (request, response) => {
         try {
             const result = createInterpretiveSynthesisRun(request, request.body || {});
+            return response.send(result);
+        } catch (error) {
+            return handleError(response, error);
+        }
+    });
+
+    router.post('/interpretive/synthesis/from-architectural-shard', async (request, response) => {
+        try {
+            const result = await createInterpretiveProposalFromArchitecturalShard(request, request.body || {});
             return response.send(result);
         } catch (error) {
             return handleError(response, error);
