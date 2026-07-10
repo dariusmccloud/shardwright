@@ -47,6 +47,21 @@ function isArchitecturalCurrentSection(state, sectionKey) {
     return isArchitecturalState(state) && sectionKey === 'current';
 }
 
+function getReviewModalTitle(state) {
+    return isArchitecturalState(state) ? 'Architectural Proposal Review' : 'Sharder Review';
+}
+
+function getReviewModalDescription(state) {
+    if (isArchitecturalState(state)) {
+        return 'Review section content before saving. Saving will persist this shard, create a governed proposal, and open Memory Review. Error-level diagnostics block save.';
+    }
+    return 'Review section content before saving. Error-level diagnostics block save.';
+}
+
+function getReviewModalSaveButtonLabel(state) {
+    return isArchitecturalState(state) ? 'Save and Open Review' : 'Save Sharder Output';
+}
+
 function getSelectedItems(items) {
     return (Array.isArray(items) ? items : []).filter((item) => item?.selected !== false);
 }
@@ -915,12 +930,14 @@ function buildModalHtml(state) {
     const errors = state.diagnostics.filter((d) => d.level === 'error').length;
     const warnings = state.diagnostics.filter((d) => d.level === 'warning').length;
     const infos = state.diagnostics.filter((d) => d.level === 'info').length;
+    const modalTitle = getReviewModalTitle(state);
+    const modalDescription = getReviewModalDescription(state);
 
     return `
-        <div class="ss-single-pass-review-modal" tabindex="0" aria-label="Sharder Review">
+        <div class="ss-single-pass-review-modal" tabindex="0" aria-label="${escapeHtml(modalTitle)}">
             <div class="ss-sp-header">
-                <h3>Sharder Review</h3>
-                <p>Review section content before saving. Error-level diagnostics block save.</p>
+                <h3>${escapeHtml(modalTitle)}</h3>
+                <p>${escapeHtml(modalDescription)}</p>
                 <div class="ss-sp-global-controls">
                     <button id="ss-sp-select-all-global" class="menu_button">Select All</button>
                     <button id="ss-sp-deselect-all-global" class="menu_button">Deselect All</button>
@@ -2127,7 +2144,7 @@ export async function openSharderReviewModal(pipelineResult, settings, regenFn =
         POPUP_TYPE.TEXT,
         null,
         {
-            okButton: 'Save Sharder Output',
+            okButton: getReviewModalSaveButtonLabel(state),
             cancelButton: 'Cancel',
             wide: true,
             large: true,
