@@ -20,45 +20,19 @@ import {
     mergeArchitecturalDecisionLedger,
     normalizeArchitecturalBaselineLedger,
 } from './architectural-decision-ledger.js';
+import {
+    ARCHITECTURAL_DECISION_STATUSES,
+    ARCHITECTURAL_DECISION_TYPES,
+    ARCHITECTURAL_SECTION_CAPS,
+    ARCHITECTURAL_THREAD_STATUSES,
+} from './architectural-sharder-contract.js';
 
-export const ARCHITECTURAL_DECISION_TYPES = Object.freeze([
-    'GOVERNANCE',
-    'JURISDICTION',
-    'HIERARCHY',
-    'CORRECTION',
-    'REPLACEMENT',
-    'RENAME',
-    'SCOPE',
-    'DIAGNOSTIC',
-    'IMPLEMENTATION',
-    'STRATEGY',
-    'COMMITMENT',
-    'PROCEDURE',
-]);
-
-export const ARCHITECTURAL_DECISION_STATUSES = Object.freeze([
-    'PROPOSED',
-    'ACCEPTED',
-    'SEALED',
-    'SUPERSEDED',
-]);
-
-export const ARCHITECTURAL_THREAD_STATUSES = Object.freeze([
-    'UNRESOLVED',
-    'DEVELOPING',
-    'ACTIVE',
-    'RESOLVED',
-]);
-
-export const ARCHITECTURAL_SECTION_CAPS = Object.freeze({
-    timeline: 15,
-    decisions: 12,
-    events: 12,
-    developments: 10,
-    dialogue: 8,
-    threads: 8,
-    current: 1,
-});
+export {
+    ARCHITECTURAL_DECISION_STATUSES,
+    ARCHITECTURAL_DECISION_TYPES,
+    ARCHITECTURAL_SECTION_CAPS,
+    ARCHITECTURAL_THREAD_STATUSES,
+} from './architectural-sharder-contract.js';
 
 const DECISION_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 

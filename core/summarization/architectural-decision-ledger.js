@@ -1,6 +1,7 @@
 import { ARCHITECTURAL_PROFILE, getSharderSectionRegistry } from './sharder-section-registry.js';
 import { parseArchitecturalExtractionResponse } from './architectural-sharder-format.js';
 import { parseArchitecturalDecisionRecord } from './architectural-record-parser.js';
+import { ARCHITECTURAL_DECISION_STATUSES } from './architectural-sharder-contract.js';
 
 export const ARCHITECTURAL_DECISION_NEW_ID_LIMITS = Object.freeze({
     normalMax: 7,
@@ -12,7 +13,7 @@ export const ARCHITECTURAL_DECISION_UPDATE_WARN_THRESHOLD = 12;
 
 const DECISION_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const REQUIRED_DECISION_FIELDS = ['ID', 'TYPE', 'DECISION', 'WHY', 'SCOPE', 'STATUS', 'EVIDENCE'];
-const CANONICAL_STATUSES = new Set(['PROPOSED', 'ACCEPTED', 'SEALED', 'SUPERSEDED']);
+const CANONICAL_STATUSES = new Set(ARCHITECTURAL_DECISION_STATUSES);
 
 function buildDiagnostic(level, code, message, extra = {}) {
     return {

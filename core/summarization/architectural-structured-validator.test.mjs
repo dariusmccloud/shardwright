@@ -4,10 +4,9 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { parseArchitecturalExtractionResponse, reconstructArchitecturalExtraction } from './architectural-sharder-format.js';
+import { ARCHITECTURAL_DECISION_TYPES, ARCHITECTURAL_SECTION_CAPS } from './architectural-sharder-contract.js';
 import { ARCHITECTURAL_PROFILE, getSharderSectionRegistry } from './sharder-section-registry.js';
 import {
-    ARCHITECTURAL_DECISION_TYPES,
-    ARCHITECTURAL_SECTION_CAPS,
     buildArchitecturalBaselineFromShards,
     indexedSelectedItems,
     validateArchitecturalStructuredSections,

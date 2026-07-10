@@ -1,5 +1,6 @@
 import { parseArchitecturalDecisionRecord, parseArchitecturalDialogueRecord, parseArchitecturalEventRecord, parseArchitecturalThreadRecord } from './architectural-record-parser.js';
-import { ARCHITECTURAL_SECTION_CAPS, indexedSelectedItems } from './architectural-structured-validator.js';
+import { ARCHITECTURAL_SECTION_CAPS } from './architectural-sharder-contract.js';
+import { indexedSelectedItems } from './architectural-structured-validator.js';
 
 export const ARCHITECTURAL_PRUNING_CLASSIFICATIONS = Object.freeze({
     LOW_RISK: 'low-risk',
