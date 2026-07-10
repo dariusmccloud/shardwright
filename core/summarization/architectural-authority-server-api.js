@@ -224,6 +224,13 @@ export async function listInterpretiveReviews(filters = {}) {
     return await fetchJson(`/interpretive/reviews${buildQueryString(filters)}`);
 }
 
+export async function createInterpretiveProposalFromArchitecturalShard(payload = {}) {
+    return await fetchJson('/interpretive/synthesis/from-architectural-shard', {
+        method: 'POST',
+        body: payload || {},
+    });
+}
+
 export async function getInterpretiveCandidate(interpretationRevisionId) {
     const normalizedId = String(interpretationRevisionId || '').trim();
     if (!normalizedId) {

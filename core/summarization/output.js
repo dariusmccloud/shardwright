@@ -35,7 +35,13 @@ import {
     consumeDebugHostSaveFailure,
     recordArchitecturalIntegrationEvent,
 } from './architectural-authority-integration.js';
-import { persistArchitecturalAuthorityProjection } from './architectural-authority-runtime.js';
+import {
+    buildArchitecturalMessageIdentityScanLocator,
+    persistArchitecturalAuthorityProjection,
+} from './architectural-authority-runtime.js';
+import { reconcileCurrentChatMessageIdentity } from './message-identity-runtime.js';
+import { createInterpretiveProposalFromArchitecturalShard } from './architectural-authority-server-api.js';
+import { openInterpretiveReviewModal } from '../../ui/modals/management/interpretive-review-modal.js';
 
 // World info metadata key
 const METADATA_KEY = 'world_info';
@@ -82,6 +88,7 @@ export async function handleSummaryResult(
         ? buildArchitecturalShardMetadata(summary)
         : {};
     const isArchitecturalAuthorityRun = settings?.sharderMode === true && settings?.sharderProfile === ARCHITECTURAL_PROFILE;
+    let pendingArchitecturalReviewOpen = null;
 
     if (isArchitecturalAuthorityRun) {
         beginArchitecturalIntegrationTrace({
@@ -165,6 +172,12 @@ export async function handleSummaryResult(
                 });
                 if (!authorityResult.committed && authorityResult.reason && typeof toastr !== 'undefined') {
                     toastr.warning('Architectural scope authority was not updated because the saved shard did not match the current authoritative version.');
+                } else if (authorityResult.committed) {
+                    pendingArchitecturalReviewOpen = await createArchitecturalProposalReviewLaunchRequest({
+                        outputUID,
+                        activeChatId,
+                        authorityResult,
+                    });
                 }
             } catch (error) {
                 recordArchitecturalIntegrationEvent('AUTHORITY_ADOPTION_CALL_FAILED', {
@@ -223,16 +236,16 @@ export async function handleSummaryResult(
         if (skipWarmArchive) {
             ragLog.log('Warm archive skipped for Architectural Memory; architectural RAG support is deferred.');
         } else {
-        const warmResult = await archiveToWarm(
-            [{ text: summary, source: 'output-summary' }],
-            startIndex,
-            endIndex,
-            settings,
-            { source: 'output-summary', extra: { outputMode: settings?.outputMode || 'system' } }
-        );
-        if (!warmResult.success && warmResult.reason !== 'rag-disabled') {
-            ragLog.warn('Warm archive failed for output summary:', warmResult.error || warmResult.reason);
-        }
+            const warmResult = await archiveToWarm(
+                [{ text: summary, source: 'output-summary' }],
+                startIndex,
+                endIndex,
+                settings,
+                { source: 'output-summary', extra: { outputMode: settings?.outputMode || 'system' } }
+            );
+            if (!warmResult.success && warmResult.reason !== 'rag-disabled') {
+                ragLog.warn('Warm archive failed for output summary:', warmResult.error || warmResult.reason);
+            }
         }
     }
 
@@ -256,12 +269,78 @@ export async function handleSummaryResult(
         }
     }
 
+    if (pendingArchitecturalReviewOpen?.interpretationRevisionId) {
+        void openInterpretiveReviewModal({
+            interpretationRevisionId: pendingArchitecturalReviewOpen.interpretationRevisionId,
+            detailView: 'review',
+        });
+    }
+
     return {
         didInjectToContext,
         mode,
         outputUID,
         ...(mode === 'lorebook' ? { successCount: successCount || 0 } : {})
     };
+}
+
+async function createArchitecturalProposalReviewLaunchRequest(options = {}) {
+    const outputUID = String(options.outputUID || '').trim();
+    const authorityResult = options.authorityResult || null;
+    const context = globalThis.SillyTavern?.getContext?.() || null;
+    if (!context || !outputUID) {
+        return null;
+    }
+
+    await reconcileCurrentChatMessageIdentity({
+        context,
+        reason: 'architectural-shard-save',
+    });
+
+    const savedIndex = findIndexByUID(Array.isArray(context.chat) ? context.chat : [], outputUID);
+    const savedMessage = savedIndex >= 0 ? context.chat[savedIndex] : null;
+    const shardMessageId = String(savedMessage?.extra?.summary_sharder?.messageIdentity?.messageId || '').trim();
+    const memoryScopeId = String(authorityResult?.projectionMetadata?.memoryScopeId || '').trim();
+    const avatarUrl = String(
+        characters?.[this_chid]?.avatar
+        || context?.characters?.[context?.characterId]?.avatar
+        || ''
+    ).trim();
+    const locator = buildArchitecturalMessageIdentityScanLocator({
+        context,
+        chatId: options.activeChatId,
+        avatarUrl,
+    });
+    const memorySubjectId = avatarUrl ? `character:${avatarUrl}` : '';
+    const userName = String(context?.name1 || context?.user_name || '').trim();
+    const createdByEntityId = userName ? `user:${userName}` : '';
+
+    if (!locator?.avatarUrl || !locator?.chatLocator || !shardMessageId || !memoryScopeId || !memorySubjectId || !createdByEntityId) {
+        ragLog.warn('Architectural proposal handoff skipped because required persisted shard identifiers were not available.');
+        return null;
+    }
+
+    try {
+        const proposalResult = await createInterpretiveProposalFromArchitecturalShard({
+            avatarUrl: locator.avatarUrl,
+            chatLocator: locator.chatLocator,
+            shardMessageId,
+            memoryScopeId,
+            memorySubjectId,
+            createdByEntityId,
+        });
+        const interpretationRevisionId = String(proposalResult?.interpretation?.interpretationRevisionId || '').trim();
+        if (!interpretationRevisionId) {
+            ragLog.warn('Architectural proposal handoff completed without an interpretation revision id.');
+            return null;
+        }
+        return {
+            interpretationRevisionId,
+        };
+    } catch (error) {
+        ragLog.warn('Architectural proposal handoff failed after shard save:', error?.message || error);
+        return null;
+    }
 }
 
 async function persistArchitecturalDecisionCapacityOverride(outputUID, mode, startIndex, endIndex, overrideMetadata) {

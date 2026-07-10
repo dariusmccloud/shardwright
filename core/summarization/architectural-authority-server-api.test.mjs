@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+    createInterpretiveProposalFromArchitecturalShard,
     getInterpretiveCandidate,
     healthcheckArchitecturalAuthorityServer,
     listInterpretiveDelegationPolicies,
@@ -62,6 +63,56 @@ test('getInterpretiveCandidate requires an interpretation revision id', async ()
         () => getInterpretiveCandidate(''),
         /interpretationRevisionId is required/u,
     );
+});
+
+test('createInterpretiveProposalFromArchitecturalShard posts to synthesis route', async () => {
+    const calls = [];
+    global.fetch = async (url, options = {}) => {
+        calls.push({ url, options });
+        if (url === '/csrf-token') {
+            return {
+                ok: true,
+                async json() {
+                    return { token: 'disabled' };
+                },
+            };
+        }
+        return {
+            ok: true,
+            async json() {
+                return {
+                    ok: true,
+                    interpretation: {
+                        interpretationRevisionId: 'interprev_arch_saved_v1',
+                    },
+                };
+            },
+        };
+    };
+
+    const response = await createInterpretiveProposalFromArchitecturalShard({
+        avatarUrl: 'jeep.png',
+        chatLocator: 'Jeep - Test',
+        shardMessageId: 'msg_alpha0000000000000000000000000',
+        memoryScopeId: 'scope_arch_demo',
+        memorySubjectId: 'character:jeep.png',
+        createdByEntityId: 'user:Chris',
+    });
+
+    assert.equal(
+        calls[1].url,
+        '/api/plugins/summary-sharder-memory/interpretive/synthesis/from-architectural-shard',
+    );
+    assert.equal(calls[1].options.method, 'POST');
+    assert.deepEqual(JSON.parse(calls[1].options.body), {
+        avatarUrl: 'jeep.png',
+        chatLocator: 'Jeep - Test',
+        shardMessageId: 'msg_alpha0000000000000000000000000',
+        memoryScopeId: 'scope_arch_demo',
+        memorySubjectId: 'character:jeep.png',
+        createdByEntityId: 'user:Chris',
+    });
+    assert.equal(response.interpretation.interpretationRevisionId, 'interprev_arch_saved_v1');
 });
 
 test('getInterpretiveCandidate fetches encoded revision path', async () => {
