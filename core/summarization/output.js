@@ -178,6 +178,9 @@ export async function handleSummaryResult(
                         activeChatId,
                         authorityResult,
                     });
+                    if (!pendingArchitecturalReviewOpen?.interpretationRevisionId && pendingArchitecturalReviewOpen?.userMessage && typeof toastr !== 'undefined') {
+                        toastr.warning(pendingArchitecturalReviewOpen.userMessage);
+                    }
                 }
             } catch (error) {
                 recordArchitecturalIntegrationEvent('AUTHORITY_ADOPTION_CALL_FAILED', {
@@ -289,7 +292,14 @@ async function createArchitecturalProposalReviewLaunchRequest(options = {}) {
     const authorityResult = options.authorityResult || null;
     const context = globalThis.SillyTavern?.getContext?.() || null;
     if (!context || !outputUID) {
-        return null;
+        recordArchitecturalIntegrationEvent('GOVERNED_PROPOSAL_HANDOFF_SKIPPED', {
+            outputUID,
+            reason: 'missing-context-or-output-uid',
+        });
+        return {
+            interpretationRevisionId: '',
+            userMessage: 'Architectural shard saved, but the governed proposal could not be opened automatically because the current chat context was unavailable.',
+        };
     }
 
     await reconcileCurrentChatMessageIdentity({
@@ -317,10 +327,29 @@ async function createArchitecturalProposalReviewLaunchRequest(options = {}) {
 
     if (!locator?.avatarUrl || !locator?.chatLocator || !shardMessageId || !memoryScopeId || !memorySubjectId || !createdByEntityId) {
         ragLog.warn('Architectural proposal handoff skipped because required persisted shard identifiers were not available.');
-        return null;
+        recordArchitecturalIntegrationEvent('GOVERNED_PROPOSAL_HANDOFF_SKIPPED', {
+            outputUID,
+            reason: 'missing-persisted-identifiers',
+            hasAvatarUrl: !!locator?.avatarUrl,
+            hasChatLocator: !!locator?.chatLocator,
+            hasShardMessageId: !!shardMessageId,
+            hasMemoryScopeId: !!memoryScopeId,
+            hasMemorySubjectId: !!memorySubjectId,
+            hasCreatedByEntityId: !!createdByEntityId,
+        });
+        return {
+            interpretationRevisionId: '',
+            userMessage: 'Architectural shard saved, but the governed proposal could not be opened automatically because the persisted shard identifiers were incomplete.',
+        };
     }
 
     try {
+        recordArchitecturalIntegrationEvent('GOVERNED_PROPOSAL_HANDOFF_STARTED', {
+            outputUID,
+            shardMessageId,
+            memoryScopeId,
+            memorySubjectId,
+        });
         const proposalResult = await createInterpretiveProposalFromArchitecturalShard({
             avatarUrl: locator.avatarUrl,
             chatLocator: locator.chatLocator,
@@ -332,14 +361,34 @@ async function createArchitecturalProposalReviewLaunchRequest(options = {}) {
         const interpretationRevisionId = String(proposalResult?.interpretation?.interpretationRevisionId || '').trim();
         if (!interpretationRevisionId) {
             ragLog.warn('Architectural proposal handoff completed without an interpretation revision id.');
-            return null;
+            recordArchitecturalIntegrationEvent('GOVERNED_PROPOSAL_HANDOFF_FAILED', {
+                outputUID,
+                reason: 'missing-interpretation-revision-id',
+            });
+            return {
+                interpretationRevisionId: '',
+                userMessage: 'Architectural shard saved, but the governed proposal did not return a review revision. Open Memory Review to inspect the queue.',
+            };
         }
+        recordArchitecturalIntegrationEvent('GOVERNED_PROPOSAL_HANDOFF_SUCCEEDED', {
+            outputUID,
+            interpretationRevisionId,
+        });
         return {
             interpretationRevisionId,
         };
     } catch (error) {
         ragLog.warn('Architectural proposal handoff failed after shard save:', error?.message || error);
-        return null;
+        recordArchitecturalIntegrationEvent('GOVERNED_PROPOSAL_HANDOFF_FAILED', {
+            outputUID,
+            reason: 'request-failed',
+            code: String(error?.code || 'ARCH_PROPOSAL_HANDOFF_FAILED'),
+            message: String(error?.message || 'Architectural proposal handoff failed after shard save.'),
+        });
+        return {
+            interpretationRevisionId: '',
+            userMessage: 'Architectural shard saved, but the governed proposal could not be opened automatically. Open Memory Review to inspect pending proposals.',
+        };
     }
 }
 
