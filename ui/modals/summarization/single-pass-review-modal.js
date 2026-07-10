@@ -34,6 +34,7 @@ import {
     parseSceneCodes,
     EVENT_WEIGHTS,
 } from '../../../core/summarization/sharder-pipeline.js';
+import { buildSaveBlockerProjection } from './review-blocker-projection.js';
 
 function sectionTitle(section) {
     return section.key === 'currentState' ? 'CURRENT (as of end of extract)' : section.name;
@@ -265,6 +266,20 @@ function buildLocationLabel(diagnostic) {
         return String(diagnostic.sectionKey || '').toUpperCase();
     }
     return '';
+}
+
+function buildBlockingNoteHtml(state) {
+    const projection = buildSaveBlockerProjection(state?.diagnostics || [], {
+        architectural: isArchitecturalState(state),
+    });
+    if (!projection.blocked) {
+        return '';
+    }
+    return `
+        <div class="ss-sp-blocking-title">${escapeHtml(projection.title)}</div>
+        <div class="ss-sp-blocking-reason"><strong>Reason:</strong> ${escapeHtml(projection.reason)}</div>
+        <div class="ss-sp-blocking-next"><strong>Next step:</strong> ${escapeHtml(projection.nextStep)}</div>
+    `;
 }
 
 function diagnosticSignature(diagnostic) {
@@ -1011,7 +1026,7 @@ function buildModalHtml(state) {
             ` : ''}
 
             <div class="ss-sp-blocking-note" id="ss-sp-blocking-note" style="display:${errors > 0 ? 'block' : 'none'};">
-                Save blocked: resolve or manually remove error-level issues.
+                ${buildBlockingNoteHtml(state)}
             </div>
         </div>
     `;
@@ -1090,6 +1105,7 @@ function updateOutputEditor(state) {
     const blockingNote = document.getElementById('ss-sp-blocking-note');
     if (blockingNote) {
         blockingNote.style.display = errors > 0 ? 'block' : 'none';
+        blockingNote.innerHTML = errors > 0 ? buildBlockingNoteHtml(state) : '';
     }
 
     const diagArea = document.querySelector('.ss-sp-diagnostics');
@@ -1371,9 +1387,12 @@ function setupPruningAdvisorHandlers() {
 function handleBlockedSave(state, message = 'Save blocked due to error-level diagnostics') {
     updateOutputEditor(state);
     revealFirstBlockingDiagnostic();
+    const projection = buildSaveBlockerProjection(state?.diagnostics || [], {
+        architectural: isArchitecturalState(state),
+    });
 
     if (typeof toastr !== 'undefined') {
-        toastr.warning(message);
+        toastr.warning(projection.blocked ? projection.toastMessage : message);
     }
 }
 
