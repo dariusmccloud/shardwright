@@ -190,31 +190,20 @@ function renderStringList(items, emptyLabel = '(none)') {
     return items.map((item) => `<code>${escapeHtml(String(item))}</code>`).join(', ');
 }
 
-function renderCopyControl(value, label = 'Copy') {
-    const normalized = String(value || '').trim();
-    if (!normalized) {
-        return '';
-    }
-    return `
-        <button
-            type="button"
-            class="ss-interpretive-review-copy-btn"
-            data-copy-value="${escapeHtml(normalized)}">
-            ${escapeHtml(label)}
-        </button>
-    `;
-}
-
 function renderCopyableCode(value, options = {}) {
     const normalized = String(value || '').trim();
     if (!normalized) {
         return escapeHtml(options.emptyLabel || 'n/a');
     }
     return `
-        <span class="ss-interpretive-review-copyable">
+        <button
+            type="button"
+            class="ss-interpretive-review-copyable"
+            data-copy-value="${escapeHtml(normalized)}"
+            title="Copy exact value"
+            aria-label="Copy ${escapeHtml(normalized)}">
             <code>${escapeHtml(normalized)}</code>
-            ${renderCopyControl(normalized, options.copyLabel || 'Copy')}
-        </span>
+        </button>
     `;
 }
 

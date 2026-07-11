@@ -154,34 +154,28 @@ export const INTERPRETIVE_REVIEW_CSS = `
     outline: none;
 }
 
-.ss-interpretive-review-copy-btn {
+.ss-interpretive-review-copyable {
     appearance: none;
-    border: 1px solid color-mix(in srgb, var(--ss-border) 82%, transparent);
-    border-radius: 999px;
-    padding: 4px 10px;
-    margin-left: 8px;
-    background: color-mix(in srgb, var(--ss-bg-primary) 90%, white 10%);
-    color: color-mix(in srgb, var(--ss-text-primary) 88%, transparent);
+    border: 0;
+    border-radius: 3px;
+    padding: 1px 3px;
+    margin: 0;
+    background: transparent;
+    color: inherit;
     font: inherit;
-    font-size: 11px;
-    line-height: 1.2;
     cursor: pointer;
     vertical-align: middle;
     transition:
-        transform 0.15s ease,
-        border-color 0.15s ease,
         background-color 0.15s ease,
         color 0.15s ease,
         box-shadow 0.15s ease;
 }
 
-.ss-interpretive-review-copy-btn:hover,
-.ss-interpretive-review-copy-btn:focus-visible {
-    border-color: color-mix(in srgb, var(--ss-primary) 42%, var(--ss-border));
+.ss-interpretive-review-copyable:hover,
+.ss-interpretive-review-copyable:focus-visible {
     background: color-mix(in srgb, var(--ss-primary) 12%, var(--ss-bg-primary));
     color: var(--ss-text-primary);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ss-primary) 16%, transparent);
-    transform: translateY(-1px);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--ss-primary) 20%, transparent);
     outline: none;
 }
 
