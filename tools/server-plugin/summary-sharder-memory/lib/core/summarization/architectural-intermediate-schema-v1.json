@@ -1,0 +1,223 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://summary-sharder/architectural-intermediate/v1",
+  "title": "Architectural Intermediate Semantic Record Set v1",
+  "description": "Renderer-independent architectural memory records produced from a bounded source set.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "profile", "source", "sections"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "profile": { "const": "architectural-memory" },
+    "source": { "$ref": "#/$defs/sourceEnvelope" },
+    "sections": { "$ref": "#/$defs/sections" }
+  },
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceRef": {
+      "type": "string",
+      "pattern": "^S[0-9]+:[0-9]+$"
+    },
+    "stableDecisionId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "weight": {
+      "type": "integer",
+      "enum": [1, 2, 3, 4, 5]
+    },
+    "decisionType": {
+      "type": "string",
+      "enum": [
+        "GOVERNANCE",
+        "JURISDICTION",
+        "HIERARCHY",
+        "CORRECTION",
+        "REPLACEMENT",
+        "RENAME",
+        "SCOPE",
+        "DIAGNOSTIC",
+        "IMPLEMENTATION",
+        "STRATEGY",
+        "COMMITMENT",
+        "PROCEDURE"
+      ]
+    },
+    "decisionStatus": {
+      "type": "string",
+      "enum": ["PROPOSED", "ACCEPTED", "SEALED", "SUPERSEDED"]
+    },
+    "threadStatus": {
+      "type": "string",
+      "enum": ["UNRESOLVED", "DEVELOPING", "ACTIVE", "RESOLVED"]
+    },
+    "sourceEnvelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rangeStart", "rangeEnd", "messageIds"],
+      "properties": {
+        "rangeStart": { "type": "integer", "minimum": 0 },
+        "rangeEnd": { "type": "integer", "minimum": 0 },
+        "messageIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        }
+      }
+    },
+    "timelineRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceRef", "summary", "weight"],
+      "properties": {
+        "sourceRef": { "$ref": "#/$defs/sourceRef" },
+        "summary": { "$ref": "#/$defs/nonEmptyString" },
+        "weight": { "$ref": "#/$defs/weight" }
+      }
+    },
+    "decisionRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceRef", "weight", "id", "types", "decision", "why", "scope", "status", "evidence"],
+      "properties": {
+        "sourceRef": { "$ref": "#/$defs/sourceRef" },
+        "weight": { "$ref": "#/$defs/weight" },
+        "id": { "$ref": "#/$defs/stableDecisionId" },
+        "types": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/decisionType" }
+        },
+        "decision": { "$ref": "#/$defs/nonEmptyString" },
+        "problem": {
+          "$ref": "#/$defs/nonEmptyString",
+          "$comment": "Omit when the source does not state a triggering problem."
+        },
+        "why": { "$ref": "#/$defs/nonEmptyString" },
+        "ruledOut": {
+          "$ref": "#/$defs/nonEmptyString",
+          "$comment": "Omit when the source does not explicitly consider and reject an alternative."
+        },
+        "changed": {
+          "$ref": "#/$defs/nonEmptyString",
+          "$comment": "Omit when the source does not establish a before-and-after state."
+        },
+        "scope": { "$ref": "#/$defs/nonEmptyString" },
+        "status": { "$ref": "#/$defs/decisionStatus" },
+        "anchor": {
+          "$ref": "#/$defs/nonEmptyString",
+          "$comment": "Omit when no independently useful, source-grounded conceptual handle exists."
+        },
+        "supersedes": {
+          "$ref": "#/$defs/stableDecisionId",
+          "$comment": "Omit when the decision replaces no earlier decision."
+        },
+        "supersededBy": {
+          "$ref": "#/$defs/stableDecisionId",
+          "$comment": "Omit unless a later stable decision explicitly replaces this decision."
+        },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        }
+      }
+    },
+    "eventRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceRef", "weight", "description"],
+      "properties": {
+        "sourceRef": { "$ref": "#/$defs/sourceRef" },
+        "weight": { "$ref": "#/$defs/weight" },
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "decisionIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/stableDecisionId" },
+          "$comment": "Omit when the event does not create, modify, accept, seal, or supersede a decision."
+        }
+      }
+    },
+    "developmentRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceRef", "weight", "summary"],
+      "properties": {
+        "sourceRef": { "$ref": "#/$defs/sourceRef" },
+        "weight": { "$ref": "#/$defs/weight" },
+        "summary": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "dialogueRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceRef", "weight", "quote", "speaker"],
+      "properties": {
+        "sourceRef": { "$ref": "#/$defs/sourceRef" },
+        "weight": { "$ref": "#/$defs/weight" },
+        "quote": { "$ref": "#/$defs/nonEmptyString" },
+        "speaker": { "$ref": "#/$defs/nonEmptyString" },
+        "context": {
+          "$ref": "#/$defs/nonEmptyString",
+          "$comment": "Omit when no independently useful structural context is stated."
+        }
+      }
+    },
+    "threadRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceRef", "weight", "subject", "status", "introRef", "lastRef"],
+      "properties": {
+        "sourceRef": { "$ref": "#/$defs/sourceRef" },
+        "weight": { "$ref": "#/$defs/weight" },
+        "subject": { "$ref": "#/$defs/nonEmptyString" },
+        "status": { "$ref": "#/$defs/threadStatus" },
+        "introRef": { "$ref": "#/$defs/sourceRef" },
+        "lastRef": { "$ref": "#/$defs/sourceRef" },
+        "notes": {
+          "$ref": "#/$defs/nonEmptyString",
+          "$comment": "Omit when the source states no additional thread context."
+        }
+      }
+    },
+    "currentRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "currentState"],
+      "properties": {
+        "scope": { "$ref": "#/$defs/nonEmptyString" },
+        "currentState": { "$ref": "#/$defs/nonEmptyString" },
+        "activeFocus": { "$ref": "#/$defs/nonEmptyString" },
+        "pending": { "$ref": "#/$defs/nonEmptyString" },
+        "blockedBy": { "$ref": "#/$defs/nonEmptyString" },
+        "nextAction": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "sections": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["timeline", "decisions", "events", "developments", "dialogue", "threads", "current"],
+      "properties": {
+        "timeline": { "type": "array", "maxItems": 15, "items": { "$ref": "#/$defs/timelineRecord" } },
+        "decisions": { "type": "array", "maxItems": 12, "items": { "$ref": "#/$defs/decisionRecord" } },
+        "events": { "type": "array", "maxItems": 12, "items": { "$ref": "#/$defs/eventRecord" } },
+        "developments": { "type": "array", "maxItems": 10, "items": { "$ref": "#/$defs/developmentRecord" } },
+        "dialogue": { "type": "array", "maxItems": 8, "items": { "$ref": "#/$defs/dialogueRecord" } },
+        "threads": { "type": "array", "maxItems": 8, "items": { "$ref": "#/$defs/threadRecord" } },
+        "current": {
+          "type": "array",
+          "maxItems": 1,
+          "items": { "$ref": "#/$defs/currentRecord" },
+          "$comment": "Empty is valid when the bounded extract establishes no current-state claim."
+        }
+      }
+    }
+  }
+}

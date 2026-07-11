@@ -18,11 +18,14 @@ const STATIC_PAYLOAD_FILES = Object.freeze([
     'rebuild.js',
     'upgrade.js',
     'schema.js',
+    'architectural-intermediate-validator.js',
+    'architectural-intermediate-validator.generated.cjs',
     'sqlite-node.js',
     'sqlite-bun.js',
 ]);
 
 const RUNTIME_SHARED_ENTRYPOINTS = Object.freeze([
+    'core/summarization/architectural-intermediate-schema-v1.json',
     'core/summarization/sharder-section-registry.js',
     'core/summarization/architectural-authority-store.js',
     'core/summarization/architectural-dialogue-claim-extractor.js',

@@ -10,6 +10,10 @@ import {
     ARCHITECTURAL_SECTION_CAPS,
     ARCHITECTURAL_THREAD_STATUSES,
 } from '../../../core/summarization/architectural-sharder-contract.js';
+import {
+    ARCHITECTURAL_INTERMEDIATE_SCHEMA_ID,
+    validateArchitecturalIntermediatePayload,
+} from './architectural-intermediate-validator.js';
 
 const schema = JSON.parse(fs.readFileSync(
     new URL('../../../core/summarization/architectural-intermediate-schema-v1.json', import.meta.url),
@@ -71,6 +75,11 @@ test('Ajv compiles a stable, closed v1 schema with canonical vocabularies and ca
 test('Ajv accepts a representative v1 semantic payload', () => {
     const payload = validPayload();
     assert.equal(validate(payload), true, JSON.stringify(validate.errors));
+    assert.deepEqual(validateArchitecturalIntermediatePayload(payload), {
+        ok: true,
+        schemaId: ARCHITECTURAL_INTERMEDIATE_SCHEMA_ID,
+        errors: [],
+    });
 });
 
 test('Ajv rejects illegal enums, unknown fields, malformed refs, and section overflow', () => {
@@ -87,4 +96,10 @@ test('Ajv rejects illegal enums, unknown fields, malformed refs, and section ove
     assert.equal(keywords.has('pattern'), true);
     assert.equal(keywords.has('additionalProperties'), true);
     assert.equal(keywords.has('maxItems'), true);
+
+    const admission = validateArchitecturalIntermediatePayload(payload);
+    assert.equal(admission.ok, false);
+    assert.equal(admission.schemaId, ARCHITECTURAL_INTERMEDIATE_SCHEMA_ID);
+    assert.equal(admission.errors.some((error) => error.keyword === 'enum' && error.field === 'types'), true);
+    assert.equal(admission.errors.some((error) => error.keyword === 'additionalProperties' && error.field === 'invented'), true);
 });

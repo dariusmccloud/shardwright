@@ -272,6 +272,16 @@ test('packaged plugin stages only declared payload and resolves runtime imports 
     assert.equal(fs.existsSync(payloadManifestPath), true);
     const resolvedFiles = assertImportsStayWithinRoot(path.join(staged.pluginRoot, 'index.js'), staged.pluginRoot);
     assert.equal(resolvedFiles.some((filePath) => filePath.includes('OneDrive')), false);
+    assert.equal(
+        fs.existsSync(path.join(staged.pluginRoot, 'lib', 'core', 'summarization', 'architectural-intermediate-schema-v1.json')),
+        true,
+    );
+    const validatorModule = await import(pathToFileURL(
+        path.join(staged.pluginRoot, 'architectural-intermediate-validator.js'),
+    ).href);
+    const invalidAdmission = validatorModule.validateArchitecturalIntermediatePayload(null);
+    assert.equal(invalidAdmission.ok, false);
+    assert.equal(invalidAdmission.schemaId, 'https://summary-sharder/architectural-intermediate/v1');
 });
 
 test('packaged plugin smoke succeeds under Node from staged payload only', async () => {

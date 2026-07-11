@@ -12,6 +12,8 @@
     "rebuild.js",
     "upgrade.js",
     "schema.js",
+    "architectural-intermediate-validator.js",
+    "architectural-intermediate-validator.generated.cjs",
     "sqlite-node.js",
     "sqlite-bun.js"
   ],
@@ -32,6 +34,11 @@
       "sha256": "26217c943f5215dc86303007aa68b0d7286e8b84d50e83b7a4bba55591f8d6e0"
     },
     {
+      "canonicalRelativePath": "core/summarization/architectural-intermediate-schema-v1.json",
+      "packagedRelativePath": "lib/core/summarization/architectural-intermediate-schema-v1.json",
+      "sha256": "f1582cd073bbf18e2429c086bbf4d6177405588b86025579b388d9b765cf9d17"
+    },
+    {
       "canonicalRelativePath": "core/summarization/architectural-rebuild-protocol.js",
       "packagedRelativePath": "lib/core/summarization/architectural-rebuild-protocol.js",
       "sha256": "5d83b60ca0e21c1cce8424af1339fa403cd9525aeed560e72c0172cbd81bddbe"
@@ -39,7 +46,7 @@
     {
       "canonicalRelativePath": "core/summarization/architectural-record-parser.js",
       "packagedRelativePath": "lib/core/summarization/architectural-record-parser.js",
-      "sha256": "ffe88b9c4b91ddffce0bc27b4a881c1e6630244671fdf6c1735833c51a0fa44c"
+      "sha256": "653f789cd0f9b0a8171cc1ead41fd58e4b7dc51eccf67537c58d036e2dd30f84"
     },
     {
       "canonicalRelativePath": "core/summarization/architectural-sharder-format.js",
@@ -49,7 +56,7 @@
     {
       "canonicalRelativePath": "core/summarization/architectural-sharder-shell.js",
       "packagedRelativePath": "lib/core/summarization/architectural-sharder-shell.js",
-      "sha256": "81852c8275d5388daa525998a4fe42ccd2c6350226161de696563f946e60ef4c"
+      "sha256": "94bb34ddfee1f4d9454c2edd055b7f13a38f860d9231a0005ead351624890d41"
     },
     {
       "canonicalRelativePath": "core/summarization/crypto-compat.js",
@@ -84,16 +91,24 @@
   ],
   "payloadFiles": [
     {
+      "relativePath": "architectural-intermediate-validator.generated.cjs",
+      "sha256": "e0740660cef8c9bead4b5783edf95276691ae52801da154d13cc8acb20095fdc"
+    },
+    {
+      "relativePath": "architectural-intermediate-validator.js",
+      "sha256": "2efc088c69a67c8cb0cee8f149108a6bcf70869d42ba44c9b4bc3a01944adacc"
+    },
+    {
       "relativePath": "core.js",
-      "sha256": "a0aa733226f575aa7a5c0b76a740659c0f0c66bc1e34ee8733e8e25874e8ee17"
+      "sha256": "c0740ece38127f729fa6d61ec24a334da05d0497641a3e9b4a196813a24c7cbb"
     },
     {
       "relativePath": "index.js",
-      "sha256": "1e40ff91bce040d51ea87f28e07a4f0708ab4eb4aa84ea32b01934c333f9b631"
+      "sha256": "4078588311803a3280d4d6bf79f59a283a6a28cdb346db2119b4f4d185e207e2"
     },
     {
       "relativePath": "interpretive.js",
-      "sha256": "a7aef7596dc04eece0a1e379a7f5c25356d8c77acd7707e046fa474fd2fc3fa5"
+      "sha256": "b854f6fb2afcb8a849f0ff2fe6de1838cb85ce8c699d104306bf3c29b99f88a3"
     },
     {
       "relativePath": "lib/core/chat/archive-policy.js",
@@ -108,12 +123,16 @@
       "sha256": "26217c943f5215dc86303007aa68b0d7286e8b84d50e83b7a4bba55591f8d6e0"
     },
     {
+      "relativePath": "lib/core/summarization/architectural-intermediate-schema-v1.json",
+      "sha256": "f1582cd073bbf18e2429c086bbf4d6177405588b86025579b388d9b765cf9d17"
+    },
+    {
       "relativePath": "lib/core/summarization/architectural-rebuild-protocol.js",
       "sha256": "5d83b60ca0e21c1cce8424af1339fa403cd9525aeed560e72c0172cbd81bddbe"
     },
     {
       "relativePath": "lib/core/summarization/architectural-record-parser.js",
-      "sha256": "ffe88b9c4b91ddffce0bc27b4a881c1e6630244671fdf6c1735833c51a0fa44c"
+      "sha256": "653f789cd0f9b0a8171cc1ead41fd58e4b7dc51eccf67537c58d036e2dd30f84"
     },
     {
       "relativePath": "lib/core/summarization/architectural-sharder-format.js",
@@ -121,7 +140,7 @@
     },
     {
       "relativePath": "lib/core/summarization/architectural-sharder-shell.js",
-      "sha256": "81852c8275d5388daa525998a4fe42ccd2c6350226161de696563f946e60ef4c"
+      "sha256": "94bb34ddfee1f4d9454c2edd055b7f13a38f860d9231a0005ead351624890d41"
     },
     {
       "relativePath": "lib/core/summarization/crypto-compat.js",
@@ -149,11 +168,11 @@
     },
     {
       "relativePath": "lib/packaged-shared-manifest.json",
-      "sha256": "30c32f76f26b400b5b2e5106e785ae8e12296c928b9b668cc257a292762ac98e"
+      "sha256": "e7b190cc1f6c6866d58fe80dceb6d86a463a7348ba949839c6674dac2214b298"
     },
     {
       "relativePath": "package.json",
-      "sha256": "f9fc8bb4895cca3fa4293a6c76d0debf149f5f64a8df0cd9ac17cc85da46488f"
+      "sha256": "3d3696d8f1926aa2c48c2b9cb9ceb201087a341e78f6ec1325f66daff705d1d9"
     },
     {
       "relativePath": "promotion.js",
@@ -181,7 +200,7 @@
     },
     {
       "relativePath": "upgrade.js",
-      "sha256": "d5b3617d0da44a370a12bb38045497e2cbd963d6a143292267606fa4a1ec80f1"
+      "sha256": "3e80895a61237bba9d36fb0bf722eb4965b19bf5c26033242e800a3fdfd1168a"
     }
   ]
 }

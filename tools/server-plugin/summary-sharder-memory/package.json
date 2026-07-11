@@ -4,7 +4,11 @@
   "type": "module",
   "main": "index.js",
   "private": true,
-  "dependencies": {
+  "scripts": {
+    "generate:architectural-schema": "node ../generate-architectural-intermediate-validator.mjs",
+    "test:architectural-schema": "node --test architectural-intermediate-schema.test.mjs"
+  },
+  "devDependencies": {
     "ajv": "8.20.0"
   }
 }

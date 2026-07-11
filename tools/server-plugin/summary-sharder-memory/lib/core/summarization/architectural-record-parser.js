@@ -21,6 +21,19 @@ export const ARCHITECTURAL_THREAD_FIELDS = Object.freeze([
     'STATUS',
     'INTRO',
     'LAST',
+    'NOTES',
+]);
+
+const OPTIONAL_DECISION_REFERENCE_FIELDS = new Set([
+    'SUPERSEDES',
+    'SUPERSEDED-BY',
+]);
+
+const OPTIONAL_REFERENCE_NULL_MARKERS = new Set([
+    'NONE',
+    'NULL',
+    'N/A',
+    'NOT APPLICABLE',
 ]);
 
 export const ARCHITECTURAL_WEIGHT_BY_EMOJI = Object.freeze({
@@ -132,6 +145,22 @@ function findClosingQuote(text, startIndex = 0) {
     }
 
     return -1;
+}
+
+function isPotentialEventDecisionReferenceValue(value) {
+    const parts = String(value || '').split(',').map((part) => part.trim()).filter(Boolean);
+    if (parts.length === 0) {
+        return false;
+    }
+    if (parts.length > 1) {
+        return parts.every((part, index) => {
+            if (index === 0) {
+                return /^(?:DEC:)?[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(part);
+            }
+            return /^DEC:[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(part);
+        });
+    }
+    return /^(?:DEC:)?[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(parts[0]);
 }
 
 function parseFieldSegments(text) {
@@ -329,8 +358,35 @@ function firstFieldValue(rawValue) {
     return Array.isArray(rawValue) ? rawValue[0] : rawValue;
 }
 
+function normalizeThreadSourceRef(value, rowSourceRef) {
+    const raw = String(value || '').trim();
+    if (ARCHITECTURAL_SOURCE_REF_PATTERN.test(raw)) {
+        return raw;
+    }
+
+    if (!rowSourceRef) {
+        return raw;
+    }
+
+    const shortMatch = raw.match(/^S(\d+)$/);
+    const rowMatch = String(rowSourceRef).match(/^S(\d+):(\d+)$/);
+    if (!shortMatch || !rowMatch) {
+        return raw;
+    }
+
+    if (shortMatch[1] !== rowMatch[1]) {
+        return raw;
+    }
+
+    return `S${shortMatch[1]}:${rowMatch[2]}`;
+}
+
 function normalizeDecisionFields(splitResult, result) {
     for (const entry of splitResult.rawFields) {
+        if (OPTIONAL_DECISION_REFERENCE_FIELDS.has(entry.field)
+            && OPTIONAL_REFERENCE_NULL_MARKERS.has(String(entry.value || '').trim().toUpperCase())) {
+            continue;
+        }
         result.rawFields.push({
             field: entry.field,
             rawField: entry.rawField,
@@ -346,6 +402,11 @@ function normalizeDecisionFields(splitResult, result) {
     splitResult.warnings.forEach((warning) => pushWarning(result, warning.code, warning.message, { field: warning.field, rawField: warning.rawField }));
 
     Object.entries(splitResult.fields).forEach(([fieldName, value]) => {
+        if (OPTIONAL_DECISION_REFERENCE_FIELDS.has(fieldName)
+            && !Array.isArray(value)
+            && OPTIONAL_REFERENCE_NULL_MARKERS.has(String(value || '').trim().toUpperCase())) {
+            return;
+        }
         result.fields[fieldName] = Array.isArray(value)
             ? value.map((entry) => String(entry))
             : String(value);
@@ -379,7 +440,7 @@ export function parseArchitecturalEventRecord(text) {
     const splitResult = splitArchitecturalPipeFields(afterWeight.rest);
 
     const segments = [...splitResult.segments];
-    result.description = segments.shift() || '';
+    const descriptionSegments = [segments.shift() || ''];
     result.rawFields = [];
     result.fieldOrder = [];
     result.duplicateFields = [];
@@ -392,13 +453,27 @@ export function parseArchitecturalEventRecord(text) {
         if (!segment) continue;
         const colonIndex = findTopLevelIndex(segment, ':');
         if (colonIndex < 0) {
-            result.malformedSegments.push(segment);
+            descriptionSegments.push(segment);
             continue;
         }
 
         const fieldName = segment.slice(0, colonIndex).trim().toUpperCase();
         const rawValue = segment.slice(colonIndex + 1).trim();
         const value = unescapeArchitecturalFieldValue(rawValue);
+        if (!fieldName) {
+            result.malformedSegments.push(segment);
+            continue;
+        }
+        if (fieldName === 'DEC'
+            && OPTIONAL_REFERENCE_NULL_MARKERS.has(value.trim().toUpperCase())) {
+            continue;
+        }
+        if (fieldName === 'DEC'
+            && /\s/u.test(value.trim())
+            && !isPotentialEventDecisionReferenceValue(value)) {
+            descriptionSegments.push(value);
+            continue;
+        }
         result.fieldOrder.push(fieldName);
         result.rawFields.push({ field: fieldName, value: rawValue, raw: segment });
 
@@ -408,8 +483,10 @@ export function parseArchitecturalEventRecord(text) {
         valuesByField[fieldName].push(value);
     }
 
+    result.description = descriptionSegments.map((entry) => entry.trim()).filter(Boolean).join(' | ');
+
     if (result.malformedSegments.length > 0) {
-        pushError(result, 'MALFORMED_SEGMENT', 'One or more pipe-delimited segments were missing a field name.', {
+        pushError(result, 'MALFORMED_SEGMENT', 'Write event prose before any optional field. DEC:<stable-decision-id> is only for linking an event to a selected decision; omit it when no decision applies.', {
             segments: [...result.malformedSegments],
         });
     }
@@ -450,7 +527,9 @@ export function parseArchitecturalEventRecord(text) {
                 normalizedRefs.push(String(entry));
             }
 
-            result.fields.DEC = normalizedRefs;
+            if (normalizedRefs.length > 0) {
+                result.fields.DEC = normalizedRefs;
+            }
             result.decisionRefs = normalizedRefs.map((entry) => String(entry));
             result.normalizedDecList = normalizedList;
             if (normalizedList) {
@@ -573,7 +652,12 @@ export function parseArchitecturalThreadRecord(text) {
                 result.duplicateFields.push(fieldName);
             }
 
-            result.namedFields[fieldName] = unescapeArchitecturalFieldValue(rawValue);
+            let normalizedValue = unescapeArchitecturalFieldValue(rawValue);
+            if (fieldName === 'INTRO' || fieldName === 'LAST') {
+                normalizedValue = normalizeThreadSourceRef(normalizedValue, result.sourceRef);
+            }
+
+            result.namedFields[fieldName] = normalizedValue;
             continue;
         }
 
@@ -609,6 +693,7 @@ export function parseArchitecturalThreadRecord(text) {
     result.status = result.namedFields.STATUS ?? null;
     result.intro = result.namedFields.INTRO ?? null;
     result.last = result.namedFields.LAST ?? null;
+    result.notes = result.namedFields.NOTES ?? result.notes;
 
     return result;
 }

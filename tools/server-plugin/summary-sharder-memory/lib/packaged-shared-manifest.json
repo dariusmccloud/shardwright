@@ -19,6 +19,11 @@
       "sha256": "26217c943f5215dc86303007aa68b0d7286e8b84d50e83b7a4bba55591f8d6e0"
     },
     {
+      "canonicalRelativePath": "core/summarization/architectural-intermediate-schema-v1.json",
+      "packagedRelativePath": "lib/core/summarization/architectural-intermediate-schema-v1.json",
+      "sha256": "f1582cd073bbf18e2429c086bbf4d6177405588b86025579b388d9b765cf9d17"
+    },
+    {
       "canonicalRelativePath": "core/summarization/architectural-rebuild-protocol.js",
       "packagedRelativePath": "lib/core/summarization/architectural-rebuild-protocol.js",
       "sha256": "5d83b60ca0e21c1cce8424af1339fa403cd9525aeed560e72c0172cbd81bddbe"
@@ -26,7 +31,7 @@
     {
       "canonicalRelativePath": "core/summarization/architectural-record-parser.js",
       "packagedRelativePath": "lib/core/summarization/architectural-record-parser.js",
-      "sha256": "ffe88b9c4b91ddffce0bc27b4a881c1e6630244671fdf6c1735833c51a0fa44c"
+      "sha256": "653f789cd0f9b0a8171cc1ead41fd58e4b7dc51eccf67537c58d036e2dd30f84"
     },
     {
       "canonicalRelativePath": "core/summarization/architectural-sharder-format.js",
@@ -36,7 +41,7 @@
     {
       "canonicalRelativePath": "core/summarization/architectural-sharder-shell.js",
       "packagedRelativePath": "lib/core/summarization/architectural-sharder-shell.js",
-      "sha256": "81852c8275d5388daa525998a4fe42ccd2c6350226161de696563f946e60ef4c"
+      "sha256": "94bb34ddfee1f4d9454c2edd055b7f13a38f860d9231a0005ead351624890d41"
     },
     {
       "canonicalRelativePath": "core/summarization/crypto-compat.js",
