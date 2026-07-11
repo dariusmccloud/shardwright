@@ -3,5 +3,8 @@
   "version": "0.1.0",
   "type": "module",
   "main": "index.js",
-  "private": true
+  "private": true,
+  "dependencies": {
+    "ajv": "8.20.0"
+  }
 }
