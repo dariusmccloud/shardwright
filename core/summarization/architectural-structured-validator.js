@@ -134,7 +134,7 @@ function validateDecisionWeight(record, diagnostics, itemIndex) {
             'warning',
             'ARCH_DECISION_WEIGHT_MISSING',
             'Decision record is missing a canonical weight.',
-            { sectionKey: 'decisions', itemIndex, recordId: record.decisionId || null }
+            { sectionKey: 'decisions', itemIndex, recordId: record.decisionId || null, field: 'WEIGHT' }
         ));
         return;
     }
@@ -144,7 +144,14 @@ function validateDecisionWeight(record, diagnostics, itemIndex) {
             'error',
             'ARCH_DECISION_WEIGHT_INVALID',
             `Decision record uses an unknown weight marker: ${record.weightRaw}.`,
-            { sectionKey: 'decisions', itemIndex, recordId: record.decisionId || null }
+            {
+                sectionKey: 'decisions',
+                itemIndex,
+                recordId: record.decisionId || null,
+                field: 'WEIGHT',
+                invalidValue: record.weightRaw,
+                allowedValues: Object.keys(ARCHITECTURAL_WEIGHT_BY_EMOJI),
+            }
         ));
     }
 }
@@ -234,8 +241,15 @@ function validateDecisionRecord(record, itemIndex, diagnostics) {
         diagnostics.push(buildDiagnostic(
             'error',
             'ARCH_DECISION_STATUS_INVALID',
-            `Decision STATUS is invalid: ${status}.`,
-            { sectionKey: 'decisions', itemIndex, recordId: decisionId || null, field: 'STATUS' }
+            `Decision status "${status}" is invalid.`,
+            {
+                sectionKey: 'decisions',
+                itemIndex,
+                recordId: decisionId || null,
+                field: 'STATUS',
+                invalidValue: status,
+                allowedValues: [...ARCHITECTURAL_DECISION_STATUSES],
+            }
         ));
     }
 
@@ -259,8 +273,15 @@ function validateDecisionRecord(record, itemIndex, diagnostics) {
             diagnostics.push(buildDiagnostic(
                 'error',
                 'ARCH_DECISION_TYPE_INVALID',
-                `Decision TYPE is invalid: ${type}.`,
-                { sectionKey: 'decisions', itemIndex, recordId: decisionId || null, field: 'TYPE' }
+                `Decision type "${type}" is invalid.`,
+                {
+                    sectionKey: 'decisions',
+                    itemIndex,
+                    recordId: decisionId || null,
+                    field: 'TYPE',
+                    invalidValue: type,
+                    allowedValues: [...ARCHITECTURAL_DECISION_TYPES],
+                }
             ));
             continue;
         }
@@ -465,14 +486,20 @@ function validateEventRecord(record, itemIndex, currentDecisionIds, diagnostics)
             'warning',
             'ARCH_EVENT_WEIGHT_MISSING',
             'Event record is missing a canonical weight.',
-            { sectionKey: 'events', itemIndex }
+            { sectionKey: 'events', itemIndex, field: 'WEIGHT' }
         ));
     } else if (!ARCHITECTURAL_WEIGHT_BY_EMOJI[record.weightRaw]) {
         diagnostics.push(buildDiagnostic(
             'error',
             'ARCH_EVENT_WEIGHT_INVALID',
             `Event record uses an unknown weight marker: ${record.weightRaw}.`,
-            { sectionKey: 'events', itemIndex }
+            {
+                sectionKey: 'events',
+                itemIndex,
+                field: 'WEIGHT',
+                invalidValue: record.weightRaw,
+                allowedValues: Object.keys(ARCHITECTURAL_WEIGHT_BY_EMOJI),
+            }
         ));
     }
 
@@ -508,18 +535,20 @@ function validateEventRecord(record, itemIndex, currentDecisionIds, diagnostics)
         diagnostics.push(buildDiagnostic(
             'error',
             'ARCH_EVENT_UNKNOWN_FIELD',
-            `Event record contains unsupported field(s): ${[...new Set(record.unknownFields)].join(', ')}.`,
+            `Event record contains unsupported field(s): ${[...new Set(record.unknownFields)].join(', ')}. Write event prose before any optional field. DEC:<stable-decision-id> is only for linking to a selected decision; omit it otherwise.`,
             { sectionKey: 'events', itemIndex }
         ));
     }
 
     const refs = Array.isArray(record.fields.DEC) ? record.fields.DEC : [];
+    const availableDecisionIds = [...currentDecisionIds].sort();
+    const availableDecisionText = availableDecisionIds.length > 0 ? availableDecisionIds.join(', ') : 'none';
     refs.forEach((ref) => {
         if (!DECISION_ID_PATTERN.test(ref)) {
             diagnostics.push(buildDiagnostic(
                 'error',
                 'ARCH_EVENT_DEC_ID_INVALID',
-                `Event DEC reference is not a valid stable decision ID: ${ref}.`,
+                `Event DEC reference is invalid: ${ref}. Use lowercase kebab-case. Available selected decision IDs: ${availableDecisionText}.`,
                 { sectionKey: 'events', itemIndex, field: 'DEC' }
             ));
             return;
@@ -528,7 +557,7 @@ function validateEventRecord(record, itemIndex, currentDecisionIds, diagnostics)
             diagnostics.push(buildDiagnostic(
                 'error',
                 'ARCH_EVENT_DEC_UNRESOLVED',
-                `Event DEC reference does not resolve in current selected decisions: ${ref}.`,
+                `Event DEC reference does not resolve: ${ref}. Available selected decision IDs: ${availableDecisionText}. Omit DEC when no decision applies.`,
                 { sectionKey: 'events', itemIndex, field: 'DEC', recordId: ref }
             ));
         }
@@ -538,7 +567,7 @@ function validateEventRecord(record, itemIndex, currentDecisionIds, diagnostics)
         diagnostics.push(buildDiagnostic(
             'error',
             'ARCH_EVENT_DEC_REQUIRED',
-            'Event describes an explicit decision transition and must include DEC:<stable-id>.',
+            `Event describes an explicit decision transition and must include DEC:<stable-decision-id>. Available selected decision IDs: ${availableDecisionText}.`,
             { sectionKey: 'events', itemIndex, field: 'DEC' }
         ));
     }
@@ -594,8 +623,14 @@ function validateThreadRecord(record, itemIndex, diagnostics) {
         diagnostics.push(buildDiagnostic(
             'error',
             'ARCH_THREAD_STATUS_INVALID',
-            `Thread status is invalid: ${record.status}.`,
-            { sectionKey: 'threads', itemIndex, field: 'status' }
+            `Thread status "${record.status}" is invalid.`,
+            {
+                sectionKey: 'threads',
+                itemIndex,
+                field: 'STATUS',
+                invalidValue: record.status,
+                allowedValues: [...ARCHITECTURAL_THREAD_STATUSES],
+            }
         ));
     }
 

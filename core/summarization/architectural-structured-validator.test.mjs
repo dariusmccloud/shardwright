@@ -4,7 +4,12 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { parseArchitecturalExtractionResponse, reconstructArchitecturalExtraction } from './architectural-sharder-format.js';
-import { ARCHITECTURAL_DECISION_TYPES, ARCHITECTURAL_SECTION_CAPS } from './architectural-sharder-contract.js';
+import {
+    ARCHITECTURAL_DECISION_STATUSES,
+    ARCHITECTURAL_DECISION_TYPES,
+    ARCHITECTURAL_SECTION_CAPS,
+    ARCHITECTURAL_THREAD_STATUSES,
+} from './architectural-sharder-contract.js';
 import { ARCHITECTURAL_PROFILE, getSharderSectionRegistry } from './sharder-section-registry.js';
 import {
     buildArchitecturalBaselineFromShards,
@@ -41,6 +46,15 @@ test('valid minimal architectural fixture passes structured validation', () => {
     assert.equal(diagnostics.some((entry) => entry.level === 'error'), false);
 });
 
+test('explicit null supersession markers do not create supersession relationships', () => {
+    const sections = parseFixture('architectural-valid-minimal-01.txt');
+    sections.decisions[0].content += ' | SUPERSEDES:None | SUPERSEDED-BY:None';
+
+    const diagnostics = validateArchitecturalStructuredSections(sections, { baselineDecisions: {} });
+
+    assert.equal(codes(diagnostics).some((code) => code.startsWith('ARCH_SUPERSESSION_')), false);
+});
+
 test('canonical decision TYPE list includes PROCEDURE', () => {
     assert.deepEqual(ARCHITECTURAL_DECISION_TYPES, [
         'GOVERNANCE',
@@ -56,6 +70,29 @@ test('canonical decision TYPE list includes PROCEDURE', () => {
         'COMMITMENT',
         'PROCEDURE',
     ]);
+});
+
+test('closed decision vocabulary diagnostics expose invalid and allowed values as structured data', () => {
+    const sections = parseFixture('architectural-valid-minimal-01.txt');
+    sections.decisions[0].content = sections.decisions[0].content
+        .replace('TYPE:GOVERNANCE', 'TYPE:ARCHITECTURE')
+        .replace('STATUS:ACCEPTED', 'STATUS:ACTIVE');
+    sections.threads[0].content = sections.threads[0].content.replace('status:ACTIVE', 'status:PAUSED');
+
+    const diagnostics = validateArchitecturalStructuredSections(sections, { baselineDecisions: {} });
+    const typeDiagnostic = diagnostics.find((entry) => entry.code === 'ARCH_DECISION_TYPE_INVALID');
+    const statusDiagnostic = diagnostics.find((entry) => entry.code === 'ARCH_DECISION_STATUS_INVALID');
+    const threadStatusDiagnostic = diagnostics.find((entry) => entry.code === 'ARCH_THREAD_STATUS_INVALID');
+
+    assert.equal(typeDiagnostic.field, 'TYPE');
+    assert.equal(typeDiagnostic.invalidValue, 'ARCHITECTURE');
+    assert.deepEqual(typeDiagnostic.allowedValues, ARCHITECTURAL_DECISION_TYPES);
+    assert.equal(statusDiagnostic.field, 'STATUS');
+    assert.equal(statusDiagnostic.invalidValue, 'ACTIVE');
+    assert.deepEqual(statusDiagnostic.allowedValues, ARCHITECTURAL_DECISION_STATUSES);
+    assert.equal(threadStatusDiagnostic.field, 'STATUS');
+    assert.equal(threadStatusDiagnostic.invalidValue, 'PAUSED');
+    assert.deepEqual(threadStatusDiagnostic.allowedValues, ARCHITECTURAL_THREAD_STATUSES);
 });
 
 test('selected-entry section caps treat deselected entries as non-counting', () => {

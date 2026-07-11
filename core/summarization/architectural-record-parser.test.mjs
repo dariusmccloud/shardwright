@@ -100,6 +100,17 @@ test('decision parser detects mixed-case duplicate fields in normalized namespac
     assert.equal(record.warnings.some((entry) => entry.code === 'NONCANONICAL_FIELD_CASE'), true);
 });
 
+test('decision parser treats explicit null supersession markers as omitted optional fields', () => {
+    const record = parseArchitecturalDecisionRecord(
+        '[S10:2] 🔴 ID:test | TYPE:GOVERNANCE | DECISION:X | WHY:unstated | SCOPE:Y | STATUS:SEALED | SUPERSEDES:None | SUPERSEDED-BY:N/A | EVIDENCE:"z"'
+    );
+
+    assert.equal(record.fields.SUPERSEDES, undefined);
+    assert.equal(record.fields['SUPERSEDED-BY'], undefined);
+    assert.equal(record.fieldOrder.includes('SUPERSEDES'), false);
+    assert.equal(record.fieldOrder.includes('SUPERSEDED-BY'), false);
+});
+
 test('event parser captures description and multiple DEC references', () => {
     const record = parseArchitecturalEventRecord(
         '[S5:3] 🟠 decision superseded by replacement record | DEC:decision-sealed | DEC:decision-sealed-replacement'
@@ -119,6 +130,35 @@ test('event parser safely normalizes comma-delimited DEC lists into repeated ref
     assert.deepEqual(record.decisionRefs, ['decision-sealed', 'decision-sealed-replacement']);
     assert.equal(record.normalizedDecList, true);
     assert.equal(record.warnings.some((entry) => entry.code === 'DEC_LIST_NORMALIZED'), true);
+});
+
+test('event parser folds prose-only pipe segments into the description and omits DEC none', () => {
+    const record = parseArchitecturalEventRecord(
+        '[S289:1] 🟡 sabrina-character-architecture-completed | Sabrina architecture was cleaned and structured for insertion | DEC:none'
+    );
+
+    assert.equal(
+        record.description,
+        'sabrina-character-architecture-completed | Sabrina architecture was cleaned and structured for insertion'
+    );
+    assert.deepEqual(record.decisionRefs, []);
+    assert.equal(record.fields.DEC, undefined);
+    assert.deepEqual(record.malformedSegments, []);
+    assert.equal(record.errors.length, 0);
+});
+
+test('event parser recovers model-shaped DEC prose as description and omits a trailing DEC none', () => {
+    const record = parseArchitecturalEventRecord(
+        '[S289:1] 🟡 sabrina-character-architecture-completed | DEC:Sabrina architecture was cleaned and structured for insertion | DEC:none'
+    );
+
+    assert.equal(
+        record.description,
+        'sabrina-character-architecture-completed | Sabrina architecture was cleaned and structured for insertion'
+    );
+    assert.deepEqual(record.decisionRefs, []);
+    assert.equal(record.fields.DEC, undefined);
+    assert.equal(record.errors.length, 0);
 });
 
 test('dialogue parser enforces quote, speaker, optional context, and line count structure', () => {
@@ -163,4 +203,18 @@ test('thread parser accepts canonical uppercase thread fields as well as legacy 
     assert.equal(canonical.last, 'S2:2');
     assert.equal(canonical.notes, 'pending normalization cleanup');
     assert.deepEqual(canonical.fieldOrder, ['STATUS', 'INTRO', 'LAST']);
+});
+
+test('thread parser accepts named NOTES field and normalizes same-row shorthand refs', () => {
+    const record = parseArchitecturalThreadRecord(
+        '[S324:1] csp-contract-validation | status:ACTIVE | intro:S324 | last:S324 | notes:Draft submitted; requires review before SDE work begins'
+    );
+
+    assert.equal(record.status, 'ACTIVE');
+    assert.equal(record.intro, 'S324:1');
+    assert.equal(record.last, 'S324:1');
+    assert.equal(record.notes, 'Draft submitted; requires review before SDE work begins');
+    assert.deepEqual(record.fieldOrder, ['STATUS', 'INTRO', 'LAST', 'NOTES']);
+    assert.deepEqual(record.unknownFields, []);
+    assert.equal(record.errors.length, 0);
 });
