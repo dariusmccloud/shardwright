@@ -7,6 +7,7 @@ import path from 'node:path';
 import { getStoragePaths, openOperationalDatabase } from './core.js';
 import {
     bootstrapStandardInterpretivePublicationPolicy,
+    createInterpretiveProposalFromArchitecturalShard,
     createInterpretivePublicationAuthorization,
     executeInterpretiveSynthesisRun,
     executeInterpretivePublicationAuthorization,
@@ -58,6 +59,17 @@ function buildRequest(root, overrides = {}) {
         params: {},
         ...overrides,
     };
+}
+
+function writeCharacterChatJsonl(root, avatarUrl, chatLocator, records) {
+    const avatarDir = String(avatarUrl || '').replace(/\.png$/iu, '');
+    const chatDir = path.join(root, 'chats', avatarDir);
+    fs.mkdirSync(chatDir, { recursive: true });
+    fs.writeFileSync(
+        path.join(chatDir, `${chatLocator}.jsonl`),
+        `${records.map((entry) => JSON.stringify(entry)).join('\n')}\n`,
+        'utf8',
+    );
 }
 
 function makeBasePayload(overrides = {}) {
@@ -299,6 +311,141 @@ function makePublicationPolicyPayload(overrides = {}) {
         ...overrides,
     };
 }
+
+test('architectural shard proposal creation backfills the shard manifest from persisted output when header metadata is missing', async () => {
+    const root = makeTempRoot();
+    const request = buildRequest(root);
+    const avatarUrl = 'jeep.png';
+    const chatLocator = 'architectural-proposal-launch';
+    const header = {
+        chat_metadata: {
+            summary_sharder: {
+                architecturalMemoryBinding: {
+                    memoryScopeId: 'scope_arch',
+                    chatInstanceId: 'chat_arch',
+                },
+                shardManifests: [],
+            },
+        },
+    };
+    const sourceMessageA = {
+        name: 'Chris',
+        mes: 'We need deterministic proposal creation from saved architectural shards.',
+        send_date: 'src_send_a',
+        extra: {
+            summary_sharder: {
+                messageIdentity: {
+                    messageId: 'msg_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+                    revisionHash: 'sha256:src-a',
+                },
+                speakerIdentity: {
+                    speakerEntityId: 'user:Chris',
+                },
+            },
+        },
+    };
+    const sourceMessageB = {
+        name: 'Jeep',
+        mes: 'The governed proposal should open directly from the saved shard.',
+        send_date: 'src_send_b',
+        extra: {
+            summary_sharder: {
+                messageIdentity: {
+                    messageId: 'msg_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+                    revisionHash: 'sha256:src-b',
+                },
+                speakerIdentity: {
+                    speakerEntityId: 'character:jeep.png',
+                },
+            },
+        },
+    };
+    const shardMessage = {
+        name: 'system',
+        mes: '[MEMORY SHARD: Messages 0-1]\n\n[DECISIONS]\n[S0:1] ID:jeep-continuity-authority | TYPE:GOVERNANCE | DECISION:Jeep evolved into the primary architectural authority over continuity and memory requirements within a shared architecture with Chris. | WHY:The shared work assigned Jeep continuing architectural responsibility. | SCOPE:continuity architecture | STATUS:ACCEPTED | EVIDENCE:[REF: S1:1]\n',
+        send_date: 'out_send_arch',
+        extra: {
+            summary_sharder: {
+                messageIdentity: {
+                    messageId: 'msg_cccccccccccccccccccccccccccccccc',
+                    revisionHash: 'sha256:out-c',
+                },
+                speakerIdentity: {
+                    speakerEntityId: 'system:summary-sharder',
+                },
+            },
+        },
+    };
+    writeCharacterChatJsonl(root, avatarUrl, chatLocator, [
+        header,
+        sourceMessageA,
+        sourceMessageB,
+        shardMessage,
+    ]);
+
+    const result = await createInterpretiveProposalFromArchitecturalShard(request, {
+        avatarUrl,
+        chatLocator,
+        shardMessageId: 'msg_cccccccccccccccccccccccccccccccc',
+        memoryScopeId: 'scope_arch',
+        memorySubjectId: 'character:jeep.png',
+        createdByEntityId: 'user:Chris',
+        synthesisRunId: 'synthrun_arch_launch',
+        synthesisProposalId: 'synthproposal_arch_launch',
+        interpretationId: 'interp_arch_launch',
+        interpretationRevisionId: 'interprev_arch_launch_v1',
+        now: Date.parse('2026-07-11T12:00:00.000Z'),
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(result.sourceKind, 'persisted-architectural-shard');
+    assert.equal(result.admitted, true);
+    assert.equal(result.interpretation.interpretationRevisionId, 'interprev_arch_launch_v1');
+    assert.equal(
+        result.interpretation.statement,
+        'Jeep evolved into the primary architectural authority over continuity and memory requirements within a shared architecture with Chris.',
+    );
+    assert.deepEqual(result.interpretation.assertionDomains, ['AUTHORITY', 'RELATIONSHIP', 'ROLE']);
+    assert.equal(result.interpretation.sharedRelationshipAsserted, true);
+    assert.equal(result.interpretation.personalMeaningAsserted, false);
+    assert.deepEqual(result.interpretation.materialParticipantEntityIds, ['character:jeep.png', 'user:Chris']);
+    assert.equal(
+        result.synthesisRun.sourceManifest.sourceManifestEntries.some((entry) => entry.sourceClass === 'STRUCTURAL_RECORD' && entry.basisRecordId === 'decision:jeep-continuity-authority'),
+        true,
+    );
+    assert.equal(
+        result.synthesisRun.sourceManifest.sourceManifestEntries.filter((entry) => entry.sourceClass === 'SOURCE_OCCURRENCE').length,
+        2,
+    );
+    assert.equal(result.synthesisRun.sourceManifestHash.startsWith('sha256:'), true);
+    assert.equal(result.interpretation.evidenceFindingState, 'AVAILABLE');
+    assert.deepEqual(result.interpretation.evidenceFindings, [
+        {
+            findingId: result.interpretation.evidenceFindings[0].findingId,
+            role: 'PRIMARY',
+            summary: 'Jeep evolved into the primary architectural authority over continuity and memory requirements within a shared architecture with Chris.',
+            basisRefs: ['decision:jeep-continuity-authority', 'msg_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'msg_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'],
+            sourceLabel: 'Architectural shard decision jeep-continuity-authority',
+            domains: ['AUTHORITY', 'RELATIONSHIP', 'ROLE'],
+            supportLevel: 'SUPPORTED',
+            createdAt: result.interpretation.evidenceFindings[0].createdAt,
+            updatedAt: result.interpretation.evidenceFindings[0].updatedAt,
+        },
+    ]);
+
+    await assert.rejects(
+        () => createInterpretiveProposalFromArchitecturalShard(request, {
+            avatarUrl,
+            chatLocator,
+            shardMessageId: 'msg_cccccccccccccccccccccccccccccccc',
+            memoryScopeId: 'scope_arch',
+            memorySubjectId: 'character:sabrina.png',
+            createdByEntityId: 'user:Chris',
+            now: Date.parse('2026-07-11T12:01:00.000Z'),
+        }),
+        (error) => error?.code === 'ARCH_NO_REVIEWABLE_INTERPRETIVE_DECISION',
+    );
+});
 
 function publishGrantedRevision(request, options = {}) {
     const interpretationId = options.interpretationId || 'interp_publish_default';
@@ -794,9 +941,9 @@ test('deterministic stub synthesis admits a proposal into the existing interpret
     assert.equal(executed.synthesisRun.proposals.length, 1);
     assert.equal(executed.synthesisRun.proposals[0].proposalStatus, 'ADMITTED');
     assert.equal(executed.synthesisRun.proposals[0].groundingEvaluation.referentialStatus, 'VALID');
-    assert.equal(executed.synthesisRun.proposals[0].groundingEvaluation.aggregateOutcome, 'CONTRARY_EVIDENCE_PRESENT');
-    assert.equal(executed.synthesisRun.proposals[0].groundingEvaluation.scopeAssessment, 'TOO_BROAD');
-    assert.equal(executed.synthesisRun.proposals[0].groundingEvaluation.counterevidencePresent, true);
+    assert.equal(executed.synthesisRun.proposals[0].groundingEvaluation.aggregateOutcome, 'STRONGLY_SUPPORTED');
+    assert.equal(executed.synthesisRun.proposals[0].groundingEvaluation.scopeAssessment, 'SUPPORTED');
+    assert.equal(executed.synthesisRun.proposals[0].groundingEvaluation.counterevidencePresent, false);
     assert.equal(executed.interpretation.reviewState, 'PENDING');
     assert.equal(executed.interpretation.publicationState, 'NOT_PUBLISHED');
     assert.equal(executed.interpretation.authorityEffect, 'DESCRIPTIVE_ONLY');
@@ -804,6 +951,54 @@ test('deterministic stub synthesis admits a proposal into the existing interpret
     const reopened = getInterpretiveCandidate(request, 'interprev_synth_generated_v1');
     assert.equal(reopened.interpretation.policyBinding.validationPolicyId, 'shared-role-memory');
     assert.equal(reopened.interpretation.reviewRequests.length, 2);
+});
+
+test('deterministic stub synthesis admits the production-cased Jeep subject path', () => {
+    const root = makeTempRoot();
+    const request = buildRequest(root);
+    upsertInterpretiveSynthesisPolicy(request, makeSynthesisPolicyPayload({
+        memorySubjectId: 'character:Jeep.png',
+    }));
+    createInterpretiveSynthesisRun(request, makeSynthesisRunPayload({
+        memorySubjectId: 'character:Jeep.png',
+        requestedAssertionDomains: ['ROLE', 'AUTHORITY', 'RELATIONSHIP'],
+        sharedRelationshipRequested: true,
+        personalMeaningRequested: true,
+        sourceManifestEntries: [
+            {
+                sourceClass: 'STRUCTURAL_RECORD',
+                memoryScopeId: 'scope_alpha',
+                basisRecordId: 'decision:constitutional-sovereignty',
+                basisRecordVersion: 1,
+                basisRecordHash: 'sha256:constitutional-sovereignty',
+                speakerEntityId: 'character:Jeep.png',
+            },
+            {
+                sourceClass: 'SOURCE_OCCURRENCE',
+                memoryScopeId: 'scope_alpha',
+                chatInstanceId: 'chat_alpha',
+                messageId: 'msg_alpha0000000000000000000000000',
+                messageRevisionHash: 'sha256:msg-alpha',
+                speakerEntityId: 'user:Chris',
+            },
+        ],
+    }));
+
+    const executed = executeInterpretiveSynthesisRun(request, 'synthrun_scope_alpha_v1', {
+        adapterId: 'DETERMINISTIC_STUB_V1',
+        interpretationId: 'interp_synth_generated_cased',
+        interpretationRevisionId: 'interprev_synth_generated_cased_v1',
+        now: Date.parse('2026-06-26T00:06:00.000Z'),
+    });
+
+    assert.equal(executed.admitted, true);
+    assert.equal(executed.synthesisRun.runStatus, 'COMPLETED_ADMITTED');
+    assert.equal(executed.synthesisRun.proposals[0].proposalStatus, 'ADMITTED');
+    assert.deepEqual(
+        executed.synthesisRun.proposals[0].proposalPayload.materialParticipantEntityIds,
+        ['character:Jeep.png', 'user:Chris'],
+    );
+    assert.equal(executed.interpretation.memorySubjectId, 'character:Jeep.png');
 });
 
 test('deterministic stub synthesis quarantines output that attempts to set authority-bearing fields', () => {
@@ -1852,8 +2047,8 @@ test('publication qualification preserves synthesis envelope provenance distinct
         now: Date.parse('2026-06-26T00:15:20.000Z'),
     });
 
-    assert.equal(qualification.qualification.eligibilityVerdict, 'INELIGIBLE');
-    assert.equal(qualification.qualification.refusalCodes.includes('GROUNDING_OUTCOME_BELOW_POLICY'), true);
+    assert.equal(qualification.qualification.eligibilityVerdict, 'ELIGIBLE');
+    assert.equal(qualification.qualification.refusalCodes.length, 0);
     assert.equal(qualification.qualification.binding.groundingBindingMode, 'SYNTHESIS_ENVELOPE');
     assert.match(qualification.qualification.binding.groundingEnvelopeHash, /^sha256:/);
     assert.match(qualification.qualification.binding.groundingSourceSetHash, /^sha256:/);

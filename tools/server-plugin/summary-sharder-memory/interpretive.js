@@ -17,6 +17,7 @@ import {
     stableStringify,
 } from './core.js';
 import { buildCorpusRevisionHash } from './lib/core/summarization/message-identity-core.js';
+import { parseArchitecturalDecisionRecord } from './lib/core/summarization/architectural-record-parser.js';
 
 function hashCanonical(value) {
     const content = stableStringify(value);
@@ -25,6 +26,53 @@ function hashCanonical(value) {
         canonical: content,
         hash,
     };
+}
+
+function resolveManifestSourceMessages(messages, manifest) {
+    const selector = manifest?.sourceSelector;
+    if (!selector || typeof selector !== 'object') {
+        return null;
+    }
+
+    const messageById = new Map();
+    for (const message of messages) {
+        const messageId = String(message?.extra?.summary_sharder?.messageIdentity?.messageId || '').trim();
+        if (messageId && !messageById.has(messageId)) {
+            messageById.set(messageId, message);
+        }
+    }
+
+    const sourceCount = Number.parseInt(selector.sourceCount, 10);
+    if (!Number.isInteger(sourceCount) || sourceCount <= 0) {
+        return [];
+    }
+
+    if (selector.mode === 'message_id_list') {
+        const sourceMessageIds = Array.isArray(selector.sourceMessageIds) ? selector.sourceMessageIds : [];
+        if (sourceMessageIds.length !== sourceCount) {
+            return [];
+        }
+        const resolved = sourceMessageIds.map((messageId) => messageById.get(String(messageId || '').trim()));
+        return resolved.every(Boolean) ? resolved : [];
+    }
+
+    if (selector.mode === 'contiguous_interval') {
+        const startMessageId = String(selector.startMessageId || '').trim();
+        const endMessageId = String(selector.endMessageId || '').trim();
+        const startIndex = messages.findIndex((message) => (
+            String(message?.extra?.summary_sharder?.messageIdentity?.messageId || '').trim() === startMessageId
+        ));
+        const endIndex = messages.findIndex((message) => (
+            String(message?.extra?.summary_sharder?.messageIdentity?.messageId || '').trim() === endMessageId
+        ));
+        if (startIndex < 0 || endIndex < startIndex) {
+            return [];
+        }
+        const resolved = messages.slice(startIndex, endIndex + 1);
+        return resolved.length === sourceCount ? resolved : [];
+    }
+
+    return [];
 }
 
 const ALLOWED_INTERPRETATION_TYPES = new Set([
@@ -139,6 +187,74 @@ const ALLOWED_EVIDENCE_FINDING_STATES = new Set([
     'AVAILABLE',
     'UNAVAILABLE',
 ]);
+
+const MANAGED_OUTPUT_WRAPPER_REGEX = /^\[(MEMORY SHARD|SUMMARY):\s*Messages\s*(\d+)\s*[-–]\s*(\d+)\]\s*\n\n/iu;
+
+function trimPersistedText(value) {
+    return String(value || '').trim();
+}
+
+function normalizePersistedText(value) {
+    return String(value || '').replace(/\r\n?/gu, '\n');
+}
+
+function buildPersistedManifestId(outputUID, artifactKind, startIndex, endIndex) {
+    const outputKey = trimPersistedText(outputUID);
+    if (outputKey) {
+        return `manifest:${artifactKind}:${outputKey}`;
+    }
+    return `manifest:${artifactKind}:${startIndex}-${endIndex}`;
+}
+
+function resolvePersistedArtifactKind(tag) {
+    return String(tag || '').toUpperCase() === 'MEMORY SHARD'
+        ? 'system-shard'
+        : 'system-summary';
+}
+
+function parsePersistedManagedOutputWrapper(text) {
+    const match = normalizePersistedText(text).match(MANAGED_OUTPUT_WRAPPER_REGEX);
+    if (!match) {
+        return null;
+    }
+    return {
+        tag: String(match[1] || '').toUpperCase(),
+        artifactKind: resolvePersistedArtifactKind(match[1]),
+        startIndex: Number.parseInt(match[2], 10),
+        endIndex: Number.parseInt(match[3], 10),
+    };
+}
+
+async function buildBackfilledPersistedShardManifest(messages, shardMessage) {
+    const wrapper = parsePersistedManagedOutputWrapper(shardMessage?.mes);
+    if (!wrapper) {
+        return null;
+    }
+    const shardMessageIndex = Array.isArray(messages) ? messages.indexOf(shardMessage) : -1;
+    if (shardMessageIndex !== -1 && wrapper.endIndex >= shardMessageIndex) {
+        return null;
+    }
+    const sourceMessages = messages.slice(wrapper.startIndex, wrapper.endIndex + 1);
+    const expectedSourceCount = wrapper.endIndex - wrapper.startIndex + 1;
+    if (!Number.isInteger(wrapper.startIndex)
+        || !Number.isInteger(wrapper.endIndex)
+        || wrapper.endIndex < wrapper.startIndex
+        || sourceMessages.length === 0
+        || sourceMessages.length !== expectedSourceCount) {
+        return null;
+    }
+    return {
+        manifestId: buildPersistedManifestId(shardMessage?.send_date, wrapper.artifactKind, wrapper.startIndex, wrapper.endIndex),
+        artifactKind: wrapper.artifactKind,
+        outputUID: trimPersistedText(shardMessage?.send_date) || null,
+        sourceStartPositionAtCreation: wrapper.startIndex,
+        sourceEndPositionAtCreation: wrapper.endIndex,
+        sourceRevisionHash: await buildCorpusRevisionHash(sourceMessages),
+        promptPolicy: 'unknown_legacy',
+        createdAt: Date.now(),
+        recoveredFromShardMessage: true,
+    };
+}
 
 const ALLOWED_CONTINUITY_TARGET_TYPES = new Set([
     'MEMORY_SUBJECT',
@@ -3167,19 +3283,21 @@ function executeDeterministicStubSynthesizer(run, options = {}) {
     const type = run.requestedInterpretationTypes[0];
     const assertionDomains = run.requestedAssertionDomains.slice();
     const supportingOccurrence = run.sourceManifest.sourceManifestEntries.find((entry) => entry.sourceClass === 'SOURCE_OCCURRENCE');
+    const normalizedMemorySubjectId = String(run.memorySubjectId || '').trim().toLowerCase();
     if (
-        run.memorySubjectId === 'character:jeep.png'
+        normalizedMemorySubjectId === 'character:jeep.png'
         && type === 'ROLE_EVOLUTION'
         && assertionDomains.includes('AUTHORITY')
         && supportingOccurrence
     ) {
+        const createdByName = entityDisplayName(run.createdByEntityId);
         return {
             type: 'ROLE_EVOLUTION',
-            statement: "Jeep evolved from an analytical role into the primary architectural authority for the extension's design.",
+            statement: `Jeep evolved into the primary architectural authority over continuity and memory requirements within a shared architecture with ${createdByName}.`,
             assertionDomains: ['ROLE', 'AUTHORITY', 'RELATIONSHIP'],
             sharedRelationshipAsserted: true,
             personalMeaningAsserted: true,
-            materialParticipantEntityIds: ['character:jeep.png', 'user:Chris'],
+            materialParticipantEntityIds: [run.memorySubjectId, run.createdByEntityId].filter(Boolean),
             proposedBasis: run.sourceManifest.sourceManifestEntries.map((entry) => (
                 entry.sourceClass === 'STRUCTURAL_RECORD'
                     ? {
@@ -3269,18 +3387,26 @@ async function readPersistedArchitecturalShardContext(request, payload = {}) {
     if (!shardMessage) {
         throw createError(404, `Shard message ${shardMessageId} was not found in ${chatLocator}`, 'ARCH_SHARD_MESSAGE_NOT_FOUND');
     }
-    const manifest = manifests.find((entry) => String(entry?.outputUID || '').trim() === String(shardMessage?.send_date || '').trim());
+    const manifest = manifests.find((entry) => String(entry?.outputUID || '').trim() === String(shardMessage?.send_date || '').trim())
+        || await buildBackfilledPersistedShardManifest(messages, shardMessage);
     if (!manifest) {
         throw createError(409, `Shard message ${shardMessageId} is missing a persisted shard manifest`, 'ARCH_SHARD_MANIFEST_MISSING');
     }
 
+    const selectorSourceMessages = resolveManifestSourceMessages(messages, manifest);
     const sourceStart = Number.parseInt(manifest.sourceStartPositionAtCreation, 10);
     const sourceEnd = Number.parseInt(manifest.sourceEndPositionAtCreation, 10);
-    if (!Number.isInteger(sourceStart) || !Number.isInteger(sourceEnd) || sourceEnd < sourceStart) {
+    if (selectorSourceMessages === null
+        && (!Number.isInteger(sourceStart) || !Number.isInteger(sourceEnd) || sourceEnd < sourceStart)) {
         throw createError(409, `Shard message ${shardMessageId} has an invalid persisted source range`, 'ARCH_SHARD_SOURCE_RANGE_INVALID');
     }
-    const sourceMessages = messages.slice(sourceStart, sourceEnd + 1);
-    if (sourceMessages.length !== (sourceEnd - sourceStart + 1)) {
+    const sourceMessages = selectorSourceMessages === null
+        ? messages.slice(sourceStart, sourceEnd + 1)
+        : selectorSourceMessages;
+    const expectedSourceCount = selectorSourceMessages === null
+        ? (sourceEnd - sourceStart + 1)
+        : Number.parseInt(manifest.sourceSelector?.sourceCount, 10);
+    if (sourceMessages.length !== expectedSourceCount) {
         throw createError(409, `Shard message ${shardMessageId} source range no longer resolves cleanly`, 'ARCH_SHARD_SOURCE_RANGE_STALE');
     }
     const currentSourceRevisionHash = await buildCorpusRevisionHash(sourceMessages);
@@ -3357,6 +3483,130 @@ function buildArchitecturalShardSourceManifestEntries(context, memorySubjectId) 
     return entries;
 }
 
+function extractArchitecturalDecisionRecords(shardText) {
+    const normalized = normalizePersistedText(shardText);
+    const sectionMatch = normalized.match(/^\[DECISIONS\]\s*$\n?([\s\S]*?)(?=^\[[A-Z][A-Z0-9 _-]*\]\s*$|^===END===\s*$|(?![\s\S]))/mu);
+    if (!sectionMatch) {
+        return [];
+    }
+    const records = [];
+    let current = '';
+    for (const line of sectionMatch[1].split('\n')) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        if (/^(?:\[S\d+:\d+\]|\(S\d+:\d+\))/u.test(trimmed)) {
+            if (current) records.push(current);
+            current = trimmed;
+        } else if (current) {
+            current += `\n${trimmed}`;
+        }
+    }
+    if (current) records.push(current);
+    return records
+        .map((record) => parseArchitecturalDecisionRecord(record))
+        .filter((record) => record.errors.length === 0 && record.decisionId && record.fields.DECISION);
+}
+
+function entityDisplayName(entityId) {
+    const value = String(entityId || '').trim().replace(/^[^:]+:/u, '');
+    return value.replace(/\.[^.]+$/u, '').replace(/[_-]+/gu, ' ').trim();
+}
+
+function selectInterpretiveDecisionRecord(records, memorySubjectId) {
+    const subjectName = entityDisplayName(memorySubjectId).toLowerCase();
+    const statusRank = new Map([
+        ['SEALED', 3],
+        ['ACCEPTED', 2],
+        ['PROPOSED', 1],
+    ]);
+    const escapedSubjectName = subjectName ? subjectName.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&') : '';
+    const subjectMatcher = escapedSubjectName ? new RegExp(`\\b${escapedSubjectName}\\b`, 'iu') : null;
+    return records
+        .filter((record) => {
+            const statement = String(record.fields.DECISION || '').trim().toLowerCase();
+            const status = String(record.status || '').trim().toUpperCase();
+            return subjectMatcher
+                && subjectMatcher.test(statement)
+                && /\b(role|authority|relationship|relational)\b/u.test(statement)
+                && status !== 'SUPERSEDED';
+        })
+        .sort((left, right) => (
+            (statusRank.get(String(right.status || '').toUpperCase()) || 0)
+            - (statusRank.get(String(left.status || '').toUpperCase()) || 0)
+        ))[0] || null;
+}
+
+function deriveInterpretiveProposalFromDecision(context, decision, memorySubjectId, createdByEntityId) {
+    const statement = String(decision.fields.DECISION || '').trim();
+    const lowerStatement = statement.toLowerCase();
+    const assertionDomains = [];
+    if (/\bauthorit(?:y|ies)\b/u.test(lowerStatement)) assertionDomains.push('AUTHORITY');
+    if (/\b(role|evolved|evolution)\b/u.test(lowerStatement) || assertionDomains.includes('AUTHORITY')) assertionDomains.push('ROLE');
+    if (/\brelationship|relational|shared architecture\b/u.test(lowerStatement)) assertionDomains.push('RELATIONSHIP');
+    if (assertionDomains.length === 0) assertionDomains.push('ROLE');
+
+    const evidenceRefs = [...String(decision.fields.EVIDENCE || '').matchAll(/\bS(\d+):(\d+)\b/gu)]
+        .map((match) => `S${match[1]}:${match[2]}`);
+    const sourceRefs = new Set([decision.sourceRef, ...evidenceRefs].filter(Boolean));
+    const referencedMessageIds = new Set();
+    const unresolvedSourceRefs = [];
+    for (const sourceRef of sourceRefs) {
+        const match = String(sourceRef).match(/^S(\d+):\d+$/u);
+        if (!match) {
+            unresolvedSourceRefs.push(sourceRef);
+            continue;
+        }
+        const sourceIndex = Number.parseInt(match[1], 10);
+        const messageId = context.sourceMessages[sourceIndex]?.extra?.summary_sharder?.messageIdentity?.messageId;
+        if (!messageId) {
+            unresolvedSourceRefs.push(sourceRef);
+            continue;
+        }
+        referencedMessageIds.add(String(messageId).trim());
+    }
+    if (unresolvedSourceRefs.length > 0 || referencedMessageIds.size === 0) {
+        throw createError(
+            409,
+            `Architectural decision ${decision.decisionId} source references could not be resolved to source messages${
+                unresolvedSourceRefs.length > 0 ? `: ${unresolvedSourceRefs.join(', ')}` : ''
+            }.`,
+            'ARCH_DECISION_SOURCE_REFERENCE_UNRESOLVED',
+            { unresolvedSourceRefs, referencedMessageIds: [...referencedMessageIds] },
+        );
+    }
+
+    const structuralBasisRef = `decision:${decision.decisionId}`;
+    const proposedBasis = [
+        { basisType: 'STRUCTURAL_RECORD', basisRecordId: structuralBasisRef },
+        ...[...referencedMessageIds].map((messageId) => ({ basisType: 'SOURCE_OCCURRENCE', messageId })),
+    ];
+    const createdByName = entityDisplayName(createdByEntityId).toLowerCase();
+    const sharedRelationshipAsserted = assertionDomains.includes('RELATIONSHIP');
+    const materialParticipantEntityIds = [memorySubjectId];
+    if (createdByEntityId && (sharedRelationshipAsserted || lowerStatement.includes(createdByName))) {
+        materialParticipantEntityIds.push(createdByEntityId);
+    }
+    return {
+        type: assertionDomains.includes('RELATIONSHIP') && !assertionDomains.includes('ROLE') && !assertionDomains.includes('AUTHORITY')
+            ? 'RELATIONAL_PROGRESSION'
+            : 'ROLE_EVOLUTION',
+        statement,
+        assertionDomains,
+        sharedRelationshipAsserted,
+        personalMeaningAsserted: false,
+        materialParticipantEntityIds,
+        proposedBasis,
+        evidenceFindings: [{
+            role: 'PRIMARY',
+            summary: statement,
+            basisRefs: proposedBasis.map((entry) => entry.basisRecordId || entry.messageId),
+            sourceLabel: `Architectural shard decision ${decision.decisionId}`,
+            domains: assertionDomains,
+            supportLevel: 'SUPPORTED',
+        }],
+    };
+}
+
 export async function createInterpretiveProposalFromArchitecturalShard(request, payload = {}) {
     const timestamp = nowTimestamp(payload?.now);
     const memorySubjectId = sanitizeIdentifier(payload?.memorySubjectId, 'memorySubjectId');
@@ -3365,7 +3615,24 @@ export async function createInterpretiveProposalFromArchitecturalShard(request, 
     if (context.memoryScopeId !== sanitizeIdentifier(payload?.memoryScopeId || context.memoryScopeId, 'memoryScopeId')) {
         throw createError(409, 'Persisted shard memory scope does not match the requested memory scope', 'ARCH_MEMORY_SCOPE_MISMATCH');
     }
+    const decision = selectInterpretiveDecisionRecord(
+        extractArchitecturalDecisionRecords(context.shardMessage?.mes),
+        memorySubjectId,
+    );
+    if (!decision) {
+        throw createError(
+            409,
+            'The saved architectural shard contains no explicit source-derived role or relationship decision for this memory subject.',
+            'ARCH_NO_REVIEWABLE_INTERPRETIVE_DECISION',
+        );
+    }
     const sourceManifestEntries = buildArchitecturalShardSourceManifestEntries(context, memorySubjectId);
+    const proposalOverride = deriveInterpretiveProposalFromDecision(
+        context,
+        decision,
+        memorySubjectId,
+        createdByEntityId,
+    );
     const policyPayload = buildDefaultArchitecturalSynthesisPolicyPayload(
         memorySubjectId,
         timestamp,
@@ -3380,10 +3647,10 @@ export async function createInterpretiveProposalFromArchitecturalShard(request, 
         memoryScopeId: context.memoryScopeId,
         memorySubjectId,
         synthesisPolicyId: policyPayload.synthesisPolicyId,
-        requestedInterpretationTypes: ['ROLE_EVOLUTION'],
-        requestedAssertionDomains: ['ROLE', 'AUTHORITY', 'RELATIONSHIP'],
-        sharedRelationshipRequested: true,
-        personalMeaningRequested: true,
+        requestedInterpretationTypes: [proposalOverride.type],
+        requestedAssertionDomains: proposalOverride.assertionDomains,
+        sharedRelationshipRequested: proposalOverride.sharedRelationshipAsserted,
+        personalMeaningRequested: proposalOverride.personalMeaningAsserted,
         maxCandidatesRequested: 1,
         manualTriggerAcknowledged: true,
         createdByEntityId,
@@ -3395,6 +3662,9 @@ export async function createInterpretiveProposalFromArchitecturalShard(request, 
         interpretationId: payload?.interpretationId ? sanitizeIdentifier(payload.interpretationId, 'interpretationId') : createId('interp'),
         interpretationRevisionId: payload?.interpretationRevisionId ? sanitizeIdentifier(payload.interpretationRevisionId, 'interpretationRevisionId') : createId('interprev'),
         synthesisProposalId: payload?.synthesisProposalId ? sanitizeIdentifier(payload.synthesisProposalId, 'synthesisProposalId') : createId('synthproposal'),
+        stubProposalOverride: buildArchitecturalProposalOverride({
+            proposalOverride,
+        }),
         now: timestamp,
     });
     return {
@@ -3409,6 +3679,10 @@ export async function createInterpretiveProposalFromArchitecturalShard(request, 
     };
 }
 
+function buildArchitecturalProposalOverride({ proposalOverride }) {
+    return cloneJson(proposalOverride);
+}
+
 function normalizeStubProposalOutput(rawProposal) {
     if (!rawProposal || typeof rawProposal !== 'object' || Array.isArray(rawProposal)) {
         throw createError(409, 'Stub synthesizer output must be an object', 'ARCH_SYNTHESIS_PROPOSAL_INVALID');
@@ -3421,6 +3695,7 @@ function normalizeStubProposalOutput(rawProposal) {
         'personalMeaningAsserted',
         'materialParticipantEntityIds',
         'proposedBasis',
+        'evidenceFindings',
     ]);
     const forbiddenKeys = Object.keys(rawProposal).filter((key) => !allowedKeys.has(key));
     if (forbiddenKeys.length > 0) {
@@ -3443,6 +3718,7 @@ function normalizeStubProposalOutput(rawProposal) {
             null,
         ).map((entry) => sanitizeIdentifier(entry, 'materialParticipantEntityId')),
         proposedBasis: Array.isArray(rawProposal.proposedBasis) ? cloneJson(rawProposal.proposedBasis) : [],
+        evidenceFindings: Array.isArray(rawProposal.evidenceFindings) ? cloneJson(rawProposal.evidenceFindings) : [],
     };
     if (!ALLOWED_INTERPRETATION_TYPES.has(normalized.type)) {
         throw createError(409, 'Stub synthesizer emitted an unsupported interpretation type', 'ARCH_SYNTHESIS_TYPE_UNSUPPORTED');
@@ -3520,6 +3796,7 @@ function buildSynthesisGroundingEvaluation(run, proposalContentHash, normalizedP
         reasonCodes.push('SOURCE_MANIFEST_DRIFT');
     }
     const statement = normalizedProposal.statement;
+    const subjectName = entityDisplayName(run.memorySubjectId).toLowerCase();
     const linkAssessments = groundingLinks.map((link, index) => ({
         groundingLinkId: link.groundingLinkId || (
             link.basisType === 'STRUCTURAL_RECORD'
@@ -3534,7 +3811,9 @@ function buildSynthesisGroundingEvaluation(run, proposalContentHash, normalizedP
     let aggregateOutcome = 'SUPPORTED';
     let scopeAssessment = 'SUPPORTED';
     let counterevidencePresent = false;
-    if (!/evolved/i.test(statement) || !/(authority|role|architecture)/i.test(statement)) {
+    if (!subjectName
+        || !statement.toLowerCase().includes(subjectName)
+        || !/(authority|role|relationship|relational)/iu.test(statement)) {
         aggregateOutcome = 'UNSUPPORTED';
         scopeAssessment = 'UNSUPPORTED';
         reasonCodes.push('SEMANTIC_SUPPORT_INSUFFICIENT');
@@ -5458,6 +5737,7 @@ export function executeInterpretiveSynthesisRun(request, synthesisRunId, payload
             personalMeaningAsserted: normalizedProposal.personalMeaningAsserted,
             materialParticipantEntityIds: normalizedProposal.materialParticipantEntityIds,
             groundingLinks,
+            evidenceFindings: normalizedProposal.evidenceFindings,
             groundingOutcomeOverride: groundingEvaluation.aggregateOutcome,
             now: timestamp,
         };

@@ -86,7 +86,7 @@ Profile: architectural-memory
 Schema: architectural-memory/v1
 
 [DECISIONS]
-[S1:1] | STATUS: PROPOSED | ID: gain-modulation-boundary | DECISION: Keep browser-local state non-authoritative.
+[S1:1] | STATUS: PROPOSED | ID: gain-modulation-boundary | DECISION: Jeep retains the architectural authority role outside browser-local projection state.
 
 ===END===`,
             extra: {
@@ -1605,7 +1605,7 @@ Profile: architectural-memory
 Schema: architectural-memory/v1
 
 [DECISIONS]
-[S1:1] | STATUS: PROPOSED | ID: gain-modulation-boundary | DECISION: Keep browser-local state non-authoritative.
+[S1:1] | STATUS: PROPOSED | ID: gain-modulation-boundary | DECISION: Jeep retains the architectural authority role outside browser-local projection state.
 [S1:2] | STATUS: PROPOSED | ID: authority-replay-guard | DECISION: Replay must refuse stale source evidence.
 [S1:3] | STATUS: PROPOSED | ID: gain-modulation-boundary | DECISION: Duplicate id should not create a duplicate structural entry.
 
@@ -1678,6 +1678,55 @@ test('interpretive synthesis route rejects persisted architectural shards whose 
 
     assert.equal(result.statusCode, 409);
     assert.equal(result.payload?.code, 'ARCH_SHARD_SOURCE_RANGE_STALE');
+});
+
+test('interpretive synthesis route resolves a fresh shard by stable source ids after chat positions shift', async () => {
+    const root = makeTempRoot();
+    const { memoryScopeId, shardMessageId, avatarUrl, chatLocator, chatFilePath } = await writeArchitecturalChat(root, {
+        shardMessageText: `[MEMORY SHARD: Messages 0-1]
+
+[KEY]
+Profile: architectural-memory
+Schema: architectural-memory/v1
+
+[DECISIONS]
+[S0:1] ID:jeep-continuity-authority | TYPE:GOVERNANCE | DECISION:Jeep evolved into the primary architectural authority over continuity and memory requirements within a shared architecture with Chris. | WHY:The shared work assigned Jeep continuing architectural responsibility. | SCOPE:continuity architecture | STATUS:ACCEPTED | EVIDENCE:[REF: S1:1]
+
+===END===`,
+    });
+    const lines = fs.readFileSync(chatFilePath, 'utf8').trimEnd().split('\n');
+    const records = lines.map((line) => JSON.parse(line));
+    const manifest = records[0].chat_metadata.summary_sharder.shardManifests[0];
+    manifest.sourceStartPositionAtCreation = 1;
+    manifest.sourceEndPositionAtCreation = 2;
+    fs.writeFileSync(chatFilePath, `${records.map((record) => JSON.stringify(record)).join('\n')}\n`, 'utf8');
+
+    const router = createMockRouter();
+    await init(router);
+    const result = await invoke(
+        router.routes.post.get('/interpretive/synthesis/from-architectural-shard'),
+        buildRequest(root, {
+            body: {
+                avatarUrl,
+                chatLocator,
+                shardMessageId,
+                memoryScopeId,
+                memorySubjectId: 'character:jeep.png',
+                createdByEntityId: 'user:Chris',
+                synthesisRunId: 'synthrun_architectural_shifted_positions',
+                interpretationId: 'interp_architectural_shifted_positions',
+                interpretationRevisionId: 'interprev_architectural_shifted_positions_v1',
+                synthesisProposalId: 'synthproposal_architectural_shifted_positions',
+                now: Date.parse('2026-06-26T03:15:00.000Z'),
+            },
+        }),
+    );
+
+    assert.equal(result.statusCode, 200);
+    assert.equal(result.payload.admitted, true);
+    assert.equal(result.payload.synthesisRun.sourceManifest.sourceManifestEntries.filter(
+        (entry) => entry.sourceClass === 'SOURCE_OCCURRENCE',
+    ).length, 2);
 });
 
 test('health route reconciles verifying promotion state before opening live authority', async () => {
