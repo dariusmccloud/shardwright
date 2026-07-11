@@ -30,6 +30,7 @@ import { throwIfAborted } from '../api/abort-controller.js';
 import { ARCHITECTURAL_PROFILE } from './sharder-section-registry.js';
 import { isWarmArchiveEligible } from './architectural-sharder-shell.js';
 import { buildArchitecturalShardMetadata } from './saved-shard-identity.js';
+import { SHARD_ARTIFACT_KINDS } from './shard-integrity-core.js';
 import {
     beginArchitecturalIntegrationTrace,
     consumeDebugHostSaveFailure,
@@ -41,7 +42,12 @@ import {
 } from './architectural-authority-runtime.js';
 import { reconcileCurrentChatMessageIdentity } from './message-identity-runtime.js';
 import { createInterpretiveProposalFromArchitecturalShard } from './architectural-authority-server-api.js';
+import { refreshCurrentChatShardIntegrity } from './shard-integrity-runtime.js';
 import { openInterpretiveReviewModal } from '../../ui/modals/management/interpretive-review-modal.js';
+import {
+    projectArchitecturalProposalLaunchBlocker,
+    shouldCreateProposalAfterAuthorityResult,
+} from './architectural-proposal-launch-blocker.js';
 
 // World info metadata key
 const METADATA_KEY = 'world_info';
@@ -170,16 +176,55 @@ export async function handleSummaryResult(
                     endIndex,
                     baselineLedger: resultMetadata?.architecturalAuthorityContext?.baselineLedger || null,
                 });
-                if (!authorityResult.committed && authorityResult.reason && typeof toastr !== 'undefined') {
-                    toastr.warning('Architectural scope authority was not updated because the saved shard did not match the current authoritative version.');
-                } else if (authorityResult.committed) {
-                    pendingArchitecturalReviewOpen = await createArchitecturalProposalReviewLaunchRequest({
-                        outputUID,
-                        activeChatId,
-                        authorityResult,
-                    });
-                    if (!pendingArchitecturalReviewOpen?.interpretationRevisionId && pendingArchitecturalReviewOpen?.userMessage && typeof toastr !== 'undefined') {
-                        toastr.warning(pendingArchitecturalReviewOpen.userMessage);
+                const shouldCreateProposal = shouldCreateProposalAfterAuthorityResult(authorityResult);
+                if (!authorityResult?.committed && authorityResult?.reason && typeof toastr !== 'undefined') {
+                    const message = shouldCreateProposal
+                        ? 'Existing architectural authority was preserved. The saved shard will enter review as a proposed change.'
+                        : 'Architectural scope authority was not updated because the saved shard did not match the current authoritative version.';
+                    toastr.warning(message);
+                }
+                if (shouldCreateProposal) {
+                    let integrityBlocked = false;
+                    try {
+                        await refreshCurrentChatShardIntegrity({
+                            reason: 'architectural-proposal-launch',
+                            registerOutput: {
+                                outputUID,
+                                artifactKind: mode === 'system'
+                                    ? SHARD_ARTIFACT_KINDS.SYSTEM_SHARD
+                                    : SHARD_ARTIFACT_KINDS.LOREBOOK_SUMMARY,
+                                startIndex,
+                                endIndex,
+                            },
+                        });
+                    } catch (integrityError) {
+                        const projection = projectArchitecturalProposalLaunchBlocker(null, integrityError);
+                        recordArchitecturalIntegrationEvent('ARCHITECTURAL_HANDOFF_BLOCKED', {
+                            profile: ARCHITECTURAL_PROFILE,
+                            mode,
+                            outputUID,
+                            code: projection.code,
+                            message: projection.reason,
+                        });
+                        ragLog.warn('Architectural proposal handoff blocked by integrity refresh:', integrityError?.message || integrityError);
+                        pendingArchitecturalReviewOpen = {
+                            interpretationRevisionId: null,
+                            userMessage: projection.toastMessage,
+                        };
+                        if (typeof toastr !== 'undefined') {
+                            toastr.warning(pendingArchitecturalReviewOpen.userMessage);
+                        }
+                        integrityBlocked = true;
+                    }
+                    if (!integrityBlocked) {
+                        pendingArchitecturalReviewOpen = await createArchitecturalProposalReviewLaunchRequest({
+                            outputUID,
+                            activeChatId,
+                            authorityResult,
+                        });
+                        if (!pendingArchitecturalReviewOpen?.interpretationRevisionId && pendingArchitecturalReviewOpen?.userMessage && typeof toastr !== 'undefined') {
+                            toastr.warning(pendingArchitecturalReviewOpen.userMessage);
+                        }
                     }
                 }
             } catch (error) {
@@ -312,9 +357,7 @@ async function createArchitecturalProposalReviewLaunchRequest(options = {}) {
     const shardMessageId = String(savedMessage?.extra?.summary_sharder?.messageIdentity?.messageId || '').trim();
     const memoryScopeId = String(authorityResult?.projectionMetadata?.memoryScopeId || '').trim();
     const avatarUrl = String(
-        characters?.[this_chid]?.avatar
-        || context?.characters?.[context?.characterId]?.avatar
-        || ''
+        context?.characters?.[context?.characterId]?.avatar || ''
     ).trim();
     const locator = buildArchitecturalMessageIdentityScanLocator({
         context,
@@ -360,14 +403,16 @@ async function createArchitecturalProposalReviewLaunchRequest(options = {}) {
         });
         const interpretationRevisionId = String(proposalResult?.interpretation?.interpretationRevisionId || '').trim();
         if (!interpretationRevisionId) {
+            const projection = projectArchitecturalProposalLaunchBlocker(proposalResult);
             ragLog.warn('Architectural proposal handoff completed without an interpretation revision id.');
             recordArchitecturalIntegrationEvent('GOVERNED_PROPOSAL_HANDOFF_FAILED', {
                 outputUID,
                 reason: 'missing-interpretation-revision-id',
+                code: projection.code,
             });
             return {
                 interpretationRevisionId: '',
-                userMessage: 'Architectural shard saved, but the governed proposal did not return a review revision. Open Memory Review to inspect the queue.',
+                userMessage: projection.toastMessage,
             };
         }
         recordArchitecturalIntegrationEvent('GOVERNED_PROPOSAL_HANDOFF_SUCCEEDED', {
@@ -378,16 +423,17 @@ async function createArchitecturalProposalReviewLaunchRequest(options = {}) {
             interpretationRevisionId,
         };
     } catch (error) {
+        const projection = projectArchitecturalProposalLaunchBlocker(null, error);
         ragLog.warn('Architectural proposal handoff failed after shard save:', error?.message || error);
         recordArchitecturalIntegrationEvent('GOVERNED_PROPOSAL_HANDOFF_FAILED', {
             outputUID,
             reason: 'request-failed',
-            code: String(error?.code || 'ARCH_PROPOSAL_HANDOFF_FAILED'),
+            code: projection.code,
             message: String(error?.message || 'Architectural proposal handoff failed after shard save.'),
         });
         return {
             interpretationRevisionId: '',
-            userMessage: 'Architectural shard saved, but the governed proposal could not be opened automatically. Open Memory Review to inspect pending proposals.',
+            userMessage: projection.toastMessage,
         };
     }
 }
