@@ -14,13 +14,24 @@ function getDiagnosticSectionLabel(sectionKey) {
 
 function getBlockingReasonText(diagnostic) {
     const code = String(diagnostic?.code || '').trim().toUpperCase();
+    const field = String(diagnostic?.field || '').trim().toUpperCase();
+    const invalidValue = diagnostic?.invalidValue;
+    const allowedValues = Array.isArray(diagnostic?.allowedValues)
+        ? diagnostic.allowedValues.map((value) => String(value)).filter(Boolean)
+        : [];
+    if (field && invalidValue !== undefined && invalidValue !== null && allowedValues.length > 0) {
+        return `ERROR: Invalid ${field} "${String(invalidValue)}" detected | Approved values: ${allowedValues.join(', ')}`;
+    }
+
     switch (code) {
         case 'ARCH_DECISION_TYPE_INVALID':
             return 'A decision uses a TYPE value outside the approved architectural vocabulary.';
+        case 'ARCH_DECISION_STATUS_INVALID':
+            return 'A decision uses a STATUS value outside the approved architectural vocabulary.';
         case 'ARCH_EVENT_MALFORMED':
-            return 'An event entry is missing a required FIELD:value segment.';
+            return String(diagnostic?.message || 'Write event prose before any optional field. DEC:<stable-decision-id> is only for linking to a selected decision.').trim();
         case 'ARCH_EVENT_UNKNOWN_FIELD':
-            return 'An event entry contains a field name the architectural format does not support.';
+            return String(diagnostic?.message || 'Write event prose before any optional field. DEC:<stable-decision-id> is only for linking to a selected decision.').trim();
         case 'ARCH_DIALOGUE_MISSING_SPEAKER':
             return 'A dialogue entry is missing the required speaker marker.';
         case 'ARCH_THREAD_INTRO_INVALID':
@@ -37,6 +48,8 @@ function getBlockingNextStepText(diagnostic) {
     switch (code) {
         case 'ARCH_DECISION_TYPE_INVALID':
             return 'Review the extracted decision wording, then edit or regenerate it using an allowed decision type.';
+        case 'ARCH_DECISION_STATUS_INVALID':
+            return 'Review the extracted decision wording, then edit or regenerate it using an allowed decision status.';
         case 'ARCH_EVENT_MALFORMED':
         case 'ARCH_EVENT_UNKNOWN_FIELD':
             return 'Review the source content for this event or narrow the extraction scope, then regenerate or edit the event row.';
@@ -48,6 +61,13 @@ function getBlockingNextStepText(diagnostic) {
         default:
             return 'Review source content or adjust extraction scope, then regenerate or edit the failing section.';
     }
+}
+
+export function projectArchitecturalDiagnostic(diagnostic) {
+    return {
+        reason: getBlockingReasonText(diagnostic),
+        nextStep: getBlockingNextStepText(diagnostic),
+    };
 }
 
 export function buildSaveBlockerProjection(diagnostics, { architectural = false } = {}) {
@@ -74,8 +94,7 @@ export function buildSaveBlockerProjection(diagnostics, { architectural = false 
     }
 
     const sectionLabel = getDiagnosticSectionLabel(primary?.sectionKey);
-    const reason = getBlockingReasonText(primary);
-    const nextStep = getBlockingNextStepText(primary);
+    const { reason, nextStep } = projectArchitecturalDiagnostic(primary);
     return {
         blocked: true,
         title: `Blocked: ${sectionLabel} failed validation`,

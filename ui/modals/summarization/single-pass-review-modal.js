@@ -34,7 +34,7 @@ import {
     parseSceneCodes,
     EVENT_WEIGHTS,
 } from '../../../core/summarization/sharder-pipeline.js';
-import { buildSaveBlockerProjection } from './review-blocker-projection.js';
+import { buildSaveBlockerProjection, projectArchitecturalDiagnostic } from './review-blocker-projection.js';
 
 function sectionTitle(section) {
     return section.key === 'currentState' ? 'CURRENT (as of end of extract)' : section.name;
@@ -78,6 +78,13 @@ function getArchitecturalDecisionCountText(state, selected, total) {
 function getArchitecturalCurrentError(state) {
     if (!isArchitecturalState(state)) return null;
     const currentItems = state.editableSections?.current || [];
+    if (currentItems.length === 0) {
+        return {
+            level: 'warning',
+            code: 'ARCH_CURRENT_EMPTY',
+            message: 'Architectural CURRENT is empty for this extract.',
+        };
+    }
     const selectedCurrent = getSelectedItems(currentItems);
     if (selectedCurrent.length === 0) {
         return {
@@ -693,6 +700,26 @@ function weightSelectorHtml(item) {
     return `<div class="ss-sharder-weight-selector" data-item-id="${escapeHtml(item.id)}">${buttons}</div>`;
 }
 
+function autoResizeTextarea(textarea) {
+    if (!textarea) return;
+    textarea.style.height = 'auto';
+    textarea.style.height = `${textarea.scrollHeight}px`;
+}
+
+function bindAutoResizeTextarea(textarea) {
+    if (!textarea || textarea.dataset.ssAutoResizeBound === 'true') return;
+    textarea.dataset.ssAutoResizeBound = 'true';
+    autoResizeTextarea(textarea);
+    textarea.addEventListener('input', () => autoResizeTextarea(textarea));
+}
+
+function getInlineDiagnosticText(state, diagnostic) {
+    if (!isArchitecturalState(state)) {
+        return String(diagnostic?.message || '').trim();
+    }
+    return projectArchitecturalDiagnostic(diagnostic).reason;
+}
+
 function rowDiagnosticsHtml(state, sectionKey, itemIndex) {
     const diagnostics = getRowDiagnostics(state, sectionKey, itemIndex);
     if (!diagnostics.length) return '';
@@ -702,7 +729,7 @@ function rowDiagnosticsHtml(state, sectionKey, itemIndex) {
             ${diagnostics.map((diagnostic) => `
                 <div class="ss-sp-inline-diag ss-level-${escapeHtml(diagnostic.level)}">
                     <span class="ss-sp-inline-code">${escapeHtml(diagnostic.code || 'UNSPECIFIED')}</span>
-                    <span class="ss-sp-inline-msg">${escapeHtml(diagnostic.message || '')}</span>
+                    <span class="ss-sp-inline-msg">${escapeHtml(getInlineDiagnosticText(state, diagnostic))}</span>
                 </div>
             `).join('')}
         </div>
@@ -1087,6 +1114,7 @@ function updateOutputEditor(state) {
         editor.value = !isArchitecturalState(state) && typeof state.outputOverride === 'string'
             ? state.outputOverride
             : state.reconstructedOutput;
+        autoResizeTextarea(editor);
     }
     state.finalOutput = editor?.value || state.reconstructedOutput;
 
@@ -1328,6 +1356,10 @@ function setupAccordionHandlers() {
             const expanded = accordion.classList.toggle('expanded');
             content.style.display = expanded ? 'block' : 'none';
             icon.className = expanded ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-right';
+            if (expanded) {
+                content.querySelectorAll('textarea').forEach(bindAutoResizeTextarea);
+                content.querySelectorAll('textarea').forEach(autoResizeTextarea);
+            }
         });
     });
 
@@ -1345,6 +1377,8 @@ function expandAccordion(sectionName) {
     accordion.classList.add('expanded');
     content.style.display = 'block';
     icon.className = 'fa-solid fa-chevron-down';
+    content.querySelectorAll('textarea').forEach(bindAutoResizeTextarea);
+    content.querySelectorAll('textarea').forEach(autoResizeTextarea);
     return accordion;
 }
 
@@ -1358,16 +1392,65 @@ function revealFirstBlockingDiagnostic() {
         block: 'nearest',
         inline: 'nearest',
     });
+    firstError.setAttribute('tabindex', '-1');
+    firstError.focus({ preventScroll: true });
+}
+
+function scrollReviewElementIntoView(element) {
+    element?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'nearest',
+    });
+}
+
+function focusBlockingDiagnostic(state, diagnostic) {
+    const sectionKey = String(diagnostic?.sectionKey || '').trim();
+    if (!sectionKey) {
+        revealFirstBlockingDiagnostic();
+        return;
+    }
+
+    const accordion = expandAccordion(`sp-${sectionKey}`);
+    const sectionItems = Array.isArray(state?.editableSections?.[sectionKey]) ? state.editableSections[sectionKey] : [];
+    const targetedItem = Number.isInteger(diagnostic?.itemIndex) ? sectionItems[diagnostic.itemIndex] : null;
+    const targetedRow = targetedItem
+        ? document.querySelector(`.ss-cr-item-row[data-section-key="${CSS.escape(sectionKey)}"][data-item-id="${CSS.escape(targetedItem.id)}"]`)
+        : null;
+
+    if (targetedRow) {
+        scrollReviewElementIntoView(targetedRow);
+        targetedRow.setAttribute('tabindex', '-1');
+        targetedRow.focus({ preventScroll: true });
+        return;
+    }
+
+    const sectionError = accordion?.querySelector('.ss-sp-diag[data-diag-level="error"]');
+    if (sectionError) {
+        scrollReviewElementIntoView(sectionError);
+        sectionError.setAttribute('tabindex', '-1');
+        sectionError.focus({ preventScroll: true });
+        return;
+    }
+
+    if (accordion) {
+        scrollReviewElementIntoView(accordion);
+        accordion.setAttribute('tabindex', '-1');
+        accordion.focus({ preventScroll: true });
+        return;
+    }
+
+    revealFirstBlockingDiagnostic();
 }
 
 function navigateToReviewItem(sectionKey, itemId) {
     const accordion = expandAccordion(`sp-${sectionKey}`);
     const row = document.querySelector(`.ss-cr-item-row[data-section-key="${CSS.escape(sectionKey)}"][data-item-id="${CSS.escape(itemId)}"]`);
     if (accordion) {
-        accordion.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+        scrollReviewElementIntoView(accordion);
     }
     if (row) {
-        row.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+        scrollReviewElementIntoView(row);
     }
 }
 
@@ -1384,10 +1467,12 @@ function setupPruningAdvisorHandlers() {
     });
 }
 
-function handleBlockedSave(state, message = 'Save blocked due to error-level diagnostics') {
+function handleBlockedSave(state, diagnostics = null, message = 'Save blocked due to error-level diagnostics') {
     updateOutputEditor(state);
-    revealFirstBlockingDiagnostic();
-    const projection = buildSaveBlockerProjection(state?.diagnostics || [], {
+    const saveDiagnostics = Array.isArray(diagnostics) ? diagnostics : (state?.diagnostics || []);
+    const primaryDiagnostic = saveDiagnostics.find((diagnostic) => diagnostic?.level === 'error') || null;
+    focusBlockingDiagnostic(state, primaryDiagnostic);
+    const projection = buildSaveBlockerProjection(saveDiagnostics, {
         architectural: isArchitecturalState(state),
     });
 
@@ -1400,6 +1485,7 @@ function setupOutputOverrideHandlers(state) {
     const btn = document.getElementById('ss-sp-edit-output');
     const textarea = document.getElementById('ss-sp-output-editor');
     if (!textarea) return;
+    bindAutoResizeTextarea(textarea);
     if (isArchitecturalState(state)) {
         textarea.readOnly = true;
         state.outputOverride = null;
@@ -1472,6 +1558,7 @@ function createNewItem(sectionKey) {
 
 function setupSectionHandlers(state, regenFn) {
     document.querySelectorAll('.ss-cr-item-editor').forEach((editor) => {
+        bindAutoResizeTextarea(editor);
         editor.addEventListener('input', (e) => {
             const sectionKey = e.target.dataset.sectionKey;
             const itemId = e.target.dataset.itemId;
@@ -1635,6 +1722,7 @@ function setupSectionHandlers(state, regenFn) {
             if (newRow) {
                 const editor = newRow.querySelector('.ss-cr-item-editor');
                 if (editor) {
+                    bindAutoResizeTextarea(editor);
                     editor.addEventListener('input', (ev) => {
                         newItem.content = ev.target.value;
                         newItem.sceneCodes = parseSceneCodes(newItem.content || '');
@@ -2175,7 +2263,7 @@ export async function openSharderReviewModal(pipelineResult, settings, regenFn =
                 const saveDiagnostics = getCurrentSaveDiagnostics(state);
 
                 if (hasBlockingReviewErrors(saveDiagnostics)) {
-                    handleBlockedSave(state);
+                    handleBlockedSave(state, saveDiagnostics);
                     return false;
                 }
 
@@ -2203,7 +2291,7 @@ export async function openSharderReviewModal(pipelineResult, settings, regenFn =
     if (result === POPUP_RESULT.AFFIRMATIVE) {
         const saveDiagnostics = getCurrentSaveDiagnostics(state);
         if (hasBlockingReviewErrors(saveDiagnostics)) {
-            handleBlockedSave(state);
+            handleBlockedSave(state, saveDiagnostics);
             return {
                 confirmed: false,
                 finalOutput: '',

@@ -91,9 +91,9 @@ export function validateArchitecturalShellSections(sections) {
     }
     if (!currentItems.length) {
         diagnostics.push({
-            level: 'error',
+            level: 'warning',
             code: 'ARCH_CURRENT_MISSING',
-            message: 'Architectural CURRENT section is missing.',
+            message: 'Architectural CURRENT is empty for this extract.',
         });
     } else if (selectedCurrent.length === 0) {
         diagnostics.push({

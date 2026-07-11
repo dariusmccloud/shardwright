@@ -315,7 +315,8 @@ export const SUMMARIZE_CSS = `
 .ss-cr-item-editor {
     width: 100%;
     min-height: 44px;
-    resize: vertical;
+    overflow-y: hidden;
+    resize: none;
     font-family: inherit;
     font-size: 12px;
     line-height: 1.35;

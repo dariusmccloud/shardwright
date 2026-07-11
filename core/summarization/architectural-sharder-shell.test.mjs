@@ -85,9 +85,12 @@ test('architectural shell validator warns when Schema marker is missing or inval
     assert.equal(getCodes(invalid).includes('ARCH_KEY_SCHEMA_RECOVERED'), true);
 });
 
-test('architectural shell validator errors when CURRENT is missing', () => {
+test('architectural shell validator warns when CURRENT is missing for this extract', () => {
     const diagnostics = validateArchitecturalShellSections(buildSections({ current: [] }));
-    assert.equal(getCodes(diagnostics).includes('ARCH_CURRENT_MISSING'), true);
+    const currentMissing = diagnostics.find((entry) => entry.code === 'ARCH_CURRENT_MISSING');
+    assert.ok(currentMissing);
+    assert.equal(currentMissing.level, 'warning');
+    assert.equal(diagnostics.some((entry) => entry.level === 'error'), false);
 });
 
 test('architectural shell validator errors when zero CURRENT rows are selected', () => {
