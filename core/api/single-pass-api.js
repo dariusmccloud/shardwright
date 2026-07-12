@@ -22,6 +22,7 @@ import { log } from '../logger.js';
 import { ARCHITECTURAL_PROFILE, normalizeSharderProfile } from '../summarization/sharder-section-registry.js';
 import { getPersistedMessageId, SHARD_ARTIFACT_KINDS } from '../summarization/shard-integrity-core.js';
 import { refreshCurrentChatShardIntegrity } from '../summarization/shard-integrity-runtime.js';
+import { buildSinglePassInput } from './single-pass-input.js';
 import { resolveSelectedShardsForRun } from './sharder-run-selection.js';
 import {
     startSharderHeadlessOperation,
@@ -31,52 +32,6 @@ import {
 } from './sharder-run-execution.js';
 
 let isSharderRunning = false;
-
-function buildEffectiveCleanupSettings(settings) {
-    let effectiveCleanup = {
-        stripHiddenMessages: settings.contextCleanup?.stripHiddenMessages !== false,
-    };
-
-    if (settings.contextCleanup?.enabled) {
-        effectiveCleanup = {
-            ...settings.contextCleanup,
-            stripHiddenMessages: settings.contextCleanup?.stripHiddenMessages !== false,
-            stripEmojis: false,
-        };
-    }
-
-    return effectiveCleanup;
-}
-
-function buildSinglePassChatText(messages, startIndex, endIndex, settings) {
-    const effectiveCleanup = buildEffectiveCleanupSettings(settings);
-
-    let chatText = buildChatText(messages, startIndex, endIndex, {
-        cleanup: effectiveCleanup,
-        indexFormat: 'msg'
-    });
-
-    if (effectiveCleanup) {
-        chatText = applyContextCleanup(chatText, effectiveCleanup);
-    }
-
-    return chatText;
-}
-
-function collectSinglePassMessageIds(messages, startIndex, endIndex, settings) {
-    const effectiveCleanup = buildEffectiveCleanupSettings(settings);
-    const messageIds = [];
-
-    for (let index = startIndex; index <= endIndex; index += 1) {
-        const message = messages[index];
-        if (!message) continue;
-        if (effectiveCleanup.stripHiddenMessages && (message.is_hidden || message.is_system)) continue;
-
-        messageIds.push(getPersistedMessageId(message));
-    }
-
-    return messageIds;
-}
 
 async function runPipelineWithAnalysis(chatText, settings, startIndex, endIndex, selectedShards = [], extractKeywords = false, messageIds = []) {
     const { runSharderPipeline } = await import('../sharder/single-pass-pipeline.js');
@@ -129,8 +84,17 @@ export async function runSharderHeadless(startIndex, endIndex, settings, selecte
         throw new Error('No messages to process');
     }
 
-    const chatText = buildSinglePassChatText(messages, startIndex, endIndex, settings);
-    const messageIds = collectSinglePassMessageIds(messages, startIndex, endIndex, settings);
+    const { chatText, messageIds } = buildSinglePassInput(
+        messages,
+        startIndex,
+        endIndex,
+        settings,
+        {
+            buildChatText,
+            applyContextCleanup,
+            getPersistedMessageId,
+        },
+    );
 
     if (!chatText.trim()) {
         throw new Error('Selected message range is empty');
