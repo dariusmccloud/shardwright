@@ -17,6 +17,7 @@ import {
     oai_settings,
 } from '../../../../../openai.js';
 import { runCompatibilityFallback } from './compatibility-fallback.js';
+import { applyStructuredOutputFormat } from './structured-output.js';
 
 /**
  * Normalize API URL by removing endpoint-specific paths
@@ -51,6 +52,7 @@ export function normalizeApiUrl(url) {
  * @property {string} [messageFormat='minimal'] - Message format: 'minimal' or 'alternating'
  * @property {AbortSignal|null} [signal=null] - Optional abort signal
  * @property {boolean} [removeStopStrings=false] - Remove stop strings for ST/Connection Profile generation
+ * @property {Object|null} [structuredOutput=null] - OpenAI-compatible JSON Schema response format
  */
 
 /**
@@ -198,6 +200,7 @@ async function callSillyTavernAPICompatibility(messages, options) {
         topP = null,
         signal = null,
         removeStopStrings = false,
+        structuredOutput = null,
     } = options || {};
 
     if (main_api !== 'openai') {
@@ -215,13 +218,13 @@ async function callSillyTavernAPICompatibility(messages, options) {
 
     const model = getChatCompletionModel(compatSettings);
     const { generate_data } = await createGenerationParameters(compatSettings, model, 'swipe', messages);
-    const defaultBody = {
+    const defaultBody = applyStructuredOutputFormat({
         ...generate_data,
         type: 'swipe',
         stream: false,
         max_tokens: maxTokens,
         n: 1,
-    };
+    }, structuredOutput);
 
     const hasStops = Array.isArray(defaultBody.stop) && defaultBody.stop.length > 0;
     const noStopBody = hasStops ? { ...defaultBody, stop: [] } : defaultBody;
@@ -255,12 +258,16 @@ export async function callSillyTavernAPI(systemPrompt, userPrompt, options = {})
         topP = null,
         messageFormat = 'minimal',
         signal = null,
-        removeStopStrings = false
+        removeStopStrings = false,
+        structuredOutput = null,
     } = options;
     const messages = buildMessages(systemPrompt, userPrompt, messageFormat);
 
-    if (removeStopStrings) {
+    if (removeStopStrings || structuredOutput) {
         if (main_api !== 'openai') {
+            if (structuredOutput) {
+                throw new Error('Structured output requires a chat-completions API path.');
+            }
             log.warn('Remove Stop Strings is only supported on chat-completions main_api=openai. Using default quiet path.', {
                 mainApi: main_api,
             });
@@ -279,12 +286,14 @@ export async function callSillyTavernAPI(systemPrompt, userPrompt, options = {})
                     temperature,
                     topP,
                     signal,
-                    removeStopStrings: true,
+                    removeStopStrings,
+                    structuredOutput,
                 });
             } catch (error) {
                 const compatibilityFailure = toError(error, 'Remove-stop compatibility request failed');
+                const capability = structuredOutput ? 'Structured output' : 'Remove Stop Strings';
                 throw new Error(
-                    `SillyTavern API failed with Remove Stop Strings enabled. ` +
+                    `SillyTavern API failed with ${capability} enabled. ` +
                     `Source=${source} Model=${model}. ${compatibilityFailure.message}`
                 );
             }
@@ -327,7 +336,13 @@ export async function callSillyTavernAPI(systemPrompt, userPrompt, options = {})
  * @returns {Promise<string>} The API response
  */
 export async function callExternalAPI(settings, systemPrompt, userPrompt, options = {}) {
-    const { temperature = 0.7, topP = 1, maxTokens = 4096, signal = null } = options;
+    const {
+        temperature = 0.7,
+        topP = 1,
+        maxTokens = 4096,
+        signal = null,
+        structuredOutput = null,
+    } = options;
 
     if (!settings.apiUrl) {
         throw new Error('API URL is not configured');
@@ -348,7 +363,7 @@ export async function callExternalAPI(settings, systemPrompt, userPrompt, option
     // API key is passed via custom_include_headers to override the Authorization header
     // This avoids writing to the shared api_key_custom secret slot
     const messageFormat = settings.messageFormat || 'minimal';
-    const requestBody = {
+    const requestBody = applyStructuredOutputFormat({
         chat_completion_source: 'custom',
         custom_url: baseUrl,
         model: settings.selectedModel || 'gpt-4',
@@ -357,7 +372,7 @@ export async function callExternalAPI(settings, systemPrompt, userPrompt, option
         temperature: temperature,
         top_p: topP,
         stream: false
-    };
+    }, structuredOutput);
 
     // Add prompt post-processing if configured (transforms message roles before sending to API)
     if (settings.postProcessing) {
