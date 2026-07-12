@@ -26,6 +26,7 @@ import { resolveSelectedShardsForRun } from './sharder-run-selection.js';
 import {
     startSharderHeadlessOperation,
     executeSharderHeadlessRun,
+    refreshSharderIntegrityAfterSave,
     cleanupSharderHeadlessOperation,
 } from './sharder-run-execution.js';
 
@@ -281,17 +282,26 @@ export async function runSharder(startIndex, endIndex, settings, selectedShards 
 
             await recomputeVisibility();
 
-            await refreshCurrentChatShardIntegrity({
-                reason: 'sharder-saved',
-                registerOutput: {
-                    outputUID: outputResult.outputUID,
-                    artifactKind: outputResult.mode === 'system'
-                        ? SHARD_ARTIFACT_KINDS.SYSTEM_SHARD
-                        : SHARD_ARTIFACT_KINDS.LOREBOOK_SUMMARY,
-                    startIndex,
-                    endIndex,
+            await refreshSharderIntegrityAfterSave(
+                {
+                    reason: 'sharder-saved',
+                    registerOutput: {
+                        outputUID: outputResult.outputUID,
+                        artifactKind: outputResult.mode === 'system'
+                            ? SHARD_ARTIFACT_KINDS.SYSTEM_SHARD
+                            : SHARD_ARTIFACT_KINDS.LOREBOOK_SUMMARY,
+                        startIndex,
+                        endIndex,
+                    },
                 },
-            });
+                {
+                    refreshIntegrity: refreshCurrentChatShardIntegrity,
+                    reportFailure: (integrityError) => {
+                        log.error('Sharder output saved, but shard integrity refresh failed:', integrityError);
+                        toastr.warning('Sharder output was saved, but shard integrity could not be refreshed.');
+                    },
+                },
+            );
         }
 
         const archivedCount = review.archivedItems?.length || 0;

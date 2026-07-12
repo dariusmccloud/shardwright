@@ -40,6 +40,21 @@ export async function executeSharderHeadlessRun(startIndex, endIndex, settings, 
     return headless;
 }
 
+export async function refreshSharderIntegrityAfterSave(options, deps) {
+    const {
+        refreshIntegrity,
+        reportFailure,
+    } = deps;
+
+    try {
+        await refreshIntegrity(options);
+        return { refreshed: true, error: null };
+    } catch (error) {
+        reportFailure(error);
+        return { refreshed: false, error };
+    }
+}
+
 export function cleanupSharderHeadlessOperation(state, deps) {
     const {
         progressToast,

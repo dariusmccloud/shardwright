@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
     cleanupSharderHeadlessOperation,
     executeSharderHeadlessRun,
+    refreshSharderIntegrityAfterSave,
     startSharderHeadlessOperation,
 } from './sharder-run-execution.js';
 import { resolveSelectedShardsForRun } from './sharder-run-selection.js';
@@ -191,6 +192,24 @@ test('generation error clears operation state and abort controller when cleanup 
     assert.equal(calls.clearProgressToast, 1);
     assert.equal(calls.clearAbortController, 1);
     assert.equal(calls.endUiOperation, 1);
+});
+
+test('post-save integrity failure is reported without rejecting the committed run', async () => {
+    const expectedError = new Error('integrity refresh failed');
+    const reported = [];
+
+    const result = await refreshSharderIntegrityAfterSave(
+        { reason: 'sharder-saved' },
+        {
+            refreshIntegrity: async () => {
+                throw expectedError;
+            },
+            reportFailure: error => reported.push(error),
+        },
+    );
+
+    assert.deepEqual(result, { refreshed: false, error: expectedError });
+    assert.deepEqual(reported, [expectedError]);
 });
 
 test('narrative RAG bypass still reaches generation through the core path', async () => {
