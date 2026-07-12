@@ -8,6 +8,7 @@ import { log } from '../logger.js';
 import { chat_completion_sources } from '../../../../../openai.js';
 import { textgen_types } from '../../../../../textgen-settings.js';
 import { SECRET_KEYS } from '../../../../../secrets.js';
+import { buildConnectionProfileOverridePayload } from './connection-profile-request-options.js';
 
 const PROFILE_MODE_ERROR_HINT = 'Enable Connection Manager or switch the feature API mode.';
 const MAX_ERROR_CHAIN_DEPTH = 8;
@@ -294,7 +295,7 @@ export function getConnectionProfiles() {
  * @param {string} profileId
  * @param {string} systemPrompt
  * @param {string} userPrompt
- * @param {{temperature?: number, topP?: number, maxTokens?: number, signal?: AbortSignal, messageFormat?: string, removeStopStrings?: boolean}} options
+ * @param {{temperature?: number, topP?: number, maxTokens?: number, signal?: AbortSignal, messageFormat?: string, removeStopStrings?: boolean, structuredOutput?: Object|null}} options
  * @returns {Promise<string>}
  */
 export async function callConnectionProfileAPI(profileId, systemPrompt, userPrompt, options = {}) {
@@ -318,7 +319,8 @@ export async function callConnectionProfileAPI(profileId, systemPrompt, userProm
         maxTokens = 4096,
         signal = null,
         messageFormat = 'minimal',
-        removeStopStrings = false
+        removeStopStrings = false,
+        structuredOutput = null,
     } = options;
 
     const messages = buildMessages(systemPrompt, userPrompt, messageFormat);
@@ -330,14 +332,13 @@ export async function callConnectionProfileAPI(profileId, systemPrompt, userProm
         includeInstruct: false
     };
 
-    const overridePayload = {
+    const overridePayload = buildConnectionProfileOverridePayload({
         temperature,
-        top_p: topP
-    };
-
-    if (removeStopStrings === true) {
-        overridePayload.stop = [];
-    }
+        topP,
+        removeStopStrings,
+        structuredOutput,
+        supportsStructuredOutput: selectedApiMap.selected === 'openai',
+    });
 
     let result;
     try {
