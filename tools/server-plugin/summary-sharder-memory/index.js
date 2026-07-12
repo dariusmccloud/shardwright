@@ -41,6 +41,10 @@ import {
 } from './promotion.js';
 import { replayGovernedMemoryState } from './upgrade.js';
 import {
+    loadArchitecturalReplayArtifact,
+    persistArchitecturalReplayArtifact,
+} from './architectural-replay.js';
+import {
     bootstrapStandardInterpretivePublicationPolicy,
     createInterpretiveProposalFromArchitecturalShard,
     executeInterpretiveSynthesisRun,
@@ -80,6 +84,31 @@ export const info = {
 };
 
 export async function init(router) {
+    router.post('/architectural/replay-artifacts', async (request, response) => {
+        try {
+            const result = await persistArchitecturalReplayArtifact(
+                getAuthenticatedUserRoot(request),
+                request.body?.artifact,
+                { now: request.body?.now },
+            );
+            return response.send({ ok: true, ...result });
+        } catch (error) {
+            return handleError(response, error);
+        }
+    });
+
+    router.get('/architectural/replay-artifacts/:artifactId', async (request, response) => {
+        try {
+            const result = await loadArchitecturalReplayArtifact(
+                getAuthenticatedUserRoot(request),
+                request.params?.artifactId,
+            );
+            return response.send({ ok: true, ...result });
+        } catch (error) {
+            return handleError(response, error);
+        }
+    });
+
     router.get('/health', async (request, response) => {
         try {
             const paths = getStoragePaths(getAuthenticatedUserRoot(request));

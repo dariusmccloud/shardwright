@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://summary-sharder/architectural-finalized/v1",
+  "title": "Finalized Multi-Source Architectural Semantic Record Set v1",
+  "description": "Consolidated Architectural records with generation context separated from immutable record provenance. Semantic record fields are validated through architectural-intermediate/v1 after provenance projection.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "profile", "generationContext", "sourceManifests", "sections"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "profile": { "const": "architectural-memory-finalized" },
+    "generationContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rangeStart", "rangeEnd", "messageIds", "currentManifestId"],
+      "properties": {
+        "rangeStart": { "type": "integer", "minimum": 0 },
+        "rangeEnd": { "type": "integer", "minimum": 0 },
+        "messageIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "currentManifestId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "sourceManifests": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/manifestDescriptor" }
+    },
+    "sections": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["timeline", "decisions", "events", "developments", "dialogue", "threads", "current"],
+      "properties": {
+        "timeline": { "$ref": "#/$defs/records" },
+        "decisions": { "$ref": "#/$defs/records" },
+        "events": { "$ref": "#/$defs/records" },
+        "developments": { "$ref": "#/$defs/records" },
+        "dialogue": { "$ref": "#/$defs/records" },
+        "threads": { "$ref": "#/$defs/records" },
+        "current": { "$ref": "#/$defs/records" }
+      }
+    }
+  },
+  "$defs": {
+    "manifestDescriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["manifestId", "sourceIdentityHash", "sourceRevisionHash", "sourceStartPositionAtCreation", "sourceEndPositionAtCreation"],
+      "properties": {
+        "manifestId": { "type": "string", "minLength": 1 },
+        "sourceIdentityHash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "sourceRevisionHash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "sourceStartPositionAtCreation": { "type": "integer", "minimum": 0 },
+        "sourceEndPositionAtCreation": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["provenance"],
+        "properties": {
+          "provenance": { "$ref": "#/$defs/provenance" }
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["originManifestId", "authorityRecordId", "referenceBindings"],
+      "properties": {
+        "originManifestId": { "type": ["string", "null"] },
+        "authorityRecordId": { "type": ["string", "null"] },
+        "referenceBindings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["reference", "manifestId"],
+            "properties": {
+              "reference": { "type": "string", "pattern": "^S[0-9]+:[0-9]+$" },
+              "manifestId": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    }
+  }
+}

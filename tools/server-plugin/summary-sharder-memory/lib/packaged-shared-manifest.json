@@ -4,6 +4,11 @@
   "generatedBy": "tools/server-plugin/package-summary-sharder-memory.mjs",
   "modules": [
     {
+      "canonicalRelativePath": "core/api/structured-output.js",
+      "packagedRelativePath": "lib/core/api/structured-output.js",
+      "sha256": "a2a40f723bd8148952760eda022450cb5c63152f901ff9c89e09d0869fd87a88"
+    },
+    {
       "canonicalRelativePath": "core/chat/archive-policy.js",
       "packagedRelativePath": "lib/core/chat/archive-policy.js",
       "sha256": "8cea40f22bba032fa828b546a50cec1646151017f579b09eb97a76905b724499"
@@ -19,9 +24,29 @@
       "sha256": "26217c943f5215dc86303007aa68b0d7286e8b84d50e83b7a4bba55591f8d6e0"
     },
     {
+      "canonicalRelativePath": "core/summarization/architectural-finalized-schema-v1.json",
+      "packagedRelativePath": "lib/core/summarization/architectural-finalized-schema-v1.json",
+      "sha256": "a3b0f425523caa0a908f29ab8f1981c29c8ada5594e62396f98ef927d79acb68"
+    },
+    {
+      "canonicalRelativePath": "core/summarization/architectural-finalized-semantic.js",
+      "packagedRelativePath": "lib/core/summarization/architectural-finalized-semantic.js",
+      "sha256": "90ac3cfb3f82cec17fc6ef90f002feb0644b44afc7aefa7ab394b2d3d9b76400"
+    },
+    {
       "canonicalRelativePath": "core/summarization/architectural-intermediate-schema-v1.json",
       "packagedRelativePath": "lib/core/summarization/architectural-intermediate-schema-v1.json",
       "sha256": "f1582cd073bbf18e2429c086bbf4d6177405588b86025579b388d9b765cf9d17"
+    },
+    {
+      "canonicalRelativePath": "core/summarization/architectural-intermediate-validator.generated.js",
+      "packagedRelativePath": "lib/core/summarization/architectural-intermediate-validator.generated.js",
+      "sha256": "6ffa4b428f0030dcf220366c82122d30433d08c96b5681460d2b7abdd8a667b6"
+    },
+    {
+      "canonicalRelativePath": "core/summarization/architectural-intermediate-validator.js",
+      "packagedRelativePath": "lib/core/summarization/architectural-intermediate-validator.js",
+      "sha256": "df74377c96367b3eaa49af892371cc3fd0649a116e97f1b6c7fcc4689156bccc"
     },
     {
       "canonicalRelativePath": "core/summarization/architectural-rebuild-protocol.js",
@@ -34,6 +59,31 @@
       "sha256": "653f789cd0f9b0a8171cc1ead41fd58e4b7dc51eccf67537c58d036e2dd30f84"
     },
     {
+      "canonicalRelativePath": "core/summarization/architectural-semantic-prompt.js",
+      "packagedRelativePath": "lib/core/summarization/architectural-semantic-prompt.js",
+      "sha256": "2d0493d021e4f5b45d76a4381092f13e2be728b1f5883039dafba51439b633e0"
+    },
+    {
+      "canonicalRelativePath": "core/summarization/architectural-semantic-renderer.js",
+      "packagedRelativePath": "lib/core/summarization/architectural-semantic-renderer.js",
+      "sha256": "60c7d185cd32ddfc4dc256164400e08bc1604ba4d18bc02702b471c7e3853efa"
+    },
+    {
+      "canonicalRelativePath": "core/summarization/architectural-semantic-replay-artifact.js",
+      "packagedRelativePath": "lib/core/summarization/architectural-semantic-replay-artifact.js",
+      "sha256": "c7492259afd55c2cebeb05e7e2301d952ad4df9d9ef0ff5c09325560b7ecf277"
+    },
+    {
+      "canonicalRelativePath": "core/summarization/architectural-semantic-request.js",
+      "packagedRelativePath": "lib/core/summarization/architectural-semantic-request.js",
+      "sha256": "389da54dd211c514263bbfb73edf79b4f59ea3d77d4021405f82625013625365"
+    },
+    {
+      "canonicalRelativePath": "core/summarization/architectural-sharder-contract.js",
+      "packagedRelativePath": "lib/core/summarization/architectural-sharder-contract.js",
+      "sha256": "306cb03933b3901f8f345e9c185c1b8a8dc71ee003530594b95d4e803a4a0ea8"
+    },
+    {
       "canonicalRelativePath": "core/summarization/architectural-sharder-format.js",
       "packagedRelativePath": "lib/core/summarization/architectural-sharder-format.js",
       "sha256": "4c30afc82ed333f9a0d4dc4cabcf2af035919149e4428d2e845e36ad12acce1f"
@@ -41,7 +91,7 @@
     {
       "canonicalRelativePath": "core/summarization/architectural-sharder-shell.js",
       "packagedRelativePath": "lib/core/summarization/architectural-sharder-shell.js",
-      "sha256": "94bb34ddfee1f4d9454c2edd055b7f13a38f860d9231a0005ead351624890d41"
+      "sha256": "956d6b2c5595a57c7ecf0e0fba14859bb0e2d691df869c8e28e8e09e187dd87c"
     },
     {
       "canonicalRelativePath": "core/summarization/crypto-compat.js",
@@ -66,7 +116,7 @@
     {
       "canonicalRelativePath": "core/summarization/shard-integrity-core.js",
       "packagedRelativePath": "lib/core/summarization/shard-integrity-core.js",
-      "sha256": "0be3634043e23a8b186acb54ac95b821e573ef3ea9781d2b820698cc93034611"
+      "sha256": "e299862fc054ff6fede36cc3ab36865b53e4ac5006508ea00fd71eddff0a3ec1"
     },
     {
       "canonicalRelativePath": "core/summarization/sharder-section-registry.js",

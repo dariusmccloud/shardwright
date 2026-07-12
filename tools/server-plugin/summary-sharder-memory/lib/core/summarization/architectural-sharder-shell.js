@@ -89,17 +89,11 @@ export function validateArchitecturalShellSections(sections) {
             message: `Architectural KEY schema marker was missing or invalid; canonical output will emit ${ARCHITECTURAL_SCHEMA_LINE}.`,
         });
     }
-    if (!currentItems.length) {
+    if (!currentItems.length || selectedCurrent.length === 0) {
         diagnostics.push({
             level: 'warning',
             code: 'ARCH_CURRENT_MISSING',
             message: 'Architectural CURRENT is empty for this extract.',
-        });
-    } else if (selectedCurrent.length === 0) {
-        diagnostics.push({
-            level: 'error',
-            code: 'ARCH_CURRENT_EMPTY',
-            message: 'Architectural CURRENT requires one selected entry.',
         });
     } else if (selectedCurrent.length > 1) {
         diagnostics.push({

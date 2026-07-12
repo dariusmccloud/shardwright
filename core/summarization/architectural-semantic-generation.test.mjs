@@ -57,6 +57,9 @@ test('generates deterministic canonical output through the semantic contract', a
     assert.equal(captured.requestOptions.structuredOutput.type, 'json_schema');
     assert.equal(result.output.startsWith('[KEY]\n'), true);
     assert.equal(result.output.endsWith('===END==='), true);
+    assert.deepEqual(result.replayMaterial.semanticPayload, payload());
+    assert.equal(result.replayMaterial.canonicalOutput, result.output);
+    assert.equal(result.replayMaterial.semanticRendererVersion, result.rendererVersion);
 });
 
 test('rejects a semantic response that changes persisted source identity', async () => {

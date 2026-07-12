@@ -186,6 +186,8 @@ export function getStoragePaths(userRoot) {
     const statePath = path.join(storageRoot, 'architectural-memory.state.json');
     const interpretiveGovernanceLedgerPath = path.join(storageRoot, 'interpretive-governance-ledger.jsonl');
     const dnmPublicationLedgerPath = path.join(storageRoot, 'dnm-publication-ledger.jsonl');
+    const architecturalReplayArtifactsRoot = path.join(storageRoot, 'architectural-replay-artifacts');
+    const architecturalReplayLedgerPath = path.join(storageRoot, 'architectural-shard-replay-ledger.jsonl');
     const generationsRoot = path.join(storageRoot, 'generations');
     const promotionsRoot = path.join(storageRoot, 'promotions');
     const promotionAuthorizationsRoot = path.join(promotionsRoot, 'authorizations');
@@ -199,6 +201,8 @@ export function getStoragePaths(userRoot) {
         statePath,
         interpretiveGovernanceLedgerPath,
         dnmPublicationLedgerPath,
+        architecturalReplayArtifactsRoot,
+        architecturalReplayLedgerPath,
         generationsRoot,
         promotionsRoot,
         promotionAuthorizationsRoot,

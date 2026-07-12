@@ -13,6 +13,7 @@ const STATIC_PAYLOAD_FILES = Object.freeze([
     'README.md',
     'index.js',
     'core.js',
+    'architectural-replay.js',
     'interpretive.js',
     'promotion.js',
     'rebuild.js',
@@ -33,6 +34,8 @@ const RUNTIME_SHARED_ENTRYPOINTS = Object.freeze([
     'core/summarization/architectural-sharder-format.js',
     'core/summarization/saved-shard-identity.js',
     'core/summarization/shard-integrity-core.js',
+    'core/summarization/architectural-semantic-replay-artifact.js',
+    'core/summarization/architectural-finalized-schema-v1.json',
 ]);
 
 function normalizeRelative(relativePath) {

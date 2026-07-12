@@ -188,6 +188,14 @@ export async function generateArchitecturalSemanticShard(options) {
     const prepared = prepareArchitecturalSemanticShardForSave(parsed.payload, { baselineDecisions });
     return {
         ...prepared,
+        replayMaterial: {
+            semanticPayload: parsed.payload,
+            canonicalOutput: prepared.output,
+            semanticSchemaId: request.schemaId,
+            semanticSchemaVersion: request.schemaVersion,
+            semanticPromptVersion: request.promptVersion,
+            semanticRendererVersion: prepared.rendererVersion,
+        },
         rawResponse,
         repair,
         promptVersion: request.promptVersion,
