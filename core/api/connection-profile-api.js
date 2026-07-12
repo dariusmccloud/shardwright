@@ -9,10 +9,10 @@ import { chat_completion_sources } from '../../../../../openai.js';
 import { textgen_types } from '../../../../../textgen-settings.js';
 import { SECRET_KEYS } from '../../../../../secrets.js';
 import { buildConnectionProfileOverridePayload } from './connection-profile-request-options.js';
+import { runWithProfileSecretGuard } from './connection-profile-secret-guard.js';
 
 const PROFILE_MODE_ERROR_HINT = 'Enable Connection Manager or switch the feature API mode.';
 const MAX_ERROR_CHAIN_DEPTH = 8;
-let secretRotationLock = Promise.resolve();
 
 /**
  * Build the messages array based on the configured message format.
@@ -187,47 +187,16 @@ async function rotateSecretRaw(secretKey, secretId) {
 async function withProfileSecret(profile, selectedApiMap, run) {
     const requestedSecretId = String(profile?.['secret-id'] || '').trim();
     const secretKey = resolveProfileSecretKey(selectedApiMap);
-
-    if (!requestedSecretId || !secretKey) {
-        return await run();
-    }
-
-    const executeLocked = async () => {
-        const state = await readSecretsStateRaw();
-        const secrets = Array.isArray(state?.[secretKey]) ? state[secretKey] : [];
-        if (secrets.length === 0) {
-            throw new Error(`Profile secret key ${secretKey} has no configured secrets`);
-        }
-
-        const targetSecret = secrets.find(secret => secret?.id === requestedSecretId);
-        if (!targetSecret) {
-            throw new Error(`Profile secret ${requestedSecretId} is missing for key ${secretKey}`);
-        }
-
-        const activeSecret = secrets.find(secret => secret?.active);
-        const activeSecretId = String(activeSecret?.id || '').trim() || null;
-        const needsRotation = activeSecretId !== requestedSecretId;
-
-        if (needsRotation) {
-            await rotateSecretRaw(secretKey, requestedSecretId);
-        }
-
-        try {
-            return await run();
-        } finally {
-            if (needsRotation && activeSecretId) {
-                try {
-                    await rotateSecretRaw(secretKey, activeSecretId);
-                } catch (restoreError) {
-                    log.error('Failed to restore previously active secret:', restoreError);
-                }
-            }
-        }
-    };
-
-    const queued = secretRotationLock.then(executeLocked, executeLocked);
-    secretRotationLock = queued.catch(() => {});
-    return await queued;
+    return await runWithProfileSecretGuard({
+        requestedSecretId,
+        secretKey,
+        readSecretsState: readSecretsStateRaw,
+        rotateSecret: rotateSecretRaw,
+        run,
+        reportRestoreFailure: restoreError => {
+            log.error('Failed to restore previously active secret:', restoreError);
+        },
+    });
 }
 
 /**
