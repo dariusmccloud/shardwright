@@ -29,6 +29,16 @@ function normalizeResponseText(rawResponse) {
     return rawResponse.replace(/^\uFEFF/u, '').trim();
 }
 
+function summarizeSchemaDiagnostic(diagnostic) {
+    const instancePath = String(diagnostic?.instancePath || '');
+    const field = String(diagnostic?.field || '');
+    const location = field && !instancePath.endsWith(`/${field}`)
+        ? `${instancePath}/${field}`.replace(/^\/$/u, '')
+        : (instancePath || field || 'response');
+    const message = String(diagnostic?.message || 'is invalid').trim();
+    return `${location} ${message}`;
+}
+
 /**
  * Parses and validates a complete architectural semantic response.
  * Deliberately does not extract fenced JSON or repair malformed model output.
@@ -59,9 +69,10 @@ export function parseArchitecturalSemanticResponse(rawResponse) {
 
     const validation = validateArchitecturalIntermediatePayload(payload);
     if (!validation.ok) {
+        const firstViolation = summarizeSchemaDiagnostic(validation.errors[0]);
         throw new ArchitecturalSemanticResponseError(
             ARCHITECTURAL_SEMANTIC_RESPONSE_ERROR_CODES.SCHEMA_INVALID,
-            'Architectural semantic response does not satisfy the required schema.',
+            `Architectural semantic response does not satisfy the required schema. First violation: ${firstViolation}.`,
             {
                 phase: 'validate',
                 schemaId: validation.schemaId,

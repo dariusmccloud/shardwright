@@ -310,6 +310,9 @@ export async function runSharder(startIndex, endIndex, settings, selectedShards 
         }
 
         log.error('Sharder failed:', error);
+        if (Array.isArray(error?.diagnostics) && error.diagnostics.length > 0) {
+            log.error('Sharder validation diagnostics:', error.diagnostics.map((diagnostic) => ({ ...diagnostic })));
+        }
         toastr.error(`Sharder failed: ${error.message}`);
     } finally {
         cleanupSharderHeadlessOperation(

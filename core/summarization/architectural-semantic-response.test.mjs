@@ -94,6 +94,7 @@ test('rejects schema-invalid JSON with structured validator diagnostics', () => 
     assert.equal(error.code, ARCHITECTURAL_SEMANTIC_RESPONSE_ERROR_CODES.SCHEMA_INVALID);
     assert.equal(error.phase, 'validate');
     assert.equal(error.schemaId, ARCHITECTURAL_INTERMEDIATE_SCHEMA_ID);
+    assert.match(error.message, /First violation: \/sections\/decisions\/0\/invented must NOT have additional properties/u);
     assert.equal(error.diagnostics.some((diagnostic) => diagnostic.keyword === 'enum' && diagnostic.field === 'types'), true);
     assert.equal(error.diagnostics.some((diagnostic) => diagnostic.keyword === 'enum' && diagnostic.field === 'status'), true);
     assert.equal(error.diagnostics.some((diagnostic) => diagnostic.keyword === 'additionalProperties' && diagnostic.field === 'invented'), true);
