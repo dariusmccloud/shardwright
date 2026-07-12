@@ -1,4 +1,4 @@
-import { applyStructuredOutputFormat } from './structured-output.js';
+import { applySillyTavernStructuredOutputFormat } from './structured-output.js';
 
 /**
  * Builds the Connection Manager override payload without mutating caller data.
@@ -34,13 +34,5 @@ export function buildConnectionProfileOverridePayload(options) {
         return payload;
     }
 
-    const normalized = applyStructuredOutputFormat({}, structuredOutput).response_format;
-    return {
-        ...payload,
-        json_schema: {
-            name: normalized.json_schema.name,
-            value: normalized.json_schema.schema,
-            strict: normalized.json_schema.strict,
-        },
-    };
+    return applySillyTavernStructuredOutputFormat(payload, structuredOutput);
 }

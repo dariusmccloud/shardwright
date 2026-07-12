@@ -14,6 +14,7 @@ const structuredOutput = createJsonSchemaResponseFormat({
 });
 
 test('forwards SillyTavern json_schema for chat-completions profiles', () => {
+    const originalStructuredOutput = structuredClone(structuredOutput);
     const payload = buildConnectionProfileOverridePayload({
         temperature: 0.3,
         topP: 1,
@@ -31,6 +32,7 @@ test('forwards SillyTavern json_schema for chat-completions profiles', () => {
         strict: true,
     });
     assert.equal(Object.hasOwn(payload, 'response_format'), false);
+    assert.deepEqual(structuredOutput, originalStructuredOutput);
 });
 
 test('does not send json_schema to text-completion profiles', () => {
@@ -42,4 +44,18 @@ test('does not send json_schema to text-completion profiles', () => {
     });
 
     assert.equal(Object.hasOwn(payload, 'json_schema'), false);
+});
+
+test('does not send json_schema when no structured output is requested', () => {
+    const payload = buildConnectionProfileOverridePayload({
+        temperature: 0.3,
+        topP: 1,
+        structuredOutput: null,
+        supportsStructuredOutput: true,
+    });
+
+    assert.deepEqual(payload, {
+        temperature: 0.3,
+        top_p: 1,
+    });
 });
