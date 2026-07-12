@@ -1,0 +1,77 @@
+import { validateArchitecturalIntermediatePayload } from './architectural-intermediate-validator.js';
+
+export const ARCHITECTURAL_SEMANTIC_RESPONSE_ERROR_CODES = Object.freeze({
+    EMPTY: 'ARCH_SEMANTIC_RESPONSE_EMPTY',
+    JSON_INVALID: 'ARCH_SEMANTIC_RESPONSE_JSON_INVALID',
+    SCHEMA_INVALID: 'ARCH_SEMANTIC_RESPONSE_SCHEMA_INVALID',
+});
+
+export class ArchitecturalSemanticResponseError extends Error {
+    constructor(code, message, options = {}) {
+        super(message);
+        this.name = 'ArchitecturalSemanticResponseError';
+        this.code = code;
+        this.phase = options.phase || null;
+        this.schemaId = options.schemaId || null;
+        this.diagnostics = Array.isArray(options.diagnostics)
+            ? options.diagnostics.map((diagnostic) => ({ ...diagnostic }))
+            : [];
+        if (options.cause) {
+            this.cause = options.cause;
+        }
+    }
+}
+
+function normalizeResponseText(rawResponse) {
+    if (typeof rawResponse !== 'string') {
+        return '';
+    }
+    return rawResponse.replace(/^\uFEFF/u, '').trim();
+}
+
+/**
+ * Parses and validates a complete architectural semantic response.
+ * Deliberately does not extract fenced JSON or repair malformed model output.
+ *
+ * @param {string} rawResponse
+ * @returns {{ payload: object, schemaId: string }}
+ */
+export function parseArchitecturalSemanticResponse(rawResponse) {
+    const responseText = normalizeResponseText(rawResponse);
+    if (!responseText) {
+        throw new ArchitecturalSemanticResponseError(
+            ARCHITECTURAL_SEMANTIC_RESPONSE_ERROR_CODES.EMPTY,
+            'Architectural semantic response is empty.',
+            { phase: 'parse' },
+        );
+    }
+
+    let payload;
+    try {
+        payload = JSON.parse(responseText);
+    } catch (cause) {
+        throw new ArchitecturalSemanticResponseError(
+            ARCHITECTURAL_SEMANTIC_RESPONSE_ERROR_CODES.JSON_INVALID,
+            'Architectural semantic response is not valid whole-response JSON.',
+            { phase: 'parse', cause },
+        );
+    }
+
+    const validation = validateArchitecturalIntermediatePayload(payload);
+    if (!validation.ok) {
+        throw new ArchitecturalSemanticResponseError(
+            ARCHITECTURAL_SEMANTIC_RESPONSE_ERROR_CODES.SCHEMA_INVALID,
+            'Architectural semantic response does not satisfy the required schema.',
+            {
+                phase: 'validate',
+                schemaId: validation.schemaId,
+                diagnostics: validation.errors,
+            },
+        );
+    }
+
+    return {
+        payload,
+        schemaId: validation.schemaId,
+    };
+}
