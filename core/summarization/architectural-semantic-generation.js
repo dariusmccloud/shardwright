@@ -4,6 +4,10 @@ import {
     ARCHITECTURAL_SEMANTIC_RESPONSE_ERROR_CODES,
     parseArchitecturalSemanticResponse,
 } from './architectural-semantic-response.js';
+import {
+    createArchitecturalOverflowRepairDescriptor,
+    parseArchitecturalOverflowRepairResponse,
+} from './architectural-overflow-repair.js';
 
 export const ARCHITECTURAL_SEMANTIC_GENERATION_ERROR_CODES = Object.freeze({
     SOURCE_ENVELOPE_INVALID: 'ARCH_SEMANTIC_SOURCE_ENVELOPE_INVALID',
@@ -103,6 +107,42 @@ async function generateParsedResponse(callApi, request, userPrompt) {
             throw error;
         }
 
+        let targetedRepairFailed = false;
+        if (error.repairTarget) {
+            try {
+                const target = error.repairTarget;
+                const invalidPayload = error.invalidPayload;
+                const originalItems = invalidPayload?.sections?.[target.sectionKey];
+                const fullSchema = request.structuredOutput?.json_schema?.schema;
+                const repairRequest = createArchitecturalOverflowRepairDescriptor(fullSchema, target, originalItems);
+                const repairRawResponse = await callApi(
+                    repairRequest.systemPrompt,
+                    repairRequest.userPrompt,
+                    { structuredOutput: repairRequest.structuredOutput },
+                );
+                const repairedItems = parseArchitecturalOverflowRepairResponse(repairRawResponse, target);
+                const repairedPayload = JSON.parse(JSON.stringify(invalidPayload));
+                repairedPayload.sections[target.sectionKey] = repairedItems;
+                const repairedRawResponse = JSON.stringify(repairedPayload);
+                return {
+                    parsed: parseArchitecturalSemanticResponse(repairedRawResponse),
+                    rawResponse: repairedRawResponse,
+                    repair: {
+                        strategy: 'TARGETED_SECTION_REPAIR_V1',
+                        ...target,
+                        repairedCount: repairedItems.length,
+                    },
+                };
+            } catch {
+                targetedRepairFailed = true;
+            }
+        }
+
+        if (!targetedRepairFailed
+            && error.diagnostics.some((diagnostic) => diagnostic?.keyword === 'maxItems')) {
+            throw error;
+        }
+
         const retryRawResponse = await callApi(
             request.systemPrompt,
             schemaRetryPrompt(userPrompt, error),
@@ -135,7 +175,7 @@ export async function generateArchitecturalSemanticShard(options) {
     const source = authoritativeSourceEnvelope(context);
     const request = await createArchitecturalSemanticRequestDescriptor(requestDescriptorOptions);
     const userPrompt = buildArchitecturalSemanticUserPrompt(chatText, context);
-    const { parsed, rawResponse } = await generateParsedResponse(callApi, request, userPrompt);
+    const { parsed, rawResponse, repair = null } = await generateParsedResponse(callApi, request, userPrompt);
 
     if (!sameSourceEnvelope(parsed.payload.source, source)) {
         throw new ArchitecturalSemanticGenerationError(
@@ -149,6 +189,7 @@ export async function generateArchitecturalSemanticShard(options) {
     return {
         ...prepared,
         rawResponse,
+        repair,
         promptVersion: request.promptVersion,
         semanticSchemaId: request.schemaId,
         semanticSchemaVersion: request.schemaVersion,

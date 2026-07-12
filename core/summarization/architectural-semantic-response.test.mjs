@@ -106,4 +106,26 @@ test('rejects schema-invalid JSON with structured validator diagnostics', () => 
     assert.equal(error.diagnostics.some((diagnostic) => diagnostic.keyword === 'enum' && diagnostic.field === 'types'), true);
     assert.equal(error.diagnostics.some((diagnostic) => diagnostic.keyword === 'enum' && diagnostic.field === 'status'), true);
     assert.equal(error.diagnostics.some((diagnostic) => diagnostic.keyword === 'additionalProperties' && diagnostic.field === 'invented'), true);
+    assert.equal(error.repairTarget, null);
+});
+
+test('exposes a repair target only for one exclusively overflowing section', () => {
+    const payload = validPayload();
+    payload.sections.events = Array.from({ length: 13 }, (_, index) => ({
+        sourceRef: `S10:${index + 1}`,
+        weight: 2,
+        description: `Event ${index + 1}`,
+    }));
+
+    const error = captureError(JSON.stringify(payload));
+
+    assert.equal(error.code, ARCHITECTURAL_SEMANTIC_RESPONSE_ERROR_CODES.SCHEMA_INVALID);
+    assert.deepEqual(error.repairTarget, {
+        eligible: true,
+        reason: 'SINGLE_SECTION_OVERFLOW',
+        sectionKey: 'events',
+        limit: 12,
+        actualCount: 13,
+        overflowCount: 1,
+    });
 });

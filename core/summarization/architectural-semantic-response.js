@@ -1,4 +1,5 @@
 import { validateArchitecturalIntermediatePayload } from './architectural-intermediate-validator.js';
+import { classifyArchitecturalOverflowRepair } from './architectural-overflow-repair.js';
 
 export const ARCHITECTURAL_SEMANTIC_RESPONSE_ERROR_CODES = Object.freeze({
     EMPTY: 'ARCH_SEMANTIC_RESPONSE_EMPTY',
@@ -16,6 +17,12 @@ export class ArchitecturalSemanticResponseError extends Error {
         this.diagnostics = Array.isArray(options.diagnostics)
             ? options.diagnostics.map((diagnostic) => ({ ...diagnostic }))
             : [];
+        this.repairTarget = options.repairTarget?.eligible === true
+            ? { ...options.repairTarget }
+            : null;
+        this.invalidPayload = options.invalidPayload && typeof options.invalidPayload === 'object'
+            ? options.invalidPayload
+            : null;
         if (options.cause) {
             this.cause = options.cause;
         }
@@ -72,6 +79,7 @@ export function parseArchitecturalSemanticResponse(rawResponse) {
     const validation = validateArchitecturalIntermediatePayload(payload);
     if (!validation.ok) {
         const firstViolation = summarizeSchemaDiagnostic(validation.errors[0]);
+        const repairTarget = classifyArchitecturalOverflowRepair(payload, validation.errors);
         throw new ArchitecturalSemanticResponseError(
             ARCHITECTURAL_SEMANTIC_RESPONSE_ERROR_CODES.SCHEMA_INVALID,
             `Architectural semantic response does not satisfy the required schema. First violation: ${firstViolation}.`,
@@ -79,6 +87,8 @@ export function parseArchitecturalSemanticResponse(rawResponse) {
                 phase: 'validate',
                 schemaId: validation.schemaId,
                 diagnostics: validation.errors,
+                repairTarget,
+                invalidPayload: payload,
             },
         );
     }

@@ -133,3 +133,90 @@ test('stops after one schema retry also fails', async () => {
     );
     assert.equal(calls, 2);
 });
+
+test('repairs only one overflowing section and preserves all unaffected sections', async () => {
+    const overflowing = payload();
+    overflowing.sections.events = Array.from({ length: 13 }, (_, index) => ({
+        sourceRef: `S10:${index + 1}`,
+        weight: 2,
+        description: `Event ${index + 1}`,
+    }));
+    const originalTimeline = JSON.stringify(overflowing.sections.timeline);
+    let calls = 0;
+    let repairCall;
+
+    const result = await generateArchitecturalSemanticShard(options({
+        callApi: async (systemPrompt, userPrompt, requestOptions) => {
+            calls += 1;
+            if (calls === 1) return JSON.stringify(overflowing);
+            repairCall = { systemPrompt, userPrompt, requestOptions };
+            return JSON.stringify({ items: overflowing.sections.events.slice(0, 12) });
+        },
+    }));
+
+    const repairedPayload = JSON.parse(result.rawResponse);
+    assert.equal(calls, 2);
+    assert.match(repairCall.userPrompt, /^SECTION: events\nCAP: 12\nRECORDS:/u);
+    assert.doesNotMatch(repairCall.userPrompt, /Semantic path activated/u);
+    assert.equal(repairCall.requestOptions.structuredOutput.json_schema.schema.properties.items.maxItems, 12);
+    assert.equal(JSON.stringify(repairedPayload.sections.timeline), originalTimeline);
+    assert.equal(repairedPayload.sections.events.length, 12);
+    assert.equal(result.repair.strategy, 'TARGETED_SECTION_REPAIR_V1');
+    assert.equal(result.repair.sectionKey, 'events');
+});
+
+test('falls back to one whole-response schema retry when targeted repair fails', async () => {
+    const overflowing = payload();
+    overflowing.sections.events = Array.from({ length: 13 }, (_, index) => ({
+        sourceRef: `S10:${index + 1}`,
+        weight: 2,
+        description: `Event ${index + 1}`,
+    }));
+    let calls = 0;
+    let retryPrompt = '';
+
+    const result = await generateArchitecturalSemanticShard(options({
+        callApi: async (_systemPrompt, userPrompt) => {
+            calls += 1;
+            if (calls === 1) return JSON.stringify(overflowing);
+            if (calls === 2) return JSON.stringify({ items: [] });
+            retryPrompt = userPrompt;
+            return JSON.stringify(payload());
+        },
+    }));
+
+    assert.equal(calls, 3);
+    assert.match(retryPrompt, /SCHEMA CORRECTION REQUIRED/u);
+    assert.equal(result.repair, null);
+    assert.equal(result.output.startsWith('[KEY]\n'), true);
+});
+
+test('does not attempt targeted or whole-response repair for multiple overflowing sections', async () => {
+    const overflowing = payload();
+    overflowing.sections.events = Array.from({ length: 13 }, (_, index) => ({
+        sourceRef: `S10:${index + 1}`,
+        weight: 2,
+        description: `Event ${index + 1}`,
+    }));
+    overflowing.sections.threads = Array.from({ length: 9 }, (_, index) => ({
+        sourceRef: `S10:${index + 1}`,
+        weight: 2,
+        subject: `Thread ${index + 1}`,
+        status: 'ACTIVE',
+        introRef: `S10:${index + 1}`,
+        lastRef: `S10:${index + 1}`,
+    }));
+    let calls = 0;
+
+    await assert.rejects(
+        generateArchitecturalSemanticShard(options({
+            callApi: async () => {
+                calls += 1;
+                return JSON.stringify(overflowing);
+            },
+        })),
+        (error) => error.code === 'ARCH_SEMANTIC_RESPONSE_SCHEMA_INVALID'
+            && error.repairTarget === null,
+    );
+    assert.equal(calls, 1);
+});
