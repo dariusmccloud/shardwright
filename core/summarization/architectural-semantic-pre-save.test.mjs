@@ -142,3 +142,12 @@ test('allows schema-authorized empty CURRENT without inventing state', () => {
     assert.equal(result.output.includes('[CURRENT]\n\n===END==='), true);
     assert.equal(result.diagnostics.some((diagnostic) => diagnostic.level === 'error'), false);
 });
+
+test('allows a thread without notes when no additional context is source-grounded', () => {
+    const payload = validPayload();
+    delete payload.sections.threads[0].notes;
+
+    const result = prepareArchitecturalSemanticShardForSave(payload);
+    assert.equal(result.output.includes('STATUS: ACTIVE | INTRO: S324:1 | LAST: S342:1'), true);
+    assert.equal(result.diagnostics.some((diagnostic) => diagnostic.level === 'error'), false);
+});

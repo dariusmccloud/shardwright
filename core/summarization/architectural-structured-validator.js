@@ -666,14 +666,6 @@ function validateThreadRecord(record, itemIndex, diagnostics) {
         ));
     }
 
-    if (!String(record.notes || '').trim()) {
-        diagnostics.push(buildDiagnostic(
-            'error',
-            'ARCH_THREAD_NOTES_MISSING',
-            'Thread record requires non-empty notes after the final |.',
-            { sectionKey: 'threads', itemIndex }
-        ));
-    }
 }
 
 function validateSectionCaps(sections, diagnostics) {

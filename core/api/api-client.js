@@ -17,7 +17,13 @@ import {
     oai_settings,
 } from '../../../../../openai.js';
 import { runCompatibilityFallback } from './compatibility-fallback.js';
-import { applyStructuredOutputFormat } from './structured-output.js';
+import {
+    applySillyTavernStructuredOutputFormat,
+    applyStructuredOutputFormat,
+} from './structured-output.js';
+import { runWithOneTransientRetry } from './transient-retry.js';
+
+const TRANSIENT_COMPATIBILITY_STATUSES = new Set([502, 503, 504]);
 
 /**
  * Normalize API URL by removing endpoint-specific paths
@@ -158,7 +164,16 @@ async function runCompatibilityAttempt(label, body, signal) {
     const rawText = await response.text();
 
     if (!response.ok) {
-        throw new Error(`${label}: Compatibility API error (${response.status}): ${rawText || response.statusText}`);
+        let providerCode = null;
+        try {
+            providerCode = JSON.parse(rawText)?.error?.code || null;
+        } catch {
+            // Preserve the original response text in the error below.
+        }
+        const error = new Error(`${label}: Compatibility API error (${response.status}): ${rawText || response.statusText}`);
+        error.status = response.status;
+        error.code = providerCode;
+        throw error;
     }
 
     let data;
@@ -218,7 +233,7 @@ async function callSillyTavernAPICompatibility(messages, options) {
 
     const model = getChatCompletionModel(compatSettings);
     const { generate_data } = await createGenerationParameters(compatSettings, model, 'swipe', messages);
-    const defaultBody = applyStructuredOutputFormat({
+    const defaultBody = applySillyTavernStructuredOutputFormat({
         ...generate_data,
         type: 'swipe',
         stream: false,
@@ -235,7 +250,10 @@ async function callSillyTavernAPICompatibility(messages, options) {
             hasStops,
             defaultBody,
             noStopBody,
-            runAttempt: (label, body) => runCompatibilityAttempt(label, body, signal),
+            runAttempt: (label, body) => runWithOneTransientRetry({
+                run: () => runCompatibilityAttempt(label, body, signal),
+                shouldRetry: error => TRANSIENT_COMPATIBILITY_STATUSES.has(error?.status),
+            }),
         });
     } catch (error) {
         throw toError(error, 'Compatibility request failed');

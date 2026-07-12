@@ -87,8 +87,49 @@ test('rejects missing persisted message IDs before calling the model', async () 
 });
 
 test('does not fall back to canonical text when semantic JSON is malformed', async () => {
+    let calls = 0;
     await assert.rejects(
-        generateArchitecturalSemanticShard(options({ callApi: async () => '[KEY]\n[TIMELINE]\n===END===' })),
+        generateArchitecturalSemanticShard(options({
+            callApi: async () => {
+                calls += 1;
+                return '[KEY]\n[TIMELINE]\n===END===';
+            },
+        })),
         (error) => error.code === 'ARCH_SEMANTIC_RESPONSE_JSON_INVALID',
     );
+    assert.equal(calls, 1);
+});
+
+test('retries one schema-invalid semantic response with correction guidance', async () => {
+    let calls = 0;
+    let retryPrompt = '';
+    const result = await generateArchitecturalSemanticShard(options({
+        callApi: async (_systemPrompt, userPrompt) => {
+            calls += 1;
+            if (calls === 1) {
+                return JSON.stringify({ timeline: [], decisions: [] });
+            }
+            retryPrompt = userPrompt;
+            return JSON.stringify(payload());
+        },
+    }));
+
+    assert.equal(calls, 2);
+    assert.match(retryPrompt, /SCHEMA CORRECTION REQUIRED/u);
+    assert.match(retryPrompt, /root must contain schemaVersion, profile, source, and sections/u);
+    assert.equal(result.output.startsWith('[KEY]\n'), true);
+});
+
+test('stops after one schema retry also fails', async () => {
+    let calls = 0;
+    await assert.rejects(
+        generateArchitecturalSemanticShard(options({
+            callApi: async () => {
+                calls += 1;
+                return JSON.stringify({ timeline: [], decisions: [] });
+            },
+        })),
+        (error) => error.code === 'ARCH_SEMANTIC_RESPONSE_SCHEMA_INVALID',
+    );
+    assert.equal(calls, 2);
 });

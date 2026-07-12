@@ -49,6 +49,14 @@ test('accepts a valid complete semantic response with outer whitespace and BOM',
     assert.equal(result.schemaId, ARCHITECTURAL_INTERMEDIATE_SCHEMA_ID);
 });
 
+test('accepts exactly one outer JSON fence without changing the payload', () => {
+    const payload = validPayload();
+    const result = parseArchitecturalSemanticResponse(`\`\`\`json\n${JSON.stringify(payload)}\n\`\`\``);
+
+    assert.deepEqual(result.payload, payload);
+    assert.equal(result.schemaId, ARCHITECTURAL_INTERMEDIATE_SCHEMA_ID);
+});
+
 test('rejects empty and non-string responses', () => {
     for (const rawResponse of ['', '  ', null, { response: '{}' }]) {
         const error = captureError(rawResponse);
@@ -58,11 +66,11 @@ test('rejects empty and non-string responses', () => {
     }
 });
 
-test('rejects fenced, malformed, and trailing response content without repair', () => {
+test('rejects malformed, multiple-block, and trailing response content without repair', () => {
     const secret = 'private-model-output-marker';
     const invalidResponses = [
-        `\`\`\`json\n${JSON.stringify(validPayload())}\n\`\`\``,
         '{"schemaVersion":',
+        `\`\`\`json\n${JSON.stringify(validPayload())}\n\`\`\`\n\`\`\`json\n{}\n\`\`\``,
         `${JSON.stringify(validPayload())}\n${secret}`,
     ];
 

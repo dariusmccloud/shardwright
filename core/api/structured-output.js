@@ -61,3 +61,29 @@ export function applyStructuredOutputFormat(body, responseFormat) {
         response_format: normalizedFormat,
     };
 }
+
+/**
+ * Add SillyTavern's internal JSON Schema descriptor without mutating the body.
+ *
+ * @param {Object} body
+ * @param {Object|null|undefined} responseFormat
+ * @returns {Object}
+ */
+export function applySillyTavernStructuredOutputFormat(body, responseFormat) {
+    if (!isPlainObject(body)) {
+        throw new Error('Structured-output request body must be a JSON object.');
+    }
+    if (responseFormat == null) {
+        return body;
+    }
+
+    const normalizedFormat = applyStructuredOutputFormat({}, responseFormat).response_format;
+    return {
+        ...body,
+        json_schema: {
+            name: normalizedFormat.json_schema.name,
+            value: normalizedFormat.json_schema.schema,
+            strict: normalizedFormat.json_schema.strict,
+        },
+    };
+}

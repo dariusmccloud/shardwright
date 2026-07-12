@@ -1,6 +1,9 @@
 import { prepareArchitecturalSemanticShardForSave } from './architectural-semantic-pre-save.js';
 import { createArchitecturalSemanticRequestDescriptor } from './architectural-semantic-request.js';
-import { parseArchitecturalSemanticResponse } from './architectural-semantic-response.js';
+import {
+    ARCHITECTURAL_SEMANTIC_RESPONSE_ERROR_CODES,
+    parseArchitecturalSemanticResponse,
+} from './architectural-semantic-response.js';
 
 export const ARCHITECTURAL_SEMANTIC_GENERATION_ERROR_CODES = Object.freeze({
     SOURCE_ENVELOPE_INVALID: 'ARCH_SEMANTIC_SOURCE_ENVELOPE_INVALID',
@@ -77,6 +80,41 @@ CURRENT SOURCE CONTENT
 ${String(chatText || '').trim()}${baselineShardText(context)}`;
 }
 
+function schemaRetryPrompt(userPrompt, error) {
+    const firstViolation = String(error?.message || 'The response did not match the required schema.');
+    return `${userPrompt}
+
+SCHEMA CORRECTION REQUIRED
+The previous response was rejected: ${firstViolation}
+Return one complete JSON object matching the supplied JSON schema. The root must contain schemaVersion, profile, source, and sections. Put timeline, decisions, events, developments, dialogue, threads, and current inside sections. Do not use the legacy flattened root shape.`;
+}
+
+async function generateParsedResponse(callApi, request, userPrompt) {
+    const requestOptions = { structuredOutput: request.structuredOutput };
+    const firstRawResponse = await callApi(request.systemPrompt, userPrompt, requestOptions);
+
+    try {
+        return {
+            parsed: parseArchitecturalSemanticResponse(firstRawResponse),
+            rawResponse: firstRawResponse,
+        };
+    } catch (error) {
+        if (error?.code !== ARCHITECTURAL_SEMANTIC_RESPONSE_ERROR_CODES.SCHEMA_INVALID) {
+            throw error;
+        }
+
+        const retryRawResponse = await callApi(
+            request.systemPrompt,
+            schemaRetryPrompt(userPrompt, error),
+            requestOptions,
+        );
+        return {
+            parsed: parseArchitecturalSemanticResponse(retryRawResponse),
+            rawResponse: retryRawResponse,
+        };
+    }
+}
+
 /**
  * Generates and proves one architectural semantic shard without permitting a
  * fallback to model-authored canonical syntax.
@@ -97,10 +135,7 @@ export async function generateArchitecturalSemanticShard(options) {
     const source = authoritativeSourceEnvelope(context);
     const request = await createArchitecturalSemanticRequestDescriptor(requestDescriptorOptions);
     const userPrompt = buildArchitecturalSemanticUserPrompt(chatText, context);
-    const rawResponse = await callApi(request.systemPrompt, userPrompt, {
-        structuredOutput: request.structuredOutput,
-    });
-    const parsed = parseArchitecturalSemanticResponse(rawResponse);
+    const { parsed, rawResponse } = await generateParsedResponse(callApi, request, userPrompt);
 
     if (!sameSourceEnvelope(parsed.payload.source, source)) {
         throw new ArchitecturalSemanticGenerationError(

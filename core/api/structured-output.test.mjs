@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+    applySillyTavernStructuredOutputFormat,
     applyStructuredOutputFormat,
     createJsonSchemaResponseFormat,
 } from './structured-output.js';
@@ -49,6 +50,28 @@ test('applies structured output without mutating the base request body', () => {
 test('leaves the original body unchanged when no structured output is requested', () => {
     const body = { model: 'test-model' };
     assert.equal(applyStructuredOutputFormat(body, null), body);
+});
+
+test('applies SillyTavern internal json_schema without provider response_format', () => {
+    const body = { model: 'test-model', messages: [] };
+    const responseFormat = createJsonSchemaResponseFormat({
+        name: 'architectural_intermediate_v1',
+        schema,
+    });
+
+    const result = applySillyTavernStructuredOutputFormat(body, responseFormat);
+
+    assert.notEqual(result, body);
+    assert.equal(Object.hasOwn(body, 'json_schema'), false);
+    assert.equal(Object.hasOwn(result, 'response_format'), false);
+    assert.deepEqual(result, {
+        ...body,
+        json_schema: {
+            name: 'architectural_intermediate_v1',
+            value: schema,
+            strict: true,
+        },
+    });
 });
 
 test('rejects malformed schema descriptors before a provider request is sent', () => {

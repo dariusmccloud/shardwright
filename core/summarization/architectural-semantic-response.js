@@ -26,7 +26,9 @@ function normalizeResponseText(rawResponse) {
     if (typeof rawResponse !== 'string') {
         return '';
     }
-    return rawResponse.replace(/^\uFEFF/u, '').trim();
+    const normalized = rawResponse.replace(/^\uFEFF/u, '').trim();
+    const fencedJson = normalized.match(/^```json[ \t]*\r?\n([\s\S]*)\r?\n```$/iu);
+    return fencedJson ? fencedJson[1].trim() : normalized;
 }
 
 function summarizeSchemaDiagnostic(diagnostic) {
@@ -41,7 +43,7 @@ function summarizeSchemaDiagnostic(diagnostic) {
 
 /**
  * Parses and validates a complete architectural semantic response.
- * Deliberately does not extract fenced JSON or repair malformed model output.
+ * Accepts one outer JSON fence but does not extract partial JSON or repair content.
  *
  * @param {string} rawResponse
  * @returns {{ payload: object, schemaId: string }}
