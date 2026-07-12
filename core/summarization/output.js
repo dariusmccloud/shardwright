@@ -45,6 +45,7 @@ import { createInterpretiveProposalFromArchitecturalShard } from './architectura
 import { refreshCurrentChatShardIntegrity } from './shard-integrity-runtime.js';
 import { openInterpretiveReviewModal } from '../../ui/modals/management/interpretive-review-modal.js';
 import {
+    getArchitecturalAuthorityWarning,
     projectArchitecturalProposalLaunchBlocker,
     shouldCreateProposalAfterAuthorityResult,
 } from './architectural-proposal-launch-blocker.js';
@@ -178,10 +179,7 @@ export async function handleSummaryResult(
                 });
                 const shouldCreateProposal = shouldCreateProposalAfterAuthorityResult(authorityResult);
                 if (!authorityResult?.committed && authorityResult?.reason && typeof toastr !== 'undefined') {
-                    const message = shouldCreateProposal
-                        ? 'Existing architectural authority was preserved. The saved shard will enter review as a proposed change.'
-                        : 'Architectural scope authority was not updated because the saved shard did not match the current authoritative version.';
-                    toastr.warning(message);
+                    toastr.warning(getArchitecturalAuthorityWarning(authorityResult));
                 }
                 if (shouldCreateProposal) {
                     let integrityBlocked = false;

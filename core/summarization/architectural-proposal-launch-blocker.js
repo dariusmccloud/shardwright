@@ -18,6 +18,16 @@ export function shouldCreateProposalAfterAuthorityResult(result = {}) {
     return Boolean(memoryScopeId && REVIEWABLE_AUTHORITY_CONFLICT_CODES.has(code));
 }
 
+export function getArchitecturalAuthorityWarning(result = {}) {
+    if (result?.committed === true || !result?.reason) {
+        return null;
+    }
+
+    return shouldCreateProposalAfterAuthorityResult(result)
+        ? 'Existing architectural authority was preserved.'
+        : 'Architectural scope authority was not updated because the saved shard did not match the current authoritative version.';
+}
+
 function getPrimaryQuarantine(result) {
     const proposals = Array.isArray(result?.synthesisRun?.proposals) ? result.synthesisRun.proposals : [];
     return proposals.find((proposal) => normalizeCode(proposal?.proposalStatus) === 'QUARANTINED') || proposals[0] || null;
@@ -87,12 +97,17 @@ export function projectArchitecturalProposalLaunchBlocker(result = {}, error = n
     const errorCode = normalizeCode(error?.code);
     const code = (referentialStatus && referentialStatus !== 'VALID' ? referentialStatus : '') || quarantineCode || failureCode || errorCode;
     const { reason, nextStep } = getReasonAndNextStep(code);
+    const noProposalCreated = code === 'ARCH_NO_REVIEWABLE_INTERPRETIVE_DECISION';
+    const title = noProposalCreated
+        ? 'Shard saved; no proposal created'
+        : 'Blocked: governed proposal creation failed';
 
     return {
         code: code || 'ARCH_PROPOSAL_HANDOFF_BLOCKED',
-        title: 'Blocked: governed proposal creation failed',
+        outcome: noProposalCreated ? 'NO_PROPOSAL_CREATED' : 'BLOCKED',
+        title,
         reason,
         nextStep,
-        toastMessage: `Blocked: governed proposal creation failed. Reason: ${reason} Next step: ${nextStep}`,
+        toastMessage: `${title}. Reason: ${reason} Next step: ${nextStep}`,
     };
 }

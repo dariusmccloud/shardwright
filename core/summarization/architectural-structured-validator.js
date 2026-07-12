@@ -700,9 +700,9 @@ function validateSectionCaps(sections, diagnostics) {
     const currentSelected = selectedItems(sections?.current || []);
     if (currentSelected.length === 0) {
         diagnostics.push(buildDiagnostic(
-            'error',
-            'ARCH_CURRENT_EMPTY',
-            'Architectural CURRENT requires one selected entry.',
+            'warning',
+            'ARCH_CURRENT_MISSING',
+            'Architectural CURRENT is empty for this extract.',
             { sectionKey: 'current' }
         ));
     } else if (currentSelected.length > 1) {

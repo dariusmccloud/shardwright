@@ -81,16 +81,16 @@ function getArchitecturalCurrentError(state) {
     if (currentItems.length === 0) {
         return {
             level: 'warning',
-            code: 'ARCH_CURRENT_EMPTY',
+            code: 'ARCH_CURRENT_MISSING',
             message: 'Architectural CURRENT is empty for this extract.',
         };
     }
     const selectedCurrent = getSelectedItems(currentItems);
     if (selectedCurrent.length === 0) {
         return {
-            level: 'error',
-            code: 'ARCH_CURRENT_EMPTY',
-            message: 'Architectural CURRENT requires one selected entry.',
+            level: 'warning',
+            code: 'ARCH_CURRENT_MISSING',
+            message: 'Architectural CURRENT is empty for this extract.',
         };
     }
     if (selectedCurrent.length > 1) {

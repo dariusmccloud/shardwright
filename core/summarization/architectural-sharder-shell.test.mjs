@@ -93,11 +93,14 @@ test('architectural shell validator warns when CURRENT is missing for this extra
     assert.equal(diagnostics.some((entry) => entry.level === 'error'), false);
 });
 
-test('architectural shell validator errors when zero CURRENT rows are selected', () => {
+test('architectural shell validator warns when zero CURRENT rows are selected', () => {
     const diagnostics = validateArchitecturalShellSections(buildSections({
         current: [{ content: 'Project|State|Focus|Pending|Blocked|Next', selected: false }],
     }));
-    assert.equal(getCodes(diagnostics).includes('ARCH_CURRENT_EMPTY'), true);
+    const currentMissing = diagnostics.find((entry) => entry.code === 'ARCH_CURRENT_MISSING');
+    assert.ok(currentMissing);
+    assert.equal(currentMissing.level, 'warning');
+    assert.equal(diagnostics.some((entry) => entry.level === 'error'), false);
 });
 
 test('architectural shell validator errors when multiple CURRENT rows are selected', () => {

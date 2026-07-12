@@ -46,6 +46,18 @@ test('valid minimal architectural fixture passes structured validation', () => {
     assert.equal(diagnostics.some((entry) => entry.level === 'error'), false);
 });
 
+test('empty CURRENT is warning-only when the extract establishes no current-state claim', () => {
+    const sections = parseFixture('architectural-valid-minimal-01.txt');
+    sections.current = [];
+
+    const diagnostics = validateArchitecturalStructuredSections(sections, { baselineDecisions: {} });
+    const currentMissing = diagnostics.find((entry) => entry.code === 'ARCH_CURRENT_MISSING');
+
+    assert.ok(currentMissing);
+    assert.equal(currentMissing.level, 'warning');
+    assert.equal(diagnostics.some((entry) => entry.level === 'error'), false);
+});
+
 test('explicit null supersession markers do not create supersession relationships', () => {
     const sections = parseFixture('architectural-valid-minimal-01.txt');
     sections.decisions[0].content += ' | SUPERSEDES:None | SUPERSEDED-BY:None';
