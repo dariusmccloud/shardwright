@@ -16,7 +16,7 @@ import {
     getChatCompletionModel,
     oai_settings,
 } from '../../../../../openai.js';
-import { runCompatibilityFallback } from './compatibility-fallback.js';
+import { isAbortError, runCompatibilityFallback } from './compatibility-fallback.js';
 import {
     applySillyTavernStructuredOutputFormat,
     applyStructuredOutputFormat,
@@ -308,6 +308,9 @@ export async function callSillyTavernAPI(systemPrompt, userPrompt, options = {})
                     structuredOutput,
                 });
             } catch (error) {
+                if (isAbortError(error)) {
+                    throw error;
+                }
                 const compatibilityFailure = toError(error, 'Remove-stop compatibility request failed');
                 const capability = structuredOutput ? 'Structured output' : 'Remove Stop Strings';
                 throw new Error(

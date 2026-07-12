@@ -1,3 +1,9 @@
+export function isAbortError(error) {
+    return Boolean(error)
+        && (typeof error === 'object' || typeof error === 'function')
+        && error.name === 'AbortError';
+}
+
 /**
  * Execute the bounded compatibility fallback for chat-completions requests.
  * When remove-stop mode is requested and stop strings are present, try the
@@ -37,6 +43,9 @@ export async function runCompatibilityFallback({
         try {
             return await runAttempt(attempt.label, attempt.body);
         } catch (error) {
+            if (isAbortError(error)) {
+                throw error;
+            }
             const message = error instanceof Error ? error.message : String(error || `${attempt.label} compatibility request failed`);
             errors.push(message);
         }
