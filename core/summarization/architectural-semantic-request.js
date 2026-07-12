@@ -65,7 +65,7 @@ export async function loadArchitecturalIntermediateSchema(options = {}) {
 }
 
 /**
- * Build the dormant C0.6.9 semantic-generation request contract.
+ * Build the C0.6.9 semantic-generation request contract.
  *
  * @param {{fetchImpl?:Function,schemaUrl?:URL|string}} options
  * @returns {Promise<Object>}

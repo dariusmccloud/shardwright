@@ -133,7 +133,7 @@ async function buildSourceIdentityHashFromIds(messageIds, options = {}) {
     }), options.cryptoApi);
 }
 
-function getResolvedMessageId(message) {
+export function getPersistedMessageId(message) {
     return sanitizeMessageId(getMessageIdentity(message)?.messageId);
 }
 
@@ -252,7 +252,7 @@ function resolveSourceEntries(messages, selector) {
             currentStartPosition: positions.length > 0 ? positions[0] : null,
             currentEndPosition: positions.length > 0 ? positions[positions.length - 1] : null,
             resolvedSourceCount: entries.length,
-            sequenceMessageIds: entries.map((entry) => getResolvedMessageId(entry.message)).filter(Boolean),
+            sequenceMessageIds: entries.map((entry) => getPersistedMessageId(entry.message)).filter(Boolean),
         };
     }
 
@@ -292,7 +292,7 @@ function resolveSourceEntries(messages, selector) {
         currentStartPosition: startEntry.index,
         currentEndPosition: endEntry.index,
         resolvedSourceCount: entries.length,
-        sequenceMessageIds: entries.map((entry) => getResolvedMessageId(entry.message)).filter(Boolean),
+        sequenceMessageIds: entries.map((entry) => getPersistedMessageId(entry.message)).filter(Boolean),
     };
 }
 

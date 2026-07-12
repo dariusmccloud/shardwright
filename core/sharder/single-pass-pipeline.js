@@ -22,6 +22,7 @@ import { checkSinglePassEvidence } from './evidence-checker.js';
 import { checkRelationshipCoherence } from './relationship-guard.js';
 import { buildArchitecturalBaselineFromShards } from '../summarization/architectural-structured-validator.js';
 import { mergeArchitecturalDecisionLedger } from '../summarization/architectural-decision-ledger.js';
+import { generateArchitecturalSemanticShard } from '../summarization/architectural-semantic-generation.js';
 
 /**
  * @param {Object} settings
@@ -29,7 +30,7 @@ import { mergeArchitecturalDecisionLedger } from '../summarization/architectural
  * @param {string} userPrompt
  * @returns {Promise<string>}
  */
-async function callSharderApi(settings, systemPrompt, userPrompt) {
+async function callSharderApi(settings, systemPrompt, userPrompt, requestOptions = {}) {
     const effective = await getFeatureApiSettings(settings, 'sharder');
     const options = {
         temperature: effective.temperature,
@@ -38,6 +39,7 @@ async function callSharderApi(settings, systemPrompt, userPrompt) {
         signal: getAbortSignal(),
         messageFormat: effective.messageFormat,
         removeStopStrings: effective.removeStopStrings === true,
+        structuredOutput: requestOptions.structuredOutput || null,
     };
 
     if (effective.useSillyTavernAPI) {
@@ -146,9 +148,23 @@ export async function runSharderPipeline(chatText, settings, context) {
         }
     }
 
-    const raw = await callSharderApi(settings, systemPrompt, userPrompt);
+    const semanticGeneration = sectionRegistry.profile === ARCHITECTURAL_PROFILE
+        ? await generateArchitecturalSemanticShard({
+            chatText,
+            context: { ...context, existingShards },
+            baselineDecisions: architecturalBaseline.decisions,
+            callApi: async (semanticSystemPrompt, semanticUserPrompt, requestOptions) => (
+                await callSharderApi(settings, semanticSystemPrompt, semanticUserPrompt, requestOptions)
+            ),
+        })
+        : null;
+    const raw = sectionRegistry.profile === ARCHITECTURAL_PROFILE
+        ? semanticGeneration.output
+        : await callSharderApi(settings, systemPrompt, userPrompt);
     throwIfAborted('sharder api');
-    const parsedResult = context.extractKeywords ? parseSummaryResponse(raw) : { summary: raw, keywords: [] };
+    const parsedResult = context.extractKeywords && sectionRegistry.profile !== ARCHITECTURAL_PROFILE
+        ? parseSummaryResponse(raw)
+        : { summary: raw, keywords: [] };
     const cleanedRaw = parsedResult.summary || raw;
     const parsed = parseExtractionResponse(cleanedRaw, { sectionRegistry });
     const {
@@ -237,6 +253,12 @@ export async function runSharderPipeline(chatText, settings, context) {
                 baselineDecisions: architecturalBaseline.decisions,
                 baselineLedger: architecturalBaseline.ledger || architecturalBaseline.decisions,
                 decisionLedgerMetrics: decisionLedger?.metrics || null,
+                ...(semanticGeneration ? {
+                    semanticSchemaId: semanticGeneration.semanticSchemaId,
+                    semanticSchemaVersion: semanticGeneration.semanticSchemaVersion,
+                    semanticPromptVersion: semanticGeneration.promptVersion,
+                    semanticRendererVersion: semanticGeneration.rendererVersion,
+                } : {}),
             } : {}),
         }
     };

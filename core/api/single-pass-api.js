@@ -20,7 +20,7 @@ import {
 import { startUiOperation, endUiOperation } from './api-ui-helpers.js';
 import { log } from '../logger.js';
 import { ARCHITECTURAL_PROFILE, normalizeSharderProfile } from '../summarization/sharder-section-registry.js';
-import { SHARD_ARTIFACT_KINDS } from '../summarization/shard-integrity-core.js';
+import { getPersistedMessageId, SHARD_ARTIFACT_KINDS } from '../summarization/shard-integrity-core.js';
 import { refreshCurrentChatShardIntegrity } from '../summarization/shard-integrity-runtime.js';
 import { resolveSelectedShardsForRun } from './sharder-run-selection.js';
 import {
@@ -62,12 +62,28 @@ function buildSinglePassChatText(messages, startIndex, endIndex, settings) {
     return chatText;
 }
 
-async function runPipelineWithAnalysis(chatText, settings, startIndex, endIndex, selectedShards = [], extractKeywords = false) {
+function collectSinglePassMessageIds(messages, startIndex, endIndex, settings) {
+    const effectiveCleanup = buildEffectiveCleanupSettings(settings);
+    const messageIds = [];
+
+    for (let index = startIndex; index <= endIndex; index += 1) {
+        const message = messages[index];
+        if (!message) continue;
+        if (effectiveCleanup.stripHiddenMessages && (message.is_hidden || message.is_system)) continue;
+
+        messageIds.push(getPersistedMessageId(message));
+    }
+
+    return messageIds;
+}
+
+async function runPipelineWithAnalysis(chatText, settings, startIndex, endIndex, selectedShards = [], extractKeywords = false, messageIds = []) {
     const { runSharderPipeline } = await import('../sharder/single-pass-pipeline.js');
     const result = await runSharderPipeline(chatText, settings, {
         startIndex,
         endIndex,
         extractKeywords,
+        messageIds,
         existingShards: (selectedShards || []).map((s) => ({
             content: s.content,
             identifier: s.identifier,
@@ -113,6 +129,7 @@ export async function runSharderHeadless(startIndex, endIndex, settings, selecte
     }
 
     const chatText = buildSinglePassChatText(messages, startIndex, endIndex, settings);
+    const messageIds = collectSinglePassMessageIds(messages, startIndex, endIndex, settings);
 
     if (!chatText.trim()) {
         throw new Error('Selected message range is empty');
@@ -127,7 +144,8 @@ export async function runSharderHeadless(startIndex, endIndex, settings, selecte
         startIndex,
         endIndex,
         selectedShards,
-        extractKeywords
+        extractKeywords,
+        messageIds
     );
     throwIfAborted('sharder pipeline');
 
@@ -135,6 +153,7 @@ export async function runSharderHeadless(startIndex, endIndex, settings, selecte
         result,
         chatText,
         extractKeywords,
+        messageIds,
     };
 }
 
@@ -209,7 +228,8 @@ export async function runSharder(startIndex, endIndex, settings, selectedShards 
                 startIndex,
                 endIndex,
                 selection.selectedShards,
-                headless.extractKeywords
+                headless.extractKeywords,
+                headless.messageIds
             );
             throwIfAborted('sharder regenerate');
             return result;

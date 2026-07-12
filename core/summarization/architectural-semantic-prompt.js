@@ -9,8 +9,8 @@ export const ARCHITECTURAL_SEMANTIC_PROMPT_VERSION = 1;
 /**
  * C0.6.9 semantic extraction contract.
  *
- * This prompt remains dormant until the constrained-generation and renderer
- * bridge can consume its output without disrupting the live canonical path.
+ * The live architectural pipeline consumes this contract through constrained
+ * generation, strict validation, and deterministic canonical rendering.
  */
 export const DEFAULT_ARCHITECTURAL_SEMANTIC_PROMPT = `Task: Extract architectural continuity as semantic JSON records.
 
