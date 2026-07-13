@@ -53,6 +53,10 @@ import {
     shouldCreateProposalAfterAuthorityResult,
 } from './architectural-proposal-launch-blocker.js';
 import { registerAndPersistArchitecturalReplay } from './architectural-live-finalization.js';
+import {
+    openPreparedArchitecturalProposalHandoff,
+    prepareArchitecturalProposalHandoff,
+} from './architectural-proposal-handoff-orchestration.js';
 
 // World info metadata key
 const METADATA_KEY = 'world_info';
@@ -196,20 +200,19 @@ export async function handleSummaryResult(
                     endIndex,
                     baselineLedger: resultMetadata?.architecturalAuthorityContext?.baselineLedger || null,
                 });
-                const shouldCreateProposal = shouldCreateProposalAfterAuthorityResult(authorityResult);
-                if (!authorityResult?.committed && authorityResult?.reason && typeof toastr !== 'undefined') {
-                    toastr.warning(getArchitecturalAuthorityWarning(authorityResult));
-                }
-                if (shouldCreateProposal) {
-                    pendingArchitecturalReviewOpen = await createArchitecturalProposalReviewLaunchRequest({
-                        outputUID,
-                        activeChatId,
-                        authorityResult,
-                    });
-                    if (!pendingArchitecturalReviewOpen?.interpretationRevisionId && pendingArchitecturalReviewOpen?.userMessage && typeof toastr !== 'undefined') {
-                        toastr.warning(pendingArchitecturalReviewOpen.userMessage);
-                    }
-                }
+                pendingArchitecturalReviewOpen = await prepareArchitecturalProposalHandoff({
+                    didSave: didInjectToContext,
+                    savedOutputUID: outputUID,
+                    activeChatId,
+                    authorityResult,
+                }, {
+                    shouldCreateProposal: shouldCreateProposalAfterAuthorityResult,
+                    createReviewLaunchRequest: createArchitecturalProposalReviewLaunchRequest,
+                    getAuthorityWarning: getArchitecturalAuthorityWarning,
+                    warnOperator: (message) => {
+                        if (typeof toastr !== 'undefined') toastr.warning(message);
+                    },
+                });
             } catch (error) {
                 recordArchitecturalIntegrationEvent('AUTHORITY_ADOPTION_CALL_FAILED', {
                     profile: ARCHITECTURAL_PROFILE,
@@ -300,12 +303,9 @@ export async function handleSummaryResult(
         }
     }
 
-    if (pendingArchitecturalReviewOpen?.interpretationRevisionId) {
-        void openInterpretiveReviewModal({
-            interpretationRevisionId: pendingArchitecturalReviewOpen.interpretationRevisionId,
-            detailView: 'review',
-        });
-    }
+    openPreparedArchitecturalProposalHandoff(pendingArchitecturalReviewOpen, {
+        openReview: openInterpretiveReviewModal,
+    });
 
     return {
         didInjectToContext,

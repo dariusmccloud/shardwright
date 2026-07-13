@@ -123,6 +123,33 @@ test('root contract mismatch reports only the expected and received version valu
     assert.equal(error.message.includes(JSON.stringify(payload.source)), false);
 });
 
+test('removes exact duplicate section records before cap validation with stable metadata', () => {
+    const payload = validPayload();
+    const uniqueEvents = Array.from({ length: 12 }, (_, index) => ({
+        sourceRef: `S10:${index + 1}`,
+        weight: 2,
+        description: `Event ${index + 1}`,
+    }));
+    payload.sections.events = [...uniqueEvents, { ...uniqueEvents[4] }];
+    const rawResponse = JSON.stringify(payload);
+
+    const first = parseArchitecturalSemanticResponse(rawResponse);
+    const second = parseArchitecturalSemanticResponse(rawResponse);
+
+    assert.deepEqual(first, second);
+    assert.deepEqual(first.payload.sections.events, uniqueEvents);
+    assert.deepEqual(first.normalization, {
+        strategy: 'EXACT_DUPLICATE_SECTION_RECORDS_V1',
+        removedCount: 1,
+        sections: [{
+            sectionKey: 'events',
+            beforeCount: 13,
+            afterCount: 12,
+            removedCount: 1,
+        }],
+    });
+});
+
 test('exposes a repair target only for one exclusively overflowing section', () => {
     const payload = validPayload();
     payload.sections.events = Array.from({ length: 13 }, (_, index) => ({

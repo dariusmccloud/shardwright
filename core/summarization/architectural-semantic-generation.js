@@ -128,6 +128,7 @@ async function generateParsedResponse(callApi, request, userPrompt) {
                 return {
                     parsed: parseArchitecturalSemanticResponse(repairedRawResponse),
                     rawResponse: repairedRawResponse,
+                    normalization: error.normalization,
                     repair: {
                         strategy: 'TARGETED_SECTION_REPAIR_V1',
                         ...target,
@@ -176,7 +177,7 @@ export async function generateArchitecturalSemanticShard(options) {
     const source = authoritativeSourceEnvelope(context);
     const request = await createArchitecturalSemanticRequestDescriptor(requestDescriptorOptions);
     const userPrompt = buildArchitecturalSemanticUserPrompt(chatText, context);
-    const { parsed, rawResponse, repair = null } = await generateParsedResponse(callApi, request, userPrompt);
+    const { parsed, rawResponse, repair = null, normalization = parsed.normalization } = await generateParsedResponse(callApi, request, userPrompt);
 
     if (!sameSourceEnvelope(parsed.payload.source, source)) {
         throw new ArchitecturalSemanticGenerationError(
@@ -199,6 +200,7 @@ export async function generateArchitecturalSemanticShard(options) {
         },
         rawResponse,
         repair,
+        normalization,
         promptVersion: request.promptVersion,
         semanticSchemaId: request.schemaId,
         semanticSchemaVersion: request.schemaVersion,

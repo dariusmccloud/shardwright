@@ -1,8 +1,10 @@
 # Phase C0.6.9: Architectural Sharder Contract Boundary Brief
 
-Last updated: 2026-07-10
+Last updated: 2026-07-13
 
-Status: active contract brief
+Status: complete
+
+Completion record: `C0_6_9_COMPLETION_REPORT.md`
 
 ## Purpose
 

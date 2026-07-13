@@ -1,6 +1,10 @@
 import { validateArchitecturalIntermediatePayload } from './architectural-intermediate-validator.js';
 import { classifyArchitecturalOverflowRepair } from './architectural-overflow-repair.js';
 
+const ARCHITECTURAL_SECTION_KEYS = Object.freeze([
+    'timeline', 'decisions', 'events', 'developments', 'dialogue', 'threads', 'current',
+]);
+
 export const ARCHITECTURAL_SEMANTIC_RESPONSE_ERROR_CODES = Object.freeze({
     EMPTY: 'ARCH_SEMANTIC_RESPONSE_EMPTY',
     JSON_INVALID: 'ARCH_SEMANTIC_RESPONSE_JSON_INVALID',
@@ -23,10 +27,61 @@ export class ArchitecturalSemanticResponseError extends Error {
         this.invalidPayload = options.invalidPayload && typeof options.invalidPayload === 'object'
             ? options.invalidPayload
             : null;
+        this.normalization = options.normalization && typeof options.normalization === 'object'
+            ? JSON.parse(JSON.stringify(options.normalization))
+            : null;
         if (options.cause) {
             this.cause = options.cause;
         }
     }
+}
+
+function stableStringify(value) {
+    if (Array.isArray(value)) {
+        return `[${value.map(stableStringify).join(',')}]`;
+    }
+    if (value && typeof value === 'object') {
+        const keys = Object.keys(value).sort();
+        return `{${keys.map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
+    }
+    return JSON.stringify(value);
+}
+
+function removeExactDuplicateSectionRecords(payload) {
+    if (!payload?.sections || typeof payload.sections !== 'object' || Array.isArray(payload.sections)) {
+        return null;
+    }
+    const sections = [];
+    let removedCount = 0;
+    for (const sectionKey of ARCHITECTURAL_SECTION_KEYS) {
+        const records = payload.sections[sectionKey];
+        if (!Array.isArray(records) || records.length < 2) continue;
+        const seen = new Set();
+        const normalized = [];
+        for (const record of records) {
+            const signature = stableStringify(record);
+            if (seen.has(signature)) {
+                removedCount += 1;
+                continue;
+            }
+            seen.add(signature);
+            normalized.push(record);
+        }
+        if (normalized.length !== records.length) {
+            payload.sections[sectionKey] = normalized;
+            sections.push({
+                sectionKey,
+                beforeCount: records.length,
+                afterCount: normalized.length,
+                removedCount: records.length - normalized.length,
+            });
+        }
+    }
+    return removedCount > 0 ? {
+        strategy: 'EXACT_DUPLICATE_SECTION_RECORDS_V1',
+        removedCount,
+        sections,
+    } : null;
 }
 
 function normalizeResponseText(rawResponse) {
@@ -57,7 +112,7 @@ function summarizeSchemaDiagnostic(diagnostic, payload) {
  * Accepts one outer JSON fence but does not extract partial JSON or repair content.
  *
  * @param {string} rawResponse
- * @returns {{ payload: object, schemaId: string }}
+ * @returns {{ payload: object, schemaId: string, normalization: object|null }}
  */
 export function parseArchitecturalSemanticResponse(rawResponse) {
     const responseText = normalizeResponseText(rawResponse);
@@ -80,6 +135,8 @@ export function parseArchitecturalSemanticResponse(rawResponse) {
         );
     }
 
+    const normalization = removeExactDuplicateSectionRecords(payload);
+
     const validation = validateArchitecturalIntermediatePayload(payload);
     if (!validation.ok) {
         const firstViolation = summarizeSchemaDiagnostic(validation.errors[0], payload);
@@ -93,6 +150,7 @@ export function parseArchitecturalSemanticResponse(rawResponse) {
                 diagnostics: validation.errors,
                 repairTarget,
                 invalidPayload: payload,
+                normalization,
             },
         );
     }
@@ -100,5 +158,6 @@ export function parseArchitecturalSemanticResponse(rawResponse) {
     return {
         payload,
         schemaId: validation.schemaId,
+        normalization,
     };
 }

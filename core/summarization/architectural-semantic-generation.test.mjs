@@ -158,6 +158,49 @@ test('stops after one schema retry also fails', async () => {
     assert.equal(calls, 2);
 });
 
+test('resolves duplicate-only overflow deterministically without an API retry', async () => {
+    const duplicateOverflow = payload();
+    const uniqueDecisions = Array.from({ length: 12 }, (_, index) => ({
+        sourceRef: `S10:${index + 1}`,
+        weight: index === 0 ? 5 : 3,
+        id: `decision-${index + 1}`,
+        types: ['GOVERNANCE'],
+        decision: `Decision ${index + 1}`,
+        why: 'Source-grounded reason.',
+        scope: 'duplicate overflow proof',
+        status: index === 0 ? 'SEALED' : 'PROPOSED',
+        evidence: [`S10:${index + 1}`],
+    }));
+    duplicateOverflow.sections.decisions = [...uniqueDecisions, { ...uniqueDecisions[5] }];
+    let calls = 0;
+    const run = async () => await generateArchitecturalSemanticShard(options({
+        callApi: async () => {
+            calls += 1;
+            return JSON.stringify(duplicateOverflow);
+        },
+    }));
+
+    const first = await run();
+    const second = await run();
+
+    assert.equal(calls, 2);
+    assert.equal(first.repair, null);
+    assert.deepEqual(first.normalization, {
+        strategy: 'EXACT_DUPLICATE_SECTION_RECORDS_V1',
+        removedCount: 1,
+        sections: [{
+            sectionKey: 'decisions',
+            beforeCount: 13,
+            afterCount: 12,
+            removedCount: 1,
+        }],
+    });
+    assert.deepEqual(first.replayMaterial.semanticPayload.sections.decisions, uniqueDecisions);
+    assert.equal(first.replayMaterial.semanticPayload.sections.decisions[0].status, 'SEALED');
+    assert.equal(first.output, second.output);
+    assert.deepEqual(first.normalization, second.normalization);
+});
+
 test('repairs only one overflowing section and preserves all unaffected sections', async () => {
     const overflowing = payload();
     overflowing.sections.events = Array.from({ length: 13 }, (_, index) => ({
