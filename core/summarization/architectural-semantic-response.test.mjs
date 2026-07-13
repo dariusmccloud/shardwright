@@ -109,6 +109,20 @@ test('rejects schema-invalid JSON with structured validator diagnostics', () => 
     assert.equal(error.repairTarget, null);
 });
 
+test('root contract mismatch reports only the expected and received version values', () => {
+    const payload = validPayload();
+    payload.schemaVersion = 'architectural-intermediate/v1';
+
+    const error = captureError(JSON.stringify(payload));
+
+    assert.equal(error.code, ARCHITECTURAL_SEMANTIC_RESPONSE_ERROR_CODES.SCHEMA_INVALID);
+    assert.match(
+        error.message,
+        /\/schemaVersion must be equal to constant \(expected 1; received "architectural-intermediate\/v1"\)/u,
+    );
+    assert.equal(error.message.includes(JSON.stringify(payload.source)), false);
+});
+
 test('exposes a repair target only for one exclusively overflowing section', () => {
     const payload = validPayload();
     payload.sections.events = Array.from({ length: 13 }, (_, index) => ({

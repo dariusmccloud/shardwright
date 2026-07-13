@@ -38,13 +38,17 @@ function normalizeResponseText(rawResponse) {
     return fencedJson ? fencedJson[1].trim() : normalized;
 }
 
-function summarizeSchemaDiagnostic(diagnostic) {
+function summarizeSchemaDiagnostic(diagnostic, payload) {
     const instancePath = String(diagnostic?.instancePath || '');
     const field = String(diagnostic?.field || '');
     const location = field && !instancePath.endsWith(`/${field}`)
         ? `${instancePath}/${field}`.replace(/^\/$/u, '')
         : (instancePath || field || 'response');
     const message = String(diagnostic?.message || 'is invalid').trim();
+    if (diagnostic?.keyword === 'const' && (instancePath === '/schemaVersion' || instancePath === '/profile')) {
+        const fieldName = instancePath.slice(1);
+        return `${location} ${message} (expected ${JSON.stringify(diagnostic?.params?.allowedValue)}; received ${JSON.stringify(payload?.[fieldName])})`;
+    }
     return `${location} ${message}`;
 }
 
@@ -78,7 +82,7 @@ export function parseArchitecturalSemanticResponse(rawResponse) {
 
     const validation = validateArchitecturalIntermediatePayload(payload);
     if (!validation.ok) {
-        const firstViolation = summarizeSchemaDiagnostic(validation.errors[0]);
+        const firstViolation = summarizeSchemaDiagnostic(validation.errors[0], payload);
         const repairTarget = classifyArchitecturalOverflowRepair(payload, validation.errors);
         throw new ArchitecturalSemanticResponseError(
             ARCHITECTURAL_SEMANTIC_RESPONSE_ERROR_CODES.SCHEMA_INVALID,

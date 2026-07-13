@@ -12,9 +12,11 @@ import {
 } from './architectural-sharder-contract.js';
 
 test('semantic prompt identifies the versioned intermediate contract and JSON-only boundary', () => {
-    assert.equal(ARCHITECTURAL_SEMANTIC_PROMPT_VERSION, 1);
+    assert.equal(ARCHITECTURAL_SEMANTIC_PROMPT_VERSION, 2);
     assert.match(DEFAULT_ARCHITECTURAL_SEMANTIC_PROMPT, /architectural-intermediate-schema-v1/);
     assert.match(DEFAULT_ARCHITECTURAL_SEMANTIC_PROMPT, /Return JSON only/);
+    assert.match(DEFAULT_ARCHITECTURAL_SEMANTIC_PROMPT, /schemaVersion to the JSON number 1 exactly/u);
+    assert.match(DEFAULT_ARCHITECTURAL_SEMANTIC_PROMPT, /profile to the JSON string "architectural-memory" exactly/u);
     assert.match(DEFAULT_ARCHITECTURAL_SEMANTIC_PROMPT, /Code owns canonical shard formatting/);
 });
 

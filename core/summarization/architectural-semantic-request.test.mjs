@@ -60,7 +60,7 @@ test('assembles prompt, schema identity, and strict response format into one des
 
     assert.equal(descriptor.schemaId, ARCHITECTURAL_INTERMEDIATE_SCHEMA_ID);
     assert.equal(descriptor.schemaVersion, ARCHITECTURAL_INTERMEDIATE_SCHEMA_VERSION);
-    assert.equal(descriptor.promptVersion, 1);
+    assert.equal(descriptor.promptVersion, 2);
     assert.equal(descriptor.systemPrompt, DEFAULT_ARCHITECTURAL_SEMANTIC_PROMPT);
     assert.deepEqual(descriptor.structuredOutput, {
         type: 'json_schema',

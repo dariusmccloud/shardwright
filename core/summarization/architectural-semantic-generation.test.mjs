@@ -123,6 +123,27 @@ test('retries one schema-invalid semantic response with correction guidance', as
     assert.equal(result.output.startsWith('[KEY]\n'), true);
 });
 
+test('retries a nonconstant root version with the exact governed root values', async () => {
+    let calls = 0;
+    let retryPrompt = '';
+    const wrongVersion = payload();
+    wrongVersion.schemaVersion = 'architectural-intermediate/v1';
+    const result = await generateArchitecturalSemanticShard(options({
+        callApi: async (_systemPrompt, userPrompt) => {
+            calls += 1;
+            if (calls === 1) return JSON.stringify(wrongVersion);
+            retryPrompt = userPrompt;
+            return JSON.stringify(payload());
+        },
+    }));
+
+    assert.equal(calls, 2);
+    assert.match(retryPrompt, /expected 1; received "architectural-intermediate\/v1"/u);
+    assert.match(retryPrompt, /schemaVersion as the JSON number 1 exactly/u);
+    assert.match(retryPrompt, /profile as the JSON string "architectural-memory" exactly/u);
+    assert.equal(result.replayMaterial.semanticPayload.schemaVersion, 1);
+});
+
 test('stops after one schema retry also fails', async () => {
     let calls = 0;
     await assert.rejects(

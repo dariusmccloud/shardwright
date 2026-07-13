@@ -90,7 +90,8 @@ function schemaRetryPrompt(userPrompt, error) {
 
 SCHEMA CORRECTION REQUIRED
 The previous response was rejected: ${firstViolation}
-Return one complete JSON object matching the supplied JSON schema. The root must contain schemaVersion, profile, source, and sections. Put timeline, decisions, events, developments, dialogue, threads, and current inside sections. Do not use the legacy flattened root shape.`;
+Return one complete JSON object matching the supplied JSON schema. The root must contain schemaVersion, profile, source, and sections. Put timeline, decisions, events, developments, dialogue, threads, and current inside sections. Do not use the legacy flattened root shape.
+Return schemaVersion as the JSON number 1 exactly and profile as the JSON string "architectural-memory" exactly.`;
 }
 
 async function generateParsedResponse(callApi, request, userPrompt) {

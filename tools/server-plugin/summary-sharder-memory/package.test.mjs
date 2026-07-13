@@ -7,6 +7,10 @@ import { pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
 import { packageSummarySharderMemoryPlugin } from '../package-summary-sharder-memory.mjs';
+import {
+    ARCHITECTURAL_SEMANTIC_PROMPT_VERSION,
+    DEFAULT_ARCHITECTURAL_SEMANTIC_PROMPT,
+} from '../../../core/summarization/architectural-semantic-prompt.js';
 
 function makeTempRoot() {
     return fs.mkdtempSync(path.join(os.tmpdir(), 'summary-sharder-packaged-plugin-'));
@@ -282,6 +286,14 @@ test('packaged plugin stages only declared payload and resolves runtime imports 
     const invalidAdmission = validatorModule.validateArchitecturalIntermediatePayload(null);
     assert.equal(invalidAdmission.ok, false);
     assert.equal(invalidAdmission.schemaId, 'https://summary-sharder/architectural-intermediate/v1');
+
+    const stagedPromptModule = await import(pathToFileURL(
+        path.join(staged.pluginRoot, 'lib', 'core', 'summarization', 'architectural-semantic-prompt.js'),
+    ).href);
+    assert.equal(stagedPromptModule.ARCHITECTURAL_SEMANTIC_PROMPT_VERSION, ARCHITECTURAL_SEMANTIC_PROMPT_VERSION);
+    assert.equal(stagedPromptModule.DEFAULT_ARCHITECTURAL_SEMANTIC_PROMPT, DEFAULT_ARCHITECTURAL_SEMANTIC_PROMPT);
+    assert.match(stagedPromptModule.DEFAULT_ARCHITECTURAL_SEMANTIC_PROMPT, /schemaVersion to the JSON number 1 exactly/u);
+    assert.match(stagedPromptModule.DEFAULT_ARCHITECTURAL_SEMANTIC_PROMPT, /profile to the JSON string "architectural-memory" exactly/u);
 });
 
 test('packaged plugin smoke succeeds under Node from staged payload only', async () => {

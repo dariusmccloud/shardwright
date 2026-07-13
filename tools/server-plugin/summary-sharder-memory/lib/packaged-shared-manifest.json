@@ -61,7 +61,7 @@
     {
       "canonicalRelativePath": "core/summarization/architectural-semantic-prompt.js",
       "packagedRelativePath": "lib/core/summarization/architectural-semantic-prompt.js",
-      "sha256": "2d0493d021e4f5b45d76a4381092f13e2be728b1f5883039dafba51439b633e0"
+      "sha256": "811b52eb111f67225a711f79d6c96fac303a9aa982d50fbaeee441446fb85ce2"
     },
     {
       "canonicalRelativePath": "core/summarization/architectural-semantic-renderer.js",

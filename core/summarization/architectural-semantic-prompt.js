@@ -4,7 +4,7 @@ import {
     ARCHITECTURAL_THREAD_STATUSES,
 } from './architectural-sharder-contract.js';
 
-export const ARCHITECTURAL_SEMANTIC_PROMPT_VERSION = 1;
+export const ARCHITECTURAL_SEMANTIC_PROMPT_VERSION = 2;
 
 /**
  * C0.6.9 semantic extraction contract.
@@ -18,6 +18,8 @@ OUTPUT CONTRACT
 
 - Return exactly one JSON object matching architectural-intermediate-schema-v1.
 - Return JSON only. Do not wrap it in Markdown or explanatory prose.
+- Set the root property schemaVersion to the JSON number 1 exactly.
+- Set the root property profile to the JSON string "architectural-memory" exactly.
 - Produce meaning-bearing records. Code owns canonical shard formatting, legality, normalization, pruning, and rendering.
 - Do not emit section headers, pipe-delimited fields, renderer syntax, or final Memory Shard text.
 - Do not invent facts, source references, rationale, dialogue, decisions, status, or supersession.
