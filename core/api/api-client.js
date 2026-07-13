@@ -253,6 +253,12 @@ async function callSillyTavernAPICompatibility(messages, options) {
             runAttempt: (label, body) => runWithOneTransientRetry({
                 run: () => runCompatibilityAttempt(label, body, signal),
                 shouldRetry: error => TRANSIENT_COMPATIBILITY_STATUSES.has(error?.status),
+                onRetryDiagnostic: diagnostic => log.warn('Compatibility transport retry', {
+                    label,
+                    source: String(oai_settings?.chat_completion_source || 'unknown'),
+                    model,
+                    ...diagnostic,
+                }),
             }),
         });
     } catch (error) {
