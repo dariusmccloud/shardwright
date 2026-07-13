@@ -41,7 +41,10 @@ import {
     persistArchitecturalAuthorityProjection,
 } from './architectural-authority-runtime.js';
 import { reconcileCurrentChatMessageIdentity } from './message-identity-runtime.js';
-import { createInterpretiveProposalFromArchitecturalShard } from './architectural-authority-server-api.js';
+import {
+    createInterpretiveProposalFromArchitecturalShard,
+    persistArchitecturalReplayAuthorityArtifact,
+} from './architectural-authority-server-api.js';
 import { refreshCurrentChatShardIntegrity } from './shard-integrity-runtime.js';
 import { openInterpretiveReviewModal } from '../../ui/modals/management/interpretive-review-modal.js';
 import {
@@ -49,6 +52,7 @@ import {
     projectArchitecturalProposalLaunchBlocker,
     shouldCreateProposalAfterAuthorityResult,
 } from './architectural-proposal-launch-blocker.js';
+import { registerAndPersistArchitecturalReplay } from './architectural-live-finalization.js';
 
 // World info metadata key
 const METADATA_KEY = 'world_info';
@@ -162,6 +166,21 @@ export async function handleSummaryResult(
         if (settings?.sharderMode === true && settings?.sharderProfile === ARCHITECTURAL_PROFILE) {
             try {
                 const activeChatId = SillyTavern.getContext()?.chatId || null;
+                if (resultMetadata?.architecturalReplayArtifact) {
+                    await registerAndPersistArchitecturalReplay({
+                        outputUID,
+                        currentManifest: resultMetadata.architecturalCurrentManifest,
+                        replayArtifact: resultMetadata.architecturalReplayArtifact,
+                        artifactKind: mode === 'system'
+                            ? SHARD_ARTIFACT_KINDS.SYSTEM_SHARD
+                            : SHARD_ARTIFACT_KINDS.LOREBOOK_SUMMARY,
+                        startIndex,
+                        endIndex,
+                    }, {
+                        refreshIntegrity: refreshCurrentChatShardIntegrity,
+                        persistReplayArtifact: persistArchitecturalReplayAuthorityArtifact,
+                    });
+                }
                 recordArchitecturalIntegrationEvent('AUTHORITY_ADOPTION_CALL_PREPARED', {
                     profile: ARCHITECTURAL_PROFILE,
                     mode,
@@ -182,47 +201,13 @@ export async function handleSummaryResult(
                     toastr.warning(getArchitecturalAuthorityWarning(authorityResult));
                 }
                 if (shouldCreateProposal) {
-                    let integrityBlocked = false;
-                    try {
-                        await refreshCurrentChatShardIntegrity({
-                            reason: 'architectural-proposal-launch',
-                            registerOutput: {
-                                outputUID,
-                                artifactKind: mode === 'system'
-                                    ? SHARD_ARTIFACT_KINDS.SYSTEM_SHARD
-                                    : SHARD_ARTIFACT_KINDS.LOREBOOK_SUMMARY,
-                                startIndex,
-                                endIndex,
-                            },
-                        });
-                    } catch (integrityError) {
-                        const projection = projectArchitecturalProposalLaunchBlocker(null, integrityError);
-                        recordArchitecturalIntegrationEvent('ARCHITECTURAL_HANDOFF_BLOCKED', {
-                            profile: ARCHITECTURAL_PROFILE,
-                            mode,
-                            outputUID,
-                            code: projection.code,
-                            message: projection.reason,
-                        });
-                        ragLog.warn('Architectural proposal handoff blocked by integrity refresh:', integrityError?.message || integrityError);
-                        pendingArchitecturalReviewOpen = {
-                            interpretationRevisionId: null,
-                            userMessage: projection.toastMessage,
-                        };
-                        if (typeof toastr !== 'undefined') {
-                            toastr.warning(pendingArchitecturalReviewOpen.userMessage);
-                        }
-                        integrityBlocked = true;
-                    }
-                    if (!integrityBlocked) {
-                        pendingArchitecturalReviewOpen = await createArchitecturalProposalReviewLaunchRequest({
-                            outputUID,
-                            activeChatId,
-                            authorityResult,
-                        });
-                        if (!pendingArchitecturalReviewOpen?.interpretationRevisionId && pendingArchitecturalReviewOpen?.userMessage && typeof toastr !== 'undefined') {
-                            toastr.warning(pendingArchitecturalReviewOpen.userMessage);
-                        }
+                    pendingArchitecturalReviewOpen = await createArchitecturalProposalReviewLaunchRequest({
+                        outputUID,
+                        activeChatId,
+                        authorityResult,
+                    });
+                    if (!pendingArchitecturalReviewOpen?.interpretationRevisionId && pendingArchitecturalReviewOpen?.userMessage && typeof toastr !== 'undefined') {
+                        toastr.warning(pendingArchitecturalReviewOpen.userMessage);
                     }
                 }
             } catch (error) {

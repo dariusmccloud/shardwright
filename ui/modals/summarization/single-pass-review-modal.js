@@ -20,6 +20,10 @@ import {
 } from '../../../core/summarization/architectural-structured-validator.js';
 import { mergeArchitecturalDecisionLedger } from '../../../core/summarization/architectural-decision-ledger.js';
 import {
+    buildArchitecturalReviewRecordId,
+    createArchitecturalReviewIntent,
+} from '../../../core/summarization/architectural-post-review-finalization.js';
+import {
     ARCHITECTURAL_PRUNING_CLASSIFICATIONS,
     analyzeArchitecturalPruningAdvisor,
     buildArchitecturalPruningAdvisorUiModel,
@@ -230,6 +234,7 @@ function splitSceneContentToItems(content) {
 
 function normalizeSectionItems(sections, registry = null) {
     const normalized = {};
+    const architectural = registry?.profile === ARCHITECTURAL_PROFILE;
     reviewSections(registry).forEach((section) => {
         const raw = Array.isArray(sections?.[section.key]) ? sections[section.key] : [];
 
@@ -247,6 +252,8 @@ function normalizeSectionItems(sections, registry = null) {
         normalized[section.key] = expanded.map((item, idx) => ({
             id: `${section.key}:${idx}:${Math.random().toString(36).slice(2, 8)}`,
             content: item?.content || '',
+            initialContent: item?.content || '',
+            reviewRecordId: architectural ? buildArchitecturalReviewRecordId(section.key, idx) : null,
             sceneCodes: parseSceneCodes(item?.content || ''),
             archived: false,
             selected: true,
@@ -2226,6 +2233,10 @@ export async function openSharderReviewModal(pipelineResult, settings, regenFn =
         decisionLedgerMetrics: pipelineResult.metadata?.decisionLedgerMetrics || null,
     };
 
+    state.architecturalOriginalRecordIds = isArchitecturalState(state)
+        ? Object.values(state.editableSections).flatMap((items) => items.map((item) => item.reviewRecordId).filter(Boolean))
+        : [];
+
     if (isArchitecturalState(state)) {
         state.sourceDiagnostics = (pipelineResult.diagnostics || []).filter((diagnostic) =>
             ARCHITECTURAL_IMMUTABLE_DIAGNOSTIC_CODES.has(diagnostic.code)
@@ -2325,6 +2336,15 @@ export async function openSharderReviewModal(pipelineResult, settings, regenFn =
                     architecturalAuthorityContext: {
                         baselineLedger: state.metadata?.baselineLedger || null,
                     },
+                    architecturalReviewIntent: createArchitecturalReviewIntent(
+                        state.editableSections,
+                        state.architecturalOriginalRecordIds,
+                        {
+                            baselineAuthorityContext: {
+                                baselineLedger: state.metadata?.baselineLedger || null,
+                            },
+                        },
+                    ),
                 }
                 : null,
         };

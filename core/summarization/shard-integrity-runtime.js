@@ -47,6 +47,10 @@ function getStoredManifests() {
         .filter(Boolean);
 }
 
+export function getCurrentChatShardManifests() {
+    return getStoredManifests().map((manifest) => ({ ...manifest }));
+}
+
 function setRuntimeState(context, report, now) {
     lastRuntimeState = {
         chatId: getNormalizedChatId(context),
@@ -171,6 +175,7 @@ export async function syncCurrentChatShardIntegrity(options = {}) {
         manifestsChanged,
         reportChanged,
         manifestsAdded: additions.length,
+        registeredManifests: additions.map((manifest) => ({ ...manifest })),
         manifestCount: nextManifests.length,
         report,
         summary: runtimeState.summary,

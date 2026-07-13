@@ -132,7 +132,7 @@
     {
       "canonicalRelativePath": "core/summarization/shard-integrity-core.js",
       "packagedRelativePath": "lib/core/summarization/shard-integrity-core.js",
-      "sha256": "e299862fc054ff6fede36cc3ab36865b53e4ac5006508ea00fd71eddff0a3ec1"
+      "sha256": "40ea95e9a63ce5fa66b527e44a70d0ba2f5f7a5b17e09e6dcee724f84179144e"
     },
     {
       "canonicalRelativePath": "core/summarization/sharder-section-registry.js",
@@ -255,7 +255,7 @@
     },
     {
       "relativePath": "lib/core/summarization/shard-integrity-core.js",
-      "sha256": "e299862fc054ff6fede36cc3ab36865b53e4ac5006508ea00fd71eddff0a3ec1"
+      "sha256": "40ea95e9a63ce5fa66b527e44a70d0ba2f5f7a5b17e09e6dcee724f84179144e"
     },
     {
       "relativePath": "lib/core/summarization/sharder-section-registry.js",
@@ -263,7 +263,7 @@
     },
     {
       "relativePath": "lib/packaged-shared-manifest.json",
-      "sha256": "60047a94824b611e5399275a69f5690ffba1a173ae207dc91ac68463d5b6b69c"
+      "sha256": "fdc020eeb02a503a55707c41a412262753195b7f412297e5a3be7f487010c03a"
     },
     {
       "relativePath": "package.json",

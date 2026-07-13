@@ -183,7 +183,10 @@ export function buildArchitecturalBaselineLedger(existingShards = []) {
                 };
             }
 
-            decisionsById[parsed.id] = decisionEntryFromParsed(parsed);
+            decisionsById[parsed.id] = {
+                ...decisionEntryFromParsed(parsed),
+                sourceManifest: shard?.sourceManifest ? { ...shard.sourceManifest } : null,
+            };
         }
     }
 

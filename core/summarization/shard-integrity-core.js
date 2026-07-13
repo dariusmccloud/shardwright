@@ -1,6 +1,6 @@
 import { isArchivedMessage } from '../chat/archive-policy.js';
 import { buildCorpusRevisionHash } from './message-identity-core.js';
-import { hashTextSha256Compat } from './crypto-compat.js';
+import { hashTextSha256Compat, makeRandomHexId } from './crypto-compat.js';
 
 export const SHARD_MANIFEST_SCHEMA_VERSION = 2;
 export const SHARD_INTEGRITY_REPORT_SCHEMA_VERSION = 2;
@@ -107,6 +107,11 @@ function buildManifestId(outputUID, artifactKind, startIndex, endIndex) {
         return `manifest:${artifactKind}:${outputKey}`;
     }
     return `manifest:${artifactKind}:${startIndex}-${endIndex}`;
+}
+
+export function createManagedShardManifestId(artifactKind, cryptoApi = globalThis.crypto) {
+    const normalizedKind = trimString(artifactKind) || SHARD_ARTIFACT_KINDS.SYSTEM_SUMMARY;
+    return `manifest:${normalizedKind}:shard_${makeRandomHexId(16, cryptoApi)}`;
 }
 
 function resolveArtifactKind(tag) {
@@ -372,7 +377,7 @@ export async function buildManagedShardManifest(messages, options = {}) {
 
     return {
         schemaVersion: SHARD_MANIFEST_SCHEMA_VERSION,
-        manifestId: buildManifestId(options.outputUID, artifactKind, startIndex, endIndex),
+        manifestId: trimString(options.manifestId) || buildManifestId(options.outputUID, artifactKind, startIndex, endIndex),
         artifactKind,
         outputUID: trimString(options.outputUID) || null,
         sourceStartPositionAtCreation: startIndex,

@@ -7,6 +7,7 @@ import {
     healthcheckArchitecturalAuthorityServer,
     listInterpretiveDelegationPolicies,
     listInterpretiveReviews,
+    persistArchitecturalReplayAuthorityArtifact,
     recordInterpretiveSubjectDisposition,
     resetArchitecturalAuthorityServerApiState,
     submitInterpretiveReviewDisposition,
@@ -15,6 +16,24 @@ import {
 test.afterEach(() => {
     resetArchitecturalAuthorityServerApiState();
     delete global.fetch;
+});
+
+test('persistArchitecturalReplayAuthorityArtifact posts the finalized artifact to the authenticated route', async () => {
+    const calls = [];
+    global.fetch = async (url, options = {}) => {
+        calls.push({ url, options });
+        if (url === '/csrf-token') {
+            return { ok: true, async json() { return { token: 'disabled' }; } };
+        }
+        return { ok: true, async json() { return { ok: true, created: true }; } };
+    };
+    const artifact = { artifactId: 'archreplay_test' };
+    const response = await persistArchitecturalReplayAuthorityArtifact(artifact);
+
+    assert.equal(calls[1].url, '/api/plugins/summary-sharder-memory/architectural/replay-artifacts');
+    assert.equal(calls[1].options.method, 'POST');
+    assert.deepEqual(JSON.parse(calls[1].options.body), { artifact });
+    assert.equal(response.created, true);
 });
 
 test('listInterpretiveReviews builds filtered query string', async () => {

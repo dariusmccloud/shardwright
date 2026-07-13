@@ -23,6 +23,7 @@ import { checkRelationshipCoherence } from './relationship-guard.js';
 import { buildArchitecturalBaselineFromShards } from '../summarization/architectural-structured-validator.js';
 import { mergeArchitecturalDecisionLedger } from '../summarization/architectural-decision-ledger.js';
 import { generateArchitecturalSemanticShard } from '../summarization/architectural-semantic-generation.js';
+import { createArchitecturalPostReviewPlan } from '../summarization/architectural-post-review-finalization.js';
 
 /**
  * @param {Object} settings
@@ -158,6 +159,15 @@ export async function runSharderPipeline(chatText, settings, context) {
             ),
         })
         : null;
+    const architecturalPostReviewPlan = semanticGeneration
+        ? createArchitecturalPostReviewPlan({
+            generationPayload: semanticGeneration.replayMaterial.semanticPayload,
+            currentManifest: context.currentManifest,
+            inheritedDecisionEntries: (architecturalBaseline.ledger?.orderedIds || [])
+                .map((id) => architecturalBaseline.ledger.decisionsById[id])
+                .filter(Boolean),
+        })
+        : null;
     const raw = sectionRegistry.profile === ARCHITECTURAL_PROFILE
         ? semanticGeneration.output
         : await callSharderApi(settings, systemPrompt, userPrompt);
@@ -253,6 +263,7 @@ export async function runSharderPipeline(chatText, settings, context) {
                 baselineDecisions: architecturalBaseline.decisions,
                 baselineLedger: architecturalBaseline.ledger || architecturalBaseline.decisions,
                 decisionLedgerMetrics: decisionLedger?.metrics || null,
+                architecturalPostReviewPlan,
                 ...(semanticGeneration ? {
                     semanticSchemaId: semanticGeneration.semanticSchemaId,
                     semanticSchemaVersion: semanticGeneration.semanticSchemaVersion,

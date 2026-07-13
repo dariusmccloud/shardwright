@@ -8,6 +8,7 @@ import {
     SHARD_PROMPT_POLICY_VALUES,
     buildBackfilledManifestFromOutputMessage,
     buildManagedShardManifest,
+    createManagedShardManifestId,
     parseManagedOutputWrapper,
     validateShardManifest,
 } from './shard-integrity-core.js';
@@ -48,6 +49,32 @@ test('parseManagedOutputWrapper recognizes system shard wrappers', () => {
             endIndex: 20,
         }
     );
+});
+
+test('pre-save manifest identity survives output locator registration', async () => {
+    const messages = [makeMessage(0), makeMessage(1)];
+    const manifestId = createManagedShardManifestId(SHARD_ARTIFACT_KINDS.SYSTEM_SHARD, {});
+    const beforeSave = await buildManagedShardManifest(messages, {
+        artifactKind: SHARD_ARTIFACT_KINDS.SYSTEM_SHARD,
+        manifestId,
+        startIndex: 0,
+        endIndex: 1,
+        cryptoApi: {},
+    });
+    const afterSave = await buildManagedShardManifest(messages, {
+        artifactKind: SHARD_ARTIFACT_KINDS.SYSTEM_SHARD,
+        manifestId,
+        outputUID: '2026-07-12T00:00:00.000Z',
+        startIndex: 0,
+        endIndex: 1,
+        cryptoApi: {},
+    });
+
+    assert.equal(beforeSave.manifestId, manifestId);
+    assert.equal(afterSave.manifestId, manifestId);
+    assert.equal(afterSave.outputUID, '2026-07-12T00:00:00.000Z');
+    assert.equal(afterSave.sourceIdentityHash, beforeSave.sourceIdentityHash);
+    assert.equal(afterSave.sourceRevisionHash, beforeSave.sourceRevisionHash);
 });
 
 test('buildManagedShardManifest records identity-backed source coverage', async () => {

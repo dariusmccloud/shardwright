@@ -116,7 +116,7 @@
     {
       "canonicalRelativePath": "core/summarization/shard-integrity-core.js",
       "packagedRelativePath": "lib/core/summarization/shard-integrity-core.js",
-      "sha256": "e299862fc054ff6fede36cc3ab36865b53e4ac5006508ea00fd71eddff0a3ec1"
+      "sha256": "40ea95e9a63ce5fa66b527e44a70d0ba2f5f7a5b17e09e6dcee724f84179144e"
     },
     {
       "canonicalRelativePath": "core/summarization/sharder-section-registry.js",

@@ -47,6 +47,25 @@ Fixture | Conflict | Baseline order test | None | None | Continue
     assert.equal(ledger.diagnostics.some((entry) => entry.code === 'ARCH_BASELINE_DUPLICATE_ID_CONFLICT'), true);
 });
 
+test('baseline builder retains the immutable source manifest for post-review provenance', () => {
+    const sourceManifest = {
+        manifestId: 'manifest:system-shard:baseline-test',
+        sourceIdentityHash: `sha256:${'1'.repeat(64)}`,
+        sourceRevisionHash: `sha256:${'2'.repeat(64)}`,
+        sourceStartPositionAtCreation: 1,
+        sourceEndPositionAtCreation: 2,
+    };
+    const baselineContent = readFixture('architectural-lifecycle-baseline-01.txt');
+    const ledger = buildArchitecturalBaselineLedger([{
+        content: baselineContent,
+        identifier: 'baseline',
+        messageRangeStart: 1,
+        sourceManifest,
+    }]);
+
+    assert.deepEqual(ledger.decisionsById[ledger.orderedIds[0]].sourceManifest, sourceManifest);
+});
+
 test('baseline omissions are carried forward and formatting-only overlays remain inherited', () => {
     const baselineContent = readFixture('architectural-lifecycle-baseline-01.txt');
     const baselineLedger = buildArchitecturalBaselineLedger([{ content: baselineContent, identifier: 'baseline', messageRangeStart: 1 }]);
@@ -147,4 +166,3 @@ Fixture | Generated | Baseline ledger test | None | None | Continue
 ===END===
 `;
 }
-

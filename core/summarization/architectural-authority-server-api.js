@@ -231,6 +231,13 @@ export async function createInterpretiveProposalFromArchitecturalShard(payload =
     });
 }
 
+export async function persistArchitecturalReplayAuthorityArtifact(artifact) {
+    return await fetchJson('/architectural/replay-artifacts', {
+        method: 'POST',
+        body: { artifact },
+    });
+}
+
 export async function getInterpretiveCandidate(interpretationRevisionId) {
     const normalizedId = String(interpretationRevisionId || '').trim();
     if (!normalizedId) {

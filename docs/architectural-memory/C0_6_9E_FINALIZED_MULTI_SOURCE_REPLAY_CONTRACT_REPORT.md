@@ -10,7 +10,7 @@ Parent phase status: `C0.6.9E` remains active
 
 Record the completed prerequisite boundary that allows a finalized Architectural shard to preserve consolidated multi-source provenance and replay deterministically without another model call.
 
-This report does not declare `C0.6.9E` complete. Post-review semantic reconciliation, proposal-handoff restart replay, and packaged Node/Bun parity remain open.
+This report does not declare `C0.6.9E` complete. Proposal-handoff restart replay and packaged Node/Bun parity remain open.
 
 ## Governing Decision
 
@@ -109,6 +109,19 @@ The server-managed authority path provides:
 
 No replay metadata is written into chat JSONL or lorebook content.
 
+### 7. Post-review finalization and live save integration
+
+The review modal returns operator intent only. Core post-review reconciliation:
+
+1. applies selection intent to generated and inherited records,
+2. retains inherited record provenance through historical manifests,
+3. refuses raw rendered-text authority edits,
+4. produces one finalized semantic payload,
+5. renders the exact canonical shard from that payload,
+6. constructs the replay artifact from the same payload/output pair.
+
+Before review, the live pipeline allocates and validates the current source-manifest identity. After host save, the same identity is registered against the saved output before the replay artifact is persisted. Replay persistence is independent of proposal eligibility; a valid saved shard that produces no proposal still receives its governed replay artifact.
+
 ## Failure Policy
 
 The boundary refuses when:
@@ -150,6 +163,23 @@ git diff --check
 
 All completed successfully.
 
+Live finalization integration proof (2026-07-12):
+
+```powershell
+node --test core/summarization/architectural-live-finalization.test.mjs core/summarization/architectural-post-review-finalization.test.mjs core/summarization/shard-integrity-core.test.mjs core/summarization/architectural-decision-ledger.test.mjs core/summarization/architectural-authority-server-api.test.mjs core/summarization/architectural-finalized-semantic.test.mjs core/summarization/architectural-semantic-replay-artifact.test.mjs
+```
+
+Observed result:
+
+```text
+tests 50
+pass 50
+fail 0
+exit 0
+```
+
+Syntax checks for the modified live-path modules and `git diff --check` also exited `0`.
+
 The focused matrix proved:
 
 1. current-range records resolve against the current manifest,
@@ -166,13 +196,8 @@ Expected error logs emitted during negative route cases were visible and corresp
 
 ## Remaining C0.6.9E Work
 
-1. Define the modal review-intent contract.
-2. Reconcile selection and semantic edits in a core post-review finalization service.
-3. Adapt existing baseline authority records into finalized semantic records with manifest bindings.
-4. Ensure the same finalized payload drives canonical output and replay-artifact construction.
-5. Connect post-save manifest finalization to portable replay persistence.
-6. Prove proposal-handoff state survives restart and replay.
-7. Prove packaged Node/Bun semantic parity.
+1. Prove proposal-handoff state survives restart and replay.
+2. Prove packaged Node/Bun semantic parity.
 
 ## Closed Boundary
 
@@ -181,8 +206,10 @@ The completed result is:
 ```text
 multi-source finalized semantic records
 -> exact named-manifest provenance validation
+-> core reconciliation of operator review intent
 -> deterministic canonical renderer
 -> versioned replay artifact
+-> stable pre-save/post-save manifest identity
 -> portable authority storage and authenticated reload
 ```
 

@@ -486,6 +486,8 @@ Proof:
 
 ### C0.6.9E: Operator Error Surface And Replay Safety
 
+Status note (2026-07-12): the finalized multi-source semantic contract, core post-review reconciliation, pre-save manifest identity, deterministic canonical rendering, and post-save governed replay-artifact persistence are implemented and focused-proof complete. Proposal-handoff restart replay and packaged Node/Bun parity remain open. See `C0_6_9E_FINALIZED_MULTI_SOURCE_REPLAY_CONTRACT_REPORT.md`.
+
 Implement:
 
 1. plain-language blocker projection,

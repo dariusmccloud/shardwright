@@ -20,7 +20,13 @@ import {
 import { startUiOperation, endUiOperation } from './api-ui-helpers.js';
 import { log } from '../logger.js';
 import { ARCHITECTURAL_PROFILE, normalizeSharderProfile } from '../summarization/sharder-section-registry.js';
-import { getPersistedMessageId, SHARD_ARTIFACT_KINDS } from '../summarization/shard-integrity-core.js';
+import {
+    SHARD_ARTIFACT_KINDS,
+    buildManagedShardManifest,
+    createManagedShardManifestId,
+    getPersistedMessageId,
+} from '../summarization/shard-integrity-core.js';
+import { finalizeArchitecturalReviewForSave } from '../summarization/architectural-live-finalization.js';
 import { refreshCurrentChatShardIntegrity } from '../summarization/shard-integrity-runtime.js';
 import { buildSinglePassInput } from './single-pass-input.js';
 import { resolveSelectedShardsForRun } from './sharder-run-selection.js';
@@ -33,18 +39,20 @@ import {
 
 let isSharderRunning = false;
 
-async function runPipelineWithAnalysis(chatText, settings, startIndex, endIndex, selectedShards = [], extractKeywords = false, messageIds = []) {
+async function runPipelineWithAnalysis(chatText, settings, startIndex, endIndex, selectedShards = [], extractKeywords = false, messageIds = [], currentManifest = null) {
     const { runSharderPipeline } = await import('../sharder/single-pass-pipeline.js');
     const result = await runSharderPipeline(chatText, settings, {
         startIndex,
         endIndex,
         extractKeywords,
         messageIds,
+        currentManifest,
         existingShards: (selectedShards || []).map((s) => ({
             content: s.content,
             identifier: s.identifier,
             messageRangeStart: s.messageRangeStart,
             projectionMetadata: s.projectionMetadata || null,
+            sourceManifest: s.sourceManifest || null,
         })),
     });
 
@@ -102,6 +110,23 @@ export async function runSharderHeadless(startIndex, endIndex, settings, selecte
 
     const extractKeywords = settings.outputMode === 'lorebook'
         && settings.lorebookEntryOptions?.extractKeywords !== false;
+    const architecturalRun = normalizeSharderProfile(settings?.sharderProfile) === ARCHITECTURAL_PROFILE;
+    const artifactKind = settings.outputMode === 'lorebook'
+        ? SHARD_ARTIFACT_KINDS.LOREBOOK_SUMMARY
+        : SHARD_ARTIFACT_KINDS.SYSTEM_SHARD;
+    const currentManifest = architecturalRun
+        ? await buildManagedShardManifest(messages, {
+            manifestId: createManagedShardManifestId(artifactKind),
+            artifactKind,
+            startIndex,
+            endIndex,
+        })
+        : null;
+    if (architecturalRun && !currentManifest) {
+        const error = new Error('Architectural post-review finalization requires a complete persisted source manifest.');
+        error.code = 'ARCH_POST_REVIEW_CURRENT_MANIFEST_MISSING';
+        throw error;
+    }
 
     const result = await runPipelineWithAnalysis(
         chatText,
@@ -110,7 +135,8 @@ export async function runSharderHeadless(startIndex, endIndex, settings, selecte
         endIndex,
         selectedShards,
         extractKeywords,
-        messageIds
+        messageIds,
+        currentManifest
     );
     throwIfAborted('sharder pipeline');
 
@@ -119,6 +145,7 @@ export async function runSharderHeadless(startIndex, endIndex, settings, selecte
         chatText,
         extractKeywords,
         messageIds,
+        currentManifest,
     };
 }
 
@@ -185,6 +212,7 @@ export async function runSharder(startIndex, endIndex, settings, selectedShards 
 
         const { openSharderReviewModal } = await import('../../ui/modals/summarization/single-pass-review-modal.js');
 
+        let latestPipelineResult = headless.result;
         const regenFn = async () => {
             throwIfAborted('sharder regenerate');
             const result = await runPipelineWithAnalysis(
@@ -194,8 +222,10 @@ export async function runSharder(startIndex, endIndex, settings, selectedShards 
                 endIndex,
                 selection.selectedShards,
                 headless.extractKeywords,
-                headless.messageIds
+                headless.messageIds,
+                headless.currentManifest
             );
+            latestPipelineResult = result;
             throwIfAborted('sharder regenerate');
             return result;
         };
@@ -209,17 +239,29 @@ export async function runSharder(startIndex, endIndex, settings, selectedShards 
             return;
         }
 
+        let finalOutput = review.finalOutput;
+        let resultMetadata = review.resultMetadata || null;
+        if (normalizeSharderProfile(settings?.sharderProfile) === ARCHITECTURAL_PROFILE) {
+            const finalized = await finalizeArchitecturalReviewForSave({
+                pipelineResult: latestPipelineResult,
+                review,
+                currentManifest: headless.currentManifest,
+            });
+            finalOutput = finalized.finalOutput;
+            resultMetadata = finalized.resultMetadata;
+        }
+
         throwIfAborted('sharder output');
         const outputResult = await handleSummaryResult(
             settings,
-            review.finalOutput,
+            finalOutput,
             startIndex,
             endIndex,
             false,
             headless.result.extractedKeywords || [],
             null,
             review.archiveOptions || null,
-            review.resultMetadata || null
+            resultMetadata
         );
 
         if (outputResult.didInjectToContext) {
@@ -246,26 +288,28 @@ export async function runSharder(startIndex, endIndex, settings, selectedShards 
 
             await recomputeVisibility();
 
-            await refreshSharderIntegrityAfterSave(
-                {
-                    reason: 'sharder-saved',
-                    registerOutput: {
-                        outputUID: outputResult.outputUID,
-                        artifactKind: outputResult.mode === 'system'
-                            ? SHARD_ARTIFACT_KINDS.SYSTEM_SHARD
-                            : SHARD_ARTIFACT_KINDS.LOREBOOK_SUMMARY,
-                        startIndex,
-                        endIndex,
+            if (!resultMetadata?.architecturalReplayArtifact) {
+                await refreshSharderIntegrityAfterSave(
+                    {
+                        reason: 'sharder-saved',
+                        registerOutput: {
+                            outputUID: outputResult.outputUID,
+                            artifactKind: outputResult.mode === 'system'
+                                ? SHARD_ARTIFACT_KINDS.SYSTEM_SHARD
+                                : SHARD_ARTIFACT_KINDS.LOREBOOK_SUMMARY,
+                            startIndex,
+                            endIndex,
+                        },
                     },
-                },
-                {
-                    refreshIntegrity: refreshCurrentChatShardIntegrity,
-                    reportFailure: (integrityError) => {
-                        log.error('Sharder output saved, but shard integrity refresh failed:', integrityError);
-                        toastr.warning('Sharder output was saved, but shard integrity could not be refreshed.');
+                    {
+                        refreshIntegrity: refreshCurrentChatShardIntegrity,
+                        reportFailure: (integrityError) => {
+                            log.error('Sharder output saved, but shard integrity refresh failed:', integrityError);
+                            toastr.warning('Sharder output was saved, but shard integrity could not be refreshed.');
+                        },
                     },
-                },
-            );
+                );
+            }
         }
 
         const archivedCount = review.archivedItems?.length || 0;

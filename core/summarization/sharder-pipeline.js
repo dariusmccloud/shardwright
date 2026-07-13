@@ -19,6 +19,7 @@ import {
     classifySavedShardText,
 } from './saved-shard-identity.js';
 import { getArchitecturalProjectionMetadataForSavedItem } from './architectural-authority-runtime.js';
+import { getCurrentChatShardManifests } from './shard-integrity-runtime.js';
 export {
     ARCHITECTURAL_DISPLAY_NAME,
     ARCHITECTURAL_PROFILE,
@@ -719,6 +720,11 @@ function parseMessageRangeStart(identifier) {
  */
 export async function findSavedExtractions(settings, lorebookOverride = null) {
     const extractions = [];
+    const manifestByOutputUID = new Map(
+        getCurrentChatShardManifests()
+            .filter((manifest) => manifest?.outputUID)
+            .map((manifest) => [String(manifest.outputUID), manifest]),
+    );
 
     // Get all messages
     const context = SillyTavern.getContext();
@@ -773,6 +779,7 @@ export async function findSavedExtractions(settings, lorebookOverride = null) {
     });
 
     for (const extraction of extractions) {
+        extraction.sourceManifest = manifestByOutputUID.get(String(extraction.uid || '')) || null;
         if (extraction?.shardProfile !== ARCHITECTURAL_PROFILE) continue;
         extraction.projectionMetadata = await getArchitecturalProjectionMetadataForSavedItem(extraction);
     }
@@ -837,6 +844,7 @@ export async function findSavedExtractions(settings, lorebookOverride = null) {
 
             for (const extraction of extractions) {
                 if (extraction?.source !== 'lorebook' || extraction?.shardProfile !== ARCHITECTURAL_PROFILE) continue;
+                extraction.sourceManifest = manifestByOutputUID.get(String(extraction.uid || '')) || null;
                 if (extraction.projectionMetadata) continue;
                 extraction.projectionMetadata = await getArchitecturalProjectionMetadataForSavedItem(extraction);
             }
