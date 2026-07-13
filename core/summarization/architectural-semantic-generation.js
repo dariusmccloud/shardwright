@@ -108,7 +108,7 @@ async function generateParsedResponse(callApi, request, userPrompt) {
             throw error;
         }
 
-        let targetedRepairFailed = false;
+        let targetedRepairFailure = null;
         if (error.repairTarget) {
             try {
                 const target = error.repairTarget;
@@ -135,12 +135,16 @@ async function generateParsedResponse(callApi, request, userPrompt) {
                         repairedCount: repairedItems.length,
                     },
                 };
-            } catch {
-                targetedRepairFailed = true;
+            } catch (repairError) {
+                targetedRepairFailure = {
+                    code: String(repairError?.code || 'ARCH_OVERFLOW_REPAIR_FAILED'),
+                    message: String(repairError?.message || 'Targeted section repair failed.'),
+                    sectionKey: error.repairTarget.sectionKey,
+                };
             }
         }
 
-        if (!targetedRepairFailed
+        if (!targetedRepairFailure
             && error.diagnostics.some((diagnostic) => diagnostic?.keyword === 'maxItems')) {
             throw error;
         }
@@ -150,10 +154,19 @@ async function generateParsedResponse(callApi, request, userPrompt) {
             schemaRetryPrompt(userPrompt, error),
             requestOptions,
         );
-        return {
-            parsed: parseArchitecturalSemanticResponse(retryRawResponse),
-            rawResponse: retryRawResponse,
-        };
+        try {
+            return {
+                parsed: parseArchitecturalSemanticResponse(retryRawResponse),
+                rawResponse: retryRawResponse,
+                repairFailure: targetedRepairFailure,
+            };
+        } catch (retryError) {
+            if (targetedRepairFailure) {
+                retryError.targetedRepairFailure = { ...targetedRepairFailure };
+                retryError.message = `${retryError.message} Targeted ${targetedRepairFailure.sectionKey} repair failed first: ${targetedRepairFailure.code}: ${targetedRepairFailure.message}`;
+            }
+            throw retryError;
+        }
     }
 }
 
@@ -177,7 +190,13 @@ export async function generateArchitecturalSemanticShard(options) {
     const source = authoritativeSourceEnvelope(context);
     const request = await createArchitecturalSemanticRequestDescriptor(requestDescriptorOptions);
     const userPrompt = buildArchitecturalSemanticUserPrompt(chatText, context);
-    const { parsed, rawResponse, repair = null, normalization = parsed.normalization } = await generateParsedResponse(callApi, request, userPrompt);
+    const {
+        parsed,
+        rawResponse,
+        repair = null,
+        repairFailure = null,
+        normalization = parsed.normalization,
+    } = await generateParsedResponse(callApi, request, userPrompt);
 
     if (!sameSourceEnvelope(parsed.payload.source, source)) {
         throw new ArchitecturalSemanticGenerationError(
@@ -200,6 +219,7 @@ export async function generateArchitecturalSemanticShard(options) {
         },
         rawResponse,
         repair,
+        repairFailure,
         normalization,
         promptVersion: request.promptVersion,
         semanticSchemaId: request.schemaId,

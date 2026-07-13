@@ -150,6 +150,43 @@ test('removes exact duplicate section records before cap validation with stable 
     });
 });
 
+test('deterministically prunes decision overflow while preserving sealed and correction-chain records', () => {
+    const payload = validPayload();
+    const decisions = Array.from({ length: 14 }, (_, index) => ({
+        sourceRef: `S10:${index + 1}`,
+        weight: index < 2 ? 1 : 3,
+        id: `decision-${String(index + 1).padStart(2, '0')}`,
+        types: index === 1 ? ['CORRECTION'] : ['IMPLEMENTATION'],
+        decision: `Decision ${index + 1}`,
+        why: 'Source-grounded reason.',
+        scope: 'decision cap proof',
+        status: index === 0 ? 'SEALED' : 'PROPOSED',
+        evidence: [`S10:${index + 1}`],
+    }));
+    payload.sections.decisions = decisions;
+    const reversedPayload = structuredClone(payload);
+    reversedPayload.sections.decisions.reverse();
+
+    const first = parseArchitecturalSemanticResponse(JSON.stringify(payload));
+    const second = parseArchitecturalSemanticResponse(JSON.stringify(reversedPayload));
+    const retainedIds = first.payload.sections.decisions.map((decision) => decision.id);
+
+    assert.deepEqual(retainedIds, second.payload.sections.decisions.map((decision) => decision.id));
+    assert.equal(retainedIds.includes('decision-01'), true);
+    assert.equal(retainedIds.includes('decision-02'), true);
+    assert.equal(retainedIds.includes('decision-13'), false);
+    assert.equal(retainedIds.includes('decision-14'), false);
+    assert.deepEqual(first.normalization, {
+        strategy: 'DETERMINISTIC_DECISION_CAP_V1',
+        sectionKey: 'decisions',
+        beforeCount: 14,
+        afterCount: 12,
+        removedCount: 2,
+        protectedCount: 2,
+        droppedDecisionIds: ['decision-13', 'decision-14'],
+    });
+});
+
 test('exposes a repair target only for one exclusively overflowing section', () => {
     const payload = validPayload();
     payload.sections.events = Array.from({ length: 13 }, (_, index) => ({

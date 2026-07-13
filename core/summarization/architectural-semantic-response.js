@@ -1,5 +1,6 @@
 import { validateArchitecturalIntermediatePayload } from './architectural-intermediate-validator.js';
 import { classifyArchitecturalOverflowRepair } from './architectural-overflow-repair.js';
+import { ARCHITECTURAL_SECTION_CAPS } from './architectural-sharder-contract.js';
 
 const ARCHITECTURAL_SECTION_KEYS = Object.freeze([
     'timeline', 'decisions', 'events', 'developments', 'dialogue', 'threads', 'current',
@@ -84,6 +85,76 @@ function removeExactDuplicateSectionRecords(payload) {
     } : null;
 }
 
+const DECISION_STATUS_PRIORITY = Object.freeze({
+    SEALED: 4,
+    ACCEPTED: 3,
+    PROPOSED: 2,
+    SUPERSEDED: 1,
+});
+
+function compareDecisionPriority(left, right) {
+    const statusDifference = (DECISION_STATUS_PRIORITY[right?.status] || 0)
+        - (DECISION_STATUS_PRIORITY[left?.status] || 0);
+    if (statusDifference !== 0) return statusDifference;
+    const weightDifference = (Number(right?.weight) || 0) - (Number(left?.weight) || 0);
+    if (weightDifference !== 0) return weightDifference;
+    const idDifference = String(left?.id || '').localeCompare(String(right?.id || ''));
+    if (idDifference !== 0) return idDifference;
+    return String(left?.sourceRef || '').localeCompare(String(right?.sourceRef || ''));
+}
+
+function decisionIsProtected(decision, linkedIds) {
+    const types = Array.isArray(decision?.types) ? decision.types : [];
+    return decision?.status === 'SEALED'
+        || types.includes('CORRECTION')
+        || types.includes('REPLACEMENT')
+        || linkedIds.has(String(decision?.id || ''))
+        || Boolean(decision?.supersedes)
+        || Boolean(decision?.supersededBy);
+}
+
+function pruneDecisionOverflow(payload) {
+    const decisions = payload?.sections?.decisions;
+    const limit = ARCHITECTURAL_SECTION_CAPS.decisions;
+    if (!Array.isArray(decisions) || decisions.length <= limit) return null;
+
+    const linkedIds = new Set();
+    for (const decision of decisions) {
+        if (decision?.supersedes) linkedIds.add(String(decision.supersedes));
+        if (decision?.supersededBy) linkedIds.add(String(decision.supersededBy));
+    }
+    const protectedDecisions = decisions.filter((decision) => decisionIsProtected(decision, linkedIds));
+    if (protectedDecisions.length > limit) return null;
+
+    const protectedIds = new Set(protectedDecisions.map((decision) => decision));
+    const retained = [
+        ...protectedDecisions.sort(compareDecisionPriority),
+        ...decisions.filter((decision) => !protectedIds.has(decision)).sort(compareDecisionPriority),
+    ].slice(0, limit).sort(compareDecisionPriority);
+    const retainedIds = new Set(retained.map((decision) => decision));
+    const dropped = decisions.filter((decision) => !retainedIds.has(decision));
+    payload.sections.decisions = retained;
+    return {
+        strategy: 'DETERMINISTIC_DECISION_CAP_V1',
+        sectionKey: 'decisions',
+        beforeCount: decisions.length,
+        afterCount: retained.length,
+        removedCount: dropped.length,
+        protectedCount: protectedDecisions.length,
+        droppedDecisionIds: dropped.map((decision) => String(decision?.id || '')).sort(),
+    };
+}
+
+function combineNormalizations(...operations) {
+    const applied = operations.filter(Boolean);
+    if (applied.length === 0) return null;
+    if (applied.length === 1) return applied[0];
+    return {
+        strategy: 'COMPOSITE_SEMANTIC_NORMALIZATION_V1',
+        operations: applied,
+    };
+}
+
 function normalizeResponseText(rawResponse) {
     if (typeof rawResponse !== 'string') {
         return '';
@@ -135,7 +206,10 @@ export function parseArchitecturalSemanticResponse(rawResponse) {
         );
     }
 
-    const normalization = removeExactDuplicateSectionRecords(payload);
+    const normalization = combineNormalizations(
+        removeExactDuplicateSectionRecords(payload),
+        pruneDecisionOverflow(payload),
+    );
 
     const validation = validateArchitecturalIntermediatePayload(payload);
     if (!validation.ok) {

@@ -201,6 +201,38 @@ test('resolves duplicate-only overflow deterministically without an API retry', 
     assert.deepEqual(first.normalization, second.normalization);
 });
 
+test('resolves rankable decision overflow deterministically without an API repair', async () => {
+    const decisionOverflow = payload();
+    decisionOverflow.sections.decisions = Array.from({ length: 13 }, (_, index) => ({
+        sourceRef: `S10:${index + 1}`,
+        weight: index === 12 ? 1 : 4,
+        id: `ranked-decision-${index + 1}`,
+        types: ['IMPLEMENTATION'],
+        decision: `Ranked decision ${index + 1}`,
+        why: 'Source-grounded reason.',
+        scope: 'ranked overflow proof',
+        status: 'PROPOSED',
+        evidence: [`S10:${index + 1}`],
+    }));
+    let calls = 0;
+
+    const result = await generateArchitecturalSemanticShard(options({
+        callApi: async () => {
+            calls += 1;
+            return JSON.stringify(decisionOverflow);
+        },
+    }));
+
+    assert.equal(calls, 1);
+    assert.equal(result.repair, null);
+    assert.equal(result.replayMaterial.semanticPayload.sections.decisions.length, 12);
+    assert.equal(
+        result.replayMaterial.semanticPayload.sections.decisions.some((decision) => decision.id === 'ranked-decision-13'),
+        false,
+    );
+    assert.equal(result.normalization.strategy, 'DETERMINISTIC_DECISION_CAP_V1');
+});
+
 test('repairs only one overflowing section and preserves all unaffected sections', async () => {
     const overflowing = payload();
     overflowing.sections.events = Array.from({ length: 13 }, (_, index) => ({
@@ -255,7 +287,43 @@ test('falls back to one whole-response schema retry when targeted repair fails',
     assert.equal(calls, 3);
     assert.match(retryPrompt, /SCHEMA CORRECTION REQUIRED/u);
     assert.equal(result.repair, null);
+    assert.deepEqual(result.repairFailure, {
+        code: 'ARCH_OVERFLOW_REPAIR_RESPONSE_INVALID',
+        message: 'Architectural overflow repair response does not satisfy the section repair contract.',
+        sectionKey: 'events',
+    });
     assert.equal(result.output.startsWith('[KEY]\n'), true);
+});
+
+test('preserves the targeted repair cause when the whole-response retry also fails', async () => {
+    const overflowing = payload();
+    overflowing.sections.events = Array.from({ length: 13 }, (_, index) => ({
+        sourceRef: `S10:${index + 1}`,
+        weight: 2,
+        description: `Event ${index + 1}`,
+    }));
+    let calls = 0;
+
+    await assert.rejects(
+        generateArchitecturalSemanticShard(options({
+            callApi: async () => {
+                calls += 1;
+                if (calls === 1) return JSON.stringify(overflowing);
+                return JSON.stringify({ items: [] });
+            },
+        })),
+        (error) => {
+            assert.equal(error.code, 'ARCH_SEMANTIC_RESPONSE_SCHEMA_INVALID');
+            assert.deepEqual(error.targetedRepairFailure, {
+                code: 'ARCH_OVERFLOW_REPAIR_RESPONSE_INVALID',
+                message: 'Architectural overflow repair response does not satisfy the section repair contract.',
+                sectionKey: 'events',
+            });
+            assert.match(error.message, /Targeted events repair failed first: ARCH_OVERFLOW_REPAIR_RESPONSE_INVALID/u);
+            return true;
+        },
+    );
+    assert.equal(calls, 3);
 });
 
 test('does not attempt targeted or whole-response repair for multiple overflowing sections', async () => {
