@@ -121,7 +121,7 @@ test('narrative plus RAG preserves bypass', async () => {
 test('canceling selection aborts the sharder run before generation', async () => {
     const { deps } = makeDeps({
         discoveredItems: [{ classification: 'architectural', identifier: 'Memory Shard 1-50', content: 'A' }],
-        modalResult: { confirmed: false, selectedShards: [] },
+        modalResult: { confirmed: false, selectedShards: [], returnToRange: true },
     });
 
     const result = await resolveSelectedShardsForRun(
@@ -133,6 +133,7 @@ test('canceling selection aborts the sharder run before generation', async () =>
     );
 
     assert.equal(result.confirmed, false);
+    assert.equal(result.returnToRange, true);
 });
 
 test('selecting zero shards continues from scratch', async () => {

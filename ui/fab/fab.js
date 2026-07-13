@@ -706,16 +706,17 @@ async function handleSinglePass() {
     }
 
     const maxIndex = messages.length - 1;
-    const rangeStr = await showSsInput(
-        'Sharder: Select Range',
-        `Enter message range for sharder (0 to ${maxIndex}):\nExample: '5-25'`,
-        `0-${maxIndex}`
-    );
-
-    const range = parseRangeInput(rangeStr, maxIndex);
-    if (!range) return;
-
-    await callbacksRef.onSinglePass?.(range.startIdx, range.endIdx);
+    const { runSinglePassRangeWorkflow } = await import('./single-pass-range-workflow.js');
+    await runSinglePassRangeWorkflow({
+        maxIndex,
+        requestRange: (defaultRange) => showSsInput(
+            'Sharder: Select Range',
+            `Enter message range for sharder (0 to ${maxIndex}):\nExample: '5-25'`,
+            defaultRange,
+        ),
+        parseRange: parseRangeInput,
+        runSinglePass: (startIndex, endIndex) => callbacksRef.onSinglePass?.(startIndex, endIndex),
+    });
 }
 
 async function handleBatchSharder() {

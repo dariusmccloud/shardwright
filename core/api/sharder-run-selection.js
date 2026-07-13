@@ -94,6 +94,7 @@ export async function resolveSelectedShardsForRun(startIndex, endIndex, settings
     });
     return {
         confirmed: selection?.confirmed === true,
+        returnToRange: selection?.returnToRange === true,
         selectedShards: Array.isArray(selection?.selectedShards) ? selection.selectedShards : [],
         mode: overlappingItems.length > 0 ? 'manual-overlap-aware' : 'manual',
         excludedOverlapCount: overlappingItems.length,

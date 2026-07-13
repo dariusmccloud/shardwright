@@ -121,7 +121,7 @@ function updateCount(selectableTotal) {
 
 /**
  * @param {Object} settings
- * @returns {Promise<{confirmed:boolean, selectedShards:Array}>}
+ * @returns {Promise<{confirmed:boolean, selectedShards:Array, returnToRange?:boolean}>}
  */
 export async function openShardSelectionModal(settings, preloadedItems = null, modalContext = null) {
     // In RAG mode, the vector store retrieves and assembles relevant chunks from all
@@ -235,7 +235,7 @@ export async function openShardSelectionModal(settings, preloadedItems = null, m
 
     const result = await showPromise;
     if (result !== POPUP_RESULT.AFFIRMATIVE) {
-        return { confirmed: false, selectedShards: [] };
+        return { confirmed: false, selectedShards: [], returnToRange: true };
     }
 
     const selectedItems = capturedIndices.map((idx) => allItems[idx]);

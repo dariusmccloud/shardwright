@@ -191,6 +191,9 @@ export async function runSharder(startIndex, endIndex, settings, selectedShards 
         });
 
         if (!selection.confirmed) {
+            if (selection.returnToRange) {
+                return { requestRangeRevision: true };
+            }
             toastr.info('Sharder cancelled');
             return;
         }
