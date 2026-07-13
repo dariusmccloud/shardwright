@@ -11,6 +11,8 @@ import { getAbortSignal, throwIfAborted } from '../api/abort-controller.js';
 import { ragLog } from '../logger.js';
 
 const PLUGIN_BASE = '/api/plugins/similharity';
+const COLLECTION_METADATA_CACHE_TTL_MS = 5000;
+const collectionMetadataCache = new Map();
 const QDRANT_DIMENSION_HINTS = [
     'dimension',
     'dimensions',
@@ -665,6 +667,82 @@ export async function listAllCollections(backend = '') {
     if (!resp.ok) throw new Error(`Collections list failed: ${resp.status}`);
     const data = await resp.json();
     return Array.isArray(data?.collections) ? data.collections : [];
+}
+
+/**
+ * Resolve plugin-reported collection metadata for a specific set of collection ids.
+ * Cached briefly to avoid an extra plugin roundtrip on every retrieval step.
+ *
+ * @param {string[]} collectionIds
+ * @param {string} [backend='']
+ * @returns {Promise<Map<string, {id: string, source?: string, backend?: string, model?: string}>>}
+ */
+export async function getCollectionMetadataMap(collectionIds = [], backend = '') {
+    const ids = [...new Set((collectionIds || []).map(id => String(id || '').trim()).filter(Boolean))];
+    const result = new Map();
+    if (ids.length === 0) {
+        return result;
+    }
+
+    const cacheKey = String(backend || '*').trim().toLowerCase() || '*';
+    const now = Date.now();
+    let cached = collectionMetadataCache.get(cacheKey);
+    if (!cached || (now - cached.timestamp) > COLLECTION_METADATA_CACHE_TTL_MS) {
+        try {
+            const collections = await listAllCollections(backend);
+            cached = {
+                timestamp: now,
+                collections: Array.isArray(collections) ? collections : [],
+            };
+            collectionMetadataCache.set(cacheKey, cached);
+        } catch (error) {
+            ragLog.warn('Collection metadata refresh failed; using cached metadata if available:', error?.message || error);
+            if (!cached) {
+                cached = {
+                    timestamp: now,
+                    collections: [],
+                };
+            }
+        }
+    }
+
+    const wanted = new Set(ids);
+    for (const collection of (cached.collections || [])) {
+        const id = String(collection?.id || '').trim();
+        if (!id || !wanted.has(id)) continue;
+        result.set(id, collection);
+    }
+
+    return result;
+}
+
+export async function getCollectionQuerySettingsMap(collectionIds, rag) {
+    const resolved = new Map();
+    for (const id of (collectionIds || [])) {
+        resolved.set(id, { ...rag });
+    }
+    if (!Array.isArray(collectionIds) || collectionIds.length === 0) {
+        return resolved;
+    }
+
+    let metadataMap = new Map();
+    try {
+        metadataMap = await getCollectionMetadataMap(collectionIds);
+    } catch (error) {
+        ragLog.warn('Collection metadata lookup failed; using base RAG settings for collections:', error?.message || error);
+    }
+
+    for (const id of collectionIds) {
+        const metadata = metadataMap.get(String(id || '').trim());
+        if (!metadata) continue;
+        resolved.set(id, {
+            ...rag,
+            ...(metadata.backend ? { backend: metadata.backend } : {}),
+            ...(metadata.source ? { source: metadata.source } : {}),
+            ...(metadata.model !== undefined ? { model: metadata.model || '' } : {}),
+        });
+    }
+    return resolved;
 }
 
 /**

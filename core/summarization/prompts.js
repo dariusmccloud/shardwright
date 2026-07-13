@@ -10,6 +10,10 @@ import {
 } from './sharder-section-registry.js';
 import { DEFAULT_ARCHITECTURAL_SHARDER_PROMPT } from './architectural-sharder-prompt.js';
 export { DEFAULT_ARCHITECTURAL_SHARDER_PROMPT } from './architectural-sharder-prompt.js';
+export {
+    ARCHITECTURAL_SEMANTIC_PROMPT_VERSION,
+    DEFAULT_ARCHITECTURAL_SEMANTIC_PROMPT,
+} from './architectural-semantic-prompt.js';
 
 /**
  * Default Casing Extraction Prompt

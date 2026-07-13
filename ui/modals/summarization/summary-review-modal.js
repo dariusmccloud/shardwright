@@ -7,6 +7,7 @@
 
 import { Popup, POPUP_RESULT, POPUP_TYPE } from '../../../../../../popup.js';
 import { escapeHtml, truncateText, debounce } from '../../common/ui-utils.js';
+import { getActiveRagSettings } from '../../../core/settings.js';
 import { analyzeEventCoverage } from '../../../core/processing/keyword-analysis.js';
 export { analyzeEventCoverage };
 
@@ -179,7 +180,7 @@ function buildModalHTML(summary, selectedEvents, coverageAnalysis, tokenCount, i
                     </label>
                     <label class="ss-archive-option">
                         <input type="checkbox" id="ss-archive-cold" />
-                        <span>Log to cold archive</span>
+                        <span>Save to local cold archive (history only, not RAG-retrievable)</span>
                     </label>
                 </div>
             </div>
@@ -409,6 +410,8 @@ export async function openSummaryReviewModal(
     settings,
     regenerateCallback
 ) {
+    const activeRagSettings = getActiveRagSettings(settings);
+    const ragEnabled = activeRagSettings?.enabled === true;
     // Detect mode: full (with events) or simplified (summary only)
     const isFullMode = selectedEvents && selectedEvents.length > 0;
 
@@ -441,7 +444,7 @@ export async function openSummaryReviewModal(
         coverageAnalysis,
         tokenCount,
         isFullMode,
-        settings?.rag?.enabled === true
+        ragEnabled
     );
 
     const popup = new Popup(

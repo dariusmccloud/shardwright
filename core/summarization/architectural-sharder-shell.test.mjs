@@ -6,6 +6,7 @@ import {
     getSharderSectionRegistry,
 } from './sharder-section-registry.js';
 import {
+    ARCHITECTURAL_KEY_LEGEND_LINES,
     buildArchitecturalKeyLines,
     isWarmArchiveEligible,
     validateArchitecturalShellSections,
@@ -84,16 +85,22 @@ test('architectural shell validator warns when Schema marker is missing or inval
     assert.equal(getCodes(invalid).includes('ARCH_KEY_SCHEMA_RECOVERED'), true);
 });
 
-test('architectural shell validator errors when CURRENT is missing', () => {
+test('architectural shell validator warns when CURRENT is missing for this extract', () => {
     const diagnostics = validateArchitecturalShellSections(buildSections({ current: [] }));
-    assert.equal(getCodes(diagnostics).includes('ARCH_CURRENT_MISSING'), true);
+    const currentMissing = diagnostics.find((entry) => entry.code === 'ARCH_CURRENT_MISSING');
+    assert.ok(currentMissing);
+    assert.equal(currentMissing.level, 'warning');
+    assert.equal(diagnostics.some((entry) => entry.level === 'error'), false);
 });
 
-test('architectural shell validator errors when zero CURRENT rows are selected', () => {
+test('architectural shell validator warns when zero CURRENT rows are selected', () => {
     const diagnostics = validateArchitecturalShellSections(buildSections({
         current: [{ content: 'Project|State|Focus|Pending|Blocked|Next', selected: false }],
     }));
-    assert.equal(getCodes(diagnostics).includes('ARCH_CURRENT_EMPTY'), true);
+    const currentMissing = diagnostics.find((entry) => entry.code === 'ARCH_CURRENT_MISSING');
+    assert.ok(currentMissing);
+    assert.equal(currentMissing.level, 'warning');
+    assert.equal(diagnostics.some((entry) => entry.level === 'error'), false);
 });
 
 test('architectural shell validator errors when multiple CURRENT rows are selected', () => {
@@ -148,4 +155,19 @@ test('warm archive eligibility stays disabled for architectural profile and enab
     assert.equal(isWarmArchiveEligible(ARCHITECTURAL_PROFILE, true), false);
     assert.equal(isWarmArchiveEligible('narrative', true), true);
     assert.equal(isWarmArchiveEligible('narrative', false), false);
+});
+
+test('architectural key lines inject the compact legend and strip legacy legend variants', () => {
+    const keyLines = buildArchitecturalKeyLines([
+        '#=TIMELINE xref | DEC=stable decision ID | 🔴>🟠>🟡>🟢>⚪',
+        'Weight=continuity authority, not sentiment:',
+        '🔴 5 Foundational > 🟠 4 Governing > 🟡 3 Operational > 🟢 2 Contextual',
+        'Omit non-continuity material.',
+        'Sources: Messages 1-4',
+    ]);
+
+    assert.deepEqual(keyLines.slice(2, 6), ARCHITECTURAL_KEY_LEGEND_LINES);
+    assert.equal(keyLines.includes('#=TIMELINE xref | DEC=stable decision ID | 🔴>🟠>🟡>🟢>⚪'), false);
+    assert.equal(keyLines.includes('🔴 5 Foundational > 🟠 4 Governing > 🟡 3 Operational > 🟢 2 Contextual'), false);
+    assert.equal(keyLines.includes('Sources: Messages 1-4'), true);
 });

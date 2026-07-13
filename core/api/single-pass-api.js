@@ -20,50 +20,39 @@ import {
 import { startUiOperation, endUiOperation } from './api-ui-helpers.js';
 import { log } from '../logger.js';
 import { ARCHITECTURAL_PROFILE, normalizeSharderProfile } from '../summarization/sharder-section-registry.js';
+import {
+    SHARD_ARTIFACT_KINDS,
+    buildManagedShardManifest,
+    createManagedShardManifestId,
+    getPersistedMessageId,
+} from '../summarization/shard-integrity-core.js';
+import { finalizeArchitecturalReviewForSave } from '../summarization/architectural-live-finalization.js';
+import { refreshCurrentChatShardIntegrity } from '../summarization/shard-integrity-runtime.js';
+import { buildSinglePassInput } from './single-pass-input.js';
+import { resolveSelectedShardsForRun } from './sharder-run-selection.js';
+import {
+    startSharderHeadlessOperation,
+    executeSharderHeadlessRun,
+    refreshSharderIntegrityAfterSave,
+    cleanupSharderHeadlessOperation,
+} from './sharder-run-execution.js';
 
 let isSharderRunning = false;
 
-function buildEffectiveCleanupSettings(settings) {
-    let effectiveCleanup = {
-        stripHiddenMessages: settings.contextCleanup?.stripHiddenMessages !== false,
-    };
-
-    if (settings.contextCleanup?.enabled) {
-        effectiveCleanup = {
-            ...settings.contextCleanup,
-            stripHiddenMessages: settings.contextCleanup?.stripHiddenMessages !== false,
-            stripEmojis: false,
-        };
-    }
-
-    return effectiveCleanup;
-}
-
-function buildSinglePassChatText(messages, startIndex, endIndex, settings) {
-    const effectiveCleanup = buildEffectiveCleanupSettings(settings);
-
-    let chatText = buildChatText(messages, startIndex, endIndex, {
-        cleanup: effectiveCleanup,
-        indexFormat: 'msg'
-    });
-
-    if (effectiveCleanup) {
-        chatText = applyContextCleanup(chatText, effectiveCleanup);
-    }
-
-    return chatText;
-}
-
-async function runPipelineWithAnalysis(chatText, settings, startIndex, endIndex, selectedShards = [], extractKeywords = false) {
+async function runPipelineWithAnalysis(chatText, settings, startIndex, endIndex, selectedShards = [], extractKeywords = false, messageIds = [], currentManifest = null) {
     const { runSharderPipeline } = await import('../sharder/single-pass-pipeline.js');
     const result = await runSharderPipeline(chatText, settings, {
         startIndex,
         endIndex,
         extractKeywords,
+        messageIds,
+        currentManifest,
         existingShards: (selectedShards || []).map((s) => ({
             content: s.content,
             identifier: s.identifier,
             messageRangeStart: s.messageRangeStart,
+            projectionMetadata: s.projectionMetadata || null,
+            sourceManifest: s.sourceManifest || null,
         })),
     });
 
@@ -103,7 +92,17 @@ export async function runSharderHeadless(startIndex, endIndex, settings, selecte
         throw new Error('No messages to process');
     }
 
-    const chatText = buildSinglePassChatText(messages, startIndex, endIndex, settings);
+    const { chatText, messageIds } = buildSinglePassInput(
+        messages,
+        startIndex,
+        endIndex,
+        settings,
+        {
+            buildChatText,
+            applyContextCleanup,
+            getPersistedMessageId,
+        },
+    );
 
     if (!chatText.trim()) {
         throw new Error('Selected message range is empty');
@@ -111,6 +110,23 @@ export async function runSharderHeadless(startIndex, endIndex, settings, selecte
 
     const extractKeywords = settings.outputMode === 'lorebook'
         && settings.lorebookEntryOptions?.extractKeywords !== false;
+    const architecturalRun = normalizeSharderProfile(settings?.sharderProfile) === ARCHITECTURAL_PROFILE;
+    const artifactKind = settings.outputMode === 'lorebook'
+        ? SHARD_ARTIFACT_KINDS.LOREBOOK_SUMMARY
+        : SHARD_ARTIFACT_KINDS.SYSTEM_SHARD;
+    const currentManifest = architecturalRun
+        ? await buildManagedShardManifest(messages, {
+            manifestId: createManagedShardManifestId(artifactKind),
+            artifactKind,
+            startIndex,
+            endIndex,
+        })
+        : null;
+    if (architecturalRun && !currentManifest) {
+        const error = new Error('Architectural post-review finalization requires a complete persisted source manifest.');
+        error.code = 'ARCH_POST_REVIEW_CURRENT_MANIFEST_MISSING';
+        throw error;
+    }
 
     const result = await runPipelineWithAnalysis(
         chatText,
@@ -118,7 +134,9 @@ export async function runSharderHeadless(startIndex, endIndex, settings, selecte
         startIndex,
         endIndex,
         selectedShards,
-        extractKeywords
+        extractKeywords,
+        messageIds,
+        currentManifest
     );
     throwIfAborted('sharder pipeline');
 
@@ -126,6 +144,8 @@ export async function runSharderHeadless(startIndex, endIndex, settings, selecte
         result,
         chatText,
         extractKeywords,
+        messageIds,
+        currentManifest,
     };
 }
 
@@ -136,7 +156,7 @@ export async function runSharderHeadless(startIndex, endIndex, settings, selecte
  * @param {Object} settings
  * @param {Array<{content:string,type:string,identifier:string,parsedSections:Object,messageRangeStart?:number}>} selectedShards
  */
-export async function runSharder(startIndex, endIndex, settings, selectedShards = []) {
+export async function runSharder(startIndex, endIndex, settings, selectedShards = undefined) {
     if (isSharderRunning) {
         toastr.warning('Sharder is already running');
         return;
@@ -156,28 +176,46 @@ export async function runSharder(startIndex, endIndex, settings, selectedShards 
             return;
         }
 
-        createAbortController();
-        opId = startUiOperation({
-            feature: 'sharder',
-            primaryButton: 'ss-run-single-pass',
-            disabled: true,
-            label: 'Running Sharder...',
-            lockButtons: [],
-            showStop: true,
+        const { findSavedExtractions } = await import('../summarization/sharder-pipeline.js');
+        const { isSavedShardCompatibleWithProfile } = await import('../summarization/saved-shard-identity.js');
+        const { getActiveSharderProfile, shouldBypassShardSelectionForRag } = await import('../summarization/shard-selection-policy.js');
+        const { openShardSelectionModal, parseSelectedShards } = await import('../../ui/modals/summarization/shard-selection-modal.js');
+
+        const selection = await resolveSelectedShardsForRun(startIndex, endIndex, settings, selectedShards, {
+            shouldBypassShardSelectionForRag,
+            getActiveSharderProfile,
+            findSavedExtractions,
+            isSavedShardCompatibleWithProfile,
+            parseSelectedShards,
+            openShardSelectionModal,
         });
-        operationStarted = true;
 
-        progressToast = toastr.info(
-            `Sharder processing messages ${startIndex} to ${endIndex}...`,
-            'Sharder',
-            { timeOut: 0, extendedTimeOut: 0 }
-        );
+        if (!selection.confirmed) {
+            if (selection.returnToRange) {
+                return { requestRangeRevision: true };
+            }
+            toastr.info('Sharder cancelled');
+            return;
+        }
 
-        const headless = await runSharderHeadless(startIndex, endIndex, settings, selectedShards);
-        throwIfAborted('sharder generation');
+        if (selection.mode === 'auto-include-overlap-filtered' && selection.excludedOverlapCount > 0) {
+            toastr.info(`${selection.excludedOverlapCount} overlapping saved shard(s) were ignored. This run will use only non-overlapping baselines.`);
+        }
+
+        const started = startSharderHeadlessOperation(startIndex, endIndex, {
+            createAbortController,
+            startUiOperation,
+            showProgressToast: (message, title, options) => toastr.info(message, title, options),
+        });
+        ({ progressToast, operationStarted, opId } = started);
+        const headless = await executeSharderHeadlessRun(startIndex, endIndex, settings, selection.selectedShards, {
+            runSharderHeadless,
+            throwIfAborted,
+        });
 
         const { openSharderReviewModal } = await import('../../ui/modals/summarization/single-pass-review-modal.js');
 
+        let latestPipelineResult = headless.result;
         const regenFn = async () => {
             throwIfAborted('sharder regenerate');
             const result = await runPipelineWithAnalysis(
@@ -185,9 +223,12 @@ export async function runSharder(startIndex, endIndex, settings, selectedShards 
                 settings,
                 startIndex,
                 endIndex,
-                selectedShards,
-                headless.extractKeywords
+                selection.selectedShards,
+                headless.extractKeywords,
+                headless.messageIds,
+                headless.currentManifest
             );
+            latestPipelineResult = result;
             throwIfAborted('sharder regenerate');
             return result;
         };
@@ -201,16 +242,29 @@ export async function runSharder(startIndex, endIndex, settings, selectedShards 
             return;
         }
 
+        let finalOutput = review.finalOutput;
+        let resultMetadata = review.resultMetadata || null;
+        if (normalizeSharderProfile(settings?.sharderProfile) === ARCHITECTURAL_PROFILE) {
+            const finalized = await finalizeArchitecturalReviewForSave({
+                pipelineResult: latestPipelineResult,
+                review,
+                currentManifest: headless.currentManifest,
+            });
+            finalOutput = finalized.finalOutput;
+            resultMetadata = finalized.resultMetadata;
+        }
+
         throwIfAborted('sharder output');
         const outputResult = await handleSummaryResult(
             settings,
-            review.finalOutput,
+            finalOutput,
             startIndex,
             endIndex,
             false,
             headless.result.extractedKeywords || [],
             null,
-            review.archiveOptions || null
+            review.archiveOptions || null,
+            resultMetadata
         );
 
         if (outputResult.didInjectToContext) {
@@ -236,6 +290,29 @@ export async function runSharder(startIndex, endIndex, settings, selectedShards 
             }
 
             await recomputeVisibility();
+
+            if (!resultMetadata?.architecturalReplayArtifact) {
+                await refreshSharderIntegrityAfterSave(
+                    {
+                        reason: 'sharder-saved',
+                        registerOutput: {
+                            outputUID: outputResult.outputUID,
+                            artifactKind: outputResult.mode === 'system'
+                                ? SHARD_ARTIFACT_KINDS.SYSTEM_SHARD
+                                : SHARD_ARTIFACT_KINDS.LOREBOOK_SUMMARY,
+                            startIndex,
+                            endIndex,
+                        },
+                    },
+                    {
+                        refreshIntegrity: refreshCurrentChatShardIntegrity,
+                        reportFailure: (integrityError) => {
+                            log.error('Sharder output saved, but shard integrity refresh failed:', integrityError);
+                            toastr.warning('Sharder output was saved, but shard integrity could not be refreshed.');
+                        },
+                    },
+                );
+            }
         }
 
         const archivedCount = review.archivedItems?.length || 0;
@@ -254,23 +331,19 @@ export async function runSharder(startIndex, endIndex, settings, selectedShards 
         }
 
         log.error('Sharder failed:', error);
+        if (Array.isArray(error?.diagnostics) && error.diagnostics.length > 0) {
+            log.error('Sharder validation diagnostics:', error.diagnostics.map((diagnostic) => ({ ...diagnostic })));
+        }
         toastr.error(`Sharder failed: ${error.message}`);
     } finally {
-        if (progressToast) {
-            toastr.clear(progressToast);
-        }
-        if (operationStarted) {
-            clearAbortController();
-            endUiOperation({
-                feature: 'sharder',
-                primaryButton: 'ss-run-single-pass',
-                disabled: false,
-                label: originalText,
-                lockButtons: [],
-                showStop: false,
-                opId,
-            });
-        }
+        cleanupSharderHeadlessOperation(
+            { progressToast, operationStarted, opId, originalText },
+            {
+                clearProgressToast: (toastRef) => toastr.clear(toastRef),
+                clearAbortController,
+                endUiOperation,
+            }
+        );
         isSharderRunning = false;
     }
 }

@@ -425,6 +425,15 @@ export const RAG_CSS = `
     color: var(--ss-text-muted);
 }
 
+.ss-rag-collection-dropdown-menu,
+.ss-rag-collection-dropdown-search-wrap,
+.ss-rag-collection-dropdown-options,
+.ss-rag-collection-dropdown-empty {
+    --ss-rag-dropdown-bg: var(--ss-bg-secondary, rgba(18, 18, 18, 0.96));
+    background: var(--ss-rag-dropdown-bg) !important;
+    background-color: var(--ss-rag-dropdown-bg) !important;
+}
+
 .ss-rag-collection-dropdown-menu {
     position: absolute;
     top: 100%;
@@ -434,7 +443,10 @@ export const RAG_CSS = `
     border: 1px solid var(--ss-primary);
     border-top: none;
     border-radius: 0 0 6px 6px;
-    background: var(--ss-bg-secondary);
+    background-image: none !important;
+    backdrop-filter: none !important;
+    opacity: 1 !important;
+    isolation: isolate;
     box-shadow: 0 4px 12px rgba(0,0,0,0.25);
 }
 
@@ -453,12 +465,16 @@ export const RAG_CSS = `
 }
 
 .ss-rag-collection-dropdown-item {
+    --ss-rag-dropdown-bg: var(--ss-bg-secondary, rgba(18, 18, 18, 0.96));
     padding: 7px 10px;
     cursor: pointer;
     display: flex;
     flex-direction: column;
     gap: 2px;
     border-bottom: 1px solid var(--ss-border);
+    background: var(--ss-rag-dropdown-bg);
+    background-color: var(--ss-rag-dropdown-bg);
+    opacity: 1 !important;
 }
 
 .ss-rag-collection-dropdown-item:last-child {
@@ -489,6 +505,7 @@ export const RAG_CSS = `
     text-align: center;
     font-size: 12px;
     color: var(--ss-text-muted);
+    opacity: 1 !important;
 }
 
 .ss-rag-browser-chat-selector-row {

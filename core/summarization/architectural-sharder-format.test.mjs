@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 import {
     ARCHITECTURAL_PROFILE,
@@ -8,6 +10,7 @@ import {
     getSharderSectionRegistry,
 } from './sharder-section-registry.js';
 import {
+    ARCHITECTURAL_KEY_LEGEND_LINES,
     countStandaloneArchitecturalTerminators,
     inspectCanonicalArchitecturalOutput,
     normalizeArchitecturalResponse,
@@ -16,8 +19,10 @@ import {
     parseArchitecturalExtractionResponse,
     reconstructArchitecturalExtraction,
 } from './architectural-sharder-format.js';
+import { validateArchitecturalStructuredSections } from './architectural-structured-validator.js';
 
 const registry = getSharderSectionRegistry(ARCHITECTURAL_PROFILE);
+const fixtureDir = join(process.cwd(), 'core', 'summarization', 'fixtures');
 
 test('architectural parser reads bracket headers without narrative sections', () => {
     const sections = parseArchitecturalExtractionResponse(`
@@ -105,6 +110,10 @@ test('architectural renderer owns canonical KEY metadata and terminator', () => 
     assert.equal(output.endsWith('===END==='), true);
     assert.equal(output.includes('Profile: wrong'), false);
     assert.equal(output.includes('Schema: wrong'), false);
+    assert.equal(/(?:^|\n)#=TIMELINE xref\b/m.test(output), false);
+    ARCHITECTURAL_KEY_LEGEND_LINES.forEach((line) => {
+        assert.equal(output.includes(line), true);
+    });
     assert.equal(output.includes('Sources: Messages 1-3'), true);
     assert.equal(output.includes('(S2:1) Event item'), false);
 });
@@ -166,4 +175,111 @@ test('canonical architectural output has one final terminator and only approved 
     assert.equal(inspection.terminatorCount, 1);
     assert.equal(inspection.endsWithTerminator, true);
     assert.equal(inspection.hasTrailingContent, false);
+});
+
+test('architectural dialogue parser preserves a two-line dialogue record as one item through reconstruction', () => {
+    const source = readFileSync(join(fixtureDir, 'architectural-dialogue-two-line-01.txt'), 'utf8');
+    const sections = parseArchitecturalExtractionResponse(source, registry);
+    const diagnostics = validateArchitecturalStructuredSections(sections, { baselineDecisions: {} });
+    const reconstructed = reconstructArchitecturalExtraction(sections, registry);
+
+    assert.equal(sections.dialogue.length, 1);
+    assert.equal(sections.dialogue[0].content.split('\n').length, 2);
+    assert.equal(diagnostics.some((entry) => entry.level === 'error'), false);
+    assert.equal(reconstructed.includes('[S40:1] "Speaker and context must survive multiline parsing"\n--Archivist | fixture validation context'), true);
+
+    sections.dialogue[0].content += '\nthird line';
+    const blocked = validateArchitecturalStructuredSections(sections, { baselineDecisions: {} });
+    assert.equal(blocked.some((entry) => entry.code === 'ARCH_DIALOGUE_TOO_MANY_LINES'), true);
+});
+
+test('architectural renderer canonicalizes repeated DEC fields for normalized event refs', () => {
+    const output = reconstructArchitecturalExtraction({
+        _metadata: {
+            keyLines: ['Sources: Messages 9-10'],
+        },
+        timeline: [],
+        decisions: [{ content: '[S9:1] 🔴 ID:first-id | TYPE:GOVERNANCE | DECISION:A | WHY:unstated | SCOPE:test | STATUS:ACCEPTED | EVIDENCE:"a"', selected: true }],
+        events: [{ content: '[S9:2] 🟠 Event description | DEC:first-id, DEC:second-id', selected: true }],
+        developments: [],
+        dialogue: [],
+        threads: [],
+        current: [{ content: 'Project|State|Focus|Pending|Blocked|Next', selected: true }],
+    }, registry);
+
+    assert.equal(output.includes('DEC:first-id, DEC:second-id'), false);
+    assert.equal(output.includes('| DEC: first-id | DEC: second-id'), true);
+});
+
+test('architectural renderer canonicalizes decision, event, and thread structured field spacing and casing', () => {
+    const output = reconstructArchitecturalExtraction({
+        _metadata: {
+            keyLines: ['Sources: Messages 11-12'],
+        },
+        timeline: [],
+        decisions: [{
+            content: '[S11:1] 🔴 ID:test-id|TYPE:GOVERNANCE,PROCEDURE|DECISION:Decision text|WHY:unstated|SCOPE:Scope area|STATUS:ACCEPTED|EVIDENCE:"quoted"',
+            selected: true,
+        }],
+        events: [{
+            content: '[S11:2] 🟠 Event text | DEC:first-id, DEC:second-id',
+            selected: true,
+        }],
+        developments: [{
+            content: '[S11:4] Letters: confirmed(Chris correspondence inventory stabilized)',
+            selected: true,
+        }],
+        dialogue: [],
+        threads: [{
+            content: '[S11:3] thread subject|status:ACTIVE|intro:S11:1|last:S11:2|notes with escaped \\| pipe',
+            selected: true,
+        }],
+        current: [{ content: 'Project|Current State:active|Focus|Pending:follow-up|Blocked By:none|Next Action:ship', selected: true }],
+    }, registry);
+
+    assert.equal(output.includes('[S11:1] 🔴 ID: test-id | TYPE: GOVERNANCE, PROCEDURE | DECISION: Decision text | WHY: unstated | SCOPE: Scope area | STATUS: ACCEPTED | EVIDENCE: "quoted"'), true);
+    assert.equal(output.includes('[S11:2] 🟠 Event text | DEC: first-id | DEC: second-id'), true);
+    assert.equal(output.includes('[S11:3] thread subject | STATUS: ACTIVE | INTRO: S11:1 | LAST: S11:2 | notes with escaped \\| pipe'), true);
+    assert.equal(output.includes('[S11:4] Letters: confirmed (Chris correspondence inventory stabilized)'), true);
+    assert.equal(output.includes('Project | Current State: active | Focus | Pending: follow-up | Blocked By: none | Next Action: ship'), true);
+});
+
+test('architectural renderer escapes thread field quotes and pipes during reconstruction', () => {
+    const output = reconstructArchitecturalExtraction({
+        _metadata: {
+            keyLines: ['Sources: Messages 15-16'],
+        },
+        timeline: [],
+        decisions: [],
+        events: [],
+        developments: [],
+        dialogue: [],
+        threads: [{
+            content: '[S15:1] quoted subject | STATUS: ACTIVE | INTRO: S15:0 | LAST: S15:1 | Speaker said "hold | resume"',
+            selected: true,
+        }],
+        current: [{ content: 'Project|State|Focus|Pending|Blocked|Next', selected: true }],
+    }, registry);
+
+    assert.equal(
+        output.includes('[S15:1] quoted subject | STATUS: ACTIVE | INTRO: S15:0 | LAST: S15:1 | Speaker said \\"hold \\| resume\\"'),
+        true,
+    );
+});
+
+test('architectural renderer preserves empty CURRENT cells', () => {
+    const output = reconstructArchitecturalExtraction({
+        _metadata: {
+            keyLines: ['Sources: Messages 13-14'],
+        },
+        timeline: [],
+        decisions: [],
+        events: [],
+        developments: [],
+        dialogue: [],
+        threads: [],
+        current: [{ content: 'Project |  | Focus | Pending: follow-up |  | Next Action: ship', selected: true }],
+    }, registry);
+
+    assert.equal(output.includes('Project |  | Focus | Pending: follow-up |  | Next Action: ship'), true);
 });

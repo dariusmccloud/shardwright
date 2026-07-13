@@ -7,10 +7,27 @@ import { Popup, POPUP_RESULT, POPUP_TYPE } from '../../../../../../popup.js';
 import { escapeHtml } from '../../common/ui-utils.js';
 import { archiveToWarm } from '../../../core/rag/archive.js';
 import { log } from '../../../core/logger.js';
+import { getActiveRagSettings } from '../../../core/settings.js';
 import {
+    ARCHITECTURAL_KEY_LEGEND_LINES,
     buildArchitecturalKeyLines,
     isWarmArchiveEligible,
+    validateArchitecturalShellSections,
 } from '../../../core/summarization/architectural-sharder-shell.js';
+import {
+    ARCHITECTURAL_SECTION_CAPS,
+    validateArchitecturalStructuredSections,
+} from '../../../core/summarization/architectural-structured-validator.js';
+import { mergeArchitecturalDecisionLedger } from '../../../core/summarization/architectural-decision-ledger.js';
+import {
+    buildArchitecturalReviewRecordId,
+    createArchitecturalReviewIntent,
+} from '../../../core/summarization/architectural-post-review-finalization.js';
+import {
+    ARCHITECTURAL_PRUNING_CLASSIFICATIONS,
+    analyzeArchitecturalPruningAdvisor,
+    buildArchitecturalPruningAdvisorUiModel,
+} from '../../../core/summarization/architectural-pruning-advisor.js';
 import {
     ARCHITECTURAL_PROFILE,
     NARRATIVE_PROFILE,
@@ -21,6 +38,7 @@ import {
     parseSceneCodes,
     EVENT_WEIGHTS,
 } from '../../../core/summarization/sharder-pipeline.js';
+import { buildSaveBlockerProjection, projectArchitecturalDiagnostic } from './review-blocker-projection.js';
 
 function sectionTitle(section) {
     return section.key === 'currentState' ? 'CURRENT (as of end of extract)' : section.name;
@@ -34,19 +52,49 @@ function isArchitecturalCurrentSection(state, sectionKey) {
     return isArchitecturalState(state) && sectionKey === 'current';
 }
 
+function getReviewModalTitle(state) {
+    return isArchitecturalState(state) ? 'Architectural Proposal Review' : 'Sharder Review';
+}
+
+function getReviewModalDescription(state) {
+    if (isArchitecturalState(state)) {
+        return 'Review section content before saving. Saving will persist this shard, create a governed proposal, and open Memory Review. Error-level diagnostics block save.';
+    }
+    return 'Review section content before saving. Error-level diagnostics block save.';
+}
+
+function getReviewModalSaveButtonLabel(state) {
+    return isArchitecturalState(state) ? 'Save and Open Review' : 'Save Sharder Output';
+}
+
 function getSelectedItems(items) {
     return (Array.isArray(items) ? items : []).filter((item) => item?.selected !== false);
+}
+
+function getArchitecturalDecisionCountText(state, selected, total) {
+    const metrics = state.decisionLedgerMetrics || computeDecisionLedgerMetrics(state);
+    if (!metrics) {
+        return `(${selected}/${total})`;
+    }
+    return `(${selected} selected | ${metrics.newCount} new / cap ${metrics.hardMax})`;
 }
 
 function getArchitecturalCurrentError(state) {
     if (!isArchitecturalState(state)) return null;
     const currentItems = state.editableSections?.current || [];
+    if (currentItems.length === 0) {
+        return {
+            level: 'warning',
+            code: 'ARCH_CURRENT_MISSING',
+            message: 'Architectural CURRENT is empty for this extract.',
+        };
+    }
     const selectedCurrent = getSelectedItems(currentItems);
     if (selectedCurrent.length === 0) {
         return {
-            level: 'error',
-            code: 'ARCH_CURRENT_EMPTY',
-            message: 'Architectural CURRENT requires one selected entry.',
+            level: 'warning',
+            code: 'ARCH_CURRENT_MISSING',
+            message: 'Architectural CURRENT is empty for this extract.',
         };
     }
     if (selectedCurrent.length > 1) {
@@ -58,6 +106,46 @@ function getArchitecturalCurrentError(state) {
     }
     return null;
 }
+
+const ARCHITECTURAL_IMMUTABLE_DIAGNOSTIC_CODES = new Set([
+    'ARCH_KEY_RECOVERED',
+    'ARCH_KEY_PROFILE_RECOVERED',
+    'ARCH_KEY_SCHEMA_RECOVERED',
+    'ARCH_TERMINATOR_RECOVERED',
+    'ARCH_UNKNOWN_SECTION_IGNORED',
+    'ARCH_BASELINE_DECISION_IGNORED',
+]);
+
+const SUPPRESSED_REVIEW_DIAGNOSTIC_CODES = new Set([
+    'ARCH_KEY_RECOVERED',
+    'ARCH_KEY_PROFILE_RECOVERED',
+    'ARCH_KEY_SCHEMA_RECOVERED',
+    'ARCH_TERMINATOR_RECOVERED',
+    'ARCH_EVENT_DEC_LIST_NORMALIZED',
+]);
+
+const ARCHITECTURAL_REVIEW_LEGEND_ROWS = [
+    {
+        emoji: '🔴',
+        label: 'Foundational',
+        description: 'A governing principle, authority boundary, hierarchy, replacement, or systemic correction with broad downstream effect.',
+    },
+    {
+        emoji: '🟠',
+        label: 'Governing',
+        description: 'An accepted design, criterion, scope, classification, naming rule, or validated mechanism with continuing effect.',
+    },
+    {
+        emoji: '🟡',
+        label: 'Operational',
+        description: 'A provisional plan, implementation choice, local correction, test method, or discovery that future work must carry forward.',
+    },
+    {
+        emoji: '🟢',
+        label: 'Contextual',
+        description: 'A limited or reversible detail worth retaining because it helps interpret current work, but does not independently govern it.',
+    },
+];
 
 function reviewSections(stateOrRegistry = null) {
     const registry = stateOrRegistry?.sectionRegistry || stateOrRegistry;
@@ -146,6 +234,7 @@ function splitSceneContentToItems(content) {
 
 function normalizeSectionItems(sections, registry = null) {
     const normalized = {};
+    const architectural = registry?.profile === ARCHITECTURAL_PROFILE;
     reviewSections(registry).forEach((section) => {
         const raw = Array.isArray(sections?.[section.key]) ? sections[section.key] : [];
 
@@ -163,6 +252,8 @@ function normalizeSectionItems(sections, registry = null) {
         normalized[section.key] = expanded.map((item, idx) => ({
             id: `${section.key}:${idx}:${Math.random().toString(36).slice(2, 8)}`,
             content: item?.content || '',
+            initialContent: item?.content || '',
+            reviewRecordId: architectural ? buildArchitecturalReviewRecordId(section.key, idx) : null,
             sceneCodes: parseSceneCodes(item?.content || ''),
             archived: false,
             selected: true,
@@ -175,6 +266,187 @@ function normalizeSectionItems(sections, registry = null) {
 function sectionCount(items) {
     const selected = items.filter(i => i.selected !== false).length;
     return { selected, total: items.length };
+}
+
+function buildLocationLabel(diagnostic) {
+    if (!diagnostic) return '';
+    if (diagnostic.recordId && diagnostic.sectionKey === 'decisions') {
+        return `${String(diagnostic.sectionKey || '').toUpperCase()} ID:${diagnostic.recordId}`;
+    }
+    if (diagnostic.sectionKey && Number.isInteger(diagnostic.itemIndex)) {
+        return `${String(diagnostic.sectionKey || '').toUpperCase()} item ${diagnostic.itemIndex + 1}`;
+    }
+    if (diagnostic.sectionKey) {
+        return String(diagnostic.sectionKey || '').toUpperCase();
+    }
+    return '';
+}
+
+function buildBlockingNoteHtml(state) {
+    const projection = buildSaveBlockerProjection(state?.diagnostics || [], {
+        architectural: isArchitecturalState(state),
+    });
+    if (!projection.blocked) {
+        return '';
+    }
+    return `
+        <div class="ss-sp-blocking-title">${escapeHtml(projection.title)}</div>
+        <div class="ss-sp-blocking-reason"><strong>Reason:</strong> ${escapeHtml(projection.reason)}</div>
+        <div class="ss-sp-blocking-next"><strong>Next step:</strong> ${escapeHtml(projection.nextStep)}</div>
+    `;
+}
+
+function diagnosticSignature(diagnostic) {
+    return [
+        diagnostic?.level || '',
+        diagnostic?.code || '',
+        diagnostic?.message || '',
+        diagnostic?.sectionKey || '',
+        Number.isInteger(diagnostic?.itemIndex) ? diagnostic.itemIndex : '',
+        diagnostic?.recordId || '',
+        diagnostic?.field || '',
+    ].join('|');
+}
+
+function mergeDiagnostics(sourceDiagnostics, dynamicDiagnostics) {
+    const merged = [];
+    const seen = new Set();
+
+    [...(sourceDiagnostics || []), ...(dynamicDiagnostics || [])].forEach((diagnostic) => {
+        if (SUPPRESSED_REVIEW_DIAGNOSTIC_CODES.has(diagnostic?.code)) {
+            return;
+        }
+        const signature = diagnosticSignature(diagnostic);
+        if (seen.has(signature)) return;
+        seen.add(signature);
+        merged.push(diagnostic);
+    });
+
+    return merged;
+}
+
+function getRowDiagnostics(state, sectionKey, itemIndex) {
+    return (state.diagnostics || []).filter((diagnostic) =>
+        diagnostic?.sectionKey === sectionKey && diagnostic?.itemIndex === itemIndex
+    );
+}
+
+function getSectionDiagnosticSummary(state, sectionKey) {
+    const sectionDiagnostics = (state.diagnostics || []).filter((diagnostic) => diagnostic?.sectionKey === sectionKey);
+    const counts = {
+        error: 0,
+        warning: 0,
+        info: 0,
+    };
+
+    sectionDiagnostics.forEach((diagnostic) => {
+        if (diagnostic?.level === 'error') counts.error += 1;
+        else if (diagnostic?.level === 'warning') counts.warning += 1;
+        else if (diagnostic?.level === 'info') counts.info += 1;
+    });
+
+    const level = counts.error > 0
+        ? 'error'
+        : counts.warning > 0
+            ? 'warning'
+            : counts.info > 0
+                ? 'info'
+                : null;
+
+    return {
+        counts,
+        level,
+        total: counts.error + counts.warning + counts.info,
+    };
+}
+
+function buildSectionHeaderStatus(summary) {
+    if (!summary?.level) {
+        return '';
+    }
+
+    const label = summary.level === 'error'
+        ? `${summary.counts.error} error${summary.counts.error === 1 ? '' : 's'}`
+        : summary.level === 'warning'
+            ? `${summary.counts.warning} warning${summary.counts.warning === 1 ? '' : 's'}`
+            : `${summary.counts.info} info`;
+
+    return `
+        <span class="ss-accordion-status ss-level-${escapeHtml(summary.level)}" title="${escapeHtml(label)}">
+            <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+        </span>
+    `;
+}
+
+function buildDynamicArchitecturalSections(state) {
+    const sections = {};
+    reviewSections(state).forEach((section) => {
+        sections[section.key] = (state.editableSections?.[section.key] || []).map((item) => ({
+            content: item.content,
+            selected: item.selected !== false,
+            weight: item.weight,
+            sceneCodes: item.sceneCodes,
+        }));
+    });
+
+    sections._metadata = {
+        ...(sections._metadata || {}),
+        keyLines: [...(state.keyLines || [])],
+        architectural: {
+            keyPresent: true,
+            terminatorCount: 1,
+            unknownSectionHeaders: [],
+        },
+    };
+
+    return sections;
+}
+
+function computeDecisionLedgerMetrics(state) {
+    if (!isArchitecturalState(state)) return null;
+    return mergeArchitecturalDecisionLedger(
+        state.editableSections?.decisions || [],
+        state.metadata?.baselineLedger || state.metadata?.baselineDecisions || {}
+    ).metrics;
+}
+
+function computeArchitecturalDynamicDiagnostics(state) {
+    const sections = buildDynamicArchitecturalSections(state);
+    state.decisionLedgerMetrics = computeDecisionLedgerMetrics(state);
+    const shellDiagnostics = validateArchitecturalShellSections(sections)
+        .filter((diagnostic) =>
+            !ARCHITECTURAL_IMMUTABLE_DIAGNOSTIC_CODES.has(diagnostic.code)
+            && !['ARCH_CURRENT_MISSING', 'ARCH_CURRENT_EMPTY', 'ARCH_CURRENT_MULTIPLE'].includes(diagnostic.code)
+        );
+    const structuredDiagnostics = validateArchitecturalStructuredSections(sections, {
+        baselineDecisions: state.metadata?.baselineDecisions || {},
+        baselineLedger: state.metadata?.baselineLedger || state.metadata?.baselineDecisions || {},
+        profile: ARCHITECTURAL_PROFILE,
+        allowDecisionCapacityOverride: state.decisionCapacityOverride?.enabled === true,
+        decisionCapacityOverrideJustification: state.decisionCapacityOverride?.justification || '',
+    });
+
+    return mergeDiagnostics(shellDiagnostics, structuredDiagnostics);
+}
+
+function refreshArchitecturalDiagnostics(state) {
+    if (!isArchitecturalState(state)) return;
+    state.dynamicDiagnostics = computeArchitecturalDynamicDiagnostics(state);
+    state.diagnostics = mergeDiagnostics(state.sourceDiagnostics, state.dynamicDiagnostics);
+}
+
+function getCurrentSaveDiagnostics(state) {
+    if (isArchitecturalState(state)) {
+        refreshArchitecturalDiagnostics(state);
+        refreshArchitecturalAdvisor(state);
+        return mergeDiagnostics(state.sourceDiagnostics, state.dynamicDiagnostics);
+    }
+
+    return state.diagnostics || [];
+}
+
+function hasBlockingReviewErrors(diagnostics) {
+    return (Array.isArray(diagnostics) ? diagnostics : []).some((diagnostic) => diagnostic?.level === 'error');
 }
 
 function rebuildOutput(state) {
@@ -217,6 +489,111 @@ function applyRescues(output, rescuedItems) {
     return `${(output || '').trimEnd()}\n\n[RESCUED_ITEMS]\n${lines.join('\n')}`;
 }
 
+function refreshArchitecturalAdvisor(state) {
+    if (!isArchitecturalState(state)) return;
+    state.pruningAdvisor = analyzeArchitecturalPruningAdvisor(state.editableSections, {
+        profile: ARCHITECTURAL_PROFILE,
+        decisionLedgerMetrics: state.decisionLedgerMetrics || computeDecisionLedgerMetrics(state),
+    });
+}
+
+function formatAdvisorLabel(classification) {
+    if (classification === ARCHITECTURAL_PRUNING_CLASSIFICATIONS.LOW_RISK) return 'Low-risk candidate';
+    if (classification === ARCHITECTURAL_PRUNING_CLASSIFICATIONS.REVIEW) return 'Review carefully';
+    return 'Protected';
+}
+
+function buildAdvisorItemLabel(entry) {
+    if (entry.stableDecisionId) {
+        return `ID:${entry.stableDecisionId}`;
+    }
+    if (entry.sourceRef) {
+        return entry.sourceRef;
+    }
+    return `item ${entry.itemIndex + 1}`;
+}
+
+function buildAdvisorGroup(title, entries, cssClass) {
+    if (!entries.length) {
+        return `
+            <div class="ss-pruning-advisor-group ${cssClass}">
+                <div class="ss-pruning-advisor-group-title">${escapeHtml(title)}</div>
+                <p class="ss-empty">No items in this group.</p>
+            </div>
+        `;
+    }
+
+    return `
+        <div class="ss-pruning-advisor-group ${cssClass}">
+            <div class="ss-pruning-advisor-group-title">${escapeHtml(title)}</div>
+            <div class="ss-pruning-advisor-items">
+                ${entries.map((entry) => `
+                    <div class="ss-pruning-advisor-item">
+                        <div class="ss-pruning-advisor-item-header">
+                            <span class="ss-pruning-advisor-item-title">${escapeHtml(String(entry.sectionKey || '').toUpperCase())} item ${entry.itemIndex + 1}</span>
+                            <span class="ss-pruning-advisor-item-meta">${escapeHtml(buildAdvisorItemLabel(entry))}</span>
+                            <span class="ss-pruning-advisor-badge ss-pruning-advisor-badge-${escapeHtml(entry.classification)}">${escapeHtml(formatAdvisorLabel(entry.classification))}</span>
+                        </div>
+                        <div class="ss-pruning-advisor-reasons">
+                            ${entry.reasonCodes.map((code) => `<span class="ss-pruning-advisor-reason-code">${escapeHtml(code)}</span>`).join('')}
+                        </div>
+                        <div class="ss-pruning-advisor-basis">
+                            <div class="ss-pruning-advisor-basis-title">Based on what</div>
+                            <ul>
+                                ${entry.basis.map((basis) => `<li>${escapeHtml(basis)}</li>`).join('')}
+                            </ul>
+                        </div>
+                        <div class="ss-pruning-advisor-actions">
+                            <button class="menu_button ss-pruning-advisor-go" data-section-key="${escapeHtml(entry.sectionKey)}" data-item-id="${escapeHtml(entry.itemId)}">Go to item</button>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
+function buildPruningAdvisorSection(state) {
+    if (!isArchitecturalState(state)) {
+        return '';
+    }
+
+    const uiModel = buildArchitecturalPruningAdvisorUiModel(state.pruningAdvisor);
+    const overCap = uiModel.overCapSections.filter((entry) => entry.excess > 0);
+    const overCapSummary = overCap.length > 0
+        ? `
+            <div class="ss-pruning-advisor-summary">
+                ${overCap.map((entry) => `
+                    <div class="ss-pruning-advisor-summary-row">
+                        <div>
+                            <strong>${escapeHtml(String(entry.sectionKey || '').toUpperCase())}</strong>
+                            needs ${entry.excess} removal${entry.excess === 1 ? '' : 's'} (${entry.selectedCount}/${entry.cap})
+                        </div>
+                        ${entry.message ? `<div class="ss-pruning-advisor-summary-note">${escapeHtml(entry.message)}</div>` : ''}
+                    </div>
+                `).join('')}
+            </div>
+        `
+        : '<p class="ss-hint">No sections are currently over cap. Advisor remains available for inspection.</p>';
+
+    return `
+        <div class="ss-review-accordion ${overCap.length > 0 ? 'ss-section-warning expanded' : ''}" data-section="sp-pruning-advisor">
+            <div class="ss-accordion-header">
+                <span class="ss-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
+                <span class="ss-accordion-emoji">🧭</span>
+                <span class="ss-accordion-title">Pruning Advisor</span>
+                <span class="ss-accordion-count">(${(state.pruningAdvisor?.recommendations || []).length})</span>
+            </div>
+            <div class="ss-accordion-content" style="display:${overCap.length > 0 ? 'block' : 'none'};">
+                ${overCapSummary}
+                ${buildAdvisorGroup('Low-risk candidates', uiModel.lowRisk, 'ss-pruning-advisor-low-risk')}
+                ${buildAdvisorGroup('Review carefully', uiModel.review, 'ss-pruning-advisor-review')}
+                ${buildAdvisorGroup('Protected', uiModel.protected, 'ss-pruning-advisor-protected')}
+            </div>
+        </div>
+    `;
+}
+
 function architecturalKeyBlockHtml(state) {
     if (!isArchitecturalState(state)) {
         return '';
@@ -224,13 +601,82 @@ function architecturalKeyBlockHtml(state) {
 
     const keyLines = buildArchitecturalKeyLines(state.keyLines);
     const body = keyLines.map((line) => `<div>${escapeHtml(line)}</div>`).join('');
+    const expandedLegendRows = ARCHITECTURAL_REVIEW_LEGEND_ROWS.map((row) => `
+        <li>
+            <strong>${escapeHtml(`${row.emoji} ${row.label}:`)}</strong>
+            ${escapeHtml(row.description)}
+        </li>
+    `).join('');
 
     return `
-        <div class="ss-sp-panel" style="margin-bottom: 12px;">
-            <div class="ss-output-header">
-                <span>KEY Metadata</span>
+        <div class="ss-review-accordion" data-section="sp-key">
+            <div class="ss-accordion-header">
+                <span class="ss-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
+                <span class="ss-accordion-emoji">🗝️</span>
+                <span class="ss-accordion-title">KEY Metadata</span>
             </div>
-            <div class="ss-sp-key-metadata">${body}</div>
+            <div class="ss-accordion-content" style="display:none;">
+                <div class="ss-sp-panel" style="margin-bottom: 12px;">
+                    <div class="ss-sp-key-metadata">${body}</div>
+                    <details class="ss-sp-architectural-legend" style="margin-top: 10px;">
+                        <summary>Architectural Fidelity Legend</summary>
+                        <div class="ss-sp-architectural-legend-body" style="margin-top: 8px;">
+                            <p>Weights measure future continuity importance, not sentiment, quality, urgency, or emotional intensity.</p>
+                            <ul style="margin: 8px 0 8px 18px; padding: 0;">
+                                ${expandedLegendRows}
+                            </ul>
+                            <p>Omit chatter, praise, repetition, filler, redundant summaries, and wording changes that do not alter scope, authority, classification, behavior, or future continuity.</p>
+                            <p class="ss-hint" style="margin-bottom: 0;">Internal numeric weights remain unchanged. Saved shards show the compact legend only: ${escapeHtml(ARCHITECTURAL_KEY_LEGEND_LINES[2])}</p>
+                        </div>
+                    </details>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function architecturalDecisionCapacityHtml(state) {
+    if (!isArchitecturalState(state)) return '';
+    const metrics = state.decisionLedgerMetrics || computeDecisionLedgerMetrics(state);
+    if (!metrics) return '';
+
+    const overrideEligible = metrics.overrideEligible && metrics.newCount > metrics.hardMax;
+    const overrideEnabled = state.decisionCapacityOverride?.enabled === true;
+    const justification = String(state.decisionCapacityOverride?.justification || '');
+    const statusLabel = metrics.guidanceLevel === 'blocked'
+        ? `Hard limit exceeded (${metrics.newCount}/${metrics.hardMax} new IDs)`
+        : metrics.guidanceLevel === 'elevated'
+            ? `Elevated guidance (${metrics.newCount} new IDs)`
+            : metrics.guidanceLevel === 'soft'
+                ? `Soft guidance (${metrics.newCount} new IDs)`
+                : `Within normal band (${metrics.newCount} new IDs)`;
+
+    return `
+        <div class="ss-sp-panel ss-architectural-capacity" style="margin-top: 12px;">
+            <div class="ss-output-header">
+                <span>Decision Ledger</span>
+                <span class="ss-hint">${escapeHtml(statusLabel)}</span>
+            </div>
+            <div class="ss-architectural-capacity-grid">
+                <div><strong>Inherited:</strong> ${metrics.inheritedCount}</div>
+                <div><strong>Updated:</strong> ${metrics.updatedCount}</div>
+                <div><strong>New this run:</strong> ${metrics.newCount}</div>
+                <div><strong>Soft guidance:</strong> ${metrics.softMax}</div>
+                <div><strong>Hard new-ID limit:</strong> ${metrics.hardMax}</div>
+                <div><strong>Override:</strong> ${overrideEnabled ? 'Active' : (overrideEligible ? 'Available' : 'Unavailable')}</div>
+            </div>
+            ${overrideEligible ? `
+                <label class="ss-override-toggle" style="margin-top: 10px;">
+                    <input type="checkbox" id="ss-sp-decision-override" ${overrideEnabled ? 'checked' : ''} />
+                    <span>Allow PROPOSED-only overflow beyond the hard new-ID limit</span>
+                </label>
+                <textarea id="ss-sp-decision-override-justification"
+                          class="text_pole"
+                          rows="3"
+                          placeholder="Required justification for decision-capacity override"
+                          style="margin-top: 8px; width: 100%;"
+                >${escapeHtml(justification)}</textarea>
+            ` : ''}
         </div>
     `;
 }
@@ -241,11 +687,12 @@ function diagnosticsHtml(diagnostics) {
     }
 
     return diagnostics.map((d) => `
-        <div class="ss-sp-diag ss-level-${escapeHtml(d.level)}">
+        <div class="ss-sp-diag ss-level-${escapeHtml(d.level)}" data-diag-level="${escapeHtml(d.level || 'info')}" data-diag-code="${escapeHtml(d.code || 'UNSPECIFIED')}">
             <div class="ss-sp-diag-head">
                 <span class="ss-sp-diag-level">${escapeHtml((d.level || 'info').toUpperCase())}</span>
                 <span class="ss-sp-diag-code">${escapeHtml(d.code || 'UNSPECIFIED')}</span>
             </div>
+            ${buildLocationLabel(d) ? `<div class="ss-sp-diag-loc">${escapeHtml(buildLocationLabel(d))}</div>` : ''}
             <div class="ss-sp-diag-msg">${escapeHtml(d.message || '')}</div>
         </div>
     `).join('');
@@ -260,6 +707,66 @@ function weightSelectorHtml(item) {
     return `<div class="ss-sharder-weight-selector" data-item-id="${escapeHtml(item.id)}">${buttons}</div>`;
 }
 
+function autoResizeTextarea(textarea) {
+    if (!textarea) return;
+    textarea.style.height = 'auto';
+    textarea.style.height = `${textarea.scrollHeight}px`;
+}
+
+function bindAutoResizeTextarea(textarea) {
+    if (!textarea || textarea.dataset.ssAutoResizeBound === 'true') return;
+    textarea.dataset.ssAutoResizeBound = 'true';
+    autoResizeTextarea(textarea);
+    textarea.addEventListener('input', () => autoResizeTextarea(textarea));
+}
+
+function getInlineDiagnosticText(state, diagnostic) {
+    if (!isArchitecturalState(state)) {
+        return String(diagnostic?.message || '').trim();
+    }
+    return projectArchitecturalDiagnostic(diagnostic).reason;
+}
+
+function rowDiagnosticsHtml(state, sectionKey, itemIndex) {
+    const diagnostics = getRowDiagnostics(state, sectionKey, itemIndex);
+    if (!diagnostics.length) return '';
+
+    return `
+        <div class="ss-sp-inline-diagnostics">
+            ${diagnostics.map((diagnostic) => `
+                <div class="ss-sp-inline-diag ss-level-${escapeHtml(diagnostic.level)}">
+                    <span class="ss-sp-inline-code">${escapeHtml(diagnostic.code || 'UNSPECIFIED')}</span>
+                    <span class="ss-sp-inline-msg">${escapeHtml(getInlineDiagnosticText(state, diagnostic))}</span>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function updateInlineDiagnostics(state) {
+    if (!isArchitecturalState(state)) return;
+
+    reviewSections(state).forEach((section) => {
+        const items = state.editableSections?.[section.key] || [];
+        items.forEach((item, itemIndex) => {
+            const row = document.querySelector(`.ss-cr-item-row[data-section-key="${CSS.escape(section.key)}"][data-item-id="${CSS.escape(item.id)}"]`);
+            if (!row) return;
+
+            const existing = row.querySelector('.ss-sp-inline-diagnostics');
+            const html = rowDiagnosticsHtml(state, section.key, itemIndex);
+            if (html) {
+                if (existing) {
+                    existing.outerHTML = html;
+                } else {
+                    row.insertAdjacentHTML('beforeend', html);
+                }
+            } else if (existing) {
+                existing.remove();
+            }
+        });
+    });
+}
+
 function sectionRows(state, sectionKey, items) {
     if (!items.length) {
         return '<p class="ss-empty">No items in this section.</p>';
@@ -267,7 +774,7 @@ function sectionRows(state, sectionKey, items) {
 
     const warmArchiveUnavailableMessage = getWarmArchiveUnavailableMessage(state);
 
-    return items.map((item) => {
+    return items.map((item, itemIndex) => {
         const isSelected = item.selected !== false;
         const isProtectedCurrent = isArchitecturalCurrentSection(state, sectionKey) && items.length <= 1;
         const codes = (item.sceneCodes || [])
@@ -280,7 +787,7 @@ function sectionRows(state, sectionKey, items) {
             .map((code) => `<span class="ss-scene-badge">${escapeHtml(code)}</span>`)
             .join(' ');
 
-        const weightHtml = sectionKey === 'events'
+        const weightHtml = sectionKey === 'events' && !isArchitecturalState(state)
             ? `<div class="ss-sp-weight-row">${weightSelectorHtml(item)}</div>`
             : '';
 
@@ -307,6 +814,7 @@ function sectionRows(state, sectionKey, items) {
                 </div>
                 <textarea class="ss-cr-item-editor text_pole" rows="2" data-section-key="${escapeHtml(sectionKey)}" data-item-id="${escapeHtml(item.id)}">${escapeHtml(item.content || '')}</textarea>
                 ${weightHtml}
+                ${rowDiagnosticsHtml(state, sectionKey, itemIndex)}
             </div>
         `;
     }).join('');
@@ -318,13 +826,26 @@ function sectionsHtml(state) {
         const { selected, total } = sectionCount(items);
         const isProtectedCurrent = isArchitecturalCurrentSection(state, section.key);
         const addItemDisabled = isProtectedCurrent;
+        const cap = isArchitecturalState(state) ? ARCHITECTURAL_SECTION_CAPS[section.key] : null;
+        const decisionMetrics = section.key === 'decisions' ? (state.decisionLedgerMetrics || computeDecisionLedgerMetrics(state)) : null;
+        const countText = isArchitecturalState(state) && section.key === 'decisions'
+            ? getArchitecturalDecisionCountText(state, selected, total)
+            : isArchitecturalState(state) && Number.isInteger(cap)
+            ? `(${selected} selected / cap ${cap})`
+            : `(${selected}/${total})`;
+        const overCap = isArchitecturalState(state) && section.key === 'decisions'
+            ? (decisionMetrics?.newCount || 0) > (decisionMetrics?.hardMax || 0)
+            : isArchitecturalState(state) && Number.isInteger(cap) && selected > cap;
+        const sectionDiagnosticSummary = getSectionDiagnosticSummary(state, section.key);
+        const severityClass = sectionDiagnosticSummary.level ? `ss-section-${sectionDiagnosticSummary.level}` : '';
         return `
-            <div class="ss-review-accordion" data-section="sp-${escapeHtml(section.key)}">
+            <div class="ss-review-accordion ${overCap ? 'ss-over-cap' : ''} ${severityClass}" data-section="sp-${escapeHtml(section.key)}">
                 <div class="ss-accordion-header">
                     <span class="ss-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
                     <span class="ss-accordion-emoji">${section.emoji}</span>
                     <span class="ss-accordion-title">${escapeHtml(sectionTitle(section))}</span>
-                    <span class="ss-accordion-count" data-ss-count-key="${escapeHtml(section.key)}">(${selected}/${total})</span>
+                    ${buildSectionHeaderStatus(sectionDiagnosticSummary)}
+                    <span class="ss-accordion-count" data-ss-count-key="${escapeHtml(section.key)}">${escapeHtml(countText)}</span>
                 </div>
                 <div class="ss-accordion-content" style="display:none;">
                     <div class="ss-sp-section-actions" style="margin-bottom:8px;">
@@ -419,18 +940,19 @@ function buildPruningSection(state) {
     const uncoveredGroup = !hasUncovered
         ? ''
         : `
-            <div class="ss-pruning-group ss-sub-accordion" data-pruning-group="Uncovered Messages">
+            <div class="ss-pruning-group ss-sub-accordion" data-pruning-group="Low-Coverage Source Messages">
                 <div class="ss-pruning-group-header">
                     <span class="ss-sub-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
-                    <span class="ss-pruning-group-title">📭 Uncovered Messages</span>
+                    <span class="ss-pruning-group-title" title="Source messages from the selected chat range that had weak representation in the generated shard. Review them to decide whether important continuity was missed.">📭 Low-Coverage Source Messages</span>
                     <span class="ss-pruning-group-count">(${uncoveredMessages.length} messages)</span>
                 </div>
                 <div class="ss-sub-accordion-content" style="display:none;">
                     <div class="ss-pruning-items">
+                        <div class="ss-hint" style="margin-bottom:8px;">These source messages had weak representation in the generated shard. Review them only if you need to check whether continuity-relevant material was skipped or compressed too hard.</div>
                         ${uncoveredMessages.map((msg, i) => `
                             <div class="ss-pruning-item ss-uncovered-message" data-section="uncovered" data-index="${i}">
                                 <div class="ss-pruning-content"><strong>[Msg ${msg.msgIndex}] ${escapeHtml(msg.name)}:</strong> ${escapeHtml(msg.preview || '')}${(msg.preview || '').length >= 150 ? '...' : ''}</div>
-                                <div class="ss-pruning-source">Coverage: ${Math.round((msg.coverageRatio || 0) * 100)}%</div>
+                                <div class="ss-pruning-source">Shard coverage estimate: ${Math.round((msg.coverageRatio || 0) * 100)}%</div>
                             </div>
                         `).join('')}
                     </div>
@@ -457,12 +979,14 @@ function buildModalHtml(state) {
     const errors = state.diagnostics.filter((d) => d.level === 'error').length;
     const warnings = state.diagnostics.filter((d) => d.level === 'warning').length;
     const infos = state.diagnostics.filter((d) => d.level === 'info').length;
+    const modalTitle = getReviewModalTitle(state);
+    const modalDescription = getReviewModalDescription(state);
 
     return `
-        <div class="ss-single-pass-review-modal">
+        <div class="ss-single-pass-review-modal" tabindex="0" aria-label="${escapeHtml(modalTitle)}">
             <div class="ss-sp-header">
-                <h3>Sharder Review</h3>
-                <p>Review section content before saving. Error-level diagnostics block save.</p>
+                <h3>${escapeHtml(modalTitle)}</h3>
+                <p>${escapeHtml(modalDescription)}</p>
                 <div class="ss-sp-global-controls">
                     <button id="ss-sp-select-all-global" class="menu_button">Select All</button>
                     <button id="ss-sp-deselect-all-global" class="menu_button">Deselect All</button>
@@ -492,6 +1016,8 @@ function buildModalHtml(state) {
                 ${architecturalKeyBlockHtml(state)}
                 ${sectionsHtml(state)}
             </div>
+            ${architecturalDecisionCapacityHtml(state)}
+            ${buildPruningAdvisorSection(state)}
             ${buildPruningSection(state)}
 
             <div class="ss-sp-panel" style="margin-top: 12px;">
@@ -527,14 +1053,14 @@ function buildModalHtml(state) {
                     </label>
                     <label class="ss-archive-option">
                         <input type="checkbox" id="ss-sp-archive-cold" />
-                        <span>Log output to cold archive</span>
+                        <span>Save output to local cold archive (history only, not RAG-retrievable)</span>
                     </label>
                 </div>
             </div>
             ` : ''}
 
             <div class="ss-sp-blocking-note" id="ss-sp-blocking-note" style="display:${errors > 0 ? 'block' : 'none'};">
-                Save blocked: resolve or manually remove error-level issues.
+                ${buildBlockingNoteHtml(state)}
             </div>
         </div>
     `;
@@ -543,19 +1069,129 @@ function buildModalHtml(state) {
 function updateSectionCount(state, sectionKey) {
     const items = state.editableSections[sectionKey] || [];
     const { selected, total } = sectionCount(items);
+    const cap = isArchitecturalState(state) ? ARCHITECTURAL_SECTION_CAPS[sectionKey] : null;
     const el = document.querySelector(`[data-ss-count-key="${CSS.escape(sectionKey)}"]`);
-    if (el) el.textContent = `(${selected}/${total})`;
+    if (el) {
+        el.textContent = isArchitecturalState(state) && sectionKey === 'decisions'
+            ? getArchitecturalDecisionCountText(state, selected, total)
+            : isArchitecturalState(state) && Number.isInteger(cap)
+            ? `(${selected} selected / cap ${cap})`
+            : `(${selected}/${total})`;
+    }
+
+    const accordion = document.querySelector(`.ss-review-accordion[data-section="sp-${CSS.escape(sectionKey)}"]`);
+    if (accordion && isArchitecturalState(state) && (Number.isInteger(cap) || sectionKey === 'decisions')) {
+        const decisionMetrics = state.decisionLedgerMetrics || computeDecisionLedgerMetrics(state);
+        const overCap = sectionKey === 'decisions'
+            ? (decisionMetrics?.newCount || 0) > (decisionMetrics?.hardMax || 0)
+            : selected > cap;
+        accordion.classList.toggle('ss-over-cap', overCap);
+    }
+
+    if (accordion) {
+        const summary = getSectionDiagnosticSummary(state, sectionKey);
+        accordion.classList.toggle('ss-section-error', summary.level === 'error');
+        accordion.classList.toggle('ss-section-warning', summary.level === 'warning');
+        accordion.classList.toggle('ss-section-info', summary.level === 'info');
+
+        const statusContainer = accordion.querySelector('.ss-accordion-status');
+        const statusMarkup = buildSectionHeaderStatus(summary).trim();
+        if (statusMarkup) {
+            if (statusContainer) {
+                statusContainer.outerHTML = statusMarkup;
+            } else {
+                const title = accordion.querySelector('.ss-accordion-title');
+                title?.insertAdjacentHTML('afterend', statusMarkup);
+            }
+        } else if (statusContainer) {
+            statusContainer.remove();
+        }
+    }
 }
 
 function updateOutputEditor(state) {
+    if (isArchitecturalState(state)) {
+        refreshArchitecturalDiagnostics(state);
+        refreshArchitecturalAdvisor(state);
+    }
+
     state.reconstructedOutput = rebuildOutput(state);
     const editor = document.getElementById('ss-sp-output-editor');
     if (editor) {
         editor.value = !isArchitecturalState(state) && typeof state.outputOverride === 'string'
             ? state.outputOverride
             : state.reconstructedOutput;
+        autoResizeTextarea(editor);
     }
     state.finalOutput = editor?.value || state.reconstructedOutput;
+
+    const errors = state.diagnostics.filter((d) => d.level === 'error').length;
+    const warnings = state.diagnostics.filter((d) => d.level === 'warning').length;
+    const infos = state.diagnostics.filter((d) => d.level === 'info').length;
+    const summary = document.querySelector('.ss-sp-summary');
+    if (summary) {
+        summary.innerHTML = `
+            <span class="ss-sp-pill ss-level-error">Errors: ${errors}</span>
+            <span class="ss-sp-pill ss-level-warning">Warnings: ${warnings}</span>
+            <span class="ss-sp-pill ss-level-info">Info: ${infos}</span>
+        `;
+    }
+
+    const blockingNote = document.getElementById('ss-sp-blocking-note');
+    if (blockingNote) {
+        blockingNote.style.display = errors > 0 ? 'block' : 'none';
+        blockingNote.innerHTML = errors > 0 ? buildBlockingNoteHtml(state) : '';
+    }
+
+    const diagArea = document.querySelector('.ss-sp-diagnostics');
+    if (diagArea) {
+        diagArea.innerHTML = diagnosticsHtml(state.diagnostics);
+    }
+
+    const diagCount = document.querySelector('.ss-review-accordion[data-section="sp-diagnostics"] .ss-accordion-count');
+    if (diagCount) {
+        diagCount.textContent = `(${state.diagnostics.length})`;
+    }
+
+    if (isArchitecturalState(state)) {
+        const capacityPanel = document.querySelector('.ss-architectural-capacity');
+        if (capacityPanel) {
+            capacityPanel.outerHTML = architecturalDecisionCapacityHtml(state);
+            setupDecisionCapacityOverrideHandlers(state);
+        }
+        const advisorAccordion = document.querySelector('.ss-review-accordion[data-section="sp-pruning-advisor"]');
+        if (advisorAccordion) {
+            advisorAccordion.outerHTML = buildPruningAdvisorSection(state);
+            setupAccordionHandlers();
+            setupPruningAdvisorHandlers();
+        }
+    }
+
+    reviewSections(state).forEach((section) => {
+        updateSectionCount(state, section.key);
+    });
+
+    updateInlineDiagnostics(state);
+}
+
+function setupDecisionCapacityOverrideHandlers(state) {
+    const checkbox = document.getElementById('ss-sp-decision-override');
+    const justification = document.getElementById('ss-sp-decision-override-justification');
+
+    if (checkbox && checkbox.dataset.ssBound !== 'true') {
+        checkbox.dataset.ssBound = 'true';
+        checkbox.addEventListener('change', (event) => {
+            state.decisionCapacityOverride.enabled = event.currentTarget.checked;
+            updateOutputEditor(state);
+        });
+    }
+
+    if (justification && justification.dataset.ssBound !== 'true') {
+        justification.dataset.ssBound = 'true';
+        justification.addEventListener('input', (event) => {
+            state.decisionCapacityOverride.justification = event.currentTarget.value;
+        });
+    }
 }
 
 function updatePruningHeaderCount(state) {
@@ -567,6 +1203,8 @@ function updatePruningHeaderCount(state) {
 
 function attachPruningGroupHeaderHandler(header) {
     if (!header) return;
+    if (header.dataset.ssPruningAccordionBound === 'true') return;
+    header.dataset.ssPruningAccordionBound = 'true';
     header.addEventListener('click', (e) => {
         if (e.target?.closest?.('button,input,label')) return;
         const group = header.closest('.ss-pruning-group');
@@ -713,6 +1351,8 @@ function addPrunedItemToReportAndUI(state, sectionKey, itemContent, sceneCodes =
 
 function setupAccordionHandlers() {
     document.querySelectorAll('.ss-accordion-header').forEach((header) => {
+        if (header.dataset.ssAccordionBound === 'true') return;
+        header.dataset.ssAccordionBound = 'true';
         header.addEventListener('click', (e) => {
             if (e.target.closest('button,input,textarea,label')) return;
             const accordion = header.closest('.ss-review-accordion');
@@ -723,6 +1363,10 @@ function setupAccordionHandlers() {
             const expanded = accordion.classList.toggle('expanded');
             content.style.display = expanded ? 'block' : 'none';
             icon.className = expanded ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-right';
+            if (expanded) {
+                content.querySelectorAll('textarea').forEach(bindAutoResizeTextarea);
+                content.querySelectorAll('textarea').forEach(autoResizeTextarea);
+            }
         });
     });
 
@@ -731,10 +1375,124 @@ function setupAccordionHandlers() {
     });
 }
 
+function expandAccordion(sectionName) {
+    const accordion = document.querySelector(`.ss-review-accordion[data-section="${CSS.escape(sectionName)}"]`);
+    const content = accordion?.querySelector('.ss-accordion-content');
+    const icon = accordion?.querySelector('.ss-accordion-toggle i');
+    if (!accordion || !content || !icon) return null;
+
+    accordion.classList.add('expanded');
+    content.style.display = 'block';
+    icon.className = 'fa-solid fa-chevron-down';
+    content.querySelectorAll('textarea').forEach(bindAutoResizeTextarea);
+    content.querySelectorAll('textarea').forEach(autoResizeTextarea);
+    return accordion;
+}
+
+function revealFirstBlockingDiagnostic() {
+    const accordion = expandAccordion('sp-diagnostics');
+    const firstError = accordion?.querySelector('.ss-sp-diag[data-diag-level="error"]');
+    if (!firstError) return;
+
+    firstError.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'nearest',
+    });
+    firstError.setAttribute('tabindex', '-1');
+    firstError.focus({ preventScroll: true });
+}
+
+function scrollReviewElementIntoView(element) {
+    element?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'nearest',
+    });
+}
+
+function focusBlockingDiagnostic(state, diagnostic) {
+    const sectionKey = String(diagnostic?.sectionKey || '').trim();
+    if (!sectionKey) {
+        revealFirstBlockingDiagnostic();
+        return;
+    }
+
+    const accordion = expandAccordion(`sp-${sectionKey}`);
+    const sectionItems = Array.isArray(state?.editableSections?.[sectionKey]) ? state.editableSections[sectionKey] : [];
+    const targetedItem = Number.isInteger(diagnostic?.itemIndex) ? sectionItems[diagnostic.itemIndex] : null;
+    const targetedRow = targetedItem
+        ? document.querySelector(`.ss-cr-item-row[data-section-key="${CSS.escape(sectionKey)}"][data-item-id="${CSS.escape(targetedItem.id)}"]`)
+        : null;
+
+    if (targetedRow) {
+        scrollReviewElementIntoView(targetedRow);
+        targetedRow.setAttribute('tabindex', '-1');
+        targetedRow.focus({ preventScroll: true });
+        return;
+    }
+
+    const sectionError = accordion?.querySelector('.ss-sp-diag[data-diag-level="error"]');
+    if (sectionError) {
+        scrollReviewElementIntoView(sectionError);
+        sectionError.setAttribute('tabindex', '-1');
+        sectionError.focus({ preventScroll: true });
+        return;
+    }
+
+    if (accordion) {
+        scrollReviewElementIntoView(accordion);
+        accordion.setAttribute('tabindex', '-1');
+        accordion.focus({ preventScroll: true });
+        return;
+    }
+
+    revealFirstBlockingDiagnostic();
+}
+
+function navigateToReviewItem(sectionKey, itemId) {
+    const accordion = expandAccordion(`sp-${sectionKey}`);
+    const row = document.querySelector(`.ss-cr-item-row[data-section-key="${CSS.escape(sectionKey)}"][data-item-id="${CSS.escape(itemId)}"]`);
+    if (accordion) {
+        scrollReviewElementIntoView(accordion);
+    }
+    if (row) {
+        scrollReviewElementIntoView(row);
+    }
+}
+
+function setupPruningAdvisorHandlers() {
+    document.querySelectorAll('.ss-pruning-advisor-go').forEach((button) => {
+        if (button.dataset.ssAdvisorBound === 'true') return;
+        button.dataset.ssAdvisorBound = 'true';
+        button.addEventListener('click', (event) => {
+            const sectionKey = event.currentTarget.dataset.sectionKey;
+            const itemId = event.currentTarget.dataset.itemId;
+            if (!sectionKey || !itemId) return;
+            navigateToReviewItem(sectionKey, itemId);
+        });
+    });
+}
+
+function handleBlockedSave(state, diagnostics = null, message = 'Save blocked due to error-level diagnostics') {
+    updateOutputEditor(state);
+    const saveDiagnostics = Array.isArray(diagnostics) ? diagnostics : (state?.diagnostics || []);
+    const primaryDiagnostic = saveDiagnostics.find((diagnostic) => diagnostic?.level === 'error') || null;
+    focusBlockingDiagnostic(state, primaryDiagnostic);
+    const projection = buildSaveBlockerProjection(saveDiagnostics, {
+        architectural: isArchitecturalState(state),
+    });
+
+    if (typeof toastr !== 'undefined') {
+        toastr.warning(projection.blocked ? projection.toastMessage : message);
+    }
+}
+
 function setupOutputOverrideHandlers(state) {
     const btn = document.getElementById('ss-sp-edit-output');
     const textarea = document.getElementById('ss-sp-output-editor');
     if (!textarea) return;
+    bindAutoResizeTextarea(textarea);
     if (isArchitecturalState(state)) {
         textarea.readOnly = true;
         state.outputOverride = null;
@@ -807,6 +1565,7 @@ function createNewItem(sectionKey) {
 
 function setupSectionHandlers(state, regenFn) {
     document.querySelectorAll('.ss-cr-item-editor').forEach((editor) => {
+        bindAutoResizeTextarea(editor);
         editor.addEventListener('input', (e) => {
             const sectionKey = e.target.dataset.sectionKey;
             const itemId = e.target.dataset.itemId;
@@ -934,7 +1693,7 @@ function setupSectionHandlers(state, regenFn) {
             const empty = container.querySelector('.ss-empty');
             if (empty) empty.remove();
 
-            const weightHtml = sectionKey === 'events'
+            const weightHtml = sectionKey === 'events' && !isArchitecturalState(state)
                 ? `<div class="ss-sp-weight-row">${weightSelectorHtml(newItem)}</div>`
                 : '';
 
@@ -970,6 +1729,7 @@ function setupSectionHandlers(state, regenFn) {
             if (newRow) {
                 const editor = newRow.querySelector('.ss-cr-item-editor');
                 if (editor) {
+                    bindAutoResizeTextarea(editor);
                     editor.addEventListener('input', (ev) => {
                         newItem.content = ev.target.value;
                         newItem.sceneCodes = parseSceneCodes(newItem.content || '');
@@ -1048,7 +1808,7 @@ function setupSectionHandlers(state, regenFn) {
                     });
                 }
 
-                if (sectionKey === 'events') {
+                if (sectionKey === 'events' && !isArchitecturalState(state)) {
                     newRow.querySelectorAll('.ss-weight-btn').forEach((wb) => {
                         wb.addEventListener('click', (ev) => {
                             ev.stopPropagation();
@@ -1362,6 +2122,9 @@ async function setupRegenerateHandler(state, regenFn) {
 
             // Update state
             state.diagnostics = newResult.diagnostics || [];
+            state.sourceDiagnostics = isArchitecturalState(state)
+                ? (newResult.diagnostics || []).filter((diagnostic) => ARCHITECTURAL_IMMUTABLE_DIAGNOSTIC_CODES.has(diagnostic.code))
+                : (newResult.diagnostics || []);
             state.editableSections = normalizeSectionItems(
                 regeneratedSections,
                 state.sectionRegistry
@@ -1374,8 +2137,13 @@ async function setupRegenerateHandler(state, regenFn) {
             // Re-render sections area
             const sectionsArea = document.querySelector('.ss-sp-sections-area');
             if (sectionsArea) sectionsArea.innerHTML = architecturalKeyBlockHtml(state) + sectionsHtml(state);
+            state.pruningAdvisor = analyzeArchitecturalPruningAdvisor(state.editableSections, {
+                profile: ARCHITECTURAL_PROFILE,
+            });
 
             // Re-render pruning section
+            const advisorAccordion = document.querySelector('.ss-review-accordion[data-section="sp-pruning-advisor"]');
+            if (advisorAccordion) advisorAccordion.outerHTML = buildPruningAdvisorSection(state);
             const pruningAccordion = document.querySelector('.ss-review-accordion[data-section="sp-pruning"]');
             if (pruningAccordion) pruningAccordion.outerHTML = buildPruningSection(state);
 
@@ -1386,6 +2154,7 @@ async function setupRegenerateHandler(state, regenFn) {
             // Re-wire all handlers
             setupAccordionHandlers();
             setupSectionHandlers(state, regenFn);
+            setupPruningAdvisorHandlers();
             updateOutputEditor(state);
 
             if (typeof toastr !== 'undefined') {
@@ -1426,6 +2195,8 @@ function setupArchiveOptionHandlers(state) {
  * @returns {Promise<{confirmed:boolean, finalOutput:string, archiveOptions:Object, archivedItems:Array}>}
  */
 export async function openSharderReviewModal(pipelineResult, settings, regenFn = null) {
+    const activeRagSettings = getActiveRagSettings(settings);
+    const ragEnabled = activeRagSettings?.enabled === true;
     const sectionRegistry = getSharderSectionRegistry(
         pipelineResult.metadata?.sectionRegistry || pipelineResult.metadata?.profile || NARRATIVE_PROFILE
     );
@@ -1434,6 +2205,8 @@ export async function openSharderReviewModal(pipelineResult, settings, regenFn =
     const state = {
         sectionRegistry,
         diagnostics: pipelineResult.diagnostics || [],
+        sourceDiagnostics: [],
+        dynamicDiagnostics: [],
         metadata: pipelineResult.metadata || {},
         editableSections: normalizeSectionItems(pipelineResult.sections || parsed, sectionRegistry),
         keyLines: getReviewKeyLines(pipelineResult.sections || parsed),
@@ -1446,14 +2219,33 @@ export async function openSharderReviewModal(pipelineResult, settings, regenFn =
         },
         outputOverride: null,
         settings,
-        ragEnabled: settings?.rag?.enabled === true,
-        warmArchiveAvailable: isWarmArchiveEligible(sectionRegistry, settings?.rag?.enabled === true),
+        ragEnabled,
+        warmArchiveAvailable: isWarmArchiveEligible(sectionRegistry, ragEnabled),
         archivedItems: [],
         archiveOptions: {
             archiveWarm: false,
             archiveCold: false,
         },
+        decisionCapacityOverride: {
+            enabled: false,
+            justification: '',
+        },
+        decisionLedgerMetrics: pipelineResult.metadata?.decisionLedgerMetrics || null,
     };
+
+    state.architecturalOriginalRecordIds = isArchitecturalState(state)
+        ? Object.values(state.editableSections).flatMap((items) => items.map((item) => item.reviewRecordId).filter(Boolean))
+        : [];
+
+    if (isArchitecturalState(state)) {
+        state.sourceDiagnostics = (pipelineResult.diagnostics || []).filter((diagnostic) =>
+            ARCHITECTURAL_IMMUTABLE_DIAGNOSTIC_CODES.has(diagnostic.code)
+        );
+        refreshArchitecturalDiagnostics(state);
+        refreshArchitecturalAdvisor(state);
+    } else {
+        state.sourceDiagnostics = pipelineResult.diagnostics || [];
+    }
 
     // Ensure metadata defaults for header stability
     if (!Number.isFinite(state.metadata.startIndex) || !Number.isFinite(state.metadata.endIndex)) {
@@ -1470,10 +2262,24 @@ export async function openSharderReviewModal(pipelineResult, settings, regenFn =
         POPUP_TYPE.TEXT,
         null,
         {
-            okButton: 'Save Sharder Output',
+            okButton: getReviewModalSaveButtonLabel(state),
             cancelButton: 'Cancel',
             wide: true,
             large: true,
+            onClosing: (activePopup) => {
+                if (activePopup?.result !== POPUP_RESULT.AFFIRMATIVE) {
+                    return true;
+                }
+
+                const saveDiagnostics = getCurrentSaveDiagnostics(state);
+
+                if (hasBlockingReviewErrors(saveDiagnostics)) {
+                    handleBlockedSave(state, saveDiagnostics);
+                    return false;
+                }
+
+                return true;
+            },
         }
     );
 
@@ -1482,9 +2288,11 @@ export async function openSharderReviewModal(pipelineResult, settings, regenFn =
     setTimeout(() => {
         setupAccordionHandlers();
         setupSectionHandlers(state, regenFn);
+        setupPruningAdvisorHandlers();
         setupGlobalSelectionHandlers(state);
         setupRegenerateHandler(state, regenFn);
         setupOutputOverrideHandlers(state);
+        setupDecisionCapacityOverrideHandlers(state);
         setupCopyOutputHandler();
         setupArchiveOptionHandlers(state);
         updateOutputEditor(state);
@@ -1492,15 +2300,9 @@ export async function openSharderReviewModal(pipelineResult, settings, regenFn =
 
     const result = await showPromise;
     if (result === POPUP_RESULT.AFFIRMATIVE) {
-        const currentErrorCodes = new Set(['ARCH_CURRENT_MISSING', 'ARCH_CURRENT_EMPTY', 'ARCH_CURRENT_MULTIPLE']);
-        const saveDiagnostics = state.diagnostics.filter((d) => !currentErrorCodes.has(d.code));
-        const currentError = getArchitecturalCurrentError(state);
-        if (currentError) {
-            saveDiagnostics.push(currentError);
-        }
-        const hasErrors = saveDiagnostics.some((d) => d.level === 'error');
-        if (hasErrors) {
-            toastr.warning('Save blocked due to error-level diagnostics');
+        const saveDiagnostics = getCurrentSaveDiagnostics(state);
+        if (hasBlockingReviewErrors(saveDiagnostics)) {
+            handleBlockedSave(state, saveDiagnostics);
             return {
                 confirmed: false,
                 finalOutput: '',
@@ -1520,6 +2322,31 @@ export async function openSharderReviewModal(pipelineResult, settings, regenFn =
                 : applyRescues(baseOutput, state.rescuedItems),
             archiveOptions: state.archiveOptions,
             archivedItems: state.archivedItems,
+            resultMetadata: isArchitecturalState(state)
+                ? {
+                    ...(state.decisionCapacityOverride.enabled
+                        ? {
+                            architecturalDecisionCapacityOverride: {
+                                justification: String(state.decisionCapacityOverride.justification || '').trim(),
+                                decisionMetrics: state.decisionLedgerMetrics || null,
+                                timestamp: Date.now(),
+                            },
+                        }
+                        : {}),
+                    architecturalAuthorityContext: {
+                        baselineLedger: state.metadata?.baselineLedger || null,
+                    },
+                    architecturalReviewIntent: createArchitecturalReviewIntent(
+                        state.editableSections,
+                        state.architecturalOriginalRecordIds,
+                        {
+                            baselineAuthorityContext: {
+                                baselineLedger: state.metadata?.baselineLedger || null,
+                            },
+                        },
+                    ),
+                }
+                : null,
         };
     }
 

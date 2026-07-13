@@ -504,6 +504,8 @@ export function createFabPanels({ anchorRect, panelMarkupById, mobileScalePercen
             panelMeasureCache.clear();
             wheelButtonSizeById.clear();
             wheelButtonSizeDirty = true;
+            root.classList.remove('ss-fab-sheet-active');
+            root.setAttribute('aria-hidden', 'true');
             root.removeEventListener('click', onClick);
             root.removeEventListener('keydown', onKeydown);
             root.remove();

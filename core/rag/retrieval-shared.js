@@ -606,16 +606,23 @@ export function buildQueryText(chat, queryCount) {
     if (!Array.isArray(chat) || chat.length === 0) return '';
 
     const safeCount = Math.max(1, Number(queryCount) || 2);
-    const start = Math.max(0, chat.length - safeCount);
-    const lines = [];
+    const userLines = [];
+    const fallbackLines = [];
 
-    for (let i = start; i < chat.length; i++) {
+    for (let i = chat.length - 1; i >= 0; i--) {
         const msg = chat[i];
         const text = String(msg?.mes ?? msg?.text ?? '').trim();
         if (!text) continue;
-        const speaker = String(msg?.name || (msg?.is_user ? 'User' : 'Assistant'));
-        lines.push(`[${i}] ${speaker}: ${text}`);
+
+        if (fallbackLines.length < safeCount) {
+            fallbackLines.unshift(text);
+        }
+
+        if (msg?.is_user) {
+            userLines.unshift(text);
+            if (userLines.length >= safeCount) break;
+        }
     }
 
-    return lines.join('\n');
+    return (userLines.length > 0 ? userLines : fallbackLines).join('\n');
 }

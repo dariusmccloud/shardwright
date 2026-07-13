@@ -20,6 +20,10 @@ import { sanitizeSinglePassSections } from './canonical-sanitizer.js';
 import { validateSinglePassOutput, getSinglePassSeverity } from './fidelity-validator.js';
 import { checkSinglePassEvidence } from './evidence-checker.js';
 import { checkRelationshipCoherence } from './relationship-guard.js';
+import { buildArchitecturalBaselineFromShards } from '../summarization/architectural-structured-validator.js';
+import { mergeArchitecturalDecisionLedger } from '../summarization/architectural-decision-ledger.js';
+import { generateArchitecturalSemanticShard } from '../summarization/architectural-semantic-generation.js';
+import { createArchitecturalPostReviewPlan } from '../summarization/architectural-post-review-finalization.js';
 
 /**
  * @param {Object} settings
@@ -27,7 +31,7 @@ import { checkRelationshipCoherence } from './relationship-guard.js';
  * @param {string} userPrompt
  * @returns {Promise<string>}
  */
-async function callSharderApi(settings, systemPrompt, userPrompt) {
+async function callSharderApi(settings, systemPrompt, userPrompt, requestOptions = {}) {
     const effective = await getFeatureApiSettings(settings, 'sharder');
     const options = {
         temperature: effective.temperature,
@@ -36,6 +40,7 @@ async function callSharderApi(settings, systemPrompt, userPrompt) {
         signal: getAbortSignal(),
         messageFormat: effective.messageFormat,
         removeStopStrings: effective.removeStopStrings === true,
+        structuredOutput: requestOptions.structuredOutput || null,
     };
 
     if (effective.useSillyTavernAPI) {
@@ -129,6 +134,9 @@ export async function runSharderPipeline(chatText, settings, context) {
             return true;
         });
     const userPrompt = buildSharderUserPrompt(chatText, context);
+    const architecturalBaseline = sectionRegistry.profile === ARCHITECTURAL_PROFILE
+        ? buildArchitecturalBaselineFromShards(existingShards)
+        : { decisions: {}, diagnostics: [] };
 
     const inheritedPrefixes = new Set();
     for (const shard of existingShards) {
@@ -141,9 +149,32 @@ export async function runSharderPipeline(chatText, settings, context) {
         }
     }
 
-    const raw = await callSharderApi(settings, systemPrompt, userPrompt);
+    const semanticGeneration = sectionRegistry.profile === ARCHITECTURAL_PROFILE
+        ? await generateArchitecturalSemanticShard({
+            chatText,
+            context: { ...context, existingShards },
+            baselineDecisions: architecturalBaseline.decisions,
+            callApi: async (semanticSystemPrompt, semanticUserPrompt, requestOptions) => (
+                await callSharderApi(settings, semanticSystemPrompt, semanticUserPrompt, requestOptions)
+            ),
+        })
+        : null;
+    const architecturalPostReviewPlan = semanticGeneration
+        ? createArchitecturalPostReviewPlan({
+            generationPayload: semanticGeneration.replayMaterial.semanticPayload,
+            currentManifest: context.currentManifest,
+            inheritedDecisionEntries: (architecturalBaseline.ledger?.orderedIds || [])
+                .map((id) => architecturalBaseline.ledger.decisionsById[id])
+                .filter(Boolean),
+        })
+        : null;
+    const raw = sectionRegistry.profile === ARCHITECTURAL_PROFILE
+        ? semanticGeneration.output
+        : await callSharderApi(settings, systemPrompt, userPrompt);
     throwIfAborted('sharder api');
-    const parsedResult = context.extractKeywords ? parseSummaryResponse(raw) : { summary: raw, keywords: [] };
+    const parsedResult = context.extractKeywords && sectionRegistry.profile !== ARCHITECTURAL_PROFILE
+        ? parseSummaryResponse(raw)
+        : { summary: raw, keywords: [] };
     const cleanedRaw = parsedResult.summary || raw;
     const parsed = parseExtractionResponse(cleanedRaw, { sectionRegistry });
     const {
@@ -151,17 +182,36 @@ export async function runSharderPipeline(chatText, settings, context) {
         sceneCodeFixes,
         fixedCodes,
     } = sanitizeSinglePassSections(parsed, { ...context, inheritedPrefixes });
+    const decisionLedger = sectionRegistry.profile === ARCHITECTURAL_PROFILE
+        ? mergeArchitecturalDecisionLedger(
+            sanitizedSections?.decisions || [],
+            architecturalBaseline.ledger || architecturalBaseline.decisions
+        )
+        : null;
+    const mergedSections = sectionRegistry.profile === ARCHITECTURAL_PROFILE
+        ? {
+            ...sanitizedSections,
+            decisions: decisionLedger.items,
+        }
+        : sanitizedSections;
 
-    const structure = validateSinglePassOutput(sanitizedSections, { ...context, inheritedPrefixes, sectionRegistry });
+    const structure = validateSinglePassOutput(mergedSections, {
+        ...context,
+        inheritedPrefixes,
+        sectionRegistry,
+        baselineDecisions: architecturalBaseline.decisions,
+        baselineLedger: architecturalBaseline.ledger || architecturalBaseline.decisions,
+    });
     const evidence = sectionRegistry.profile === ARCHITECTURAL_PROFILE
         ? { diagnostics: [], stats: { checked: 0, lowEvidence: 0 } }
-        : checkSinglePassEvidence(sanitizedSections, chatText);
+        : checkSinglePassEvidence(mergedSections, chatText);
     const relationships = sectionRegistry.profile === ARCHITECTURAL_PROFILE
         ? { diagnostics: [], stats: { relationships: 0, outOfBounds: 0 } }
-        : checkRelationshipCoherence(sanitizedSections);
+        : checkRelationshipCoherence(mergedSections);
 
     const diagnostics = [
         ...structure.diagnostics,
+        ...architecturalBaseline.diagnostics,
         ...evidence.diagnostics,
         ...relationships.diagnostics,
     ];
@@ -176,7 +226,7 @@ export async function runSharderPipeline(chatText, settings, context) {
 
     const severity = getSinglePassSeverity(diagnostics);
 
-    const reconstructed = reconstructExtraction(sanitizedSections, {
+    const reconstructed = reconstructExtraction(mergedSections, {
         startIndex: context.startIndex,
         endIndex: context.endIndex,
         userNotesEdited: false,
@@ -188,7 +238,7 @@ export async function runSharderPipeline(chatText, settings, context) {
     return {
         raw,
         reconstructed,
-        sections: sanitizedSections,
+        sections: mergedSections,
         extractedKeywords: parsedResult.keywords,
         diagnostics,
         severity,
@@ -210,6 +260,16 @@ export async function runSharderPipeline(chatText, settings, context) {
             schemaVersion: sectionRegistry.schemaVersion,
             ...(sectionRegistry.profile === ARCHITECTURAL_PROFILE ? {
                 shardProfile: ARCHITECTURAL_PROFILE,
+                baselineDecisions: architecturalBaseline.decisions,
+                baselineLedger: architecturalBaseline.ledger || architecturalBaseline.decisions,
+                decisionLedgerMetrics: decisionLedger?.metrics || null,
+                architecturalPostReviewPlan,
+                ...(semanticGeneration ? {
+                    semanticSchemaId: semanticGeneration.semanticSchemaId,
+                    semanticSchemaVersion: semanticGeneration.semanticSchemaVersion,
+                    semanticPromptVersion: semanticGeneration.promptVersion,
+                    semanticRendererVersion: semanticGeneration.rendererVersion,
+                } : {}),
             } : {}),
         }
     };

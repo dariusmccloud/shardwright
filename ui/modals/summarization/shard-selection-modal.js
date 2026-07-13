@@ -5,8 +5,15 @@
 
 import { Popup, POPUP_RESULT, POPUP_TYPE } from '../../../../../../popup.js';
 import { escapeHtml } from '../../common/ui-utils.js';
-import { findSavedExtractions, parseExtractionResponse } from '../../../core/summarization/sharder-pipeline.js';
+import {
+    ARCHITECTURAL_PROFILE,
+    NARRATIVE_PROFILE,
+    findSavedExtractions,
+    parseExtractionResponse,
+} from '../../../core/summarization/sharder-pipeline.js';
 import { parseConsolidatedShard } from '../../../core/summarization/shard-utils.js';
+import { isSavedShardCompatibleWithProfile } from '../../../core/summarization/saved-shard-identity.js';
+import { getActiveSharderProfile, shouldBypassShardSelectionForRag } from '../../../core/summarization/shard-selection-policy.js';
 import { log } from '../../../core/logger.js';
 
 function sortByRangeDesc(items) {
@@ -22,33 +29,57 @@ function buildRow(item, index) {
     const typeClass = item.type === 'consolidation' ? 'ss-badge-shard' : 'ss-badge-extraction';
     const sourceLabel = item.source === 'lorebook' ? 'Lorebook' : 'System Message';
     const preview = String(item.preview || '').trim();
+    const selectable = item.selectionEligible !== false;
+    const disabledReason = String(item.selectionDisabledReason || '').trim();
+    const disabledNote = disabledReason
+        ? `<div class="ss-hint" style="font-size:12px; line-height:1.35; margin-top:6px; color: var(--SmartThemeWarningColor, #f0ad4e);">${escapeHtml(disabledReason)}</div>`
+        : '';
+    const rangeLabel = Number.isFinite(item?.startIndex) && Number.isFinite(item?.endIndex)
+        ? `${item.startIndex}-${item.endIndex}`
+        : null;
 
     return `
-        <div class="ss-shard-select-row" data-row-index="${index}">
+        <div class="ss-shard-select-row${selectable ? '' : ' ss-shard-select-row-disabled'}" data-row-index="${index}">
             <label class="checkbox_label" style="display:flex; align-items:flex-start; gap:10px; width:100%;">
-                <input type="checkbox" class="ss-shard-select-checkbox" data-index="${index}" />
+                <input type="checkbox" class="ss-shard-select-checkbox" data-index="${index}" ${selectable ? '' : 'disabled'} />
                 <div style="flex:1; min-width:0;">
                     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:4px;">
                         <span class="ss-pill ${typeClass}">${escapeHtml(typeLabel)}</span>
                         <strong>${escapeHtml(item.identifier || `Item ${index + 1}`)}</strong>
                         <span class="ss-hint">${escapeHtml(sourceLabel)}</span>
+                        ${rangeLabel ? `<span class="ss-hint">Messages ${escapeHtml(rangeLabel)}</span>` : ''}
+                        ${selectable ? '' : '<span class="ss-pill" style="background: rgba(240, 173, 78, 0.18); color: var(--SmartThemeWarningColor, #f0ad4e);">Reference Only</span>'}
                     </div>
                     <div class="ss-hint" style="font-size:12px; line-height:1.35;">${escapeHtml(preview || '(No preview)')}</div>
+                    ${disabledNote}
                 </div>
             </label>
         </div>
     `;
 }
 
-function parseSelectedShards(selectedItems) {
+export function parseSelectedShards(selectedItems, settings) {
     const parsed = [];
     let skipped = 0;
+    const activeProfile = getActiveSharderProfile(settings);
 
     for (const item of selectedItems) {
         try {
-            const parsedSections = item.type === 'consolidation'
-                ? parseConsolidatedShard(item.content || '')
-                : parseExtractionResponse(item.content || '');
+            if (!isSavedShardCompatibleWithProfile(item, activeProfile) || item.selectionEligible === false) {
+                skipped++;
+                continue;
+            }
+
+            const rawContent = item.parsedBody || item.content || '';
+            let parsedSections;
+
+            if (item.shardProfile === ARCHITECTURAL_PROFILE) {
+                parsedSections = parseExtractionResponse(rawContent, { profile: ARCHITECTURAL_PROFILE });
+            } else if (item.contentFormat === 'legacy-bracket') {
+                parsedSections = parseConsolidatedShard(rawContent);
+            } else {
+                parsedSections = parseExtractionResponse(rawContent, { profile: NARRATIVE_PROFILE });
+            }
 
             if (!parsedSections || typeof parsedSections !== 'object') {
                 throw new Error('Parser returned invalid result');
@@ -60,6 +91,8 @@ function parseSelectedShards(selectedItems) {
                 identifier: item.identifier,
                 parsedSections,
                 messageRangeStart: item.messageRangeStart,
+                projectionMetadata: item.projectionMetadata || null,
+                sourceManifest: item.sourceManifest || null,
             });
         } catch (error) {
             skipped++;
@@ -78,48 +111,73 @@ function parseSelectedShards(selectedItems) {
     return parsed;
 }
 
-function updateCount(total) {
+function updateCount(selectableTotal) {
     const selected = document.querySelectorAll('.ss-shard-select-checkbox:checked').length;
     const countEl = document.getElementById('ss-shard-select-count');
     if (countEl) {
-        countEl.textContent = `${selected} of ${total} selected`;
+        countEl.textContent = `${selected} of ${selectableTotal} selected`;
     }
 }
 
 /**
  * @param {Object} settings
- * @returns {Promise<{confirmed:boolean, selectedShards:Array}>}
+ * @returns {Promise<{confirmed:boolean, selectedShards:Array, returnToRange?:boolean}>}
  */
-export async function openShardSelectionModal(settings) {
+export async function openShardSelectionModal(settings, preloadedItems = null, modalContext = null) {
     // In RAG mode, the vector store retrieves and assembles relevant chunks from all
     // shards automatically. Consolidating shards first collapses section-level
     // embeddings into a single blob, losing the granularity the pipeline depends on.
-    if (settings?.sharderMode === true && settings?.rag?.enabled === true) {
+    if (!Array.isArray(preloadedItems) && shouldBypassShardSelectionForRag(settings)) {
         return { confirmed: true, selectedShards: [] };
     }
 
     // Force lorebook scan for sharder shard selection regardless of output mode.
-    const allItems = sortByRangeDesc(await findSavedExtractions(settings, settings?.lorebookSelection || null));
+    const activeProfile = getActiveSharderProfile(settings);
+    const discoveredItems = Array.isArray(preloadedItems)
+        ? sortByRangeDesc(preloadedItems)
+        : sortByRangeDesc(await findSavedExtractions(settings, settings?.lorebookSelection || null));
+    const allItems = Array.isArray(preloadedItems)
+        ? discoveredItems
+        : discoveredItems.filter((item) => isSavedShardCompatibleWithProfile(item, activeProfile));
+    const excludedCount = discoveredItems.length - allItems.length;
+    const selectableItems = allItems.filter((item) => item.selectionEligible !== false);
+    const overlappingCount = Array.isArray(preloadedItems)
+        ? (modalContext?.overlappingCount || allItems.filter((item) => item.overlapsCurrentRange === true).length)
+        : 0;
+
+    if (!Array.isArray(preloadedItems) && excludedCount > 0 && typeof toastr !== 'undefined') {
+        const label = activeProfile === ARCHITECTURAL_PROFILE ? 'Architectural' : 'Narrative';
+        toastr.info(`${excludedCount} incompatible saved shard(s) were excluded from ${label} baseline selection.`);
+    }
 
     if (!allItems.length) {
         return { confirmed: true, selectedShards: [] };
     }
 
-    if (settings?.autoIncludeShards === true) {
+    if (!Array.isArray(preloadedItems) && settings?.autoIncludeShards === true) {
         return {
             confirmed: true,
-            selectedShards: parseSelectedShards(allItems),
+            selectedShards: parseSelectedShards(selectableItems, settings),
         };
     }
 
     const listHtml = allItems.map((item, index) => buildRow(item, index)).join('');
+    const overlapNote = overlappingCount > 0
+        ? `<div class="ss-hint" style="font-size:12px; line-height:1.45; margin-top:6px; color: var(--SmartThemeWarningColor, #f0ad4e);">
+                ${overlappingCount} saved shard(s) overlap the current message range. They are shown here for reference only and cannot be selected in this run. Go back and revise the selected range if you want to use them as baselines.
+           </div>`
+        : '';
+    const primaryButtonLabel = selectableItems.length > 0
+        ? 'Continue Sharder'
+        : (overlappingCount > 0 ? 'Continue Without Baseline' : 'Run From Scratch');
 
     const modalHtml = `
         <div class="ss-consolidation-modal">
             <div class="ss-consolidation-header">
                 <h3>Sharder: Optional Existing Shards</h3>
                 <p>Select any extractions/shards to merge as baseline context. Leave empty to extract from scratch.</p>
-                <p id="ss-shard-select-count">0 of ${allItems.length} selected</p>
+                ${overlapNote}
+                <p id="ss-shard-select-count">0 of ${selectableItems.length} selected</p>
             </div>
 
             <div class="ss-consolidation-controls">
@@ -140,8 +198,8 @@ export async function openShardSelectionModal(settings) {
         POPUP_TYPE.TEXT,
         null,
         {
-            okButton: 'Continue Sharder',
-            cancelButton: 'Cancel',
+            okButton: primaryButtonLabel,
+            cancelButton: 'Go Back',
             wide: true,
             large: true,
             onClosing: () => {
@@ -157,32 +215,33 @@ export async function openShardSelectionModal(settings) {
 
     setTimeout(() => {
         const checkboxes = Array.from(document.querySelectorAll('.ss-shard-select-checkbox'));
+        const selectableCheckboxes = checkboxes.filter((cb) => !cb.disabled);
         checkboxes.forEach((cb) => {
-            cb.addEventListener('change', () => updateCount(allItems.length));
+            cb.addEventListener('change', () => updateCount(selectableItems.length));
         });
 
         document.getElementById('ss-shard-select-all')?.addEventListener('click', () => {
-            checkboxes.forEach((cb) => { cb.checked = true; });
-            updateCount(allItems.length);
+            selectableCheckboxes.forEach((cb) => { cb.checked = true; });
+            updateCount(selectableItems.length);
         });
 
         document.getElementById('ss-shard-select-none')?.addEventListener('click', () => {
             checkboxes.forEach((cb) => { cb.checked = false; });
-            updateCount(allItems.length);
+            updateCount(selectableItems.length);
         });
 
-        updateCount(allItems.length);
+        updateCount(selectableItems.length);
     }, 80);
 
     const result = await showPromise;
     if (result !== POPUP_RESULT.AFFIRMATIVE) {
-        return { confirmed: false, selectedShards: [] };
+        return { confirmed: false, selectedShards: [], returnToRange: true };
     }
 
     const selectedItems = capturedIndices.map((idx) => allItems[idx]);
 
     return {
         confirmed: true,
-        selectedShards: parseSelectedShards(selectedItems),
+        selectedShards: parseSelectedShards(selectedItems, settings),
     };
 }

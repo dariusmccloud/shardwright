@@ -49,38 +49,46 @@ function resolveEntryIndex(entry, fallbackIndex, maxLength) {
     return -1;
 }
 
-function extractScores(payload, expectedLength) {
-    const scores = Array.from({ length: expectedLength }, () => null);
+function extractRankingRows(payload, expectedLength) {
+    const rows = Array.from({ length: expectedLength }, (_, index) => ({
+        index,
+        score: null,
+        rank: Number.POSITIVE_INFINITY,
+    }));
 
     const directScores = Array.isArray(payload?.scores) ? payload.scores : null;
     if (directScores) {
         const limit = Math.min(expectedLength, directScores.length);
         for (let i = 0; i < limit; i++) {
             const score = toScore(directScores[i]);
-            if (score !== null) {
-                scores[i] = score;
-            }
+            rows[i] = { index: i, score, rank: i };
         }
-        return scores;
+        return rows;
     }
 
-    const entries = Array.isArray(payload?.results)
-        ? payload.results
-        : (Array.isArray(payload?.data) ? payload.data : []);
+    const entries = Array.isArray(payload)
+        ? payload
+        : (Array.isArray(payload?.results)
+            ? payload.results
+            : (Array.isArray(payload?.data) ? payload.data : []));
 
     for (let i = 0; i < entries.length; i++) {
         const entry = entries[i];
-        const score = resolveScore(entry);
-        if (score === null) continue;
         const idx = resolveEntryIndex(entry, i, expectedLength);
         if (idx < 0) continue;
+        const score = resolveScore(entry);
 
-        if (scores[idx] === null || score > scores[idx]) {
-            scores[idx] = score;
+        if (score !== null) {
+            const current = rows[idx];
+            if (current.score === null || score > current.score) {
+                rows[idx] = { index: idx, score, rank: i };
+            }
+        } else if (!Number.isFinite(rows[idx].rank)) {
+            rows[idx] = { index: idx, score: null, rank: i };
         }
     }
 
-    return scores;
+    return rows;
 }
 
 /** Direct-mode re-ranker providers that call the API from the browser. */
@@ -103,6 +111,14 @@ function buildPassthroughResult(documents, mode, target, error = '') {
         mode,
         target,
         error: summarize(error),
+        diagnostics: {
+            passthrough: true,
+            payloadKeys: [],
+            hasDirectScores: false,
+            rankedEntryCount: 0,
+            scoredEntryCount: 0,
+            rawPreview: '',
+        },
         ranked: (documents || []).map((document, index) => ({
             index,
             document,
@@ -132,15 +148,23 @@ export async function rerankDocuments(query, documents, ragSettings, options = {
         || '';
     const target = mode === 'similharity' ? PLUGIN_RERANK_URL : apiUrl;
 
-    if (!reranker.enabled || !safeQuery || safeDocs.length === 0) {
-        return {
-            success: true,
-            mode,
-            target,
-            error: '',
-            ranked: safeDocs.map((document, index) => ({ index, document, score: null })),
-        };
-    }
+        if (!reranker.enabled || !safeQuery || safeDocs.length === 0) {
+            return {
+                success: true,
+                mode,
+                target,
+                error: '',
+                diagnostics: {
+                    passthrough: true,
+                    payloadKeys: [],
+                    hasDirectScores: false,
+                    rankedEntryCount: 0,
+                    scoredEntryCount: 0,
+                    rawPreview: '',
+                },
+                ranked: safeDocs.map((document, index) => ({ index, document, score: null })),
+            };
+        }
 
     if (!apiUrl) {
         return buildPassthroughResult(safeDocs, mode, target, 'Missing re-ranker API URL');
@@ -202,26 +226,41 @@ export async function rerankDocuments(query, documents, ragSettings, options = {
             payload = {};
         }
 
-        const scores = extractScores(payload, safeDocs.length);
-        const scored = [];
-        const unscored = [];
+        const payloadKeys = Array.isArray(payload)
+            ? ['(array)']
+            : (payload && typeof payload === 'object'
+                ? Object.keys(payload).slice(0, 12)
+                : []);
+        const directScores = Array.isArray(payload?.scores) ? payload.scores : null;
+        const rankedEntries = Array.isArray(payload)
+            ? payload
+            : (Array.isArray(payload?.results)
+                ? payload.results
+                : (Array.isArray(payload?.data) ? payload.data : []));
 
-        for (let i = 0; i < safeDocs.length; i++) {
-            const entry = {
-                index: i,
-                document: safeDocs[i],
-                score: toScore(scores[i]),
-            };
-            if (entry.score === null) {
-                unscored.push(entry);
-            } else {
-                scored.push(entry);
+        const rankingRows = extractRankingRows(payload, safeDocs.length);
+        const ranked = rankingRows.map(row => ({
+            index: row.index,
+            document: safeDocs[row.index],
+            score: toScore(row.score),
+            _rank: Number.isFinite(row.rank) ? row.rank : Number.POSITIVE_INFINITY,
+        }));
+
+        ranked.sort((a, b) => {
+            const aHasScore = a.score !== null;
+            const bHasScore = b.score !== null;
+            if (aHasScore && bHasScore) {
+                const delta = (b.score ?? 0) - (a.score ?? 0);
+                if (delta !== 0) return delta;
+                const rankDelta = a._rank - b._rank;
+                if (rankDelta !== 0) return rankDelta;
+                return a.index - b.index;
             }
-        }
-
-        scored.sort((a, b) => {
-            const delta = (b.score ?? 0) - (a.score ?? 0);
-            if (delta !== 0) return delta;
+            if (aHasScore !== bHasScore) {
+                return aHasScore ? -1 : 1;
+            }
+            const rankDelta = a._rank - b._rank;
+            if (rankDelta !== 0) return rankDelta;
             return a.index - b.index;
         });
 
@@ -230,7 +269,15 @@ export async function rerankDocuments(query, documents, ragSettings, options = {
             mode,
             target,
             error: '',
-            ranked: [...scored, ...unscored],
+            diagnostics: {
+                passthrough: false,
+                payloadKeys,
+                hasDirectScores: !!directScores,
+                rankedEntryCount: rankedEntries.length,
+                scoredEntryCount: rankingRows.filter(row => row.score !== null).length,
+                rawPreview: summarize(rawText, 400),
+            },
+            ranked: ranked.map(({ _rank, ...entry }) => entry),
         };
     } catch (error) {
         ragLog.warn('Re-ranker request failed:', error?.message || error);

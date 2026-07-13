@@ -7,7 +7,7 @@ import { setExtensionPrompt } from '../../../../../../script.js';
 import { extension_settings } from '../../../../../extensions.js';
 import { getActiveCollectionIds, getWriteTargetCollectionId, getShardCollectionId, getStandardCollectionId } from './collection-manager.js';
 import { rerankDocuments } from './reranker-client.js';
-import { hybridQuery, listChunks, queryChunks } from './vector-client.js';
+import { getCollectionMetadataMap, getCollectionQuerySettingsMap, hybridQuery, listChunks, queryChunks } from './vector-client.js';
 import { keywordBoost, runClientHybridFusion, scoreAndRank } from './scoring.js';
 import { getActiveRagSettings } from '../settings.js';
 import { ragLog } from '../logger.js';
@@ -42,6 +42,7 @@ import {
     stripLeadingSectionHeader,
     stripSectionByHeading,
 } from './retrieval-shared.js';
+import { excludeArchitecturalResults, filterResultsByOriginBoundary } from './architectural-rag-boundary.js';
 
 export const EXTENSION_PROMPT_TAG_SS = '5_summary_sharder_rag';
 
@@ -95,13 +96,9 @@ function buildScopedMetadataFilter(origin, base = {}) {
     return filter;
 }
 
-function filterResultsForOrigin(results, origin) {
-    const scoped = isSharedWriteTarget(origin, origin?.collectionId);
-    if (!scoped) return Array.isArray(results) ? results : [];
 
-    return (Array.isArray(results) ? results : []).filter(item =>
-        String(item?.metadata?.originChatId || '').trim() === String(origin?.chatId || '').trim()
-    );
+export function filterResultsForOrigin(results, origin) {
+    return filterResultsByOriginBoundary(results);
 }
 
 /**
@@ -123,11 +120,11 @@ export function invalidateFallbackCache(collectionId = null) {
 
 /**
  * Internal helper to fetch with caching.
- * @param {string} collectionId 
- * @param {Object} rag 
- * @param {string} type 
- * @param {number} limit 
- * @param {Function} fetchFn 
+ * @param {string} collectionId
+ * @param {Object} rag
+ * @param {string} type
+ * @param {number} limit
+ * @param {Function} fetchFn
  * @returns {Promise<any>}
  */
 async function fetchWithFallbackCache(collectionId, rag, type, limit, fetchFn, cacheScope = '') {
@@ -266,10 +263,11 @@ export async function fetchLatestSuperseding(collectionId, rag, origin = null) {
                 limit: 20,
                 metadataFilter: buildScopedMetadataFilter({ ...(origin || {}), collectionId: id }, { chunkBehavior: 'superseding' }),
             });
-            if (!Array.isArray(items) || items.length === 0) return null;
+            const filteredItems = filterResultsForOrigin(items || [], { ...(origin || {}), collectionId: id });
+            if (filteredItems.length === 0) return null;
 
-            items.sort((a, b) => getFreshnessEndIndex(b) - getFreshnessEndIndex(a));
-            return items[0];
+            filteredItems.sort((a, b) => getFreshnessEndIndex(b) - getFreshnessEndIndex(a));
+            return filteredItems[0];
         } catch (error) {
             ragLog.warn('Fallback superseding fetch failed:', error?.message || error);
             return null;
@@ -294,7 +292,7 @@ export async function fetchLatestRolling(collectionId, rag, limit = 50, origin =
                 metadataFilter: buildScopedMetadataFilter({ ...(origin || {}), collectionId: id }, { chunkBehavior: 'rolling' }),
             });
 
-            const safeItems = Array.isArray(items) ? items : [];
+            const safeItems = filterResultsForOrigin(items || [], { ...(origin || {}), collectionId: id });
             return {
                 items: dedupeLatestRolling(safeItems),
                 fetchedCount: safeItems.length,
@@ -303,7 +301,7 @@ export async function fetchLatestRolling(collectionId, rag, limit = 50, origin =
         } catch (error) {
             ragLog.warn('Fallback rolling fetch failed:', error?.message || error);
             return {
-                items: [], 
+                items: [],
                 fetchedCount: 0,
                 hasMore: false,
             };
@@ -327,7 +325,7 @@ export async function fetchLatestAnchors(collectionId, rag, limit = 50, origin =
                 metadataFilter: buildScopedMetadataFilter({ ...(origin || {}), collectionId: id }, { chunkBehavior: 'cumulative' }),
             });
 
-            const safeItems = Array.isArray(items) ? items : [];
+            const safeItems = filterResultsForOrigin(items || [], { ...(origin || {}), collectionId: id });
             return {
                 items: collectLatestAnchors(safeItems),
                 fetchedCount: safeItems.length,
@@ -360,7 +358,7 @@ export async function fetchLatestDevelopments(collectionId, rag, limit = 50, ori
                 metadataFilter: buildScopedMetadataFilter({ ...(origin || {}), collectionId: id }, { chunkBehavior: 'cumulative' }),
             });
 
-            const safeItems = Array.isArray(items) ? items : [];
+            const safeItems = filterResultsForOrigin(items || [], { ...(origin || {}), collectionId: id });
             return {
                 items: collectLatestDevelopments(safeItems),
                 fetchedCount: safeItems.length,
@@ -839,7 +837,7 @@ export async function rearrangeChat(chat, contextSize, abort, type) {
 
         const overfetchMultiplier = Math.max(1, Number(rag.hybridOverfetchMultiplier) || 4);
         const topK = Math.max(1, (Number(rag.insertCount) || 5) * (wantsHybrid ? overfetchMultiplier : 4));
-        const threshold = Math.max(0, Math.min(1, Number(rag.scoreThreshold) || 0.25));
+        const threshold = Math.max(0, Math.min(1, Number(rag.scoreThreshold) || 0));
 
         // Multi-collection: query all bound collections in parallel, deduplicate results.
         // writeTargetCollectionId is used for continuity-style fallback fetches
@@ -851,14 +849,28 @@ export async function rearrangeChat(chat, contextSize, abort, type) {
             collectionId: writeTargetCollectionId,
         };
 
-        const queryFn = useNativeHybrid ? hybridQuery : queryChunks;
-
+        const querySettingsByCollection = await getCollectionQuerySettingsMap(collectionIds, rag);
         const querySettled = await Promise.allSettled(
-            collectionIds.map(id => queryFn(id, queryText, topK, threshold, rag))
+            collectionIds.map(async (id) => {
+                const collectionSettings = querySettingsByCollection.get(id) || rag;
+                const collectionQueryFn = wantsHybrid && (collectionSettings.backend === 'qdrant' || collectionSettings.backend === 'milvus')
+                    ? hybridQuery
+                    : queryChunks;
+                return {
+                    collectionId: id,
+                    response: await collectionQueryFn(id, queryText, topK, threshold, collectionSettings),
+                };
+            })
         );
-        const shardResults = querySettled.flatMap(r =>
-            r.status === 'fulfilled' && Array.isArray(r.value?.results) ? r.value.results : []
-        );
+        const shardResults = querySettled.flatMap((result) => {
+            if (result.status !== 'fulfilled' || !Array.isArray(result.value?.response?.results)) {
+                return [];
+            }
+            return filterResultsForOrigin(
+                result.value.response.results,
+                { ...(origin || {}), collectionId: result.value.collectionId }
+            );
+        });
 
         if (collectionIds.length > 1) {
             ragLog.debug(`Multi-collection retrieval: queried ${collectionIds.length} collections, got ${shardResults.length} raw results`);
@@ -986,11 +998,11 @@ export async function rearrangeChat(chat, contextSize, abort, type) {
                 const candidates = [...merged].sort((a, b) => getFreshnessEndIndex(b) - getFreshnessEndIndex(a));
                 const recent = candidates.slice(0, recentCount);
                 const recentHashes = new Set(recent.map(r => r.hash || r.text));
-                
+
                 // Fill remaining slots with the best remaining relevance results
                 const remainingCount = insertCount - recent.length;
                 const relevant = merged.filter(m => !recentHashes.has(m.hash || m.text)).slice(0, remainingCount);
-                
+
                 merged = [...recent, ...relevant];
             } else {
                 merged = [...superseding, ...others].slice(0, insertCount);
@@ -1021,6 +1033,9 @@ export async function rearrangeChat(chat, contextSize, abort, type) {
 
         lastInjectionData = {
             timestamp: Date.now(),
+            queryText,
+            collectionIds: [...collectionIds],
+            writeTargetCollectionId,
             entries: merged.map(item => ({
                 text: item?.text || '',
                 score: item?.score ?? null,
@@ -1034,6 +1049,7 @@ export async function rearrangeChat(chat, contextSize, abort, type) {
             template: rag.template || 'Recalled memories:\n{{text}}',
             injectionText: injection,
             scoringMethod: rag.scoringMethod || 'keyword',
+            threshold,
             backend: rag.backend,
             rerankerApplied: !!rerankMeta.metadata?.applied,
             rerankerMode: rerankMeta.metadata?.mode || 'none',

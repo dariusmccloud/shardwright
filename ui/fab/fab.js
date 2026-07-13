@@ -67,6 +67,7 @@ const POSITION_SAVE_TIMEOUT_FALLBACK_MS = 64;
 const FAB_PERF_DEBUG = false;
 const FAB_PERF_SAMPLE_LIMIT = 120;
 const FAB_PERF_LOG_INTERVAL = 20;
+const INTERPRETIVE_REVIEW_MODAL_TIMEOUT_MS = 1200;
 
 function createRelocationState() {
     return {
@@ -120,6 +121,7 @@ export function initFab(settings, callbacks) {
     pendingPositionValue = null;
     cancelPendingPositionSaveFlush();
     cancelScheduledTogglePanels();
+    cleanupOrphanedPanelsDom();
 
     if (!settingsRef.fab) {
         settingsRef.fab = { enabled: true, position: { x: null, y: null } };
@@ -156,6 +158,14 @@ function createFabElement() {
         </button>
     `;
     document.body.appendChild(fabElement);
+}
+
+function cleanupOrphanedPanelsDom() {
+    document.querySelectorAll('.ss-fab-panels').forEach((root) => {
+        root.classList.remove('ss-fab-sheet-active');
+        root.setAttribute('aria-hidden', 'true');
+        root.remove();
+    });
 }
 
 function bindEvents() {
@@ -477,6 +487,7 @@ async function closePanels() {
         panelsController.destroy();
         panelsController = null;
     }
+    cleanupOrphanedPanelsDom();
 
     fabElement.classList.remove('ss-fab-open');
     getTrigger()?.setAttribute('aria-expanded', 'false');
@@ -509,6 +520,7 @@ function closePanelsImmediate() {
         panelsController.destroy();
         panelsController = null;
     }
+    cleanupOrphanedPanelsDom();
 
     fabElement.classList.remove('ss-fab-open');
     getTrigger().setAttribute('aria-expanded', 'false');
@@ -601,6 +613,9 @@ async function handleAction(action, button) {
                 await closePanels();
                 await callbacksRef.onOpenChatManager?.();
                 break;
+            case 'open-interpretive-review':
+                await openInterpretiveReviewFromFab();
+                break;
             case 'open-visibility':
                 await closePanels();
                 await callbacksRef.onOpenVisibility?.();
@@ -619,6 +634,62 @@ async function handleAction(action, button) {
     }
 }
 
+async function openInterpretiveReviewFromFab() {
+    await closePanels();
+    await waitForFabActionHandoff();
+
+    const launcher = document.getElementById('ss-interpretive-reviews-btn');
+    if (launcher instanceof HTMLElement) {
+        launcher.click();
+        if (await waitForInterpretiveReviewModal(INTERPRETIVE_REVIEW_MODAL_TIMEOUT_MS)) {
+            return;
+        }
+    }
+
+    if (hasInterpretiveReviewModal()) {
+        return;
+    }
+
+    try {
+        await callbacksRef.onOpenInterpretiveReview?.();
+    } catch (error) {
+        log.warn('[FAB] Interpretive review callback failed, launcher fallback exhausted.', error);
+    }
+
+    if (await waitForInterpretiveReviewModal(INTERPRETIVE_REVIEW_MODAL_TIMEOUT_MS)) {
+        return;
+    }
+}
+
+async function waitForFabActionHandoff() {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await waitForNextFrame();
+    await waitForNextFrame();
+}
+
+async function waitForNextFrame() {
+    if (typeof window.requestAnimationFrame === 'function') {
+        await new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
+        return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 16));
+}
+
+function hasInterpretiveReviewModal() {
+    return !!document.querySelector('.ss-interpretive-review-modal');
+}
+
+async function waitForInterpretiveReviewModal(timeoutMs = INTERPRETIVE_REVIEW_MODAL_TIMEOUT_MS) {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+        if (hasInterpretiveReviewModal()) {
+            return true;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+    return hasInterpretiveReviewModal();
+}
+
 function withActionLock(button, isLocked) {
     if (!button) return;
     button.disabled = isLocked;
@@ -635,20 +706,17 @@ async function handleSinglePass() {
     }
 
     const maxIndex = messages.length - 1;
-    const rangeStr = await showSsInput(
-        'Sharder: Select Range',
-        `Enter message range for sharder (0 to ${maxIndex}):\nExample: '5-25'`,
-        `0-${maxIndex}`
-    );
-
-    const range = parseRangeInput(rangeStr, maxIndex);
-    if (!range) return;
-
-    const { openShardSelectionModal } = await import('../modals/summarization/shard-selection-modal.js');
-    const shardSelection = await openShardSelectionModal(settingsRef);
-    if (!shardSelection?.confirmed) return;
-
-    await callbacksRef.onSinglePass?.(range.startIdx, range.endIdx, shardSelection.selectedShards || []);
+    const { runSinglePassRangeWorkflow } = await import('./single-pass-range-workflow.js');
+    await runSinglePassRangeWorkflow({
+        maxIndex,
+        requestRange: (defaultRange) => showSsInput(
+            'Sharder: Select Range',
+            `Enter message range for sharder (0 to ${maxIndex}):\nExample: '5-25'`,
+            defaultRange,
+        ),
+        parseRange: parseRangeInput,
+        runSinglePass: (startIndex, endIndex) => callbacksRef.onSinglePass?.(startIndex, endIndex),
+    });
 }
 
 async function handleBatchSharder() {

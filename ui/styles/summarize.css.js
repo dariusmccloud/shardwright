@@ -258,6 +258,8 @@ export const SUMMARIZE_CSS = `
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     font-size: 12px;
     resize: vertical;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 /* Editable consolidated-output sections */
@@ -313,7 +315,8 @@ export const SUMMARIZE_CSS = `
 .ss-cr-item-editor {
     width: 100%;
     min-height: 44px;
-    resize: vertical;
+    overflow-y: hidden;
+    resize: none;
     font-family: inherit;
     font-size: 12px;
     line-height: 1.35;
@@ -400,6 +403,33 @@ export const SUMMARIZE_CSS = `
     margin-bottom: 15px;
 }
 
+.popup:has(.ss-single-pass-review-modal) {
+    display: flex !important;
+    flex-direction: column;
+    max-height: min(92vh, calc(100vh - 24px));
+}
+
+.popup:has(.ss-single-pass-review-modal) .popup-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+}
+
+.popup:has(.ss-single-pass-review-modal) .popup-controls {
+    flex: 0 0 auto;
+}
+
+.ss-single-pass-review-modal {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 100%;
+    overflow: visible;
+    padding: 15px;
+}
+
 /* Review Accordion */
 .ss-review-accordion {
     margin-bottom: 10px;
@@ -465,11 +495,181 @@ export const SUMMARIZE_CSS = `
     color: var(--ss-text-secondary);
 }
 
+.ss-accordion-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    margin-left: 2px;
+}
+
+.ss-accordion-status.ss-level-error {
+    color: var(--ss-error);
+}
+
+.ss-accordion-status.ss-level-warning {
+    color: var(--ss-warning);
+}
+
+.ss-accordion-status.ss-level-info {
+    color: var(--ss-info);
+}
+
 .ss-accordion-content {
     padding: 10px;
     border-top: 1px solid var(--ss-border);
     max-height: 300px;
     overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.ss-sp-header,
+.ss-sp-summary,
+.ss-sp-sections-area,
+.ss-sp-panel,
+.ss-sp-blocking-note,
+.ss-archive-section,
+.ss-sp-diagnostics {
+    min-width: 0;
+}
+
+.ss-sp-global-controls,
+.ss-output-header,
+.ss-output-actions,
+.ss-archive-options {
+    flex-wrap: wrap;
+}
+
+.ss-sp-diag {
+    scroll-margin-top: 12px;
+    overflow-wrap: anywhere;
+}
+
+.ss-sp-output-editor {
+    min-height: 200px;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.ss-pruning-advisor-summary {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.ss-pruning-advisor-summary-row {
+    padding: 10px;
+    border: 1px solid var(--ss-border);
+    border-radius: 4px;
+    background: var(--ss-bg-tertiary);
+}
+
+.ss-pruning-advisor-summary-note {
+    margin-top: 6px;
+    color: var(--ss-warning);
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.ss-pruning-advisor-group {
+    margin-bottom: 12px;
+    padding: 10px;
+    border: 1px solid var(--ss-border);
+    border-radius: 4px;
+    background: var(--ss-bg-tertiary);
+}
+
+.ss-pruning-advisor-group-title {
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.ss-pruning-advisor-items {
+    display: grid;
+    gap: 10px;
+}
+
+.ss-pruning-advisor-item {
+    padding: 10px;
+    border: 1px solid var(--ss-border);
+    border-radius: 4px;
+    background: var(--ss-bg-secondary);
+}
+
+.ss-pruning-advisor-item-header {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.ss-pruning-advisor-item-title {
+    font-weight: 700;
+    color: var(--ss-text-primary);
+}
+
+.ss-pruning-advisor-item-meta {
+    font-size: 12px;
+    color: var(--ss-text-secondary);
+}
+
+.ss-pruning-advisor-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--ss-border);
+    font-weight: 700;
+}
+
+.ss-pruning-advisor-badge-low-risk {
+    color: var(--ss-info);
+    border-color: var(--ss-info);
+}
+
+.ss-pruning-advisor-badge-review {
+    color: var(--ss-warning);
+    border-color: var(--ss-warning);
+}
+
+.ss-pruning-advisor-badge-protected {
+    color: var(--ss-error);
+    border-color: var(--ss-error);
+}
+
+.ss-pruning-advisor-reasons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.ss-pruning-advisor-reason-code {
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--ss-bg-primary);
+    border: 1px solid var(--ss-border);
+    color: var(--ss-text-secondary);
+}
+
+.ss-pruning-advisor-basis-title {
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.ss-pruning-advisor-basis ul {
+    margin: 0 0 8px 18px;
+    padding: 0;
+}
+
+.ss-pruning-advisor-basis li {
+    margin-bottom: 2px;
+}
+
+.ss-pruning-advisor-actions {
+    display: flex;
+    justify-content: flex-end;
 }
 
 /* Warning Badges */

@@ -16,6 +16,14 @@ import {
     getChatCompletionModel,
     oai_settings,
 } from '../../../../../openai.js';
+import { isAbortError, runCompatibilityFallback } from './compatibility-fallback.js';
+import {
+    applySillyTavernStructuredOutputFormat,
+    applyStructuredOutputFormat,
+} from './structured-output.js';
+import { runWithOneTransientRetry } from './transient-retry.js';
+
+const TRANSIENT_COMPATIBILITY_STATUSES = new Set([502, 503, 504]);
 
 /**
  * Normalize API URL by removing endpoint-specific paths
@@ -50,6 +58,7 @@ export function normalizeApiUrl(url) {
  * @property {string} [messageFormat='minimal'] - Message format: 'minimal' or 'alternating'
  * @property {AbortSignal|null} [signal=null] - Optional abort signal
  * @property {boolean} [removeStopStrings=false] - Remove stop strings for ST/Connection Profile generation
+ * @property {Object|null} [structuredOutput=null] - OpenAI-compatible JSON Schema response format
  */
 
 /**
@@ -155,7 +164,16 @@ async function runCompatibilityAttempt(label, body, signal) {
     const rawText = await response.text();
 
     if (!response.ok) {
-        throw new Error(`${label}: Compatibility API error (${response.status}): ${rawText || response.statusText}`);
+        let providerCode = null;
+        try {
+            providerCode = JSON.parse(rawText)?.error?.code || null;
+        } catch {
+            // Preserve the original response text in the error below.
+        }
+        const error = new Error(`${label}: Compatibility API error (${response.status}): ${rawText || response.statusText}`);
+        error.status = response.status;
+        error.code = providerCode;
+        throw error;
     }
 
     let data;
@@ -197,10 +215,11 @@ async function callSillyTavernAPICompatibility(messages, options) {
         topP = null,
         signal = null,
         removeStopStrings = false,
+        structuredOutput = null,
     } = options || {};
 
     if (main_api !== 'openai') {
-        throw new Error(`Compatibility retry is only available for main_api=openai (current: ${main_api || 'unknown'})`);
+        throw new Error(`Compatibility request is only available for main_api=openai (current: ${main_api || 'unknown'})`);
     }
 
     const compatSettings = cloneOaiSettings();
@@ -214,37 +233,37 @@ async function callSillyTavernAPICompatibility(messages, options) {
 
     const model = getChatCompletionModel(compatSettings);
     const { generate_data } = await createGenerationParameters(compatSettings, model, 'swipe', messages);
-    const defaultBody = {
+    const defaultBody = applySillyTavernStructuredOutputFormat({
         ...generate_data,
         type: 'swipe',
         stream: false,
         max_tokens: maxTokens,
         n: 1,
-    };
+    }, structuredOutput);
 
     const hasStops = Array.isArray(defaultBody.stop) && defaultBody.stop.length > 0;
     const noStopBody = hasStops ? { ...defaultBody, stop: [] } : defaultBody;
 
-    const attempts = [];
-    if (removeStopStrings && hasStops) {
-        attempts.push({ label: 'no-stop', body: noStopBody });
-    } else {
-        attempts.push({ label: 'default-stop', body: defaultBody });
+    try {
+        return await runCompatibilityFallback({
+            removeStopStrings,
+            hasStops,
+            defaultBody,
+            noStopBody,
+            runAttempt: (label, body) => runWithOneTransientRetry({
+                run: () => runCompatibilityAttempt(label, body, signal),
+                shouldRetry: error => TRANSIENT_COMPATIBILITY_STATUSES.has(error?.status),
+                onRetryDiagnostic: diagnostic => log.warn('Compatibility transport retry', {
+                    label,
+                    source: String(oai_settings?.chat_completion_source || 'unknown'),
+                    model,
+                    ...diagnostic,
+                }),
+            }),
+        });
+    } catch (error) {
+        throw toError(error, 'Compatibility request failed');
     }
-
-    const errors = [];
-    for (let i = 0; i < attempts.length; i++) {
-        const attempt = attempts[i];
-        try {
-            return await runCompatibilityAttempt(attempt.label, attempt.body, signal);
-        } catch (error) {
-            const normalizedError = toError(error, `${attempt.label} compatibility request failed`);
-            errors.push(normalizedError.message);
-
-        }
-    }
-
-    throw new Error(errors.join('. ') || 'Compatibility retry failed');
 }
 
 /**
@@ -263,12 +282,16 @@ export async function callSillyTavernAPI(systemPrompt, userPrompt, options = {})
         topP = null,
         messageFormat = 'minimal',
         signal = null,
-        removeStopStrings = false
+        removeStopStrings = false,
+        structuredOutput = null,
     } = options;
     const messages = buildMessages(systemPrompt, userPrompt, messageFormat);
 
-    if (removeStopStrings) {
+    if (removeStopStrings || structuredOutput) {
         if (main_api !== 'openai') {
+            if (structuredOutput) {
+                throw new Error('Structured output requires a chat-completions API path.');
+            }
             log.warn('Remove Stop Strings is only supported on chat-completions main_api=openai. Using default quiet path.', {
                 mainApi: main_api,
             });
@@ -287,12 +310,17 @@ export async function callSillyTavernAPI(systemPrompt, userPrompt, options = {})
                     temperature,
                     topP,
                     signal,
-                    removeStopStrings: true,
+                    removeStopStrings,
+                    structuredOutput,
                 });
             } catch (error) {
+                if (isAbortError(error)) {
+                    throw error;
+                }
                 const compatibilityFailure = toError(error, 'Remove-stop compatibility request failed');
+                const capability = structuredOutput ? 'Structured output' : 'Remove Stop Strings';
                 throw new Error(
-                    `SillyTavern API failed with Remove Stop Strings enabled. ` +
+                    `SillyTavern API failed with ${capability} enabled. ` +
                     `Source=${source} Model=${model}. ${compatibilityFailure.message}`
                 );
             }
@@ -335,7 +363,13 @@ export async function callSillyTavernAPI(systemPrompt, userPrompt, options = {})
  * @returns {Promise<string>} The API response
  */
 export async function callExternalAPI(settings, systemPrompt, userPrompt, options = {}) {
-    const { temperature = 0.7, topP = 1, maxTokens = 4096, signal = null } = options;
+    const {
+        temperature = 0.7,
+        topP = 1,
+        maxTokens = 4096,
+        signal = null,
+        structuredOutput = null,
+    } = options;
 
     if (!settings.apiUrl) {
         throw new Error('API URL is not configured');
@@ -356,7 +390,7 @@ export async function callExternalAPI(settings, systemPrompt, userPrompt, option
     // API key is passed via custom_include_headers to override the Authorization header
     // This avoids writing to the shared api_key_custom secret slot
     const messageFormat = settings.messageFormat || 'minimal';
-    const requestBody = {
+    const requestBody = applyStructuredOutputFormat({
         chat_completion_source: 'custom',
         custom_url: baseUrl,
         model: settings.selectedModel || 'gpt-4',
@@ -365,7 +399,7 @@ export async function callExternalAPI(settings, systemPrompt, userPrompt, option
         temperature: temperature,
         top_p: topP,
         stream: false
-    };
+    }, structuredOutput);
 
     // Add prompt post-processing if configured (transforms message roles before sending to API)
     if (settings.postProcessing) {

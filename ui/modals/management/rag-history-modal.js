@@ -44,7 +44,7 @@ function renderEntries(entries) {
     return entries.map((item, idx) => {
         const score = Number(item?.score);
         const hasScore = Number.isFinite(score);
-        const scoreSpan = hasScore ? `<span class="ss-rag-debug-item-score">score=${score.toFixed(4)}</span>` : '';
+        const scoreSpan = hasScore ? `<span class="ss-rag-debug-item-score">score = ${score.toFixed(4)}</span>` : '';
         const snippetClass = hasScore ? 'ss-rag-debug-item-snippet' : 'ss-rag-debug-item-snippet no-score';
         const behavior = String(item?.metadata?.chunkBehavior || '').trim().toLowerCase() || 'legacy';
         const scene = String(item?.metadata?.sceneCode || '').trim() || '(none)';
@@ -81,12 +81,22 @@ function renderModalHtml(data) {
             <div><strong>Mode:</strong> ${escapeHtml(data.mode)}</div>
             <div><strong>Backend:</strong> ${escapeHtml(data.backend)}</div>
             <div><strong>Scoring:</strong> ${escapeHtml(data.scoringMethod)}</div>
+            <div><strong>Threshold:</strong> ${escapeHtml(String(data.threshold ?? 'n/a'))}</div>
             <div><strong>Reranker:</strong> ${data.rerankerApplied ? escapeHtml(data.rerankerMode) : 'not applied'}</div>
             <div><strong>Entries:</strong> ${data.entries?.length || 0}</div>
         </div>
 
         <div class="ss-rag-debug-info-grid" style="margin-top:6px;">
             <div><strong>Injected to:</strong> ${describeInjectionTarget(data)}</div>
+        </div>
+
+        <h4 style="margin-top:12px;">Query</h4>
+        <pre class="ss-rag-debug-injection-preview">${escapeHtml(String(data.queryText || '(empty)'))}</pre>
+
+        <h4 style="margin-top:12px;">Collections</h4>
+        <div class="ss-rag-debug-info-grid">
+            <div><strong>Read collections:</strong> ${escapeHtml(Array.isArray(data.collectionIds) && data.collectionIds.length > 0 ? data.collectionIds.join(', ') : '(none)')}</div>
+            <div><strong>Write target:</strong> ${escapeHtml(String(data.writeTargetCollectionId || '(none)'))}</div>
         </div>
 
         <h4 style="margin-top:12px;">Retrieved Entries</h4>

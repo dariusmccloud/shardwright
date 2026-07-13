@@ -10,7 +10,7 @@ import {
     saveWorldInfo,
     createWorldInfoEntry,
 } from '../../../../../world-info.js';
-import { chat_metadata, characters, this_chid, saveChatConditional } from '../../../../../../script.js';
+import { chat_metadata, characters, this_chid, saveChatConditional, saveMetadata } from '../../../../../../script.js';
 import { findIndexByUID } from '../processing/utils.js';
 import { parseBannedKeywords, filterBannedKeywords } from '../processing/keyword-filter.js';
 import { refreshMultipleLorebooksUI } from '../processing/lorebook-refresh.js';
@@ -29,6 +29,34 @@ import { archiveToWarm, archiveToCold } from '../rag/archive.js';
 import { throwIfAborted } from '../api/abort-controller.js';
 import { ARCHITECTURAL_PROFILE } from './sharder-section-registry.js';
 import { isWarmArchiveEligible } from './architectural-sharder-shell.js';
+import { buildArchitecturalShardMetadata } from './saved-shard-identity.js';
+import { SHARD_ARTIFACT_KINDS } from './shard-integrity-core.js';
+import {
+    beginArchitecturalIntegrationTrace,
+    consumeDebugHostSaveFailure,
+    recordArchitecturalIntegrationEvent,
+} from './architectural-authority-integration.js';
+import {
+    buildArchitecturalMessageIdentityScanLocator,
+    persistArchitecturalAuthorityProjection,
+} from './architectural-authority-runtime.js';
+import { reconcileCurrentChatMessageIdentity } from './message-identity-runtime.js';
+import {
+    createInterpretiveProposalFromArchitecturalShard,
+    persistArchitecturalReplayAuthorityArtifact,
+} from './architectural-authority-server-api.js';
+import { refreshCurrentChatShardIntegrity } from './shard-integrity-runtime.js';
+import { openInterpretiveReviewModal } from '../../ui/modals/management/interpretive-review-modal.js';
+import {
+    getArchitecturalAuthorityWarning,
+    projectArchitecturalProposalLaunchBlocker,
+    shouldCreateProposalAfterAuthorityResult,
+} from './architectural-proposal-launch-blocker.js';
+import { registerAndPersistArchitecturalReplay } from './architectural-live-finalization.js';
+import {
+    openPreparedArchitecturalProposalHandoff,
+    prepareArchitecturalProposalHandoff,
+} from './architectural-proposal-handoff-orchestration.js';
 
 // World info metadata key
 const METADATA_KEY = 'world_info';
@@ -43,6 +71,7 @@ const METADATA_KEY = 'world_info';
  * @param {string[]} extractedKeywords - AI-extracted keywords from the summary
  * @param {string|null} insertAfterUID - UID (send_date) of message to insert after
  * @param {{injectToContext?: boolean, archiveWarm?: boolean, archiveCold?: boolean}|null} archiveOptions
+ * @param {Object|null} resultMetadata
  * @param {{skipDomMesidUpdate?: boolean}|null} options
  * @returns {Promise<{didInjectToContext: boolean, mode: 'system'|'lorebook', outputUID: string|null, successCount?: number}>}
  */
@@ -55,6 +84,7 @@ export async function handleSummaryResult(
     extractedKeywords = [],
     insertAfterUID = null,
     archiveOptions = null,
+    resultMetadata = null,
     options = null
 ) {
     throwIfAborted('summary output');
@@ -69,6 +99,27 @@ export async function handleSummaryResult(
         ...(archiveOptions || {})
     };
     const shouldInjectToContext = resolvedArchiveOptions.injectToContext !== false;
+    const architecturalMetadata = settings?.sharderMode === true && settings?.sharderProfile === ARCHITECTURAL_PROFILE
+        ? buildArchitecturalShardMetadata(summary)
+        : {};
+    const isArchitecturalAuthorityRun = settings?.sharderMode === true && settings?.sharderProfile === ARCHITECTURAL_PROFILE;
+    let pendingArchitecturalReviewOpen = null;
+
+    if (isArchitecturalAuthorityRun) {
+        beginArchitecturalIntegrationTrace({
+            profile: ARCHITECTURAL_PROFILE,
+            mode,
+            startIndex,
+            endIndex,
+            outputUID: null,
+        });
+        recordArchitecturalIntegrationEvent('SHARD_SAVE_REQUESTED', {
+            profile: ARCHITECTURAL_PROFILE,
+            mode,
+            startIndex,
+            endIndex,
+        });
+    }
 
     if (shouldInjectToContext) {
         const isSharder = settings?.sharderMode === true;
@@ -86,29 +137,114 @@ export async function handleSummaryResult(
 
     throwIfAborted('summary output');
     if (didInjectToContext) {
+        if (isArchitecturalAuthorityRun) {
+            recordArchitecturalIntegrationEvent('HOST_SAVE_CONFIRMED', {
+                profile: ARCHITECTURAL_PROFILE,
+                mode,
+                startIndex,
+                endIndex,
+                outputUID,
+            });
+        }
+
+        if (settings?.sharderMode === true) {
+            recordArchitecturalIntegrationEvent('AUTHORITY_ADOPTION_GATE_EVALUATED', {
+                mode,
+                outputUID,
+                sharderMode: settings?.sharderMode === true,
+                sharderProfile: settings?.sharderProfile || null,
+                isArchitecturalAuthorityRun,
+            });
+        }
+
+        if (resultMetadata?.architecturalDecisionCapacityOverride) {
+            await persistArchitecturalDecisionCapacityOverride(
+                outputUID,
+                mode,
+                startIndex,
+                endIndex,
+                resultMetadata.architecturalDecisionCapacityOverride
+            );
+        }
+
+        if (settings?.sharderMode === true && settings?.sharderProfile === ARCHITECTURAL_PROFILE) {
+            try {
+                const activeChatId = SillyTavern.getContext()?.chatId || null;
+                if (resultMetadata?.architecturalReplayArtifact) {
+                    await registerAndPersistArchitecturalReplay({
+                        outputUID,
+                        currentManifest: resultMetadata.architecturalCurrentManifest,
+                        replayArtifact: resultMetadata.architecturalReplayArtifact,
+                        artifactKind: mode === 'system'
+                            ? SHARD_ARTIFACT_KINDS.SYSTEM_SHARD
+                            : SHARD_ARTIFACT_KINDS.LOREBOOK_SUMMARY,
+                        startIndex,
+                        endIndex,
+                    }, {
+                        refreshIntegrity: refreshCurrentChatShardIntegrity,
+                        persistReplayArtifact: persistArchitecturalReplayAuthorityArtifact,
+                    });
+                }
+                recordArchitecturalIntegrationEvent('AUTHORITY_ADOPTION_CALL_PREPARED', {
+                    profile: ARCHITECTURAL_PROFILE,
+                    mode,
+                    outputUID,
+                    activeChatId,
+                    hasBaselineLedger: !!resultMetadata?.architecturalAuthorityContext?.baselineLedger,
+                });
+                const authorityResult = await persistArchitecturalAuthorityProjection(summary, {
+                    chatId: activeChatId,
+                    outputUID,
+                    mode,
+                    startIndex,
+                    endIndex,
+                    baselineLedger: resultMetadata?.architecturalAuthorityContext?.baselineLedger || null,
+                });
+                pendingArchitecturalReviewOpen = await prepareArchitecturalProposalHandoff({
+                    didSave: didInjectToContext,
+                    savedOutputUID: outputUID,
+                    activeChatId,
+                    authorityResult,
+                }, {
+                    shouldCreateProposal: shouldCreateProposalAfterAuthorityResult,
+                    createReviewLaunchRequest: createArchitecturalProposalReviewLaunchRequest,
+                    getAuthorityWarning: getArchitecturalAuthorityWarning,
+                    warnOperator: (message) => {
+                        if (typeof toastr !== 'undefined') toastr.warning(message);
+                    },
+                });
+            } catch (error) {
+                recordArchitecturalIntegrationEvent('AUTHORITY_ADOPTION_CALL_FAILED', {
+                    profile: ARCHITECTURAL_PROFILE,
+                    mode,
+                    outputUID,
+                    code: String(error?.code || 'ARCH_AUTHORITY_CALL_FAILED'),
+                    message: String(error?.message || 'Architectural authority call failed before persistence execution.'),
+                });
+                ragLog.warn('Failed to persist Architectural authority projection:', error?.message || error);
+            }
+        }
+
         if (settings?.sharderMode === true) {
             // Sharder mode: section-aware or standard shard vectorization
             if (settings?.rag?.enabled && settings?.rag?.autoVectorizeNewSummaries !== false) {
-                if (settings?.sharderProfile === ARCHITECTURAL_PROFILE) {
-                    ragLog.info('Architectural Memory RAG vectorization skipped; architectural RAG support is deferred.');
-                    if (typeof toastr !== 'undefined') {
-                        toastr.info('Architectural Memory saved. Architectural RAG support is deferred, so vectorization was skipped.');
-                    }
-                } else {
-                    try {
+                try {
+                    if (settings?.sharderProfile === ARCHITECTURAL_PROFILE) {
+                        await vectorizeShard(summary, startIndex, endIndex, settings, extractedKeywords);
+                    } else {
                         const mode = resolveShardChunkingMode(settings?.rag);
                         if (mode === 'section') {
                             await vectorizeShardSectionAware(summary, startIndex, endIndex, settings, extractedKeywords);
                         } else {
                             await vectorizeShard(summary, startIndex, endIndex, settings, extractedKeywords);
                         }
-                    } catch (error) {
-                        const backend = String(settings?.rag?.backend || '').toLowerCase();
-                        if (backend === 'qdrant' && isQdrantDimensionMismatchError(error) && typeof toastr !== 'undefined') {
-                            toastr.error(getQdrantDimensionMismatchToastMessage());
-                        }
-                        ragLog.warn('Failed to vectorize shard after summary save:', error?.message || error);
                     }
+                } catch (error) {
+                    const backend = String(settings?.rag?.backend || '').toLowerCase();
+                    if (backend === 'qdrant' && isQdrantDimensionMismatchError(error) && typeof toastr !== 'undefined') {
+                        toastr.error(getQdrantDimensionMismatchToastMessage());
+                    }
+                    ragLog.warn('Failed to vectorize shard after summary save:', error?.message || error);
                 }
             }
         } else {
@@ -132,18 +268,18 @@ export async function handleSummaryResult(
         const skipWarmArchive = settings?.sharderMode === true
             && !isWarmArchiveEligible(settings?.sharderProfile, settings?.rag?.enabled === true);
         if (skipWarmArchive) {
-            ragLog.info('Warm archive skipped for Architectural Memory; architectural RAG support is deferred.');
+            ragLog.log('Warm archive skipped for Architectural Memory; architectural RAG support is deferred.');
         } else {
-        const warmResult = await archiveToWarm(
-            [{ text: summary, source: 'output-summary' }],
-            startIndex,
-            endIndex,
-            settings,
-            { source: 'output-summary', extra: { outputMode: settings?.outputMode || 'system' } }
-        );
-        if (!warmResult.success && warmResult.reason !== 'rag-disabled') {
-            ragLog.warn('Warm archive failed for output summary:', warmResult.error || warmResult.reason);
-        }
+            const warmResult = await archiveToWarm(
+                [{ text: summary, source: 'output-summary' }],
+                startIndex,
+                endIndex,
+                settings,
+                { source: 'output-summary', extra: { outputMode: settings?.outputMode || 'system' } }
+            );
+            if (!warmResult.success && warmResult.reason !== 'rag-disabled') {
+                ragLog.warn('Warm archive failed for output summary:', warmResult.error || warmResult.reason);
+            }
         }
     }
 
@@ -154,12 +290,22 @@ export async function handleSummaryResult(
             startIndex,
             endIndex,
             null,
-            { source: 'output-summary', extra: { outputMode: settings?.outputMode || 'system' } }
+            {
+                source: 'output-summary',
+                extra: {
+                    outputMode: settings?.outputMode || 'system',
+                    ...architecturalMetadata,
+                }
+            }
         );
         if (!coldResult.success) {
             ragLog.warn('Cold archive failed for output summary:', coldResult.error || coldResult.reason);
         }
     }
+
+    openPreparedArchitecturalProposalHandoff(pendingArchitecturalReviewOpen, {
+        openReview: openInterpretiveReviewModal,
+    });
 
     return {
         didInjectToContext,
@@ -167,6 +313,133 @@ export async function handleSummaryResult(
         outputUID,
         ...(mode === 'lorebook' ? { successCount: successCount || 0 } : {})
     };
+}
+
+async function createArchitecturalProposalReviewLaunchRequest(options = {}) {
+    const outputUID = String(options.outputUID || '').trim();
+    const authorityResult = options.authorityResult || null;
+    const context = globalThis.SillyTavern?.getContext?.() || null;
+    if (!context || !outputUID) {
+        recordArchitecturalIntegrationEvent('GOVERNED_PROPOSAL_HANDOFF_SKIPPED', {
+            outputUID,
+            reason: 'missing-context-or-output-uid',
+        });
+        return {
+            interpretationRevisionId: '',
+            userMessage: 'Architectural shard saved, but the governed proposal could not be opened automatically because the current chat context was unavailable.',
+        };
+    }
+
+    await reconcileCurrentChatMessageIdentity({
+        context,
+        reason: 'architectural-shard-save',
+    });
+
+    const savedIndex = findIndexByUID(Array.isArray(context.chat) ? context.chat : [], outputUID);
+    const savedMessage = savedIndex >= 0 ? context.chat[savedIndex] : null;
+    const shardMessageId = String(savedMessage?.extra?.summary_sharder?.messageIdentity?.messageId || '').trim();
+    const memoryScopeId = String(authorityResult?.projectionMetadata?.memoryScopeId || '').trim();
+    const avatarUrl = String(
+        context?.characters?.[context?.characterId]?.avatar || ''
+    ).trim();
+    const locator = buildArchitecturalMessageIdentityScanLocator({
+        context,
+        chatId: options.activeChatId,
+        avatarUrl,
+    });
+    const memorySubjectId = avatarUrl ? `character:${avatarUrl}` : '';
+    const userName = String(context?.name1 || context?.user_name || '').trim();
+    const createdByEntityId = userName ? `user:${userName}` : '';
+
+    if (!locator?.avatarUrl || !locator?.chatLocator || !shardMessageId || !memoryScopeId || !memorySubjectId || !createdByEntityId) {
+        ragLog.warn('Architectural proposal handoff skipped because required persisted shard identifiers were not available.');
+        recordArchitecturalIntegrationEvent('GOVERNED_PROPOSAL_HANDOFF_SKIPPED', {
+            outputUID,
+            reason: 'missing-persisted-identifiers',
+            hasAvatarUrl: !!locator?.avatarUrl,
+            hasChatLocator: !!locator?.chatLocator,
+            hasShardMessageId: !!shardMessageId,
+            hasMemoryScopeId: !!memoryScopeId,
+            hasMemorySubjectId: !!memorySubjectId,
+            hasCreatedByEntityId: !!createdByEntityId,
+        });
+        return {
+            interpretationRevisionId: '',
+            userMessage: 'Architectural shard saved, but the governed proposal could not be opened automatically because the persisted shard identifiers were incomplete.',
+        };
+    }
+
+    try {
+        recordArchitecturalIntegrationEvent('GOVERNED_PROPOSAL_HANDOFF_STARTED', {
+            outputUID,
+            shardMessageId,
+            memoryScopeId,
+            memorySubjectId,
+        });
+        const proposalResult = await createInterpretiveProposalFromArchitecturalShard({
+            avatarUrl: locator.avatarUrl,
+            chatLocator: locator.chatLocator,
+            shardMessageId,
+            memoryScopeId,
+            memorySubjectId,
+            createdByEntityId,
+        });
+        const interpretationRevisionId = String(proposalResult?.interpretation?.interpretationRevisionId || '').trim();
+        if (!interpretationRevisionId) {
+            const projection = projectArchitecturalProposalLaunchBlocker(proposalResult);
+            ragLog.warn('Architectural proposal handoff completed without an interpretation revision id.');
+            recordArchitecturalIntegrationEvent('GOVERNED_PROPOSAL_HANDOFF_FAILED', {
+                outputUID,
+                reason: 'missing-interpretation-revision-id',
+                code: projection.code,
+            });
+            return {
+                interpretationRevisionId: '',
+                userMessage: projection.toastMessage,
+            };
+        }
+        recordArchitecturalIntegrationEvent('GOVERNED_PROPOSAL_HANDOFF_SUCCEEDED', {
+            outputUID,
+            interpretationRevisionId,
+        });
+        return {
+            interpretationRevisionId,
+        };
+    } catch (error) {
+        const projection = projectArchitecturalProposalLaunchBlocker(null, error);
+        ragLog.warn('Architectural proposal handoff failed after shard save:', error?.message || error);
+        recordArchitecturalIntegrationEvent('GOVERNED_PROPOSAL_HANDOFF_FAILED', {
+            outputUID,
+            reason: 'request-failed',
+            code: projection.code,
+            message: String(error?.message || 'Architectural proposal handoff failed after shard save.'),
+        });
+        return {
+            interpretationRevisionId: '',
+            userMessage: projection.toastMessage,
+        };
+    }
+}
+
+async function persistArchitecturalDecisionCapacityOverride(outputUID, mode, startIndex, endIndex, overrideMetadata) {
+    if (!chat_metadata.summary_sharder) {
+        chat_metadata.summary_sharder = {};
+    }
+    if (!Array.isArray(chat_metadata.summary_sharder.architecturalDecisionCapacityOverrides)) {
+        chat_metadata.summary_sharder.architecturalDecisionCapacityOverrides = [];
+    }
+
+    chat_metadata.summary_sharder.architecturalDecisionCapacityOverrides.push({
+        outputUID: outputUID || null,
+        mode,
+        startIndex,
+        endIndex,
+        justification: String(overrideMetadata?.justification || '').trim(),
+        decisionMetrics: overrideMetadata?.decisionMetrics || null,
+        timestamp: Number.isFinite(overrideMetadata?.timestamp) ? overrideMetadata.timestamp : Date.now(),
+    });
+
+    await saveMetadata();
 }
 
 /**
@@ -271,6 +544,17 @@ ${content}`;
 
     // Save the chat to persist the new message
     throwIfAborted('summary output');
+    const injectedFailure = consumeDebugHostSaveFailure('system');
+    if (injectedFailure) {
+        recordArchitecturalIntegrationEvent('HOST_SAVE_FAILED', {
+            mode: 'system',
+            injected: true,
+            reason: injectedFailure?.reason || 'debug-failure',
+        });
+        const error = new Error('Debug host save failure injected before system-message persistence.');
+        error.code = 'ARCH_DEBUG_HOST_SAVE_FAILURE';
+        throw error;
+    }
     await saveChatConditional();
 
     log.log(`Inserted system message at position ${insertionIndex} (after message ${insertionIndex - 1})`);
@@ -456,6 +740,18 @@ async function saveToSingleLorebook(lorebookName, summaryText, entryName, keywor
 
         // Save the lorebook
         throwIfAborted('summary output');
+        const injectedFailure = consumeDebugHostSaveFailure('lorebook');
+        if (injectedFailure) {
+            recordArchitecturalIntegrationEvent('HOST_SAVE_FAILED', {
+                mode: 'lorebook',
+                injected: true,
+                lorebookName,
+                reason: injectedFailure?.reason || 'debug-failure',
+            });
+            const error = new Error(`Debug host save failure injected before lorebook persistence: ${lorebookName}`);
+            error.code = 'ARCH_DEBUG_HOST_SAVE_FAILURE';
+            throw error;
+        }
         await saveWorldInfo(lorebookName, data, true);
 
         // Return the UID of the created entry

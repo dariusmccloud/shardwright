@@ -23,6 +23,20 @@ import { runSharder } from './core/api/single-pass-api.js';
 import { cacheCurrentChatState, findDeletedIndex, getCachedLength } from './core/chat/chat-state.js';
 import { validateAllRanges } from './core/chat/range-manager.js';
 import { shiftRangesOnDelete, shiftRangesOnInsert, buildRangesFromIndices, rangesMatch } from './core/chat/range-operations.js';
+import { enforceArchivedPromptExclusion, initArchiveHandler, refreshArchiveDecorations } from './core/chat/archive-manager.js';
+import { isArchivedMessage } from './core/chat/archive-policy.js';
+import { reconcileCurrentChatMessageIdentity } from './core/summarization/message-identity-runtime.js';
+import { refreshCurrentChatShardIntegrity } from './core/summarization/shard-integrity-runtime.js';
+import {
+    announceLoadProfilingBypass,
+    beginLoadTrace,
+    finishLoadTrace,
+    getLoadProfilerFlags,
+    isLoadDebugTracingEnabled,
+    installLoadTraceDebugApi,
+    isLoadProfilingBypassEnabled,
+    profileLoadStage,
+} from './core/summarization/load-profiler.js';
 
 // UI modules
 import { renderSettingsUI, runManualSummarizeUI } from './ui/ui-manager.js';
@@ -78,6 +92,62 @@ export function setLastSummarizedIndex(index) {
 }
 
 export { runSummarization, getActivePrompt, applyHideSummarized, applyVisibilitySettings, saveSettings };
+
+async function syncArchivePresentation() {
+    await enforceArchivedPromptExclusion(settings);
+    refreshArchiveDecorations(settings);
+}
+
+async function reconcileCorpusIntegrity(options = {}) {
+    const context = SillyTavern.getContext?.() || null;
+    const trace = beginLoadTrace({
+        kind: 'corpus-integrity',
+        reason: options.reason || 'runtime-sync',
+        chatId: context?.chatId || '',
+        messageCount: Array.isArray(context?.chat) ? context.chat.length : 0,
+        profilingBypassActive: isLoadProfilingBypassEnabled(globalThis),
+    });
+    let identityResult = null;
+    let integrityResult = null;
+    let traceError = null;
+
+    try {
+        identityResult = await profileLoadStage(trace, 'message-identity-scan', async () => {
+            return await reconcileCurrentChatMessageIdentity(options);
+        });
+        await profileLoadStage(trace, 'archive-presentation-sync', async () => {
+            await syncArchivePresentation();
+            return { saveKind: 'none' };
+        });
+        integrityResult = await profileLoadStage(trace, 'shard-integrity-validation', async () => {
+            return await refreshCurrentChatShardIntegrity({
+                reason: options.reason || 'runtime-sync',
+            });
+        });
+    } catch (error) {
+        traceError = {
+            message: String(error?.message || error),
+            code: String(error?.code || ''),
+        };
+        throw error;
+    } finally {
+        finishLoadTrace(trace, {
+            identitySaveKind: identityResult?.saveKind || 'none',
+            integritySaveKind: integrityResult?.saveKind || 'none',
+            manifestsAdded: integrityResult?.manifestsAdded || 0,
+            manifestCount: integrityResult?.manifestCount || 0,
+            error: traceError,
+        });
+    }
+}
+
+function isProfilingBypassActive() {
+    const active = isLoadProfilingBypassEnabled(globalThis);
+    if (active) {
+        announceLoadProfilingBypass(log, globalThis);
+    }
+    return active;
+}
 
 /**
  * Setup MutationObserver to watch for SillyTavern hide/unhide changes
@@ -146,10 +216,12 @@ async function onExternalVisibilityChange() {
         return;
     }
 
+    await syncArchivePresentation();
+
     // Detect current hidden state from chat data
     const actuallyHidden = new Set();
     for (let i = 0; i < context.chat.length; i++) {
-        if (context.chat[i]?.is_system === true) {
+        if (context.chat[i]?.is_system === true && !isArchivedMessage(context.chat[i])) {
             actuallyHidden.add(i);
         }
     }
@@ -175,6 +247,10 @@ async function onExternalVisibilityChange() {
     expandUnhiddenMessages();
 
     // Don't recompute visibility - SillyTavern already did it
+    refreshArchiveDecorations(settings);
+    await refreshCurrentChatShardIntegrity({
+        reason: 'external-visibility-change',
+    });
 }
 
 /**
@@ -229,8 +305,21 @@ function normalizeReceivedMessageEvent(messageId, messageType) {
 }
 
 async function onNewMessage(messageId, messageType, sourceEventType = event_types.MESSAGE_RECEIVED) {
+    const normalizedEvent = normalizeReceivedMessageEvent(messageId, messageType);
+
+    // SillyBunny emits MESSAGE_RECEIVED for a loaded historical first message when chat.length === 1.
+    // Initial-load / chat-change reconciliation already covers that path, so do not treat it as a new-message save trigger.
+    if (normalizedEvent.messageType === 'first_message') {
+        cacheCurrentChatState();
+        return;
+    }
+
     // Update cache after new message
     cacheCurrentChatState();
+
+    await reconcileCorpusIntegrity({
+        reason: 'message-received',
+    });
 
     if (settings.mode !== 'auto') {
         return;
@@ -247,7 +336,6 @@ async function onNewMessage(messageId, messageType, sourceEventType = event_type
         return;
     }
 
-    const normalizedEvent = normalizeReceivedMessageEvent(messageId, messageType);
     if (!shouldQualifyAutoMessage(normalizedEvent.messageId, normalizedEvent.messageType, sourceEventType, chat)) {
         return;
     }
@@ -282,7 +370,10 @@ async function onNewMessage(messageId, messageType, sourceEventType = event_type
  */
 async function onMessageEdited(eventData) {
     void eventData;
-    return;
+    await reconcileCorpusIntegrity({
+        reason: 'message-edited',
+    });
+    cacheCurrentChatState();
 }
 
 /**
@@ -296,6 +387,10 @@ async function onMessageDeleted(newChatLength) {
     // If cache is stale or no deletion occurred, just validate
     if (cachedLength === 0 || newChatLength >= cachedLength) {
         validateAllRanges();
+        await reconcileCorpusIntegrity({
+            reason: 'message-deleted',
+            recordDeletion: true,
+        });
         cacheCurrentChatState();
         return;
     }
@@ -319,6 +414,11 @@ async function onMessageDeleted(newChatLength) {
         validateAllRanges();
     }
 
+    await reconcileCorpusIntegrity({
+        reason: 'message-deleted',
+        recordDeletion: true,
+    });
+
     // Update cache for next deletion
     cacheCurrentChatState();
 }
@@ -337,7 +437,27 @@ async function onMessageInserted(insertedIndex) {
         lastSummarizedIndex++;
     }
 
+    await reconcileCorpusIntegrity({
+        reason: 'message-inserted',
+    });
+
     // Update cache
+    cacheCurrentChatState();
+}
+
+async function onMessageSwiped(eventData) {
+    void eventData;
+    await reconcileCorpusIntegrity({
+        reason: 'message-swiped',
+    });
+    cacheCurrentChatState();
+}
+
+async function onMessageUpdated(eventData) {
+    void eventData;
+    await reconcileCorpusIntegrity({
+        reason: 'message-updated',
+    });
     cacheCurrentChatState();
 }
 
@@ -395,17 +515,97 @@ function onChatChanged() {
 
     // Auto-detect hidden ranges on chat load
     setTimeout(async () => {
+        const loadTrace = beginLoadTrace({
+            kind: 'chat-changed-handler',
+            reason: 'chat-changed',
+            chatId: context?.chatId || '',
+            messageCount: Array.isArray(context?.chat) ? context.chat.length : 0,
+            deferredByMs: 500,
+            ...getLoadProfilerFlags(globalThis),
+        });
+
         // Re-attach observer for new chat DOM
-        setupVisibilityObserver();
+        try {
+            await profileLoadStage(loadTrace, 'setup-visibility-observer', async () => {
+                setupVisibilityObserver();
+                return {
+                    observerAttached: Boolean(visibilityObserver),
+                };
+            });
 
-        mergeDetectedHiddenRanges();
+            if (isProfilingBypassActive()) {
+                await profileLoadStage(loadTrace, 'profiling-bypass', async () => {
+                    return {
+                        skippedStages: [
+                            'merge-detected-hidden-ranges',
+                            'apply-visibility-settings',
+                            'reconcile-corpus-integrity',
+                            'cache-chat-state',
+                        ],
+                    };
+                });
+                return;
+            }
 
-        // Reapply visibility for THIS chat's ranges (must await to ensure completion before caching)
-        await applyVisibilitySettings(settings);
+            await profileLoadStage(loadTrace, 'merge-detected-hidden-ranges', async () => {
+                mergeDetectedHiddenRanges();
+                return {
+                    rangeCount: getChatRanges().length,
+                };
+            });
 
-        // Cache chat state for deletion tracking (after visibility is fully applied)
-        cacheCurrentChatState();
+            // Reapply visibility for THIS chat's ranges (must await to ensure completion before caching)
+            await profileLoadStage(loadTrace, 'apply-visibility-settings', async () => {
+                await applyVisibilitySettings(settings);
+                return {
+                    rangeCount: getChatRanges().length,
+                };
+            });
+
+            await profileLoadStage(loadTrace, 'reconcile-corpus-integrity', async () => {
+                await reconcileCorpusIntegrity({
+                    reason: 'chat-changed',
+                });
+                return {
+                    completed: true,
+                };
+            });
+
+            // Cache chat state for deletion tracking (after visibility is fully applied)
+            await profileLoadStage(loadTrace, 'cache-chat-state', async () => {
+                cacheCurrentChatState();
+                return {
+                    cachedLength: getCachedLength(),
+                };
+            });
+        } finally {
+            finishLoadTrace(loadTrace, {
+                bypassActive: isLoadProfilingBypassEnabled(globalThis),
+            });
+        }
     }, 500);
+}
+
+function onChatLoaded(eventData) {
+    if (!isLoadDebugTracingEnabled(globalThis)) {
+        return;
+    }
+
+    const context = SillyTavern.getContext?.() || null;
+    const detail = eventData?.detail || {};
+    const latestTrace = globalThis.summarySharderLoadProfiler?.getTraces?.()?.[0] || null;
+
+    log.log('[SummarySharder][CHAT_LOADED]', {
+        at: new Date().toISOString(),
+        chatId: context?.chatId || '',
+        detailId: detail?.id ?? null,
+        detailCharacterName: detail?.character?.name || '',
+        messageCount: Array.isArray(context?.chat) ? context.chat.length : 0,
+        profilingBypassActive: isLoadProfilingBypassEnabled(globalThis),
+        latestTraceKind: latestTrace?.meta?.kind || null,
+        latestTraceReason: latestTrace?.meta?.reason || null,
+        latestTraceDurationMs: latestTrace?.durationMs ?? null,
+    });
 }
 
 /**
@@ -501,6 +701,8 @@ jQuery(async () => {
 
     // Initialize themes
     initializeThemes(settings);
+    installLoadTraceDebugApi(globalThis);
+    announceLoadProfilingBypass(log, globalThis);
 
     // Inject CSS (includes theme modal CSS)
     injectStyles();
@@ -509,6 +711,7 @@ jQuery(async () => {
     // Initialize delegated collapse click handler
     initCollapseHandler();
     initEditUnfoldHandler();
+    initArchiveHandler(() => settings);
 
     // Render settings UI
     renderSettingsUI(settings, {
@@ -517,7 +720,7 @@ jQuery(async () => {
 
     // Initialize floating action button
     initFab(settings, {
-        onSinglePass: (start, end, selectedShards = []) => runSharder(start, end, settings, selectedShards),
+        onSinglePass: (start, end, selectedShards) => runSharder(start, end, settings, selectedShards),
         onBatchSharder: async (ranges, batchConfig) => {
             const { runSharderQueue } = await import('./core/api/single-pass-queue-api.js');
             await runSharderQueue(ranges, settings, batchConfig);
@@ -630,6 +833,14 @@ jQuery(async () => {
                 toastr.error(`Could not open chat manager: ${error?.message || error}`);
             }
         },
+        onOpenInterpretiveReview: async () => {
+            try {
+                const { openInterpretiveReviewModal } = await import('./ui/modals/management/interpretive-review-modal.js');
+                await openInterpretiveReviewModal();
+            } catch (error) {
+                toastr.error(`Could not open interpretive review queue: ${error?.message || error}`);
+            }
+        },
         onOpenVisibility: async () => {
             try {
                 const { openVisibilityModal } = await import('./ui/modals/management/visibility-modal.js');
@@ -683,15 +894,35 @@ jQuery(async () => {
     // Apply visibility on load (use async to properly await)
     setTimeout(async () => {
         await applyVisibilitySettings(settings);
+        await reconcileCorpusIntegrity({
+            reason: 'initial-load',
+        });
+        cacheCurrentChatState();
     }, 1000);
 
     // Register event handlers
     eventSource.on(event_types.MESSAGE_RECEIVED, (messageId, messageType) => onNewMessage(messageId, messageType, event_types.MESSAGE_RECEIVED));
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
-    eventSource.on(event_types.MESSAGE_DELETED, onMessageDeleted);
-    eventSource.on(event_types.MESSAGE_INSERTED, onMessageInserted);
+    if (event_types.CHAT_LOADED) {
+        eventSource.on(event_types.CHAT_LOADED, onChatLoaded);
+    }
+    if (event_types.MESSAGE_DELETED) {
+        eventSource.on(event_types.MESSAGE_DELETED, onMessageDeleted);
+    }
+    if (event_types.MESSAGE_INSERTED) {
+        eventSource.on(event_types.MESSAGE_INSERTED, onMessageInserted);
+    }
     if (event_types.MESSAGE_EDITED) {
         eventSource.on(event_types.MESSAGE_EDITED, onMessageEdited);
+    }
+    if (event_types.MESSAGE_SENT) {
+        eventSource.on(event_types.MESSAGE_SENT, (messageId, messageType) => onNewMessage(messageId, messageType, event_types.MESSAGE_SENT));
+    }
+    if (event_types.MESSAGE_SWIPED) {
+        eventSource.on(event_types.MESSAGE_SWIPED, onMessageSwiped);
+    }
+    if (event_types.MESSAGE_UPDATED) {
+        eventSource.on(event_types.MESSAGE_UPDATED, onMessageUpdated);
     }
 
     // Initialize RAG collection lifecycle (cleanup on chat delete)
