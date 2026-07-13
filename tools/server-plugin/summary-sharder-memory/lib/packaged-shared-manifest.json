@@ -71,7 +71,7 @@
     {
       "canonicalRelativePath": "core/summarization/architectural-semantic-replay-artifact.js",
       "packagedRelativePath": "lib/core/summarization/architectural-semantic-replay-artifact.js",
-      "sha256": "c7492259afd55c2cebeb05e7e2301d952ad4df9d9ef0ff5c09325560b7ecf277"
+      "sha256": "841900fce149ac3373cb9ecfd6549dd1ddc3cd447cdd6fbfac280d13831c15d9"
     },
     {
       "canonicalRelativePath": "core/summarization/architectural-semantic-request.js",

@@ -5,6 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { buildManagedShardManifest } from './lib/core/summarization/shard-integrity-core.js';
+import { renderFinalizedArchitecturalPayload } from './lib/core/summarization/architectural-finalized-semantic.js';
+import { createArchitecturalSemanticReplayArtifact } from './lib/core/summarization/architectural-semantic-replay-artifact.js';
 import {
     writeOperationalStateMarkerDescriptor,
     readOperationalStateMarker,
@@ -14,6 +16,7 @@ import {
 import { init } from './index.js';
 import { initCandidateRebuildRun, runCandidateRebuild } from './rebuild.js';
 import { createPromotionAuthorization, executePromotionAuthorization } from './promotion.js';
+import { replayInterpretiveLedger } from './interpretive.js';
 
 function makeTempRoot() {
     return fs.mkdtempSync(path.join(os.tmpdir(), 'summary-sharder-routes-'));
@@ -146,6 +149,7 @@ Schema: architectural-memory/v1
         avatarUrl: 'Jeep.png',
         chatLocator: 'Session A',
         chatFilePath,
+        manifest,
     };
 }
 
@@ -1593,6 +1597,115 @@ test('interpretive synthesis route creates proposal directly from one persisted 
     assert.equal(sourceEntries[1].sourceClass, 'SOURCE_OCCURRENCE');
     assert.equal(sourceEntries[2].sourceClass, 'SOURCE_OCCURRENCE');
     assert.equal(result.payload.synthesisRun.generatedCandidateIds[0], 'interprev_architectural_route_case_v1');
+});
+
+test('architectural replay artifact and proposal handoff survive projection loss and restart together', async () => {
+    const root = makeTempRoot();
+    const {
+        memoryScopeId,
+        shardMessageId,
+        avatarUrl,
+        chatLocator,
+        manifest,
+    } = await writeArchitecturalChat(root);
+    const sourceManifest = {
+        manifestId: manifest.manifestId,
+        sourceIdentityHash: manifest.sourceIdentityHash,
+        sourceRevisionHash: manifest.sourceRevisionHash,
+        sourceStartPositionAtCreation: manifest.sourceStartPositionAtCreation,
+        sourceEndPositionAtCreation: manifest.sourceEndPositionAtCreation,
+    };
+    const semanticPayload = {
+        schemaVersion: 1,
+        profile: 'architectural-memory-finalized',
+        generationContext: {
+            rangeStart: 0,
+            rangeEnd: 1,
+            messageIds: [makeMessageId('a1'), makeMessageId('b2')],
+            currentManifestId: manifest.manifestId,
+        },
+        sourceManifests: [sourceManifest],
+        sections: {
+            timeline: [{
+                sourceRef: 'S1:1',
+                summary: 'Architectural shard and proposal handoff share portable restart authority',
+                weight: 4,
+                provenance: {
+                    originManifestId: manifest.manifestId,
+                    authorityRecordId: null,
+                    referenceBindings: [{ reference: 'S1:1', manifestId: manifest.manifestId }],
+                },
+            }],
+            decisions: [], events: [], developments: [], dialogue: [], threads: [], current: [],
+        },
+    };
+    const rendered = await renderFinalizedArchitecturalPayload(semanticPayload);
+    const artifact = await createArchitecturalSemanticReplayArtifact({
+        semanticPayload,
+        canonicalOutput: rendered.output,
+        semanticPromptVersion: 2,
+        semanticRendererVersion: rendered.rendererVersion,
+    });
+    const firstRouter = createMockRouter();
+    await init(firstRouter);
+
+    const persistedArtifact = await invoke(
+        firstRouter.routes.post.get('/architectural/replay-artifacts'),
+        buildRequest(root, { body: { artifact, now: Date.parse('2026-06-26T02:59:00.000Z') } }),
+    );
+    const proposal = await invoke(
+        firstRouter.routes.post.get('/interpretive/synthesis/from-architectural-shard'),
+        buildRequest(root, {
+            body: {
+                avatarUrl,
+                chatLocator,
+                shardMessageId,
+                memoryScopeId,
+                memorySubjectId: 'character:jeep.png',
+                createdByEntityId: 'user:Chris',
+                synthesisRunId: 'synthrun_architectural_restart_case',
+                interpretationId: 'interp_architectural_restart_case',
+                interpretationRevisionId: 'interprev_architectural_restart_case_v1',
+                synthesisProposalId: 'synthproposal_architectural_restart_case',
+                now: Date.parse('2026-06-26T03:00:00.000Z'),
+            },
+        }),
+    );
+
+    assert.equal(persistedArtifact.statusCode, 200);
+    assert.equal(proposal.statusCode, 200);
+    assert.equal(proposal.payload.synthesisRun.runStatus, 'COMPLETED_ADMITTED');
+    assert.equal(proposal.payload.interpretation.interpretationRevisionId, 'interprev_architectural_restart_case_v1');
+
+    const paths = getStoragePaths(root);
+    fs.rmSync(paths.dbPath, { force: true });
+    const replayedProjection = replayInterpretiveLedger(buildRequest(root), {
+        now: Date.parse('2026-06-26T03:01:00.000Z'),
+    });
+    assert.equal(replayedProjection.replayedSynthesisRuns.length, 1);
+
+    const reopenedRouter = createMockRouter();
+    await init(reopenedRouter);
+    const reloadedArtifact = await invoke(
+        reopenedRouter.routes.get.get('/architectural/replay-artifacts/:artifactId'),
+        buildRequest(root, { params: { artifactId: artifact.artifactId } }),
+    );
+    const reloadedRun = await invoke(
+        reopenedRouter.routes.get.get('/interpretive/synthesis/runs/:synthesisRunId'),
+        buildRequest(root, { params: { synthesisRunId: 'synthrun_architectural_restart_case' } }),
+    );
+    const reloadedInterpretation = await invoke(
+        reopenedRouter.routes.get.get('/interpretive/candidates/:interpretationRevisionId'),
+        buildRequest(root, { params: { interpretationRevisionId: 'interprev_architectural_restart_case_v1' } }),
+    );
+
+    assert.equal(reloadedArtifact.statusCode, 200);
+    assert.deepEqual(reloadedArtifact.payload.artifact, artifact);
+    assert.equal(reloadedArtifact.payload.replay.canonicalOutput, artifact.canonicalOutput);
+    assert.equal(reloadedRun.statusCode, 200);
+    assert.deepEqual(reloadedRun.payload.synthesisRun, proposal.payload.synthesisRun);
+    assert.equal(reloadedInterpretation.statusCode, 200);
+    assert.deepEqual(reloadedInterpretation.payload.interpretation, proposal.payload.interpretation);
 });
 
 test('interpretive synthesis route emits one structural manifest entry per unique architectural decision id', async () => {

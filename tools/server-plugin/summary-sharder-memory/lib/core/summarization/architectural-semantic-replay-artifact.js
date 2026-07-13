@@ -51,15 +51,16 @@ async function hashPayload(payload, cryptoApi) {
 }
 
 export async function createArchitecturalSemanticReplayArtifact(options = {}) {
-    const payload = clonePayload(options.semanticPayload);
+    const inputPayload = clonePayload(options.semanticPayload);
     const canonicalOutput = String(options.canonicalOutput || '');
-    const rendered = await renderFinalizedArchitecturalPayload(payload, options);
+    const rendered = await renderFinalizedArchitecturalPayload(inputPayload, options);
     if (rendered.output !== canonicalOutput) {
         throw new ArchitecturalSemanticReplayError(
             ARCHITECTURAL_SEMANTIC_REPLAY_ERROR_CODES.OUTPUT_MISMATCH,
             'Finalized semantic payload does not reproduce the supplied canonical Architectural shard.',
         );
     }
+    const payload = clonePayload(rendered.semanticPayload);
     const sourceManifests = normalizeArchitecturalSourceManifestSet(payload.sourceManifests);
     const sourceManifestSetHash = await hashArchitecturalSourceManifestSet(sourceManifests, options.cryptoApi);
     const artifactBody = {

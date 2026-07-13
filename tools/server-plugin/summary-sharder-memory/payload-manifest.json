@@ -87,7 +87,7 @@
     {
       "canonicalRelativePath": "core/summarization/architectural-semantic-replay-artifact.js",
       "packagedRelativePath": "lib/core/summarization/architectural-semantic-replay-artifact.js",
-      "sha256": "c7492259afd55c2cebeb05e7e2301d952ad4df9d9ef0ff5c09325560b7ecf277"
+      "sha256": "841900fce149ac3373cb9ecfd6549dd1ddc3cd447cdd6fbfac280d13831c15d9"
     },
     {
       "canonicalRelativePath": "core/summarization/architectural-semantic-request.js",
@@ -219,7 +219,7 @@
     },
     {
       "relativePath": "lib/core/summarization/architectural-semantic-replay-artifact.js",
-      "sha256": "c7492259afd55c2cebeb05e7e2301d952ad4df9d9ef0ff5c09325560b7ecf277"
+      "sha256": "841900fce149ac3373cb9ecfd6549dd1ddc3cd447cdd6fbfac280d13831c15d9"
     },
     {
       "relativePath": "lib/core/summarization/architectural-semantic-request.js",
@@ -263,7 +263,7 @@
     },
     {
       "relativePath": "lib/packaged-shared-manifest.json",
-      "sha256": "97d7ba6eeb2ab0414a7eea997ed6870c6a59e554bcc3235dc89d184bd2e2d194"
+      "sha256": "0429beb55fa075335e136b4c7d63343cfc6a117217379131190e97f9e323feaf"
     },
     {
       "relativePath": "package.json",

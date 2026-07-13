@@ -1,16 +1,14 @@
 # C0.6.9E Finalized Multi-Source Replay Contract Report
 
-Last updated: 2026-07-12
+Last updated: 2026-07-13
 
-Boundary status: implemented and focused-proof complete
+Boundary status: complete
 
-Parent phase status: `C0.6.9E` remains active
+Parent phase status: `C0.6.9E` complete
 
 ## Purpose
 
-Record the completed prerequisite boundary that allows a finalized Architectural shard to preserve consolidated multi-source provenance and replay deterministically without another model call.
-
-This report does not declare `C0.6.9E` complete. Proposal-handoff restart replay and packaged Node/Bun parity remain open.
+Record the completed boundary that allows a finalized Architectural shard to preserve consolidated multi-source provenance, replay deterministically without another model call, restore its governed proposal handoff after projection loss, and produce identical packaged semantic authority under Node and Bun.
 
 ## Governing Decision
 
@@ -122,6 +120,16 @@ The review modal returns operator intent only. Core post-review reconciliation:
 
 Before review, the live pipeline allocates and validates the current source-manifest identity. After host save, the same identity is registered against the saved output before the replay artifact is persisted. Replay persistence is independent of proposal eligibility; a valid saved shard that produces no proposal still receives its governed replay artifact.
 
+### 8. Restart-safe proposal handoff and packaged runtime parity
+
+Architectural replay authority and interpretive proposal authority remain separate:
+
+- the immutable replay artifact and replay ledger restore the finalized shard,
+- the interpretive governance ledger restores the synthesis run, admitted proposal, and interpretation revision,
+- SQLite may be discarded and rebuilt without changing either recovered authority projection.
+
+The packaged finalized renderer and replay implementation produce identical normalized payloads, canonical output, manifest-set hash, semantic payload hash, canonical output hash, artifact identity, and replay projection under Node and Bun.
+
 ## Failure Policy
 
 The boundary refuses when:
@@ -180,6 +188,41 @@ exit 0
 
 Syntax checks for the modified live-path modules and `git diff --check` also exited `0`.
 
+Proposal-handoff restart proof (2026-07-13):
+
+```powershell
+node --test --test-name-pattern="architectural replay artifact and proposal handoff survive" tools/server-plugin/summary-sharder-memory/index.test.mjs
+```
+
+Observed result:
+
+```text
+tests 1
+pass 1
+fail 0
+exit 0
+```
+
+The proof persisted one manifest-bound replay artifact and one admitted proposal from the same saved Architectural shard, deleted the operational SQLite projection, replayed the interpretive ledger, reinitialized the route surface, and recovered the identical artifact, synthesis run, and interpretation revision.
+
+Packaged Node/Bun semantic parity proof (2026-07-13):
+
+```powershell
+node --test core/summarization/architectural-semantic-replay-artifact.test.mjs
+node --test --test-name-pattern="packaged finalized semantic replay is identical" tools/server-plugin/summary-sharder-memory/package.test.mjs
+```
+
+Observed result:
+
+```text
+tests 7
+pass 7
+fail 0
+exit 0
+```
+
+The proof also identified and resolved a normalization defect: artifact creation previously hashed the caller-ordered semantic payload while separately normalizing its manifest set. Artifact creation now persists the renderer-normalized payload, so noncanonical manifest input order yields one replayable, runtime-independent artifact identity.
+
 The focused matrix proved:
 
 1. current-range records resolve against the current manifest,
@@ -190,14 +233,16 @@ The focused matrix proved:
 6. finalized semantic payload renders byte-identical canonical output,
 7. replay restores identical payload, output, versions, and hashes,
 8. portable storage survives reopen and duplicate registration remains idempotent,
-9. authenticated routes preserve exact success and refusal behavior.
+9. authenticated routes preserve exact success and refusal behavior,
+10. proposal handoff survives operational projection loss and restart without regeneration,
+11. shard replay authority and interpretive proposal authority restore through their separate governing ledgers,
+12. packaged Node and Bun produce identical finalized semantic artifacts and replay projections.
 
 Expected error logs emitted during negative route cases were visible and corresponded to asserted refusal codes; no test failure was masked.
 
-## Remaining C0.6.9E Work
+## C0.6.9E Closure
 
-1. Prove proposal-handoff state survives restart and replay.
-2. Prove packaged Node/Bun semantic parity.
+No work remains within the declared C0.6.9E boundary. Further changes require a new bounded contract and may not redefine the authority split established here implicitly.
 
 ## Closed Boundary
 
@@ -211,6 +256,8 @@ multi-source finalized semantic records
 -> versioned replay artifact
 -> stable pre-save/post-save manifest identity
 -> portable authority storage and authenticated reload
+-> restart-safe governed proposal handoff
+-> packaged Node/Bun semantic parity
 ```
 
 The next implementation slice may depend on this contract but may not redefine its authority classification implicitly.

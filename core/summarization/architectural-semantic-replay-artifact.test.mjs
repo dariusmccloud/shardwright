@@ -80,6 +80,36 @@ test('artifact identity is deterministic and binds the normalized source-manifes
     assert.deepEqual(first.sourceManifests, sourceManifests);
 });
 
+test('artifact creation normalizes manifest order before hashing and remains replayable', async () => {
+    const historicalManifest = {
+        manifestId: 'manifest:system-shard:historical-replay-test',
+        sourceIdentityHash: `sha256:${'3'.repeat(64)}`,
+        sourceRevisionHash: `sha256:${'4'.repeat(64)}`,
+        sourceStartPositionAtCreation: 1,
+        sourceEndPositionAtCreation: 2,
+    };
+    const forwardPayload = payload();
+    forwardPayload.sourceManifests = [sourceManifests[0], historicalManifest];
+    const reversePayload = payload();
+    reversePayload.sourceManifests = [historicalManifest, sourceManifests[0]];
+    const rendered = await renderFinalizedArchitecturalPayload(forwardPayload);
+    const first = await createArchitecturalSemanticReplayArtifact({
+        semanticPayload: forwardPayload,
+        canonicalOutput: rendered.output,
+        semanticPromptVersion: 1,
+        semanticRendererVersion: rendered.rendererVersion,
+    });
+    const second = await createArchitecturalSemanticReplayArtifact({
+        semanticPayload: reversePayload,
+        canonicalOutput: rendered.output,
+        semanticPromptVersion: 1,
+        semanticRendererVersion: rendered.rendererVersion,
+    });
+
+    assert.deepEqual(second, first);
+    assert.deepEqual((await replayArchitecturalSemanticArtifact(second)).semanticPayload, first.semanticPayload);
+});
+
 test('replay refuses a modified persisted semantic payload', async () => {
     const persisted = await artifact();
     persisted.semanticPayload.sections.timeline[0].summary = 'Tampered payload';

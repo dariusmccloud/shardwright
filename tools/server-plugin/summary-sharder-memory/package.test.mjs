@@ -269,6 +269,66 @@ function makePackagedPublicationPayload(overrides = {}) {
     };
 }
 
+function makePackagedFinalizedSemanticPayload() {
+    const currentManifest = {
+        manifestId: 'manifest:system-shard:packaged-current',
+        sourceIdentityHash: `sha256:${'1'.repeat(64)}`,
+        sourceRevisionHash: `sha256:${'2'.repeat(64)}`,
+        sourceStartPositionAtCreation: 10,
+        sourceEndPositionAtCreation: 10,
+    };
+    const historicalManifest = {
+        manifestId: 'manifest:system-shard:packaged-historical',
+        sourceIdentityHash: `sha256:${'3'.repeat(64)}`,
+        sourceRevisionHash: `sha256:${'4'.repeat(64)}`,
+        sourceStartPositionAtCreation: 1,
+        sourceEndPositionAtCreation: 2,
+    };
+    return {
+        schemaVersion: 1,
+        profile: 'architectural-memory-finalized',
+        generationContext: {
+            rangeStart: 10,
+            rangeEnd: 10,
+            messageIds: ['msg_packaged_semantic'],
+            currentManifestId: currentManifest.manifestId,
+        },
+        sourceManifests: [historicalManifest, currentManifest],
+        sections: {
+            timeline: [{
+                sourceRef: 'S10:1',
+                summary: 'Packaged semantic parity is runtime-independent',
+                weight: 4,
+                provenance: {
+                    originManifestId: currentManifest.manifestId,
+                    authorityRecordId: null,
+                    referenceBindings: [{ reference: 'S10:1', manifestId: currentManifest.manifestId }],
+                },
+            }],
+            decisions: [{
+                sourceRef: 'S1:1',
+                weight: 5,
+                id: 'packaged-semantic-parity',
+                types: ['GOVERNANCE'],
+                decision: 'Node and Bun must reproduce the same finalized Architectural authority.',
+                why: 'Portable replay cannot depend on the runtime used to verify it.',
+                scope: 'Packaged server plugin',
+                status: 'SEALED',
+                evidence: ['S1:2'],
+                provenance: {
+                    originManifestId: historicalManifest.manifestId,
+                    authorityRecordId: 'authority:packaged-semantic-parity:v1',
+                    referenceBindings: [
+                        { reference: 'S1:1', manifestId: historicalManifest.manifestId },
+                        { reference: 'S1:2', manifestId: historicalManifest.manifestId },
+                    ],
+                },
+            }],
+            events: [], developments: [], dialogue: [], threads: [], current: [],
+        },
+    };
+}
+
 test('packaged plugin stages only declared payload and resolves runtime imports within plugin root', async () => {
     const staged = stagePackagedPlugin();
     const payloadManifestPath = path.join(staged.pluginRoot, 'payload-manifest.json');
@@ -294,6 +354,61 @@ test('packaged plugin stages only declared payload and resolves runtime imports 
     assert.equal(stagedPromptModule.DEFAULT_ARCHITECTURAL_SEMANTIC_PROMPT, DEFAULT_ARCHITECTURAL_SEMANTIC_PROMPT);
     assert.match(stagedPromptModule.DEFAULT_ARCHITECTURAL_SEMANTIC_PROMPT, /schemaVersion to the JSON number 1 exactly/u);
     assert.match(stagedPromptModule.DEFAULT_ARCHITECTURAL_SEMANTIC_PROMPT, /profile to the JSON string "architectural-memory" exactly/u);
+});
+
+test('packaged finalized semantic replay is identical under Node and Bun', async () => {
+    const staged = stagePackagedPlugin();
+    const payload = makePackagedFinalizedSemanticPayload();
+    const finalizedModuleUrl = pathToFileURL(
+        path.join(staged.pluginRoot, 'lib', 'core', 'summarization', 'architectural-finalized-semantic.js'),
+    ).href;
+    const replayModuleUrl = pathToFileURL(
+        path.join(staged.pluginRoot, 'lib', 'core', 'summarization', 'architectural-semantic-replay-artifact.js'),
+    ).href;
+    const finalizedModule = await import(finalizedModuleUrl);
+    const replayModule = await import(replayModuleUrl);
+    const rendered = await finalizedModule.renderFinalizedArchitecturalPayload(payload);
+    const artifact = await replayModule.createArchitecturalSemanticReplayArtifact({
+        semanticPayload: payload,
+        canonicalOutput: rendered.output,
+        semanticPromptVersion: 2,
+        semanticRendererVersion: rendered.rendererVersion,
+    });
+    const replay = await replayModule.replayArchitecturalSemanticArtifact(artifact);
+    const nodeProjection = JSON.parse(JSON.stringify({ artifact, replay }));
+
+    const helperPath = path.join(staged.tempRoot, 'run-bun-architectural-semantic-parity.mjs');
+    fs.writeFileSync(helperPath, `
+import { pathToFileURL } from 'node:url';
+
+const finalizedModule = await import(pathToFileURL(${JSON.stringify(
+        path.join(staged.pluginRoot, 'lib', 'core', 'summarization', 'architectural-finalized-semantic.js'),
+    )}).href);
+const replayModule = await import(pathToFileURL(${JSON.stringify(
+        path.join(staged.pluginRoot, 'lib', 'core', 'summarization', 'architectural-semantic-replay-artifact.js'),
+    )}).href);
+const payload = ${JSON.stringify(payload)};
+const rendered = await finalizedModule.renderFinalizedArchitecturalPayload(payload);
+const artifact = await replayModule.createArchitecturalSemanticReplayArtifact({
+  semanticPayload: payload,
+  canonicalOutput: rendered.output,
+  semanticPromptVersion: 2,
+  semanticRendererVersion: rendered.rendererVersion,
+});
+const replay = await replayModule.replayArchitecturalSemanticArtifact(artifact);
+console.log(JSON.stringify({ artifact, replay }));
+`, 'utf8');
+
+    const bunResult = spawnSync('bun', [helperPath], {
+        cwd: staged.tempRoot,
+        encoding: 'utf8',
+    });
+
+    assert.equal(bunResult.status, 0, bunResult.stderr || bunResult.stdout);
+    assert.deepEqual(JSON.parse(bunResult.stdout), nodeProjection);
+    assert.equal(nodeProjection.replay.canonicalOutput, nodeProjection.artifact.canonicalOutput);
+    assert.equal(nodeProjection.replay.artifactHash, nodeProjection.artifact.artifactHash);
+    assert.equal(nodeProjection.replay.sourceManifestSetHash, nodeProjection.artifact.sourceManifestSetHash);
 });
 
 test('packaged plugin smoke succeeds under Node from staged payload only', async () => {
