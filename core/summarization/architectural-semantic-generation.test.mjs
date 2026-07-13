@@ -55,11 +55,42 @@ test('generates deterministic canonical output through the semantic contract', a
     assert.match(captured.systemPrompt, /semantic JSON records/u);
     assert.match(captured.userPrompt, /"messageIds":\["msg_a","msg_b"\]/u);
     assert.equal(captured.requestOptions.structuredOutput.type, 'json_schema');
+    const sourceSchema = captured.requestOptions.structuredOutput.json_schema.schema.$defs.sourceEnvelope.properties;
+    assert.equal(sourceSchema.rangeStart.const, 10);
+    assert.equal(sourceSchema.rangeEnd.const, 11);
+    assert.deepEqual(sourceSchema.messageIds.const, ['msg_a', 'msg_b']);
     assert.equal(result.output.startsWith('[KEY]\n'), true);
     assert.equal(result.output.endsWith('===END==='), true);
     assert.deepEqual(result.replayMaterial.semanticPayload, payload());
     assert.equal(result.replayMaterial.canonicalOutput, result.output);
     assert.equal(result.replayMaterial.semanticRendererVersion, result.rendererVersion);
+});
+
+test('keeps baseline shards context-only while constraining the new persisted source envelope', async () => {
+    let captured;
+    const result = await generateArchitecturalSemanticShard(options({
+        context: {
+            startIndex: 10,
+            endIndex: 11,
+            messageIds: ['msg_a', 'msg_b'],
+            existingShards: [{
+                identifier: 'Memory Shard 0-9',
+                content: '[KEY]\nSources: Messages 0-9\n[TIMELINE]\n[S0:1] Baseline context\n===END===',
+            }],
+        },
+        callApi: async (_systemPrompt, userPrompt, requestOptions) => {
+            captured = { userPrompt, requestOptions };
+            return JSON.stringify(payload());
+        },
+    }));
+    const sourceSchema = captured.requestOptions.structuredOutput.json_schema.schema.$defs.sourceEnvelope.properties;
+
+    assert.match(captured.userPrompt, /BASELINE SHARDS/u);
+    assert.match(captured.userPrompt, /These are context only/u);
+    assert.equal(sourceSchema.rangeStart.const, 10);
+    assert.equal(sourceSchema.rangeEnd.const, 11);
+    assert.deepEqual(sourceSchema.messageIds.const, ['msg_a', 'msg_b']);
+    assert.deepEqual(result.replayMaterial.semanticPayload.source, payload().source);
 });
 
 test('rejects a semantic response that changes persisted source identity', async () => {

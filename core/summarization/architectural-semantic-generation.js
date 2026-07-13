@@ -188,7 +188,10 @@ export async function generateArchitecturalSemanticShard(options) {
     }
 
     const source = authoritativeSourceEnvelope(context);
-    const request = await createArchitecturalSemanticRequestDescriptor(requestDescriptorOptions);
+    const request = await createArchitecturalSemanticRequestDescriptor({
+        ...requestDescriptorOptions,
+        sourceEnvelope: source,
+    });
     const userPrompt = buildArchitecturalSemanticUserPrompt(chatText, context);
     const {
         parsed,

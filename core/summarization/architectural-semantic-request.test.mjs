@@ -72,6 +72,38 @@ test('assembles prompt, schema identity, and strict response format into one des
     });
 });
 
+test('constrains the response source envelope without mutating the normative schema', async () => {
+    const schema = {
+        ...validSchema(),
+        $defs: {
+            sourceEnvelope: {
+                type: 'object',
+                properties: {
+                    rangeStart: { type: 'integer', minimum: 0 },
+                    rangeEnd: { type: 'integer', minimum: 0 },
+                    messageIds: { type: 'array', minItems: 1, items: { type: 'string' } },
+                },
+            },
+        },
+    };
+    const original = structuredClone(schema);
+    const descriptor = await createArchitecturalSemanticRequestDescriptor({
+        schemaUrl: 'https://example.test/schema.json',
+        fetchImpl: async () => jsonResponse(schema),
+        sourceEnvelope: {
+            rangeStart: 25,
+            rangeEnd: 50,
+            messageIds: ['msg_25', 'msg_50'],
+        },
+    });
+    const sourceProperties = descriptor.structuredOutput.json_schema.schema.$defs.sourceEnvelope.properties;
+
+    assert.equal(sourceProperties.rangeStart.const, 25);
+    assert.equal(sourceProperties.rangeEnd.const, 50);
+    assert.deepEqual(sourceProperties.messageIds.const, ['msg_25', 'msg_50']);
+    assert.deepEqual(schema, original);
+});
+
 test('rejects unavailable and identity-mismatched schemas truthfully', async () => {
     await assert.rejects(
         () => loadArchitecturalIntermediateSchema({
