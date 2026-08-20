@@ -108,6 +108,17 @@ function makeBasePayload(overrides = {}) {
                 groundingAssessment: 'SUPPORTS',
             },
         ],
+        evidenceEnvelopeVersion: 1,
+        evidencePreviews: [
+            {
+                basisType: 'STRUCTURAL_RECORD',
+                basisRef: 'decision:architectural-sharder-fork',
+                previewKind: 'STRUCTURAL_FIELDS',
+                sourceLabel: 'Architectural sharder fork decision record',
+                sourceRevisionIdentity: { recordVersion: 1, recordHash: 'sha256:decision-fork' },
+                previewContent: { fields: [{ label: 'Decision', value: 'Structural grounding for this proposal.' }] },
+            },
+        ],
         now: Date.parse('2026-07-09T11:00:00.000Z'),
         ...overrides,
     };

@@ -264,6 +264,25 @@ function makePackagedPublicationPayload(overrides = {}) {
                 groundingAssessment: 'SUPPORTS',
             },
         ],
+        evidenceEnvelopeVersion: 1,
+        evidencePreviews: [
+            {
+                basisType: 'STRUCTURAL_RECORD',
+                basisRef: 'decision:packaged-publication-proof',
+                previewKind: 'STRUCTURAL_FIELDS',
+                sourceLabel: 'Packaged publication decision record',
+                sourceRevisionIdentity: { recordVersion: 1, recordHash: 'sha256:packaged-publication-proof' },
+                previewContent: { fields: [{ label: 'Decision', value: 'Structural grounding for this proposal.' }] },
+            },
+            {
+                basisType: 'SOURCE_OCCURRENCE',
+                basisRef: 'msg_packagedpublication0000000000',
+                previewKind: 'MESSAGE_EXCERPT',
+                sourceLabel: 'Jeep, packaged publication proof, June 2026',
+                messageRevisionHash: 'sha256:msg-packaged-publication',
+                previewContent: { text: 'Jeep established primary architectural authority over the packaged publication path.' },
+            },
+        ],
         now: Date.parse('2026-06-26T01:00:00.000Z'),
         ...overrides,
     };
@@ -687,6 +706,17 @@ const payload = {
       speakerEntityId: 'user:Chris',
       groundingRole: 'SUPPORTING',
       groundingAssessment: 'SUPPORTS',
+    },
+  ],
+  evidenceEnvelopeVersion: 1,
+  evidencePreviews: [
+    {
+      basisType: 'STRUCTURAL_RECORD',
+      basisRef: 'decision:packaged-publication-proof',
+      previewKind: 'STRUCTURAL_FIELDS',
+      sourceLabel: 'Packaged publication decision record',
+      sourceRevisionIdentity: { recordVersion: 1, recordHash: 'sha256:packaged-publication-proof' },
+      previewContent: { fields: [{ label: 'Decision', value: 'Structural grounding for this proposal.' }] },
     },
   ],
   now: Date.parse('2026-06-26T01:01:00.000Z'),
