@@ -17,10 +17,10 @@ import {
  */
 function applyLivePreview(prop, value) {
     const targetSelectors = [
-        '#summary-sharder-settings',
-        '#summary-sharder-panel',
-        '.ss-modal',
-        '[class*="ss-"][class*="-modal"]'
+        '#shardwright-settings',
+        '#shardwright-panel',
+        '.shardwright-modal',
+        '[class*="shardwright-"][class*="-modal"]'
     ];
 
     const shouldRemove = value === null || value === undefined || value === '';
@@ -37,7 +37,7 @@ function applyLivePreview(prop, value) {
 
     // Also apply to popup wrappers that contain our modals (for popup-controls buttons)
     document.querySelectorAll('.popup').forEach(popup => {
-        if (popup.querySelector('[class*="ss-"][class*="-modal"]')) {
+        if (popup.querySelector('[class*="shardwright-"][class*="-modal"]')) {
             if (shouldRemove) {
                 popup.style.removeProperty(prop);
             } else {
@@ -97,79 +97,79 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
 
     // Group colors by category for better UX
     const colorGroups = {
-        'Primary Colors': ['--ss-primary', '--ss-primary-hover', '--ss-primary-active'],
-        Backgrounds: ['--ss-bg-primary', '--ss-bg-secondary', '--ss-bg-tertiary', '--ss-bg-input'],
-        Text: ['--ss-text-primary', '--ss-text-secondary', '--ss-text-muted', '--ss-text-hint'],
-        Borders: ['--ss-border', '--ss-border-focus'],
-        Status: ['--ss-success', '--ss-warning', '--ss-error', '--ss-info'],
-        Accents: ['--ss-nsfw-accent', '--ss-highlight', '--ss-quote'],
-        Buttons: ['--ss-rescue-bg', '--ss-rescue-bg-hover', '--ss-stop-hover'],
-        Effects: ['--ss-shadow', '--ss-shadow-lg', '--ss-overlay-bg', '--ss-focus-glow', '--ss-transition'],
+        'Primary Colors': ['--shardwright-primary', '--shardwright-primary-hover', '--shardwright-primary-active'],
+        Backgrounds: ['--shardwright-bg-primary', '--shardwright-bg-secondary', '--shardwright-bg-tertiary', '--shardwright-bg-input'],
+        Text: ['--shardwright-text-primary', '--shardwright-text-secondary', '--shardwright-text-muted', '--shardwright-text-hint'],
+        Borders: ['--shardwright-border', '--shardwright-border-focus'],
+        Status: ['--shardwright-success', '--shardwright-warning', '--shardwright-error', '--shardwright-info'],
+        Accents: ['--shardwright-nsfw-accent', '--shardwright-highlight', '--shardwright-quote'],
+        Buttons: ['--shardwright-rescue-bg', '--shardwright-rescue-bg-hover', '--shardwright-stop-hover'],
+        Effects: ['--shardwright-shadow', '--shardwright-shadow-lg', '--shardwright-overlay-bg', '--shardwright-focus-glow', '--shardwright-transition'],
     };
 
     const PROP_LABELS = {
         // Primary Colors
-        '--ss-primary': 'Accent Color',
-        '--ss-primary-hover': 'Accent Hover',
-        '--ss-primary-active': 'Accent Pressed',
+        '--shardwright-primary': 'Accent Color',
+        '--shardwright-primary-hover': 'Accent Hover',
+        '--shardwright-primary-active': 'Accent Pressed',
         // Backgrounds
-        '--ss-bg-primary': 'Modal & Panel Background',
-        '--ss-bg-secondary': 'Section & Card Background',
-        '--ss-bg-tertiary': 'Inner Content Background',
-        '--ss-bg-input': 'Input Field Background',
+        '--shardwright-bg-primary': 'Modal & Panel Background',
+        '--shardwright-bg-secondary': 'Section & Card Background',
+        '--shardwright-bg-tertiary': 'Inner Content Background',
+        '--shardwright-bg-input': 'Input Field Background',
         // Borders
-        '--ss-border': 'Border Color',
-        '--ss-border-focus': 'Focused Border Color',
+        '--shardwright-border': 'Border Color',
+        '--shardwright-border-focus': 'Focused Border Color',
         // Status
-        '--ss-success': 'Success',
-        '--ss-warning': 'Warning',
-        '--ss-error': 'Error',
-        '--ss-info': 'Info',
+        '--shardwright-success': 'Success',
+        '--shardwright-warning': 'Warning',
+        '--shardwright-error': 'Error',
+        '--shardwright-info': 'Info',
         // Accents
-        '--ss-nsfw-accent': 'NSFW Accent',
-        '--ss-highlight': 'Hover Highlight',
-        '--ss-quote': 'Quote & Dialogue',
+        '--shardwright-nsfw-accent': 'NSFW Accent',
+        '--shardwright-highlight': 'Hover Highlight',
+        '--shardwright-quote': 'Quote & Dialogue',
         // Buttons
-        '--ss-rescue-bg': 'Rescue Button',
-        '--ss-rescue-bg-hover': 'Rescue Button Hover',
-        '--ss-stop-hover': 'Stop Button Hover',
+        '--shardwright-rescue-bg': 'Rescue Button',
+        '--shardwright-rescue-bg-hover': 'Rescue Button Hover',
+        '--shardwright-stop-hover': 'Stop Button Hover',
         // Effects
-        '--ss-shadow': 'Card Shadow',
-        '--ss-shadow-lg': 'Modal Shadow',
-        '--ss-overlay-bg': 'Overlay Backdrop',
-        '--ss-focus-glow': 'Focus Glow',
-        '--ss-transition': 'Transition Speed',
+        '--shardwright-shadow': 'Card Shadow',
+        '--shardwright-shadow-lg': 'Modal Shadow',
+        '--shardwright-overlay-bg': 'Overlay Backdrop',
+        '--shardwright-focus-glow': 'Focus Glow',
+        '--shardwright-transition': 'Transition Speed',
     };
 
     const PROP_DESCS = {
-        '--ss-primary': 'Main accent used on buttons, active tabs, checkboxes, and highlights.',
-        '--ss-primary-hover': 'Accent color when hovering primary buttons.',
-        '--ss-primary-active': 'Accent color when pressing primary buttons.',
-        '--ss-bg-primary': 'Outermost background for modals, settings panel, and FAB.',
-        '--ss-bg-secondary': 'Background for sections, cards, and panels inside modals.',
-        '--ss-bg-tertiary': 'Deepest inset layer - accordion content, scrollbar track, inner lists.',
-        '--ss-bg-input': 'Background for text inputs, textareas, selects, and dropdowns.',
-        '--ss-border': 'Default border for panels, inputs, dividers, and scrollbar thumb.',
-        '--ss-border-focus': 'Border color when an input or dropdown is focused.',
-        '--ss-success': 'Active/selected states, success badges, and confirmations.',
-        '--ss-warning': 'Summarized message borders, warning badges, and caution indicators.',
-        '--ss-error': 'Error text, missing status indicators, and destructive actions.',
-        '--ss-info': 'Informational badges and built-in theme indicators.',
-        '--ss-nsfw-accent': 'NSFW badge, section borders, and warning text color.',
-        '--ss-highlight': 'Background tint on hovered items, cards, and dropdown options.',
-        '--ss-quote': 'Quote/dialogue text color and scene badge styling.',
-        '--ss-rescue-bg': 'Background for message rescue utility buttons.',
-        '--ss-rescue-bg-hover': 'Hover state for rescue buttons.',
-        '--ss-stop-hover': 'Hover state for the stop/cancel button.',
-        '--ss-shadow': 'Small box shadow on cards and interactive elements.',
-        '--ss-shadow-lg': 'Larger shadow on modals and popup overlays.',
-        '--ss-overlay-bg': 'Page-dimming backdrop behind open modals.',
-        '--ss-focus-glow': 'Glow ring around focused search inputs.',
-        '--ss-transition': 'Duration/easing for all hover and state animations (e.g. "0.2s ease").',
+        '--shardwright-primary': 'Main accent used on buttons, active tabs, checkboxes, and highlights.',
+        '--shardwright-primary-hover': 'Accent color when hovering primary buttons.',
+        '--shardwright-primary-active': 'Accent color when pressing primary buttons.',
+        '--shardwright-bg-primary': 'Outermost background for modals, settings panel, and FAB.',
+        '--shardwright-bg-secondary': 'Background for sections, cards, and panels inside modals.',
+        '--shardwright-bg-tertiary': 'Deepest inset layer - accordion content, scrollbar track, inner lists.',
+        '--shardwright-bg-input': 'Background for text inputs, textareas, selects, and dropdowns.',
+        '--shardwright-border': 'Default border for panels, inputs, dividers, and scrollbar thumb.',
+        '--shardwright-border-focus': 'Border color when an input or dropdown is focused.',
+        '--shardwright-success': 'Active/selected states, success badges, and confirmations.',
+        '--shardwright-warning': 'Summarized message borders, warning badges, and caution indicators.',
+        '--shardwright-error': 'Error text, missing status indicators, and destructive actions.',
+        '--shardwright-info': 'Informational badges and built-in theme indicators.',
+        '--shardwright-nsfw-accent': 'NSFW badge, section borders, and warning text color.',
+        '--shardwright-highlight': 'Background tint on hovered items, cards, and dropdown options.',
+        '--shardwright-quote': 'Quote/dialogue text color and scene badge styling.',
+        '--shardwright-rescue-bg': 'Background for message rescue utility buttons.',
+        '--shardwright-rescue-bg-hover': 'Hover state for rescue buttons.',
+        '--shardwright-stop-hover': 'Hover state for the stop/cancel button.',
+        '--shardwright-shadow': 'Small box shadow on cards and interactive elements.',
+        '--shardwright-shadow-lg': 'Larger shadow on modals and popup overlays.',
+        '--shardwright-overlay-bg': 'Page-dimming backdrop behind open modals.',
+        '--shardwright-focus-glow': 'Glow ring around focused search inputs.',
+        '--shardwright-transition': 'Duration/easing for all hover and state animations (e.g. "0.2s ease").',
     };
 
     const formatPropName = (prop) => PROP_LABELS[prop]
-        || prop.replace('--ss-', '').replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        || prop.replace('--shardwright-', '').replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
     // Helper to check if value is a color (not a CSS variable or complex value)
     const isSimpleColor = (value) => {
@@ -225,9 +225,9 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
      */
     const buildColorPickerHtml = (prop, value) => {
         const { hex, alpha } = parseColorToHexAlpha(value);
-        return `<input type="color" class="ss-color-picker" data-prop="${prop}" value="${hex}">` +
-            `<input type="range" class="ss-alpha-slider" data-prop="${prop}" min="0" max="1" step="0.01" value="${alpha}">` +
-            `<span class="ss-alpha-label" data-prop="${prop}">${Math.round(alpha * 100)}%</span>`;
+        return `<input type="color" class="shardwright-color-picker" data-prop="${prop}" value="${hex}">` +
+            `<input type="range" class="shardwright-alpha-slider" data-prop="${prop}" min="0" max="1" step="0.01" value="${alpha}">` +
+            `<span class="shardwright-alpha-label" data-prop="${prop}">${Math.round(alpha * 100)}%</span>`;
     };
 
     // Helper to check if bg-primary uses SillyTavern default
@@ -235,7 +235,7 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
         return value === 'var(--SmartThemeBlurTintColor)';
     };
 
-    const SHADOW_PROPS = new Set(['--ss-shadow', '--ss-shadow-lg']);
+    const SHADOW_PROPS = new Set(['--shardwright-shadow', '--shardwright-shadow-lg']);
 
     const splitShadowLayers = (shadowValue) => {
         if (!shadowValue || typeof shadowValue !== 'string') return [];
@@ -331,10 +331,10 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
     const buildShadowColorPickerHtml = (prop, layerIndex, colorValue) => {
         const { hex, alpha } = parseColorToHexAlpha(colorValue);
         return `
-            <input type="color" class="ss-color-picker ss-shadow-color-picker" data-prop="${prop}" data-layer="${layerIndex}" value="${hex}">
-            <input type="range" class="ss-alpha-slider ss-shadow-alpha-slider" data-prop="${prop}" data-layer="${layerIndex}" min="0" max="1" step="0.01" value="${alpha}">
-            <span class="ss-alpha-label ss-shadow-alpha-label" data-prop="${prop}" data-layer="${layerIndex}">${Math.round(alpha * 100)}%</span>
-            <input type="text" class="ss-shadow-color-text" data-prop="${prop}" data-layer="${layerIndex}" value="${escapeHtml(colorValue)}" placeholder="rgba(0, 0, 0, 0.5)">
+            <input type="color" class="shardwright-color-picker shardwright-shadow-color-picker" data-prop="${prop}" data-layer="${layerIndex}" value="${hex}">
+            <input type="range" class="shardwright-alpha-slider shardwright-shadow-alpha-slider" data-prop="${prop}" data-layer="${layerIndex}" min="0" max="1" step="0.01" value="${alpha}">
+            <span class="shardwright-alpha-label shardwright-shadow-alpha-label" data-prop="${prop}" data-layer="${layerIndex}">${Math.round(alpha * 100)}%</span>
+            <input type="text" class="shardwright-shadow-color-text" data-prop="${prop}" data-layer="${layerIndex}" value="${escapeHtml(colorValue)}" placeholder="rgba(0, 0, 0, 0.5)">
         `;
     };
 
@@ -342,49 +342,49 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
         const [layer1, layer2] = parseShadowValue(value);
 
         const buildLayerHtml = (layer, layerIndex) => `
-            <div class="ss-shadow-layer" data-prop="${prop}" data-layer="${layerIndex}">
-                <div class="ss-shadow-layer-head">
-                    <span class="ss-shadow-layer-title">Layer ${layerIndex + 1}</span>
-                    <label class="ss-shadow-inset-toggle">
-                        <input type="checkbox" class="ss-shadow-inset-input" data-prop="${prop}" data-layer="${layerIndex}" ${layer.inset ? 'checked' : ''}>
+            <div class="shardwright-shadow-layer" data-prop="${prop}" data-layer="${layerIndex}">
+                <div class="shardwright-shadow-layer-head">
+                    <span class="shardwright-shadow-layer-title">Layer ${layerIndex + 1}</span>
+                    <label class="shardwright-shadow-inset-toggle">
+                        <input type="checkbox" class="shardwright-shadow-inset-input" data-prop="${prop}" data-layer="${layerIndex}" ${layer.inset ? 'checked' : ''}>
                         Inset
                     </label>
                 </div>
-                <div class="ss-shadow-metrics">
-                    <label class="ss-shadow-metric-field">
+                <div class="shardwright-shadow-metrics">
+                    <label class="shardwright-shadow-metric-field">
                         <span>X</span>
-                        <input type="number" class="ss-shadow-metric" data-prop="${prop}" data-layer="${layerIndex}" data-metric="x" value="${normalizeShadowNumber(layer.x)}" step="1">
+                        <input type="number" class="shardwright-shadow-metric" data-prop="${prop}" data-layer="${layerIndex}" data-metric="x" value="${normalizeShadowNumber(layer.x)}" step="1">
                     </label>
-                    <label class="ss-shadow-metric-field">
+                    <label class="shardwright-shadow-metric-field">
                         <span>Y</span>
-                        <input type="number" class="ss-shadow-metric" data-prop="${prop}" data-layer="${layerIndex}" data-metric="y" value="${normalizeShadowNumber(layer.y)}" step="1">
+                        <input type="number" class="shardwright-shadow-metric" data-prop="${prop}" data-layer="${layerIndex}" data-metric="y" value="${normalizeShadowNumber(layer.y)}" step="1">
                     </label>
-                    <label class="ss-shadow-metric-field">
+                    <label class="shardwright-shadow-metric-field">
                         <span>Blur</span>
-                        <input type="number" class="ss-shadow-metric" data-prop="${prop}" data-layer="${layerIndex}" data-metric="blur" value="${normalizeShadowNumber(layer.blur)}" min="0" step="1">
+                        <input type="number" class="shardwright-shadow-metric" data-prop="${prop}" data-layer="${layerIndex}" data-metric="blur" value="${normalizeShadowNumber(layer.blur)}" min="0" step="1">
                     </label>
-                    <label class="ss-shadow-metric-field">
+                    <label class="shardwright-shadow-metric-field">
                         <span>Spread</span>
-                        <input type="number" class="ss-shadow-metric" data-prop="${prop}" data-layer="${layerIndex}" data-metric="spread" value="${normalizeShadowNumber(layer.spread)}" step="1">
+                        <input type="number" class="shardwright-shadow-metric" data-prop="${prop}" data-layer="${layerIndex}" data-metric="spread" value="${normalizeShadowNumber(layer.spread)}" step="1">
                     </label>
                 </div>
-                <div class="ss-color-inputs ss-shadow-color-inputs">
+                <div class="shardwright-color-inputs shardwright-shadow-color-inputs">
                     ${buildShadowColorPickerHtml(prop, layerIndex, layer.color)}
                 </div>
             </div>
         `;
 
         return `
-            <div class="ss-color-row ss-shadow-row" data-prop="${prop}">
+            <div class="shardwright-color-row shardwright-shadow-row" data-prop="${prop}">
                 <label title="${prop}">${formatPropName(prop)}</label>
-                ${desc ? `<div class="ss-color-desc">${escapeHtml(desc)}</div>` : ''}
-                <div class="ss-shadow-editor" data-prop="${prop}">
+                ${desc ? `<div class="shardwright-color-desc">${escapeHtml(desc)}</div>` : ''}
+                <div class="shardwright-shadow-editor" data-prop="${prop}">
                     ${buildLayerHtml(layer1, 0)}
                     ${buildLayerHtml(layer2, 1)}
-                    <div class="ss-color-row ss-shadow-raw-row">
+                    <div class="shardwright-color-row shardwright-shadow-raw-row">
                         <label title="${prop}-raw">Raw CSS</label>
-                        <div class="ss-color-inputs">
-                            <input type="text" class="ss-color-text ss-shadow-raw-text" data-prop="${prop}" value="${escapeHtml(value || '')}" placeholder="0 4px 16px rgba(0,0,0,0.8), 0 0 30px rgba(...)">
+                        <div class="shardwright-color-inputs">
+                            <input type="text" class="shardwright-color-text shardwright-shadow-raw-text" data-prop="${prop}" value="${escapeHtml(value || '')}" placeholder="0 4px 16px rgba(0,0,0,0.8), 0 0 30px rgba(...)">
                         </div>
                     </div>
                 </div>
@@ -413,9 +413,9 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
         {
             key: 'primary',
             title: 'Primary Text',
-            colorProp: '--ss-text-primary',
-            fontProp: '--ss-font-primary',
-            sizeProp: '--ss-font-size-primary',
+            colorProp: '--shardwright-text-primary',
+            fontProp: '--shardwright-font-primary',
+            sizeProp: '--shardwright-font-size-primary',
             desc: 'Used for most text, labels, and input text.',
             fontDesc: 'Font family for primary text.',
             sizeDesc: 'Font size for primary text.'
@@ -423,9 +423,9 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
         {
             key: 'secondary',
             title: 'Secondary Text',
-            colorProp: '--ss-text-secondary',
-            fontProp: '--ss-font-secondary',
-            sizeProp: '--ss-font-size-secondary',
+            colorProp: '--shardwright-text-secondary',
+            fontProp: '--shardwright-font-secondary',
+            sizeProp: '--shardwright-font-size-secondary',
             desc: 'Used for secondary labels and supporting UI text.',
             fontDesc: 'Font family for secondary text.',
             sizeDesc: 'Font size for secondary text.'
@@ -433,9 +433,9 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
         {
             key: 'muted',
             title: 'Muted Text',
-            colorProp: '--ss-text-muted',
-            fontProp: '--ss-font-muted',
-            sizeProp: '--ss-font-size-muted',
+            colorProp: '--shardwright-text-muted',
+            fontProp: '--shardwright-font-muted',
+            sizeProp: '--shardwright-font-size-muted',
             desc: 'Used for descriptions and less prominent text.',
             fontDesc: 'Font family for muted text.',
             sizeDesc: 'Font size for muted text.'
@@ -443,9 +443,9 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
         {
             key: 'hint',
             title: 'Hint Text',
-            colorProp: '--ss-text-hint',
-            fontProp: '--ss-font-hint',
-            sizeProp: '--ss-font-size-hint',
+            colorProp: '--shardwright-text-hint',
+            fontProp: '--shardwright-font-hint',
+            sizeProp: '--shardwright-font-size-hint',
             desc: 'Used for fine-print hints and helper notes.',
             fontDesc: 'Font family for hint text.',
             sizeDesc: 'Font size for hint text.'
@@ -466,31 +466,31 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
             const sizeVal = parsePx(theme.colors[g.sizeProp]);
 
             return `
-                <div class="ss-text-row-group" data-text-group="${g.key}">
-                    <div class="ss-text-group-title">${escapeHtml(g.title)}</div>
+                <div class="shardwright-text-row-group" data-text-group="${g.key}">
+                    <div class="shardwright-text-group-title">${escapeHtml(g.title)}</div>
 
-                    <div class="ss-color-row">
+                    <div class="shardwright-color-row">
                         <label title="${escapeHtml(g.colorProp)}">Color</label>
-                        <div class="ss-color-desc">${escapeHtml(g.desc)}</div>
-                        <div class="ss-color-inputs">
+                        <div class="shardwright-color-desc">${escapeHtml(g.desc)}</div>
+                        <div class="shardwright-color-inputs">
                             ${isColor ? buildColorPickerHtml(g.colorProp, colorVal) : ''}
-                            <input type="text" class="ss-color-text" data-prop="${g.colorProp}" value="${escapeHtml(colorVal)}" placeholder="${escapeHtml(g.colorProp)}">
+                            <input type="text" class="shardwright-color-text" data-prop="${g.colorProp}" value="${escapeHtml(colorVal)}" placeholder="${escapeHtml(g.colorProp)}">
                         </div>
                     </div>
 
-                    <div class="ss-color-row">
+                    <div class="shardwright-color-row">
                         <label title="${escapeHtml(g.fontProp)}">Font</label>
-                        <div class="ss-color-desc">${escapeHtml(g.fontDesc)}</div>
-                        <div class="ss-color-inputs">
-                            <input type="text" class="ss-typo-font" data-prop="${g.fontProp}" value="${escapeHtml(fontVal)}" placeholder="inherit / custom" autocomplete="off" spellcheck="false">
+                        <div class="shardwright-color-desc">${escapeHtml(g.fontDesc)}</div>
+                        <div class="shardwright-color-inputs">
+                            <input type="text" class="shardwright-typo-font" data-prop="${g.fontProp}" value="${escapeHtml(fontVal)}" placeholder="inherit / custom" autocomplete="off" spellcheck="false">
                         </div>
                     </div>
 
-                    <div class="ss-color-row">
+                    <div class="shardwright-color-row">
                         <label title="${escapeHtml(g.sizeProp)}">Size</label>
-                        <div class="ss-color-desc">${escapeHtml(g.sizeDesc)}</div>
-                        <div class="ss-color-inputs">
-                            <input type="number" class="ss-typo-size" data-prop="${g.sizeProp}" value="${escapeHtml(sizeVal)}" min="6" max="64" step="1" placeholder="inherit">
+                        <div class="shardwright-color-desc">${escapeHtml(g.sizeDesc)}</div>
+                        <div class="shardwright-color-inputs">
+                            <input type="number" class="shardwright-typo-size" data-prop="${g.sizeProp}" value="${escapeHtml(sizeVal)}" min="6" max="64" step="1" placeholder="inherit">
                         </div>
                     </div>
                 </div>
@@ -505,7 +505,7 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
 
         if (groupName === 'Text') {
             inputsHtml = `
-                <div class="ss-text-row-section">
+                <div class="shardwright-text-row-section">
                     ${buildTextGroupEditor()}
                 </div>
             `;
@@ -520,33 +520,33 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
                     continue;
                 }
 
-                // Special handling for --ss-bg-primary
-                if (prop === '--ss-bg-primary') {
+                // Special handling for --shardwright-bg-primary
+                if (prop === '--shardwright-bg-primary') {
                     const isSTDefault = isBgPrimaryST(value);
                     inputsHtml += `
-                        <div class="ss-color-row ss-bg-primary-row">
+                        <div class="shardwright-color-row shardwright-bg-primary-row">
                             <label title="${prop}">${formatPropName(prop)}</label>
-                            ${desc ? `<div class="ss-color-desc">${escapeHtml(desc)}</div>` : ''}
-                            <div class="ss-bg-primary-controls">
-                                <select class="ss-bg-primary-select" data-prop="${prop}">
+                            ${desc ? `<div class="shardwright-color-desc">${escapeHtml(desc)}</div>` : ''}
+                            <div class="shardwright-bg-primary-controls">
+                                <select class="shardwright-bg-primary-select" data-prop="${prop}">
                                     <option value="st-default" ${isSTDefault ? 'selected' : ''}>SillyTavern Default</option>
                                     <option value="custom" ${!isSTDefault ? 'selected' : ''}>Custom</option>
                                 </select>
-                                <div class="ss-bg-primary-custom" style="display: ${isSTDefault ? 'none' : 'flex'}; align-items: center; gap: 6px; margin-top: 6px;">
+                                <div class="shardwright-bg-primary-custom" style="display: ${isSTDefault ? 'none' : 'flex'}; align-items: center; gap: 6px; margin-top: 6px;">
                                     ${!isSTDefault && isColor ? buildColorPickerHtml(prop, value) : ''}
-                                    <input type="text" class="ss-color-text" data-prop="${prop}" value="${isSTDefault ? '' : value}" placeholder="e.g. rgba(0,0,0,0.3)">
+                                    <input type="text" class="shardwright-color-text" data-prop="${prop}" value="${isSTDefault ? '' : value}" placeholder="e.g. rgba(0,0,0,0.3)">
                                 </div>
                             </div>
                         </div>
                     `;
                 } else {
                     inputsHtml += `
-                        <div class="ss-color-row">
+                        <div class="shardwright-color-row">
                             <label title="${prop}">${formatPropName(prop)}</label>
-                            ${desc ? `<div class="ss-color-desc">${escapeHtml(desc)}</div>` : ''}
-                            <div class="ss-color-inputs">
+                            ${desc ? `<div class="shardwright-color-desc">${escapeHtml(desc)}</div>` : ''}
+                            <div class="shardwright-color-inputs">
                                 ${isColor ? buildColorPickerHtml(prop, value) : ''}
-                                <input type="text" class="ss-color-text" data-prop="${prop}" value="${value}" placeholder="${prop}">
+                                <input type="text" class="shardwright-color-text" data-prop="${prop}" value="${value}" placeholder="${prop}">
                             </div>
                         </div>
                     `;
@@ -555,7 +555,7 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
         }
 
         groupsHtml += `
-            <div class="ss-color-group">
+            <div class="shardwright-color-group">
                 <h4>${groupName}</h4>
                 ${inputsHtml}
             </div>
@@ -563,34 +563,34 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
     }
 
     const editorHtml = `
-        <div class="ss-color-editor-modal ss-modal">
-            <div class="ss-editor-header">
+        <div class="shardwright-color-editor-modal shardwright-modal">
+            <div class="shardwright-editor-header">
                 <h3>🎨 Edit Theme: ${escapeHtml(theme.name)}</h3>
                 <p>Modify colors below. Changes are previewed live.</p>
             </div>
 
-            <div class="ss-editor-meta">
-                <div class="ss-meta-row">
+            <div class="shardwright-editor-meta">
+                <div class="shardwright-meta-row">
                     <label>Theme Name:</label>
-                    <input type="text" id="ss-edit-theme-name" value="${escapeHtml(theme.name)}">
+                    <input type="text" id="shardwright-edit-theme-name" value="${escapeHtml(theme.name)}">
                 </div>
-                <div class="ss-meta-row">
+                <div class="shardwright-meta-row">
                     <label>Description:</label>
-                    <input type="text" id="ss-edit-theme-desc" value="${escapeHtml(theme.description || '')}">
+                    <input type="text" id="shardwright-edit-theme-desc" value="${escapeHtml(theme.description || '')}">
                 </div>
-                <div class="ss-meta-row">
+                <div class="shardwright-meta-row">
                     <label>Preview Emoji:</label>
-                    <input type="text" id="ss-edit-theme-emoji" value="${escapeHtml(theme.preview || '🎨')}" maxlength="2">
+                    <input type="text" id="shardwright-edit-theme-emoji" value="${escapeHtml(theme.preview || '🎨')}" maxlength="2">
                 </div>
             </div>
 
-            <div class="ss-color-groups">
+            <div class="shardwright-color-groups">
                 ${groupsHtml}
             </div>
 
-            <div class="ss-editor-extra">
+            <div class="shardwright-editor-extra">
                 <h4>Extra CSS (Advanced)</h4>
-                <textarea id="ss-edit-extra-css" rows="4" placeholder="/* Custom CSS rules */">${escapeHtml(theme.extraStyles || '')}</textarea>
+                <textarea id="shardwright-edit-extra-css" rows="4" placeholder="/* Custom CSS rules */">${escapeHtml(theme.extraStyles || '')}</textarea>
             </div>
         </div>
     `;
@@ -609,18 +609,18 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
     const showPromise = popup.show();
 
     // Wait for DOM to be ready
-    await waitForElement('.ss-color-editor-modal');
+    await waitForElement('.shardwright-color-editor-modal');
 
-    const modal = document.querySelector('.ss-color-editor-modal');
+    const modal = document.querySelector('.shardwright-color-editor-modal');
     if (!modal) return;
     const popupControls = modal.closest('.popup')?.querySelector('.popup-controls');
 
     if (popupControls) {
         const footerActions = document.createElement('div');
-        footerActions.className = 'ss-editor-footer-actions';
+        footerActions.className = 'shardwright-editor-footer-actions';
         footerActions.innerHTML = `
-            <button class="menu_button ss-reset-colors-btn">Reset to Saved</button>
-            <button class="menu_button ss-save-theme-btn">💾 Save Changes</button>
+            <button class="menu_button shardwright-reset-colors-btn">Reset to Saved</button>
+            <button class="menu_button shardwright-save-theme-btn">💾 Save Changes</button>
         `;
         popupControls.insertBefore(footerActions, popupControls.firstChild);
     }
@@ -629,7 +629,7 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
     const positionRoot = popupRoot || document.body;
 
     const fontSuggest = document.createElement('div');
-    fontSuggest.className = 'ss-font-suggest';
+    fontSuggest.className = 'shardwright-font-suggest';
     fontSuggest.hidden = true;
     fontSuggest.style.position = popupRoot ? 'absolute' : 'fixed';
     positionRoot.appendChild(fontSuggest);
@@ -639,16 +639,16 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
     let activeFontOptionIndex = -1;
 
     const setShadowLayerControls = (prop, layerIndex, layerState) => {
-        const layerSelector = `.ss-shadow-layer[data-prop="${prop}"][data-layer="${layerIndex}"]`;
-        const xInput = modal.querySelector(`${layerSelector} .ss-shadow-metric[data-metric="x"]`);
-        const yInput = modal.querySelector(`${layerSelector} .ss-shadow-metric[data-metric="y"]`);
-        const blurInput = modal.querySelector(`${layerSelector} .ss-shadow-metric[data-metric="blur"]`);
-        const spreadInput = modal.querySelector(`${layerSelector} .ss-shadow-metric[data-metric="spread"]`);
-        const insetInput = modal.querySelector(`${layerSelector} .ss-shadow-inset-input`);
-        const colorPicker = modal.querySelector(`.ss-shadow-color-picker[data-prop="${prop}"][data-layer="${layerIndex}"]`);
-        const alphaSlider = modal.querySelector(`.ss-shadow-alpha-slider[data-prop="${prop}"][data-layer="${layerIndex}"]`);
-        const alphaLabel = modal.querySelector(`.ss-shadow-alpha-label[data-prop="${prop}"][data-layer="${layerIndex}"]`);
-        const colorText = modal.querySelector(`.ss-shadow-color-text[data-prop="${prop}"][data-layer="${layerIndex}"]`);
+        const layerSelector = `.shardwright-shadow-layer[data-prop="${prop}"][data-layer="${layerIndex}"]`;
+        const xInput = modal.querySelector(`${layerSelector} .shardwright-shadow-metric[data-metric="x"]`);
+        const yInput = modal.querySelector(`${layerSelector} .shardwright-shadow-metric[data-metric="y"]`);
+        const blurInput = modal.querySelector(`${layerSelector} .shardwright-shadow-metric[data-metric="blur"]`);
+        const spreadInput = modal.querySelector(`${layerSelector} .shardwright-shadow-metric[data-metric="spread"]`);
+        const insetInput = modal.querySelector(`${layerSelector} .shardwright-shadow-inset-input`);
+        const colorPicker = modal.querySelector(`.shardwright-shadow-color-picker[data-prop="${prop}"][data-layer="${layerIndex}"]`);
+        const alphaSlider = modal.querySelector(`.shardwright-shadow-alpha-slider[data-prop="${prop}"][data-layer="${layerIndex}"]`);
+        const alphaLabel = modal.querySelector(`.shardwright-shadow-alpha-label[data-prop="${prop}"][data-layer="${layerIndex}"]`);
+        const colorText = modal.querySelector(`.shardwright-shadow-color-text[data-prop="${prop}"][data-layer="${layerIndex}"]`);
 
         if (xInput) xInput.value = normalizeShadowNumber(layerState.x);
         if (yInput) yInput.value = normalizeShadowNumber(layerState.y);
@@ -667,13 +667,13 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
 
     const readShadowLayerControls = (prop, layerIndex) => {
         const fallback = getDefaultShadowLayer(layerIndex);
-        const layerSelector = `.ss-shadow-layer[data-prop="${prop}"][data-layer="${layerIndex}"]`;
-        const xInput = modal.querySelector(`${layerSelector} .ss-shadow-metric[data-metric="x"]`);
-        const yInput = modal.querySelector(`${layerSelector} .ss-shadow-metric[data-metric="y"]`);
-        const blurInput = modal.querySelector(`${layerSelector} .ss-shadow-metric[data-metric="blur"]`);
-        const spreadInput = modal.querySelector(`${layerSelector} .ss-shadow-metric[data-metric="spread"]`);
-        const insetInput = modal.querySelector(`${layerSelector} .ss-shadow-inset-input`);
-        const colorText = modal.querySelector(`.ss-shadow-color-text[data-prop="${prop}"][data-layer="${layerIndex}"]`);
+        const layerSelector = `.shardwright-shadow-layer[data-prop="${prop}"][data-layer="${layerIndex}"]`;
+        const xInput = modal.querySelector(`${layerSelector} .shardwright-shadow-metric[data-metric="x"]`);
+        const yInput = modal.querySelector(`${layerSelector} .shardwright-shadow-metric[data-metric="y"]`);
+        const blurInput = modal.querySelector(`${layerSelector} .shardwright-shadow-metric[data-metric="blur"]`);
+        const spreadInput = modal.querySelector(`${layerSelector} .shardwright-shadow-metric[data-metric="spread"]`);
+        const insetInput = modal.querySelector(`${layerSelector} .shardwright-shadow-inset-input`);
+        const colorText = modal.querySelector(`.shardwright-shadow-color-text[data-prop="${prop}"][data-layer="${layerIndex}"]`);
         const colorValue = colorText?.value?.trim() || fallback.color;
 
         return {
@@ -687,7 +687,7 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
     };
 
     const syncShadowRawFromControls = (prop, shouldApply = true) => {
-        const rawInput = modal.querySelector(`.ss-shadow-raw-text[data-prop="${prop}"]`);
+        const rawInput = modal.querySelector(`.shardwright-shadow-raw-text[data-prop="${prop}"]`);
         const layerA = readShadowLayerControls(prop, 0);
         const layerB = readShadowLayerControls(prop, 1);
         const serialized = serializeShadowLayers(layerA, layerB);
@@ -705,10 +705,10 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
     };
 
     const syncShadowPickerToText = (prop, layerIndex) => {
-        const picker = modal.querySelector(`.ss-shadow-color-picker[data-prop="${prop}"][data-layer="${layerIndex}"]`);
-        const slider = modal.querySelector(`.ss-shadow-alpha-slider[data-prop="${prop}"][data-layer="${layerIndex}"]`);
-        const label = modal.querySelector(`.ss-shadow-alpha-label[data-prop="${prop}"][data-layer="${layerIndex}"]`);
-        const textInput = modal.querySelector(`.ss-shadow-color-text[data-prop="${prop}"][data-layer="${layerIndex}"]`);
+        const picker = modal.querySelector(`.shardwright-shadow-color-picker[data-prop="${prop}"][data-layer="${layerIndex}"]`);
+        const slider = modal.querySelector(`.shardwright-shadow-alpha-slider[data-prop="${prop}"][data-layer="${layerIndex}"]`);
+        const label = modal.querySelector(`.shardwright-shadow-alpha-label[data-prop="${prop}"][data-layer="${layerIndex}"]`);
+        const textInput = modal.querySelector(`.shardwright-shadow-color-text[data-prop="${prop}"][data-layer="${layerIndex}"]`);
         if (!picker || !slider || !textInput) return;
         const rgba = hexAlphaToRgba(picker.value, parseFloat(slider.value));
         textInput.value = rgba;
@@ -717,10 +717,10 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
     };
 
     const syncPickerToText = (prop) => {
-        const picker = modal.querySelector(`.ss-color-picker[data-prop="${prop}"]:not(.ss-shadow-color-picker)`);
-        const slider = modal.querySelector(`.ss-alpha-slider[data-prop="${prop}"]:not(.ss-shadow-alpha-slider)`);
-        const label = modal.querySelector(`.ss-alpha-label[data-prop="${prop}"]:not(.ss-shadow-alpha-label)`);
-        const textInput = modal.querySelector(`.ss-color-text[data-prop="${prop}"]`);
+        const picker = modal.querySelector(`.shardwright-color-picker[data-prop="${prop}"]:not(.shardwright-shadow-color-picker)`);
+        const slider = modal.querySelector(`.shardwright-alpha-slider[data-prop="${prop}"]:not(.shardwright-shadow-alpha-slider)`);
+        const label = modal.querySelector(`.shardwright-alpha-label[data-prop="${prop}"]:not(.shardwright-shadow-alpha-label)`);
+        const textInput = modal.querySelector(`.shardwright-color-text[data-prop="${prop}"]`);
         if (!picker || !slider || !textInput) return;
         const rgba = hexAlphaToRgba(picker.value, parseFloat(slider.value));
         textInput.value = rgba;
@@ -788,7 +788,7 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
         filteredFontOptions = FONT_OPTIONS.filter(font => font.toLowerCase().includes(query));
 
         if (filteredFontOptions.length === 0) {
-            fontSuggest.innerHTML = '<div class="ss-font-suggest-empty">No matching fonts</div>';
+            fontSuggest.innerHTML = '<div class="shardwright-font-suggest-empty">No matching fonts</div>';
             activeFontOptionIndex = -1;
         } else {
             if (activeFontOptionIndex < 0 || activeFontOptionIndex >= filteredFontOptions.length) {
@@ -796,12 +796,12 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
             }
 
             fontSuggest.innerHTML = filteredFontOptions.map((font, index) => `
-                <button type="button" class="ss-font-suggest-item ${index === activeFontOptionIndex ? 'active' : ''}" data-font="${escapeHtml(font)}" data-index="${index}">
+                <button type="button" class="shardwright-font-suggest-item ${index === activeFontOptionIndex ? 'active' : ''}" data-font="${escapeHtml(font)}" data-index="${index}">
                     ${escapeHtml(font)}
                 </button>
             `).join('');
 
-            fontSuggest.querySelectorAll('.ss-font-suggest-item').forEach(item => {
+            fontSuggest.querySelectorAll('.shardwright-font-suggest-item').forEach(item => {
                 const font = item.dataset.font || '';
                 item.style.fontFamily = `"${font}", sans-serif`;
             });
@@ -832,36 +832,36 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
     });
 
     fontSuggest.addEventListener('mousedown', (event) => {
-        const item = event.target.closest('.ss-font-suggest-item');
+        const item = event.target.closest('.shardwright-font-suggest-item');
         if (!item) return;
         event.preventDefault();
         applyFontSuggestion(item.dataset.font || '');
     });
 
-    modal.querySelectorAll('.ss-color-picker:not(.ss-shadow-color-picker)').forEach(picker => {
+    modal.querySelectorAll('.shardwright-color-picker:not(.shardwright-shadow-color-picker)').forEach(picker => {
         picker.addEventListener('input', () => syncPickerToText(picker.dataset.prop));
     });
 
-    modal.querySelectorAll('.ss-alpha-slider:not(.ss-shadow-alpha-slider)').forEach(slider => {
+    modal.querySelectorAll('.shardwright-alpha-slider:not(.shardwright-shadow-alpha-slider)').forEach(slider => {
         slider.addEventListener('input', () => syncPickerToText(slider.dataset.prop));
     });
 
-    modal.querySelectorAll('.ss-shadow-color-picker').forEach(picker => {
+    modal.querySelectorAll('.shardwright-shadow-color-picker').forEach(picker => {
         picker.addEventListener('input', () => syncShadowPickerToText(picker.dataset.prop, Number(picker.dataset.layer)));
     });
 
-    modal.querySelectorAll('.ss-shadow-alpha-slider').forEach(slider => {
+    modal.querySelectorAll('.shardwright-shadow-alpha-slider').forEach(slider => {
         slider.addEventListener('input', () => syncShadowPickerToText(slider.dataset.prop, Number(slider.dataset.layer)));
     });
 
-    modal.querySelectorAll('.ss-shadow-color-text').forEach(input => {
+    modal.querySelectorAll('.shardwright-shadow-color-text').forEach(input => {
         input.addEventListener('input', (event) => {
             const prop = event.target.dataset.prop;
             const layerIndex = Number(event.target.dataset.layer);
             const value = event.target.value.trim();
-            const picker = modal.querySelector(`.ss-shadow-color-picker[data-prop="${prop}"][data-layer="${layerIndex}"]`);
-            const slider = modal.querySelector(`.ss-shadow-alpha-slider[data-prop="${prop}"][data-layer="${layerIndex}"]`);
-            const label = modal.querySelector(`.ss-shadow-alpha-label[data-prop="${prop}"][data-layer="${layerIndex}"]`);
+            const picker = modal.querySelector(`.shardwright-shadow-color-picker[data-prop="${prop}"][data-layer="${layerIndex}"]`);
+            const slider = modal.querySelector(`.shardwright-shadow-alpha-slider[data-prop="${prop}"][data-layer="${layerIndex}"]`);
+            const label = modal.querySelector(`.shardwright-shadow-alpha-label[data-prop="${prop}"][data-layer="${layerIndex}"]`);
 
             if (picker && slider && isSimpleColor(value)) {
                 const { hex, alpha } = parseColorToHexAlpha(value);
@@ -874,15 +874,15 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
         });
     });
 
-    modal.querySelectorAll('.ss-shadow-metric, .ss-shadow-inset-input').forEach(input => {
-        const eventName = input.classList.contains('ss-shadow-inset-input') ? 'change' : 'input';
+    modal.querySelectorAll('.shardwright-shadow-metric, .shardwright-shadow-inset-input').forEach(input => {
+        const eventName = input.classList.contains('shardwright-shadow-inset-input') ? 'change' : 'input';
         input.addEventListener(eventName, (event) => {
             const prop = event.target.dataset.prop;
             syncShadowRawFromControls(prop);
         });
     });
 
-    modal.querySelectorAll('.ss-shadow-raw-text').forEach(input => {
+    modal.querySelectorAll('.shardwright-shadow-raw-text').forEach(input => {
         input.addEventListener('input', (event) => {
             const prop = event.target.dataset.prop;
             const value = event.target.value;
@@ -892,13 +892,13 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
     });
 
     // bg-primary dropdown handler
-    modal.querySelector('.ss-bg-primary-select')?.addEventListener('change', (e) => {
-        const customDiv = modal.querySelector('.ss-bg-primary-custom');
-        const textInput = modal.querySelector('.ss-color-text[data-prop="--ss-bg-primary"]');
+    modal.querySelector('.shardwright-bg-primary-select')?.addEventListener('change', (e) => {
+        const customDiv = modal.querySelector('.shardwright-bg-primary-custom');
+        const textInput = modal.querySelector('.shardwright-color-text[data-prop="--shardwright-bg-primary"]');
         if (e.target.value === 'st-default') {
             if (customDiv) customDiv.style.display = 'none';
             if (textInput) textInput.value = 'var(--SmartThemeBlurTintColor)';
-            applyLivePreview('--ss-bg-primary', 'var(--SmartThemeBlurTintColor)');
+            applyLivePreview('--shardwright-bg-primary', 'var(--SmartThemeBlurTintColor)');
         } else {
             if (customDiv) customDiv.style.display = 'flex';
             if (textInput) textInput.value = '';
@@ -907,13 +907,13 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
     });
 
     // Live preview: text input changes -> sync back to picker + slider
-    modal.querySelectorAll('.ss-color-text:not(.ss-shadow-raw-text)').forEach(input => {
+    modal.querySelectorAll('.shardwright-color-text:not(.shardwright-shadow-raw-text)').forEach(input => {
         input.addEventListener('input', (e) => {
             const prop = e.target.dataset.prop;
             const value = e.target.value.trim();
-            const picker = modal.querySelector(`.ss-color-picker[data-prop="${prop}"]:not(.ss-shadow-color-picker)`);
-            const slider = modal.querySelector(`.ss-alpha-slider[data-prop="${prop}"]:not(.ss-shadow-alpha-slider)`);
-            const label = modal.querySelector(`.ss-alpha-label[data-prop="${prop}"]:not(.ss-shadow-alpha-label)`);
+            const picker = modal.querySelector(`.shardwright-color-picker[data-prop="${prop}"]:not(.shardwright-shadow-color-picker)`);
+            const slider = modal.querySelector(`.shardwright-alpha-slider[data-prop="${prop}"]:not(.shardwright-shadow-alpha-slider)`);
+            const label = modal.querySelector(`.shardwright-alpha-label[data-prop="${prop}"]:not(.shardwright-shadow-alpha-label)`);
 
             if (picker && slider && isSimpleColor(value)) {
                 const { hex, alpha } = parseColorToHexAlpha(value);
@@ -926,7 +926,7 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
         });
     });
 
-    modal.querySelectorAll('.ss-typo-font').forEach(input => {
+    modal.querySelectorAll('.shardwright-typo-font').forEach(input => {
         input.addEventListener('focus', () => {
             activeFontInput = input;
             activeFontOptionIndex = 0;
@@ -983,7 +983,7 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
     });
 
     // Live preview: typography (font size, px)
-    modal.querySelectorAll('.ss-typo-size').forEach(input => {
+    modal.querySelectorAll('.shardwright-typo-size').forEach(input => {
         input.addEventListener('input', (e) => {
             const prop = e.target.dataset.prop;
             const raw = String(e.target.value || '').trim();
@@ -993,24 +993,24 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
     });
 
     SHADOW_PROPS.forEach(prop => {
-        const rawInput = modal.querySelector(`.ss-shadow-raw-text[data-prop="${prop}"]`);
+        const rawInput = modal.querySelector(`.shardwright-shadow-raw-text[data-prop="${prop}"]`);
         if (rawInput) {
             const value = rawInput.value || theme.colors[prop] || '';
             hydrateShadowControlsFromRaw(prop, value);
         }
     });
 
-    const resetBtn = modal.closest('.popup')?.querySelector('.ss-reset-colors-btn');
-    const saveBtn = modal.closest('.popup')?.querySelector('.ss-save-theme-btn');
+    const resetBtn = modal.closest('.popup')?.querySelector('.shardwright-reset-colors-btn');
+    const saveBtn = modal.closest('.popup')?.querySelector('.shardwright-save-theme-btn');
 
     // Reset button
     resetBtn?.addEventListener('click', () => {
         // Reset form values (colors)
         for (const [prop, value] of Object.entries(originalColors)) {
-            const textInput = modal.querySelector(`.ss-color-text[data-prop="${prop}"]`);
-            const picker = modal.querySelector(`.ss-color-picker[data-prop="${prop}"]:not(.ss-shadow-color-picker)`);
-            const slider = modal.querySelector(`.ss-alpha-slider[data-prop="${prop}"]:not(.ss-shadow-alpha-slider)`);
-            const label = modal.querySelector(`.ss-alpha-label[data-prop="${prop}"]:not(.ss-shadow-alpha-label)`);
+            const textInput = modal.querySelector(`.shardwright-color-text[data-prop="${prop}"]`);
+            const picker = modal.querySelector(`.shardwright-color-picker[data-prop="${prop}"]:not(.shardwright-shadow-color-picker)`);
+            const slider = modal.querySelector(`.shardwright-alpha-slider[data-prop="${prop}"]:not(.shardwright-shadow-alpha-slider)`);
+            const label = modal.querySelector(`.shardwright-alpha-label[data-prop="${prop}"]:not(.shardwright-shadow-alpha-label)`);
             if (textInput) textInput.value = value;
             if (picker && slider && isSimpleColor(value)) {
                 const { hex, alpha } = parseColorToHexAlpha(value);
@@ -1024,7 +1024,7 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
         }
 
         SHADOW_PROPS.forEach(prop => {
-            const rawInput = modal.querySelector(`.ss-shadow-raw-text[data-prop="${prop}"]`);
+            const rawInput = modal.querySelector(`.shardwright-shadow-raw-text[data-prop="${prop}"]`);
             const saved = originalColors[prop] || '';
             if (rawInput) rawInput.value = saved;
             hydrateShadowControlsFromRaw(prop, saved);
@@ -1033,8 +1033,8 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
 
         // Reset typography
         const typoProps = [
-            '--ss-font-primary', '--ss-font-secondary', '--ss-font-muted', '--ss-font-hint',
-            '--ss-font-size-primary', '--ss-font-size-secondary', '--ss-font-size-muted', '--ss-font-size-hint',
+            '--shardwright-font-primary', '--shardwright-font-secondary', '--shardwright-font-muted', '--shardwright-font-hint',
+            '--shardwright-font-size-primary', '--shardwright-font-size-secondary', '--shardwright-font-size-muted', '--shardwright-font-size-hint',
         ];
 
         // Clear all first (to ensure removed values truly revert)
@@ -1049,22 +1049,22 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
         });
 
         // Restore UI fields
-        modal.querySelectorAll('.ss-typo-font').forEach(input => {
+        modal.querySelectorAll('.shardwright-typo-font').forEach(input => {
             const prop = input.dataset.prop;
             input.value = originalColors[prop] || '';
         });
 
-        modal.querySelectorAll('.ss-typo-size').forEach(input => {
+        modal.querySelectorAll('.shardwright-typo-size').forEach(input => {
             const prop = input.dataset.prop;
             const m = String(originalColors[prop] || '').trim().match(/^(-?\d+(?:\.\d+)?)px$/i);
             input.value = m ? m[1] : '';
         });
 
         // Reset meta
-        document.getElementById('ss-edit-theme-name').value = originalMeta.name;
-        document.getElementById('ss-edit-theme-desc').value = originalMeta.description || '';
-        document.getElementById('ss-edit-theme-emoji').value = originalMeta.preview || '🎨';
-        document.getElementById('ss-edit-extra-css').value = originalMeta.extraStyles || '';
+        document.getElementById('shardwright-edit-theme-name').value = originalMeta.name;
+        document.getElementById('shardwright-edit-theme-desc').value = originalMeta.description || '';
+        document.getElementById('shardwright-edit-theme-emoji').value = originalMeta.preview || '🎨';
+        document.getElementById('shardwright-edit-extra-css').value = originalMeta.extraStyles || '';
 
         closeFontSuggest();
         toastr.info('Reset to saved values');
@@ -1074,7 +1074,7 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
     saveBtn?.addEventListener('click', async () => {
         // Collect all color values
         const newColors = {};
-        modal.querySelectorAll('.ss-color-text').forEach(input => {
+        modal.querySelectorAll('.shardwright-color-text').forEach(input => {
             const prop = input.dataset.prop;
             const value = input.value.trim();
             if (prop && value) {
@@ -1083,7 +1083,7 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
         });
 
         // Collect typography (font family)
-        modal.querySelectorAll('.ss-typo-font').forEach(input => {
+        modal.querySelectorAll('.shardwright-typo-font').forEach(input => {
             const prop = input.dataset.prop;
             const value = input.value.trim();
             if (prop && value) {
@@ -1092,7 +1092,7 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
         });
 
         // Collect typography (font size)
-        modal.querySelectorAll('.ss-typo-size').forEach(input => {
+        modal.querySelectorAll('.shardwright-typo-size').forEach(input => {
             const prop = input.dataset.prop;
             const raw = String(input.value || '').trim();
             if (prop && raw) {
@@ -1101,15 +1101,15 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
         });
 
         // Handle bg-primary dropdown
-        const bgPrimarySelect = modal.querySelector('.ss-bg-primary-select');
+        const bgPrimarySelect = modal.querySelector('.shardwright-bg-primary-select');
         if (bgPrimarySelect && bgPrimarySelect.value === 'st-default') {
-            newColors['--ss-bg-primary'] = 'var(--SmartThemeBlurTintColor)';
+            newColors['--shardwright-bg-primary'] = 'var(--SmartThemeBlurTintColor)';
         }
 
         // Keep any colors not shown in editor (but allow typography fields to be cleared)
         const typographyProps = new Set([
-            '--ss-font-primary', '--ss-font-secondary', '--ss-font-muted', '--ss-font-hint',
-            '--ss-font-size-primary', '--ss-font-size-secondary', '--ss-font-size-muted', '--ss-font-size-hint',
+            '--shardwright-font-primary', '--shardwright-font-secondary', '--shardwright-font-muted', '--shardwright-font-hint',
+            '--shardwright-font-size-primary', '--shardwright-font-size-secondary', '--shardwright-font-size-muted', '--shardwright-font-size-hint',
         ]);
 
         for (const [prop, value] of Object.entries(theme.colors)) {
@@ -1121,11 +1121,11 @@ export async function showColorEditorModal(themeId, settings, saveSettingsFn) {
         const result = await updateCustomTheme(
             themeId,
             {
-                name: document.getElementById('ss-edit-theme-name')?.value?.trim() || theme.name,
-                description: document.getElementById('ss-edit-theme-desc')?.value?.trim() || '',
-                preview: document.getElementById('ss-edit-theme-emoji')?.value?.trim() || '🎨',
+                name: document.getElementById('shardwright-edit-theme-name')?.value?.trim() || theme.name,
+                description: document.getElementById('shardwright-edit-theme-desc')?.value?.trim() || '',
+                preview: document.getElementById('shardwright-edit-theme-emoji')?.value?.trim() || '🎨',
                 colors: newColors,
-                extraStyles: document.getElementById('ss-edit-extra-css')?.value || '',
+                extraStyles: document.getElementById('shardwright-edit-extra-css')?.value || '',
             },
             settings,
             saveSettingsFn

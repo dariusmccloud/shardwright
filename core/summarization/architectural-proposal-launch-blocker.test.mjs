@@ -103,3 +103,27 @@ test('maps server-side manifest missing errors even without a synthesis run payl
     assert.match(projection.reason, /persisted manifest/i);
     assert.match(projection.nextStep, /save a fresh architectural shard/i);
 });
+
+test('prefers governed operator status over internal subject-policy refusal codes', () => {
+    const projection = projectArchitecturalProposalLaunchBlocker({}, {
+        code: 'ARCH_SUBJECT_POLICY_ADMISSION_INELIGIBLE',
+        operatorStatus: {
+            governed: true,
+            eligible: false,
+            provisional: false,
+            status: 'This proposal is blocked and cannot advance.',
+            missingRequirements: [
+                'No authorized person has confirmed that this is a settled or durable conclusion.',
+                'A required participant has not acknowledged the proposed meaning.',
+            ],
+            nextAction: 'Ask an authorized person to confirm stability and enduring value.',
+        },
+    });
+
+    assert.equal(projection.code, 'SUBJECT_POLICY_REQUIREMENTS_NOT_SATISFIED');
+    assert.equal(projection.title, 'This proposal is blocked and cannot advance.');
+    assert.match(projection.reason, /settled or durable conclusion/u);
+    assert.match(projection.reason, /required participant/u);
+    assert.equal(projection.nextStep, 'Ask an authorized person to confirm stability and enduring value.');
+    assert.doesNotMatch(projection.toastMessage, /ARCH_|sha256|policy hash/iu);
+});

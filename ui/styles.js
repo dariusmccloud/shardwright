@@ -23,7 +23,7 @@ import { INTERPRETIVE_REVIEW_CSS } from './styles/interpretive-review.css.js';
 import { TEXTAREA_RESIZE_CSS } from './styles/textarea-resize.css.js';
 
 /**
- * Summary Sharder Styles
+ * Shardwright Styles
  * Assembled from modular ui/styles/*.css.js exports.
  */
 
@@ -31,7 +31,7 @@ import { TEXTAREA_RESIZE_CSS } from './styles/textarea-resize.css.js';
  * Inject styles into document
  */
 export function injectStyles() {
-    const styleId = 'summary-sharder-styles';
+    const styleId = 'shardwright-styles';
     const existing = document.getElementById(styleId);
     if (existing) {
         existing.textContent = EXTENSION_STYLES;

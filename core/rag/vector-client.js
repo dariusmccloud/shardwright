@@ -9,6 +9,7 @@ import { extension_settings } from '../../../../../extensions.js';
 import { resolveRagEmbeddingApiKey } from './rag-secrets.js';
 import { getAbortSignal, throwIfAborted } from '../api/abort-controller.js';
 import { ragLog } from '../logger.js';
+import { selectCollectionMetadata } from './collection-metadata.js';
 
 const PLUGIN_BASE = '/api/plugins/similharity';
 const COLLECTION_METADATA_CACHE_TTL_MS = 5000;
@@ -675,9 +676,10 @@ export async function listAllCollections(backend = '') {
  *
  * @param {string[]} collectionIds
  * @param {string} [backend='']
+ * @param {string} [preferredSource='']
  * @returns {Promise<Map<string, {id: string, source?: string, backend?: string, model?: string}>>}
  */
-export async function getCollectionMetadataMap(collectionIds = [], backend = '') {
+export async function getCollectionMetadataMap(collectionIds = [], backend = '', preferredSource = '') {
     const ids = [...new Set((collectionIds || []).map(id => String(id || '').trim()).filter(Boolean))];
     const result = new Map();
     if (ids.length === 0) {
@@ -706,14 +708,7 @@ export async function getCollectionMetadataMap(collectionIds = [], backend = '')
         }
     }
 
-    const wanted = new Set(ids);
-    for (const collection of (cached.collections || [])) {
-        const id = String(collection?.id || '').trim();
-        if (!id || !wanted.has(id)) continue;
-        result.set(id, collection);
-    }
-
-    return result;
+    return selectCollectionMetadata(cached.collections || [], ids, preferredSource);
 }
 
 export async function getCollectionQuerySettingsMap(collectionIds, rag) {
@@ -727,7 +722,10 @@ export async function getCollectionQuerySettingsMap(collectionIds, rag) {
 
     let metadataMap = new Map();
     try {
-        metadataMap = await getCollectionMetadataMap(collectionIds);
+        // Collection ids are backend-local. Resolve metadata inside the active
+        // backend so an identically named collection on another backend cannot
+        // silently supply the wrong embedding source/model for this query.
+        metadataMap = await getCollectionMetadataMap(collectionIds, rag?.backend || '', rag?.source || '');
     } catch (error) {
         ragLog.warn('Collection metadata lookup failed; using base RAG settings for collections:', error?.message || error);
     }
@@ -754,7 +752,7 @@ export async function getCollectionQuerySettingsMap(collectionIds, rag) {
  */
 export async function testEmbeddingConnection(
     ragSettings,
-    text = 'Summary Sharder embedding connection test',
+    text = 'Shardwright embedding connection test',
     options = {},
 ) {
     if (isDirectEmbeddingMode(ragSettings)) {

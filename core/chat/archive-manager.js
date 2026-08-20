@@ -12,9 +12,9 @@ import { applyCollapseToHiddenMessages, expandUnhiddenMessages } from './visibil
 import { clearPendingVisibilityTimers, setApplyingVisibility } from './visibility-state.js';
 
 function removeFoldArtifacts(el) {
-    el.classList.remove('ss-collapsed', 'ss-expanded');
-    el.querySelector('.mes_text')?.classList.remove('ss-text-hidden');
-    el.querySelector('.ss-fold-btn')?.remove();
+    el.classList.remove('shardwright-collapsed', 'shardwright-expanded');
+    el.querySelector('.mes_text')?.classList.remove('shardwright-text-hidden');
+    el.querySelector('.shardwright-fold-btn')?.remove();
 }
 
 function ensureArchiveBtn(el, archived) {
@@ -22,10 +22,10 @@ function ensureArchiveBtn(el, archived) {
     const nameContainer = nameText?.parentElement;
     if (!nameContainer) return;
 
-    let btn = el.querySelector('.ss-archive-btn');
+    let btn = el.querySelector('.shardwright-archive-btn');
     if (!btn) {
         btn = document.createElement('button');
-        btn.className = 'ss-archive-btn';
+        btn.className = 'shardwright-archive-btn';
         btn.type = 'button';
         nameContainer.insertBefore(btn, nameText);
     }
@@ -65,17 +65,17 @@ export function refreshArchiveDecorations(settings = {}) {
         const message = chat[mesid];
         const archived = isArchivedMessage(message);
         if (archived) {
-            el.classList.add('ss-archived-message');
+            el.classList.add('shardwright-archived-message');
             if (shouldHideArchivedRow(message, settings)) {
-                el.classList.add('ss-archived-hidden');
-                el.classList.remove('ss-archived-visible');
+                el.classList.add('shardwright-archived-hidden');
+                el.classList.remove('shardwright-archived-visible');
             } else {
-                el.classList.add('ss-archived-visible');
-                el.classList.remove('ss-archived-hidden');
+                el.classList.add('shardwright-archived-visible');
+                el.classList.remove('shardwright-archived-hidden');
             }
             removeFoldArtifacts(el);
         } else {
-            el.classList.remove('ss-archived-message', 'ss-archived-hidden', 'ss-archived-visible');
+            el.classList.remove('shardwright-archived-message', 'shardwright-archived-hidden', 'shardwright-archived-visible');
         }
 
         ensureArchiveBtn(el, archived);
@@ -191,7 +191,7 @@ export function initArchiveHandler(getSettings = () => ({})) {
     chatContainer.dataset.ssArchiveInit = 'true';
 
     chatContainer.addEventListener('click', async (event) => {
-        const btn = event.target.closest('.ss-archive-btn');
+        const btn = event.target.closest('.shardwright-archive-btn');
         if (!btn) return;
 
         const message = btn.closest('.mes');
@@ -212,7 +212,7 @@ export function initArchiveHandler(getSettings = () => ({})) {
 
         const result = await archiveMessagesByIndices([mesid], liveSettings);
         if (result.changed && typeof toastr !== 'undefined') {
-            const priorVisibility = chat[mesid]?.extra?.summary_sharder?.archive?.promptVisibilityBeforeArchive;
+            const priorVisibility = chat[mesid]?.extra?.shardwright?.archive?.promptVisibilityBeforeArchive;
             const suffix = priorVisibility === ARCHIVE_PROMPT_VISIBILITY_HIDDEN ? ' (was already prompt-hidden)' : '';
             toastr.success(`Message archived${suffix}`);
         }

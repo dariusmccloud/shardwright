@@ -143,7 +143,7 @@ function Invoke-JsonRequest {
 $stamp = Get-Date -Format 'yyyyMMddHHmmss'
 $interpretationId = "interp_seed_$stamp"
 $interpretationRevisionId = "interprev_seed_${stamp}_v1"
-$baseUri = "http://127.0.0.1:$resolvedPort/api/plugins/summary-sharder-memory"
+$baseUri = "http://127.0.0.1:$resolvedPort/api/plugins/shardwright-memory"
 $csrf = if ($RestartHostAfterReset) {
     Wait-ForCsrfSession -TargetPort $resolvedPort
 } else {

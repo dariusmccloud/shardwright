@@ -1,44 +1,44 @@
 export const MESSAGES_CSS = `
 /* Use input/primary background so default theme doesn't end up fully transparent */
-    background: var(--ss-bg-input) !important;
-    border: 1px solid var(--ss-border) !important;
+    background: var(--shardwright-bg-input) !important;
+    border: 1px solid var(--shardwright-border) !important;
     border-radius: 4px !important;
-    box-shadow: var(--ss-shadow-lg) !important;
+    box-shadow: var(--shardwright-shadow-lg) !important;
     max-height: 300px;
     overflow: hidden;
     flex-direction: column;
 }
 
-.ss-dropdown-menu.open {
+.shardwright-dropdown-menu.open {
     display: flex;
 }
 
-.ss-dropdown-search {
+.shardwright-dropdown-search {
     position: sticky;
     top: 0;
     z-index: 1;
     padding: 8px !important;
-    border-bottom: 1px solid var(--ss-border) !important;
-    background: var(--ss-bg-input) !important;
+    border-bottom: 1px solid var(--shardwright-border) !important;
+    background: var(--shardwright-bg-input) !important;
     flex-shrink: 0;
 }
 
-.ss-dropdown-search input[type="text"],
-.ss-dropdown-menu .ss-dropdown-search input,
-#summary-sharder-settings input[id$="-search"],
-#summary-sharder-panel input[id$="-search"],
-.ss-modal input[id$="-search"],
-[class*="ss-"][class*="-modal"] input[id$="-search"],
-[class*="ss-"][class*="-dropdown-container"] input[id$="-search"] {
+.shardwright-dropdown-search input[type="text"],
+.shardwright-dropdown-menu .shardwright-dropdown-search input,
+#shardwright-settings input[id$="-search"],
+#shardwright-panel input[id$="-search"],
+.shardwright-modal input[id$="-search"],
+[class*="shardwright-"][class*="-modal"] input[id$="-search"],
+[class*="shardwright-"][class*="-dropdown-container"] input[id$="-search"] {
     width: 100% !important;
     height: 36px !important;
     max-height: none !important;
     min-height: 36px !important;
     padding: 8px 12px !important;
     margin: 0 !important;
-    background: var(--ss-bg-input) !important;
-    color: var(--ss-text-primary) !important;
-    border: 1px solid var(--ss-border) !important;
+    background: var(--shardwright-bg-input) !important;
+    color: var(--shardwright-text-primary) !important;
+    border: 1px solid var(--shardwright-border) !important;
     border-radius: 4px !important;
     box-sizing: border-box !important;
     font-size: 14px !important;
@@ -46,29 +46,29 @@ export const MESSAGES_CSS = `
     outline: none !important;
 }
 
-.ss-dropdown-search input[type="text"]:focus,
-[class*="ss-"][class*="-dropdown-container"] input[id$="-search"]:focus {
-    border-color: var(--ss-border-focus) !important;
-    box-shadow: 0 0 0 2px var(--ss-focus-glow) !important;
+.shardwright-dropdown-search input[type="text"]:focus,
+[class*="shardwright-"][class*="-dropdown-container"] input[id$="-search"]:focus {
+    border-color: var(--shardwright-border-focus) !important;
+    box-shadow: 0 0 0 2px var(--shardwright-focus-glow) !important;
 }
 
-.ss-dropdown-search input::placeholder,
-[class*="ss-"][class*="-dropdown-container"] input[id$="-search"]::placeholder {
-    color: var(--ss-text-muted) !important;
+.shardwright-dropdown-search input::placeholder,
+[class*="shardwright-"][class*="-dropdown-container"] input[id$="-search"]::placeholder {
+    color: var(--shardwright-text-muted) !important;
     opacity: 0.7;
 }
 
-.ss-dropdown-options {
+.shardwright-dropdown-options {
     overflow-y: auto;
     max-height: 250px;
     flex: 1;
 }
 
-.ss-dropdown-option {
+.shardwright-dropdown-option {
     padding: 8px 12px !important;
     cursor: pointer;
-    color: var(--ss-text-primary) !important;
-    border-bottom: 1px solid var(--ss-border);
+    color: var(--shardwright-text-primary) !important;
+    border-bottom: 1px solid var(--shardwright-border);
     display: flex !important;
     align-items: center !important;
     gap: 10px !important;
@@ -76,21 +76,21 @@ export const MESSAGES_CSS = `
     transition: background 0.15s ease;
 }
 
-.ss-dropdown-option:last-child {
+.shardwright-dropdown-option:last-child {
     border-bottom: none;
 }
 
-.ss-dropdown-option:hover {
-    background: var(--ss-highlight) !important;
+.shardwright-dropdown-option:hover {
+    background: var(--shardwright-highlight) !important;
 }
 
-.ss-dropdown-option.selected {
-    background: var(--ss-primary) !important;
+.shardwright-dropdown-option.selected {
+    background: var(--shardwright-primary) !important;
     color: white !important;
 }
 
-.ss-dropdown-option-avatar,
-.ss-dropdown-option img {
+.shardwright-dropdown-option-avatar,
+.shardwright-dropdown-option img {
     width: 32px !important;
     height: 32px !important;
     min-width: 32px !important;
@@ -102,8 +102,8 @@ export const MESSAGES_CSS = `
     flex-shrink: 0 !important;
 }
 
-.ss-dropdown-option-name,
-.ss-dropdown-option .ss-option-name {
+.shardwright-dropdown-option-name,
+.shardwright-dropdown-option .shardwright-option-name {
     color: inherit;
     white-space: nowrap;
     overflow: hidden;
@@ -112,29 +112,29 @@ export const MESSAGES_CSS = `
     margin-right: 10px;
 }
 
-.ss-dropdown-option .ss-option-checkbox {
+.shardwright-dropdown-option .shardwright-option-checkbox {
     width: 18px;
     height: 18px;
     cursor: pointer;
     flex-shrink: 0;
 }
 
-.ss-dropdown-empty {
+.shardwright-dropdown-empty {
     padding: 12px !important;
-    color: var(--ss-text-muted) !important;
+    color: var(--shardwright-text-muted) !important;
     text-align: center;
     font-style: italic;
 }
 
-.ss-character-dropdown-container.disabled .ss-dropdown-trigger,
-.ss-chat-dropdown-container.disabled .ss-dropdown-trigger {
+.shardwright-character-dropdown-container.disabled .shardwright-dropdown-trigger,
+.shardwright-chat-dropdown-container.disabled .shardwright-dropdown-trigger {
     opacity: 0.6;
     cursor: not-allowed;
-    background: var(--ss-bg-tertiary) !important;
+    background: var(--shardwright-bg-tertiary) !important;
 }
 
 /* Selected Tags (Multi-select) */
-.ss-selected-tags {
+.shardwright-selected-tags {
     display: flex;
     flex-wrap: wrap;
     gap: 5px;
@@ -143,53 +143,53 @@ export const MESSAGES_CSS = `
     align-items: center;
 }
 
-.ss-selected-tag {
+.shardwright-selected-tag {
     display: inline-flex;
     align-items: center;
     gap: 5px;
     padding: 4px 8px;
-    background: var(--ss-primary);
+    background: var(--shardwright-primary);
     border-radius: 3px;
     font-size: 12px;
     color: white;
 }
 
-.ss-selected-tag .ss-tag-remove {
+.shardwright-selected-tag .shardwright-tag-remove {
     cursor: pointer;
     font-size: 14px;
     opacity: 0.7;
     line-height: 1;
 }
 
-.ss-selected-tag .ss-tag-remove:hover {
+.shardwright-selected-tag .shardwright-tag-remove:hover {
     opacity: 1;
 }
 
 /* Chat/Character Option Info */
-.ss-chat-option-info {
+.shardwright-chat-option-info {
     display: flex;
     flex-direction: column;
     gap: 2px;
 }
 
-.ss-chat-option-name {
-    color: var(--ss-text-primary);
+.shardwright-chat-option-name {
+    color: var(--shardwright-text-primary);
     font-weight: 500;
 }
 
-.ss-chat-option-details {
-    color: var(--ss-text-muted);
-    font-family: var(--ss-font-muted, inherit);
-    font-size: var(--ss-font-size-muted, 0.85em);
+.shardwright-chat-option-details {
+    color: var(--shardwright-text-muted);
+    font-family: var(--shardwright-font-muted, inherit);
+    font-size: var(--shardwright-font-size-muted, 0.85em);
 }
 
-.ss-char-option-info {
+.shardwright-char-option-info {
     display: flex;
     align-items: center;
     gap: 10px;
 }
 
-.ss-char-option-info img {
+.shardwright-char-option-info img {
     width: 32px !important;
     height: 32px !important;
     border-radius: 50%;
@@ -197,33 +197,33 @@ export const MESSAGES_CSS = `
     flex-shrink: 0;
 }
 
-.ss-char-option-name {
-    color: var(--ss-text-primary);
+.shardwright-char-option-name {
+    color: var(--shardwright-text-primary);
 }
 
 /* ==========================================================================
    SECTION 8: MESSAGE STYLING
    ========================================================================== */
 
-.mes.ss-summarized {
+.mes.shardwright-summarized {
     opacity: 0.4;
-    border-left: 3px solid var(--ss-warning);
+    border-left: 3px solid var(--shardwright-warning);
     transition: opacity 0.3s ease;
 }
 
-.mes.ss-summarized:hover {
+.mes.shardwright-summarized:hover {
     opacity: 0.8;
 }
 
-.mes.ss-hidden {
+.mes.shardwright-hidden {
     display: none !important;
 }
 
-.ss-text-hidden {
+.shardwright-text-hidden {
     display: none !important;
 }
 
-.mes.ss-collapsed .mes_text {
+.mes.shardwright-collapsed .mes_text {
     display: none;
 }
 
@@ -231,32 +231,32 @@ export const MESSAGES_CSS = `
    SECTION 23: WEIGHT INDICATORS
    ========================================================================== */
 
-.ss-weight-critical,
-.ss-weight-5 {
-    color: var(--ss-weight-critical) !important;
+.shardwright-weight-critical,
+.shardwright-weight-5 {
+    color: var(--shardwright-weight-critical) !important;
 }
 
-.ss-weight-major,
-.ss-weight-4 {
-    color: var(--ss-weight-major) !important;
+.shardwright-weight-major,
+.shardwright-weight-4 {
+    color: var(--shardwright-weight-major) !important;
 }
 
-.ss-weight-moderate,
-.ss-weight-3 {
-    color: var(--ss-weight-moderate) !important;
+.shardwright-weight-moderate,
+.shardwright-weight-3 {
+    color: var(--shardwright-weight-moderate) !important;
 }
 
-.ss-weight-minor,
-.ss-weight-2 {
-    color: var(--ss-weight-minor) !important;
+.shardwright-weight-minor,
+.shardwright-weight-2 {
+    color: var(--shardwright-weight-minor) !important;
 }
 
-.ss-weight-trivial,
-.ss-weight-1 {
-    color: var(--ss-weight-trivial) !important;
+.shardwright-weight-trivial,
+.shardwright-weight-1 {
+    color: var(--shardwright-weight-trivial) !important;
 }
 
-.ss-weight-badge {
+.shardwright-weight-badge {
     display: inline-flex;
     align-items: center;
     gap: 4px;
@@ -266,38 +266,38 @@ export const MESSAGES_CSS = `
     font-weight: 600;
 }
 
-.ss-weight-badge.critical {
+.shardwright-weight-badge.critical {
     background: rgba(255, 68, 68, 0.2);
-    border: 1px solid var(--ss-weight-critical);
+    border: 1px solid var(--shardwright-weight-critical);
 }
 
-.ss-weight-badge.major {
+.shardwright-weight-badge.major {
     background: rgba(255, 140, 0, 0.2);
-    border: 1px solid var(--ss-weight-major);
+    border: 1px solid var(--shardwright-weight-major);
 }
 
-.ss-weight-badge.moderate {
+.shardwright-weight-badge.moderate {
     background: rgba(255, 215, 0, 0.2);
-    border: 1px solid var(--ss-weight-moderate);
+    border: 1px solid var(--shardwright-weight-moderate);
 }
 
-.ss-weight-badge.minor {
+.shardwright-weight-badge.minor {
     background: rgba(144, 238, 144, 0.2);
-    border: 1px solid var(--ss-weight-minor);
+    border: 1px solid var(--shardwright-weight-minor);
 }
 
-.ss-weight-badge.trivial {
+.shardwright-weight-badge.trivial {
     background: rgba(211, 211, 211, 0.2);
-    border: 1px solid var(--ss-weight-trivial);
+    border: 1px solid var(--shardwright-weight-trivial);
 }
 
 /* ==========================================================================
    SECTION 24: NSFW CONTENT
    ========================================================================== */
 
-.ss-nsfw-badge,
-.ss-nsfw-indicator {
-    background: var(--ss-nsfw-accent);
+.shardwright-nsfw-badge,
+.shardwright-nsfw-indicator {
+    background: var(--shardwright-nsfw-accent);
     color: white;
     padding: 2px 8px;
     border-radius: 4px;
@@ -305,13 +305,13 @@ export const MESSAGES_CSS = `
     font-weight: 600;
 }
 
-.ss-nsfw-section {
-    border-left: 3px solid var(--ss-nsfw-accent);
+.shardwright-nsfw-section {
+    border-left: 3px solid var(--shardwright-nsfw-accent);
     background: rgba(255, 107, 157, 0.1);
 }
 
-.ss-nsfw-warning {
-    color: var(--ss-nsfw-accent);
+.shardwright-nsfw-warning {
+    color: var(--shardwright-nsfw-accent);
     font-weight: 600;
 }
 
@@ -319,17 +319,17 @@ export const MESSAGES_CSS = `
    SECTION 25: QUOTES & DIALOGUE
    ========================================================================== */
 
-.ss-quote,
-.ss-dialogue {
-    color: var(--ss-quote);
+.shardwright-quote,
+.shardwright-dialogue {
+    color: var(--shardwright-quote);
     font-style: italic;
-    border-left: 2px solid var(--ss-quote);
+    border-left: 2px solid var(--shardwright-quote);
     padding-left: 10px;
     margin: 5px 0;
 }
 
-.ss-speaker {
-    color: var(--ss-text-primary);
+.shardwright-speaker {
+    color: var(--shardwright-text-primary);
     font-weight: 600;
     font-style: normal;
 }
@@ -338,13 +338,13 @@ export const MESSAGES_CSS = `
    SECTION 26: STATS DISPLAY
    ========================================================================== */
 
-.ss-stats {
+.shardwright-stats {
     display: flex;
     gap: 15px;
     flex-wrap: wrap;
 }
 
-.ss-stat {
+.shardwright-stat {
     display: flex;
     flex-direction: column;
     align-items: center;

@@ -1,5 +1,5 @@
 /**
- * Output handling for Summary Sharder
+ * Output handling for Shardwright
  * Injects summaries as system messages or lorebook entries
  */
 
@@ -17,6 +17,7 @@ import { refreshMultipleLorebooksUI } from '../processing/lorebook-refresh.js';
 import { log, ragLog } from '../logger.js';
 import {
     resolveShardChunkingMode,
+    buildArchitecturalPersistedSourceEnvelope,
     vectorizeShard,
     vectorizeShardSectionAware,
     vectorizeStandardSummary,
@@ -43,6 +44,7 @@ import {
 import { reconcileCurrentChatMessageIdentity } from './message-identity-runtime.js';
 import {
     createInterpretiveProposalFromArchitecturalShard,
+    getSubjectScopedSynthesisOperatorStatus,
     persistArchitecturalReplayAuthorityArtifact,
 } from './architectural-authority-server-api.js';
 import { refreshCurrentChatShardIntegrity } from './shard-integrity-runtime.js';
@@ -57,6 +59,7 @@ import {
     openPreparedArchitecturalProposalHandoff,
     prepareArchitecturalProposalHandoff,
 } from './architectural-proposal-handoff-orchestration.js';
+import { openSubjectPolicyRequirementsModal } from '../../ui/modals/management/subject-policy-requirements-modal.js';
 
 // World info metadata key
 const METADATA_KEY = 'world_info';
@@ -229,15 +232,20 @@ export async function handleSummaryResult(
             // Sharder mode: section-aware or standard shard vectorization
             if (settings?.rag?.enabled && settings?.rag?.autoVectorizeNewSummaries !== false) {
                 try {
-                    if (settings?.sharderProfile === ARCHITECTURAL_PROFILE) {
-                        await vectorizeShard(summary, startIndex, endIndex, settings, extractedKeywords);
+                    const sourceEnvelope = settings?.sharderProfile === ARCHITECTURAL_PROFILE
+                        ? buildArchitecturalPersistedSourceEnvelope({
+                            sourceType: mode === 'system' ? 'system-message' : 'lorebook-entry',
+                            sourceUid: outputUID,
+                            startIndex,
+                            endIndex,
+                            manifest: resultMetadata?.architecturalCurrentManifest || null,
+                        })
+                        : null;
+                    const chunkingMode = resolveShardChunkingMode(settings?.rag);
+                    if (chunkingMode === 'section') {
+                        await vectorizeShardSectionAware(summary, startIndex, endIndex, settings, extractedKeywords, sourceEnvelope);
                     } else {
-                        const mode = resolveShardChunkingMode(settings?.rag);
-                        if (mode === 'section') {
-                            await vectorizeShardSectionAware(summary, startIndex, endIndex, settings, extractedKeywords);
-                        } else {
-                            await vectorizeShard(summary, startIndex, endIndex, settings, extractedKeywords);
-                        }
+                        await vectorizeShard(summary, startIndex, endIndex, settings, extractedKeywords, sourceEnvelope);
                     }
                 } catch (error) {
                     const backend = String(settings?.rag?.backend || '').toLowerCase();
@@ -248,7 +256,7 @@ export async function handleSummaryResult(
                 }
             }
         } else {
-            // Standard mode: prose vectorization into ss_standard_* collection
+            // Standard mode: prose vectorization into shardwright_standard_* collection
             if (settings?.ragStandard?.enabled && settings?.ragStandard?.autoVectorizeNewSummaries !== false) {
                 try {
                     await vectorizeStandardSummary(summary, startIndex, endIndex, settings, extractedKeywords);
@@ -305,6 +313,7 @@ export async function handleSummaryResult(
 
     openPreparedArchitecturalProposalHandoff(pendingArchitecturalReviewOpen, {
         openReview: openInterpretiveReviewModal,
+        openRequirements: openSubjectPolicyRequirementsModal,
     });
 
     return {
@@ -337,7 +346,7 @@ async function createArchitecturalProposalReviewLaunchRequest(options = {}) {
 
     const savedIndex = findIndexByUID(Array.isArray(context.chat) ? context.chat : [], outputUID);
     const savedMessage = savedIndex >= 0 ? context.chat[savedIndex] : null;
-    const shardMessageId = String(savedMessage?.extra?.summary_sharder?.messageIdentity?.messageId || '').trim();
+    const shardMessageId = String(savedMessage?.extra?.shardwright?.messageIdentity?.messageId || '').trim();
     const memoryScopeId = String(authorityResult?.projectionMetadata?.memoryScopeId || '').trim();
     const avatarUrl = String(
         context?.characters?.[context?.characterId]?.avatar || ''
@@ -406,6 +415,14 @@ async function createArchitecturalProposalReviewLaunchRequest(options = {}) {
             interpretationRevisionId,
         };
     } catch (error) {
+        const synthesisRunId = String(error?.data?.synthesisRunId || '').trim();
+        if (String(error?.code || '').startsWith('ARCH_SUBJECT_POLICY_') && synthesisRunId) {
+            try {
+                error.operatorStatus = await getSubjectScopedSynthesisOperatorStatus(synthesisRunId);
+            } catch (statusError) {
+                ragLog.warn('Subject-policy operator status could not be loaded:', statusError?.message || statusError);
+            }
+        }
         const projection = projectArchitecturalProposalLaunchBlocker(null, error);
         ragLog.warn('Architectural proposal handoff failed after shard save:', error?.message || error);
         recordArchitecturalIntegrationEvent('GOVERNED_PROPOSAL_HANDOFF_FAILED', {
@@ -417,19 +434,21 @@ async function createArchitecturalProposalReviewLaunchRequest(options = {}) {
         return {
             interpretationRevisionId: '',
             userMessage: projection.toastMessage,
+            operatorStatus: error.operatorStatus || null,
+            synthesisRunId,
         };
     }
 }
 
 async function persistArchitecturalDecisionCapacityOverride(outputUID, mode, startIndex, endIndex, overrideMetadata) {
-    if (!chat_metadata.summary_sharder) {
-        chat_metadata.summary_sharder = {};
+    if (!chat_metadata.shardwright) {
+        chat_metadata.shardwright = {};
     }
-    if (!Array.isArray(chat_metadata.summary_sharder.architecturalDecisionCapacityOverrides)) {
-        chat_metadata.summary_sharder.architecturalDecisionCapacityOverrides = [];
+    if (!Array.isArray(chat_metadata.shardwright.architecturalDecisionCapacityOverrides)) {
+        chat_metadata.shardwright.architecturalDecisionCapacityOverrides = [];
     }
 
-    chat_metadata.summary_sharder.architecturalDecisionCapacityOverrides.push({
+    chat_metadata.shardwright.architecturalDecisionCapacityOverrides.push({
         outputUID: outputUID || null,
         mode,
         startIndex,
@@ -536,7 +555,7 @@ ${content}`;
         for (const el of candidates) {
             const text = el.querySelector('.mes_text')?.textContent || '';
             if (text.includes(summaryHeader)) {
-                el.setAttribute('data-ss-batch-summary', '1');
+                el.setAttribute('data-shardwright-batch-summary', '1');
                 break;
             }
         }

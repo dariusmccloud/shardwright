@@ -64,3 +64,36 @@ test('refused proposal preserves the saved shard, warns, and never opens Review'
     ]]);
     assert.deepEqual(savedShard, { outputUID: 'saved-shard-blocked', content: 'persisted canonical shard' });
 });
+
+test('subject-policy blocker opens the requirements action surface without opening Review', async () => {
+    const calls = [];
+    const operatorStatus = {
+        governed: true,
+        permittedActions: [{ action: 'ACKNOWLEDGE', label: 'Acknowledge this meaning' }],
+    };
+    const handoff = await prepareArchitecturalProposalHandoff({
+        didSave: true,
+        savedOutputUID: 'saved-shard-requirements',
+        authorityResult: { committed: true },
+    }, {
+        shouldCreateProposal: () => true,
+        createReviewLaunchRequest: async () => ({
+            interpretationRevisionId: '',
+            userMessage: 'Proposal requirements remain.',
+            synthesisRunId: 'synthreq_requirements',
+            operatorStatus,
+        }),
+        warnOperator: () => {},
+    });
+    const opened = openPreparedArchitecturalProposalHandoff(handoff, {
+        openReview: () => calls.push('review'),
+        openRequirements: (id, status) => calls.push(['requirements', id, status]),
+    });
+
+    assert.equal(opened, false);
+    assert.deepEqual(calls, [[
+        'requirements',
+        'synthreq_requirements',
+        operatorStatus,
+    ]]);
+});

@@ -1,6 +1,6 @@
-# Summary Sharder
+# Shardwright
 
-**Compress long roleplay chats into recoverable Memory Shards for SillyTavern.**
+**Structured continuity for long-form roleplay.**
 
 ![SillyTavern Extension](https://img.shields.io/badge/SillyTavern-Extension-8865e0)
 ![Version](https://img.shields.io/badge/version-0.9-blue)
@@ -17,7 +17,7 @@
 
 ## What Is It?
 
-Summary Sharder is a SillyTavern extension that captures chat history before it falls out of context. It summarizes message ranges into structured "Memory Shards" with 16 labeled sections, manages message visibility, and routes output to system messages or lorebook entries — so nothing important is forgotten. The Memory Sharding concept is based off the Memory Shard prompt by [TheLonelyDevil](https://github.com/TheLonelyDevil9/) .
+Shardwright is a SillyTavern extension that captures chat history before it falls out of context. It summarizes message ranges into structured "Memory Shards" with 16 labeled sections, manages message visibility, and routes output to system messages or lorebook entries — so nothing important is forgotten. The Memory Sharding concept is based on the Memory Shard prompt by [TheLonelyDevil](https://github.com/TheLonelyDevil9/).
 
 An optional **RAG pipeline** vectorizes shards and automatically injects relevant memories into future generations. Shoutout to [Coneja-Chibi](https://github.com/Coneja-Chibi) for the Similharity plugin that made this part possible.
 
@@ -48,18 +48,18 @@ An optional **RAG pipeline** vectorizes shards and automatically injects relevan
 
 1. Open SillyTavern
 2. Go to **Extensions** (stacked boxes icon) → **Install Extension**
-3. Paste: `https://github.com/Promansis/summary-sharder`
+3. Paste: `https://github.com/dariusmccloud/shardwright`
 4. Click **Install** and restart SillyTavern
 
 ### Manual
 
-Clone into `data/<user-data>/extensions/third-party/summary-sharder` and restart SillyTavern.
+Clone into `data/<user-data>/extensions/third-party/shardwright` and restart SillyTavern.
 
 ---
 
 ## Quick Start
 
-1. Open the **Extensions** panel and enable **Summary Sharder**
+1. Open the **Extensions** panel and enable **Shardwright**
 2. The FAB (floating action button) appears — drag it where you like
 
 ### Basic Summary
@@ -102,7 +102,7 @@ Clone into `data/<user-data>/extensions/third-party/summary-sharder` and restart
 
 | Issue | Solution |
 |-------|----------|
-| Extension not appearing | Verify path is `data/<user-data>/extensions/third-party/summary-sharder/` and restart |
+| Extension not appearing | Verify path is `data/<user-data>/extensions/third-party/shardwright/` and restart |
 | RAG not injecting | Ensure your Backend and Embedding servers are configured according to their docs. |
 | Visibility delay on load | ~1 second delay is expected while the DOM initializes |
 | API errors | Each feature may use a different endpoint — check per-feature API config |
@@ -110,12 +110,15 @@ Clone into `data/<user-data>/extensions/third-party/summary-sharder` and restart
 ---
 
 
-## 🙌 Credits 
- - [TheLonelyDevil](https://github.com/TheLonelyDevil9/) - For listening to my rambling and stopping (trying to) my scope drift and distractions
- - [Coneja-Chibi](https://github.com/Coneja-Chibi) - Similharity and VectHare creator - Started my RAG journey with Vecthare, Similharity is a lifesaver.
+## 🙌 Credits
+
+- **Upstream lineage:** Shardwright is derived from [Promansis/summary-sharder](https://github.com/Promansis/summary-sharder), originally authored by Promansis. Shardwright is an independently named and maintained fork; this credit does not identify Promansis as its current author.
+- [TheLonelyDevil](https://github.com/TheLonelyDevil9/) - For listening to my rambling and stopping (trying to) my scope drift and distractions
+- [Coneja-Chibi](https://github.com/Coneja-Chibi) - Similharity and VectHare creator - Started my RAG journey with Vecthare, Similharity is a lifesaver.
 
 ## Author
-- [Promansis](https://github.com/Promansis/summary-sharder)
+
+- [Darius McCloud](https://github.com/dariusmccloud)
 
 
 ## License

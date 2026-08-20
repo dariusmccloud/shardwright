@@ -90,6 +90,22 @@ function getReasonAndNextStep(code) {
 }
 
 export function projectArchitecturalProposalLaunchBlocker(result = {}, error = null) {
+    const operatorStatus = error?.operatorStatus;
+    if (operatorStatus?.governed === true && operatorStatus?.eligible === false) {
+        const missingRequirements = Array.isArray(operatorStatus.missingRequirements)
+            ? operatorStatus.missingRequirements.filter(Boolean)
+            : [];
+        const reason = missingRequirements.join(' ') || String(operatorStatus.status || 'This proposal cannot advance.');
+        const nextStep = String(operatorStatus.nextAction || 'Review the proposal requirements before trying again.');
+        return {
+            code: 'SUBJECT_POLICY_REQUIREMENTS_NOT_SATISFIED',
+            outcome: 'BLOCKED',
+            title: String(operatorStatus.status || 'Blocked: proposal requirements are not satisfied'),
+            reason,
+            nextStep,
+            toastMessage: `${String(operatorStatus.status || 'Blocked: proposal requirements are not satisfied')} Reason: ${reason} Next step: ${nextStep}`,
+        };
+    }
     const primaryProposal = getPrimaryQuarantine(result);
     const referentialStatus = normalizeCode(primaryProposal?.groundingEvaluation?.referentialStatus);
     const quarantineCode = normalizeCode(primaryProposal?.quarantineCode);

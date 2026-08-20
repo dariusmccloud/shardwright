@@ -9,7 +9,7 @@ const deps = {
     applyContextCleanup: (text, cleanup) => cleanup?.enabled
         ? text.replace(/<[^>]*>/gu, '').replace(/https?:\/\/[^\s]+/gu, '[url]')
         : text,
-    getPersistedMessageId: message => message?.extra?.summary_sharder?.messageIdentity?.messageId || '',
+    getPersistedMessageId: message => message?.extra?.shardwright?.messageIdentity?.messageId || '',
 };
 
 function message(messageId, overrides = {}) {
@@ -19,7 +19,7 @@ function message(messageId, overrides = {}) {
         is_user: false,
         is_system: false,
         extra: {
-            summary_sharder: {
+            shardwright: {
                 messageIdentity: { messageId },
             },
         },

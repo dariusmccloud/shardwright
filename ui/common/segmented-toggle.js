@@ -24,7 +24,7 @@ export function createSegmentedToggle({
     disabled = false,
 } = {}) {
     const root = document.createElement('div');
-    root.className = `ss-segmented-toggle ${className}`.trim();
+    root.className = `shardwright-segmented-toggle ${className}`.trim();
     root.setAttribute('role', 'group');
 
     if (options.length > 0) {
@@ -38,7 +38,7 @@ export function createSegmentedToggle({
 
     const updateUI = () => {
         root.dataset.value = currentValue;
-        root.classList.toggle('ss-disabled-section', isDisabled);
+        root.classList.toggle('shardwright-disabled-section', isDisabled);
         buttonsByValue.forEach((button, optionValue) => {
             const isActive = optionValue === currentValue;
             button.classList.toggle('active', isActive);
@@ -46,9 +46,9 @@ export function createSegmentedToggle({
             button.disabled = isDisabled;
 
             // State-dependent inline styles (must use !important to beat ST themes)
-            forceStyle(button, 'background', isActive ? 'var(--ss-highlight)' : 'var(--ss-bg-secondary)');
-            forceStyle(button, 'background-color', isActive ? 'var(--ss-highlight)' : 'var(--ss-bg-secondary)');
-            forceStyle(button, 'color', isActive ? 'var(--ss-primary)' : 'var(--ss-text-secondary)');
+            forceStyle(button, 'background', isActive ? 'var(--shardwright-highlight)' : 'var(--shardwright-bg-secondary)');
+            forceStyle(button, 'background-color', isActive ? 'var(--shardwright-highlight)' : 'var(--shardwright-bg-secondary)');
+            forceStyle(button, 'color', isActive ? 'var(--shardwright-primary)' : 'var(--shardwright-text-secondary)');
             forceStyle(button, 'font-weight', isActive ? '600' : 'normal');
             forceStyle(button, 'z-index', isActive ? '1' : '0');
         });
@@ -56,7 +56,7 @@ export function createSegmentedToggle({
 
     const emitChange = () => {
         root.dispatchEvent(new Event('change', { bubbles: true }));
-        root.dispatchEvent(new CustomEvent('ss-segmented-change', {
+        root.dispatchEvent(new CustomEvent('shardwright-segmented-change', {
             bubbles: true,
             detail: { value: currentValue },
         }));
@@ -100,7 +100,7 @@ export function createSegmentedToggle({
         forceStyle(button, 'line-height', '1.2');
         forceStyle(button, 'cursor', 'pointer');
         forceStyle(button, 'outline', 'none');
-        forceStyle(button, 'border', '1px solid var(--ss-border)');
+        forceStyle(button, 'border', '1px solid var(--shardwright-border)');
         forceStyle(button, 'transition', 'background 0.2s ease, color 0.2s ease');
         if (index > 0) {
             forceStyle(button, 'margin-left', '-1px');
@@ -116,16 +116,16 @@ export function createSegmentedToggle({
         // Hover effects via JS since inline !important overrides CSS :hover
         button.addEventListener('mouseenter', () => {
             if (!isDisabled && optionValue !== currentValue) {
-                forceStyle(button, 'background', 'var(--ss-highlight)');
-                forceStyle(button, 'color', 'var(--ss-primary)');
+                forceStyle(button, 'background', 'var(--shardwright-highlight)');
+                forceStyle(button, 'color', 'var(--shardwright-primary)');
             }
             forceStyle(button, 'z-index', '1');
         });
         button.addEventListener('mouseleave', () => {
             if (!isDisabled) {
                 const isActive = optionValue === currentValue;
-                forceStyle(button, 'background', isActive ? 'var(--ss-highlight)' : 'var(--ss-bg-secondary)');
-                forceStyle(button, 'color', isActive ? 'var(--ss-primary)' : 'var(--ss-text-secondary)');
+                forceStyle(button, 'background', isActive ? 'var(--shardwright-highlight)' : 'var(--shardwright-bg-secondary)');
+                forceStyle(button, 'color', isActive ? 'var(--shardwright-primary)' : 'var(--shardwright-text-secondary)');
                 forceStyle(button, 'z-index', isActive ? '1' : '0');
             }
         });

@@ -45,7 +45,7 @@ function Wait-ForHealth([hashtable]$HostSpec, [int]$Attempts = 60) {
     for ($i = 0; $i -lt $Attempts; $i++) {
         Start-Sleep -Seconds 1
         try {
-            Invoke-WebRequest -Uri "http://127.0.0.1:$($HostSpec.Port)/api/plugins/summary-sharder-memory/health" -UseBasicParsing -TimeoutSec 2 | Out-Null
+            Invoke-WebRequest -Uri "http://127.0.0.1:$($HostSpec.Port)/api/plugins/shardwright-memory/health" -UseBasicParsing -TimeoutSec 2 | Out-Null
             return
         } catch {}
     }
@@ -273,7 +273,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 $proofResult = ($proofOutput -join '') | ConvertFrom-Json
 
-$baseUri = "http://127.0.0.1:$Port/api/plugins/summary-sharder-memory"
+$baseUri = "http://127.0.0.1:$Port/api/plugins/shardwright-memory"
 $csrf = Get-CsrfSession -TargetPort $Port
 $parentRevisionId = $proofResult.revisions.parentRevisionId
 $childRevisionId = $proofResult.revisions.childRevisionId

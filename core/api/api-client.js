@@ -1,6 +1,6 @@
 /**
  * Centralized API Client
- * Single source of truth for all API calls in Summary Sharder
+ * Single source of truth for all API calls in Shardwright
  */
 
 import {

@@ -25,16 +25,16 @@ export function getFabPanelIds() {
 
 function renderSections(sections) {
     return sections.map((section) => {
-        const itemClasses = ['ss-fab-section-items'];
+        const itemClasses = ['shardwright-fab-section-items'];
         if (section.layout === 'grid') {
-            itemClasses.push('ss-fab-section-items-grid');
+            itemClasses.push('shardwright-fab-section-items-grid');
         }
         const sectionTitle = section.hideTitle
             ? ''
-            : `<div class="ss-fab-section-title">${escapeHtml(section.title)}</div>`;
+            : `<div class="shardwright-fab-section-title">${escapeHtml(section.title)}</div>`;
 
         return `
-        <div class="ss-fab-section">
+        <div class="shardwright-fab-section">
             ${sectionTitle}
             <div class="${itemClasses.join(' ')}">
                 ${section.items.join('\n')}
@@ -112,7 +112,7 @@ function buildActionsPanel(snapshot) {
         sections.push({ title: 'RAG', items, layout: 'grid' });
     }
 
-    return `<div class="ss-fab-panel-content">${renderSections(sections)}</div>`;
+    return `<div class="shardwright-fab-panel-content">${renderSections(sections)}</div>`;
 }
 
 function buildConfigPanel(snapshot) {
@@ -125,30 +125,30 @@ function buildConfigPanel(snapshot) {
     const outputLabel = snapshot.outputMode === 'lorebook' ? 'Lorebook' : 'System Messages';
 
     return `
-        <div class="ss-fab-panel-content">
-            <div class="ss-fab-section">
-                <div class="ss-fab-section-title">Overview</div>
-                <div class="ss-fab-section-items">
-                    <div class="ss-fab-info-row">
-                        <span class="ss-fab-info-label">Auto/Manual:</span>
-                        <span class="ss-fab-info-value">${escapeHtml(modeLabel)}</span>
+        <div class="shardwright-fab-panel-content">
+            <div class="shardwright-fab-section">
+                <div class="shardwright-fab-section-title">Overview</div>
+                <div class="shardwright-fab-section-items">
+                    <div class="shardwright-fab-info-row">
+                        <span class="shardwright-fab-info-label">Auto/Manual:</span>
+                        <span class="shardwright-fab-info-value">${escapeHtml(modeLabel)}</span>
                     </div>
-                    <div class="ss-fab-info-row">
-                        <span class="ss-fab-info-label">Mode:</span>
-                        <span class="ss-fab-info-value">${escapeHtml(snapshot.pipelineLabel)}</span>
+                    <div class="shardwright-fab-info-row">
+                        <span class="shardwright-fab-info-label">Mode:</span>
+                        <span class="shardwright-fab-info-value">${escapeHtml(snapshot.pipelineLabel)}</span>
                     </div>
-                    <div class="ss-fab-info-row">
-                        <span class="ss-fab-info-label">RAG:</span>
-                        <span class="ss-fab-info-value">${escapeHtml(ragStatusLabel)}</span>
+                    <div class="shardwright-fab-info-row">
+                        <span class="shardwright-fab-info-label">RAG:</span>
+                        <span class="shardwright-fab-info-value">${escapeHtml(ragStatusLabel)}</span>
                     </div>
                 </div>
             </div>
 
-            <div class="ss-fab-section">
-                <div class="ss-fab-section-items">
-                    <div class="ss-fab-info-row">
-                        <span class="ss-fab-info-label">Injecting to:</span>
-                        <span class="ss-fab-info-value">${escapeHtml(outputLabel)}</span>
+            <div class="shardwright-fab-section">
+                <div class="shardwright-fab-section-items">
+                    <div class="shardwright-fab-info-row">
+                        <span class="shardwright-fab-info-label">Injecting to:</span>
+                        <span class="shardwright-fab-info-value">${escapeHtml(outputLabel)}</span>
                     </div>
                     ${snapshot.outputMode === 'lorebook' ?
                         actionBtn('open-lorebook-options', 'fa-book', 'Lorebook Options...') :
@@ -157,11 +157,11 @@ function buildConfigPanel(snapshot) {
                 </div>
             </div>
 
-            <div class="ss-fab-section">
-                <div class="ss-fab-section-items">
-                    <div class="ss-fab-info-row">
-                        <span class="ss-fab-info-label">Active API:</span>
-                        <span class="ss-fab-info-value ss-fab-info-value-small">${escapeHtml(snapshot.activeApiDisplay)}</span>
+            <div class="shardwright-fab-section">
+                <div class="shardwright-fab-section-items">
+                    <div class="shardwright-fab-info-row">
+                        <span class="shardwright-fab-info-label">Active API:</span>
+                        <span class="shardwright-fab-info-value shardwright-fab-info-value-small">${escapeHtml(snapshot.activeApiDisplay)}</span>
                     </div>
                 </div>
             </div>
@@ -199,7 +199,7 @@ function buildAdvancedPanel(snapshot) {
         );
     }
 
-    return `<div class="ss-fab-panel-content">${renderSections([configSection, managementSection])}</div>`;
+    return `<div class="shardwright-fab-panel-content">${renderSections([configSection, managementSection])}</div>`;
 }
 
 function actionBtn(action, icon, label, extraClass = '', disabled = false) {

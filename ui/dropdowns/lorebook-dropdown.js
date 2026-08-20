@@ -15,7 +15,7 @@ export class LorebookDropdown extends BaseDropdown {
         super(containerId, {
             placeholder: 'Select lorebooks...',
             searchPlaceholder: 'Search lorebooks...',
-            containerClass: 'ss-lorebook-dropdown-container',
+            containerClass: 'shardwright-lorebook-dropdown-container',
             ...options
         });
         this.selectedBooks = new Set(this.options.initialSelection || []);
@@ -27,19 +27,19 @@ export class LorebookDropdown extends BaseDropdown {
     buildHTML() {
         return `
             <div class="${this.options.containerClass}">
-                <div class="ss-selected-tags" id="${this.containerId}-tags">
+                <div class="shardwright-selected-tags" id="${this.containerId}-tags">
                     ${this.buildSelectedTags()}
                 </div>
-                <div class="ss-dropdown-trigger" id="${this.containerId}-trigger">
+                <div class="shardwright-dropdown-trigger" id="${this.containerId}-trigger">
                     <span>${this.options.placeholder}</span>
                     <span class="fa-solid fa-chevron-down"></span>
                 </div>
-                <div class="ss-dropdown-menu" id="${this.containerId}-menu">
-                    <div class="ss-dropdown-search">
+                <div class="shardwright-dropdown-menu" id="${this.containerId}-menu">
+                    <div class="shardwright-dropdown-search">
                         <input type="text" placeholder="${this.options.searchPlaceholder}"
                                id="${this.containerId}-search" />
                     </div>
-                    <div class="ss-dropdown-options" id="${this.containerId}-options">
+                    <div class="shardwright-dropdown-options" id="${this.containerId}-options">
                         ${this.buildOptions()}
                     </div>
                 </div>
@@ -56,9 +56,9 @@ export class LorebookDropdown extends BaseDropdown {
         }
 
         return Array.from(this.selectedBooks).map(name => `
-            <span class="ss-selected-tag" data-book="${escapeHtml(name)}">
+            <span class="shardwright-selected-tag" data-book="${escapeHtml(name)}">
                 ${escapeHtml(name)}
-                <span class="ss-tag-remove" data-book="${escapeHtml(name)}">&times;</span>
+                <span class="shardwright-tag-remove" data-book="${escapeHtml(name)}">&times;</span>
             </span>
         `).join('');
     }
@@ -74,9 +74,9 @@ export class LorebookDropdown extends BaseDropdown {
         }
 
         return books.map(name => `
-            <div class="ss-dropdown-option" data-book="${escapeHtml(name)}">
-                <span class="ss-option-name">${escapeHtml(name)}</span>
-                <input type="checkbox" class="ss-option-checkbox"
+            <div class="shardwright-dropdown-option" data-book="${escapeHtml(name)}">
+                <span class="shardwright-option-name">${escapeHtml(name)}</span>
+                <input type="checkbox" class="shardwright-option-checkbox"
                        data-book="${escapeHtml(name)}"
                        ${this.selectedBooks.has(name) ? 'checked' : ''} />
             </div>
@@ -111,14 +111,14 @@ export class LorebookDropdown extends BaseDropdown {
         const optionsContainer = document.getElementById(`${this.containerId}-options`);
 
         optionsContainer?.addEventListener('click', (e) => {
-            const option = e.target.closest('.ss-dropdown-option');
+            const option = e.target.closest('.shardwright-dropdown-option');
             if (!option) return;
 
             const bookName = option.dataset.book;
-            const checkbox = option.querySelector('.ss-option-checkbox');
+            const checkbox = option.querySelector('.shardwright-option-checkbox');
 
             // If clicking on the checkbox itself
-            if (e.target.classList.contains('ss-option-checkbox')) {
+            if (e.target.classList.contains('shardwright-option-checkbox')) {
                 e.stopPropagation();
                 this.toggleSelection(bookName, checkbox.checked);
                 // Keep dropdown open for multi-select
@@ -138,7 +138,7 @@ export class LorebookDropdown extends BaseDropdown {
         const tagsContainer = document.getElementById(`${this.containerId}-tags`);
 
         tagsContainer?.addEventListener('click', (e) => {
-            if (e.target.classList.contains('ss-tag-remove')) {
+            if (e.target.classList.contains('shardwright-tag-remove')) {
                 e.stopPropagation();
                 const bookName = e.target.dataset.book;
                 this.toggleSelection(bookName, false);

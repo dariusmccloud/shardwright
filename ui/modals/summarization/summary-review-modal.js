@@ -35,9 +35,9 @@ function estimateTokenCount(text) {
  */
 function getCoverageStatusClass(status) {
     switch (status) {
-        case 'covered': return 'ss-coverage-covered';
-        case 'partial': return 'ss-coverage-partial';
-        case 'missing': return 'ss-coverage-missing';
+        case 'covered': return 'shardwright-coverage-covered';
+        case 'partial': return 'shardwright-coverage-partial';
+        case 'missing': return 'shardwright-coverage-missing';
         default: return '';
     }
 }
@@ -59,7 +59,7 @@ function getCoverageEmoji(status) {
  */
 function buildEventsListHTML(events, coverageAnalysis) {
     if (events.length === 0) {
-        return '<p class="ss-empty">No events selected</p>';
+        return '<p class="shardwright-empty">No events selected</p>';
     }
 
     return events.map((event, index) => {
@@ -70,14 +70,14 @@ function buildEventsListHTML(events, coverageAnalysis) {
         const summary = event.summary || `Event ${index + 1}`;
 
         return `
-            <div class="ss-event-reference-item ${statusClass}">
-                <div class="ss-event-coverage-indicator">
-                    <span class="ss-coverage-emoji">${statusEmoji}</span>
-                    <span class="ss-coverage-percent">${Math.round(coverage.score * 100)}%</span>
+            <div class="shardwright-event-reference-item ${statusClass}">
+                <div class="shardwright-event-coverage-indicator">
+                    <span class="shardwright-coverage-emoji">${statusEmoji}</span>
+                    <span class="shardwright-coverage-percent">${Math.round(coverage.score * 100)}%</span>
                 </div>
-                <div class="ss-event-content">
-                    <div class="ss-event-summary">${escapeHtml(summary)}</div>
-                    <div class="ss-event-description">${escapeHtml(truncateText(description, 150))}</div>
+                <div class="shardwright-event-content">
+                    <div class="shardwright-event-summary">${escapeHtml(summary)}</div>
+                    <div class="shardwright-event-description">${escapeHtml(truncateText(description, 150))}</div>
                 </div>
             </div>
         `;
@@ -98,88 +98,88 @@ function buildModalHTML(summary, selectedEvents, coverageAnalysis, tokenCount, i
         : 'Review and edit the generated summary before injecting.';
 
     return `
-        <div class="ss-summary-review-modal">
-            <div class="ss-summary-review-header">
-                <div class="ss-header-left">
+        <div class="shardwright-summary-review-modal">
+            <div class="shardwright-summary-review-header">
+                <div class="shardwright-header-left">
                     <h3>Summary Review</h3>
                     <p>${description}</p>
                 </div>
-                <div class="ss-token-display">
-                    <span class="ss-token-count">${tokenCount}</span>
-                    <span class="ss-token-label">tokens (approx)</span>
+                <div class="shardwright-token-display">
+                    <span class="shardwright-token-count">${tokenCount}</span>
+                    <span class="shardwright-token-label">tokens (approx)</span>
                 </div>
             </div>
 
             ${isFullMode ? `
-                <div class="ss-coverage-summary">
-                    <span class="ss-coverage-stat ss-coverage-covered">\u{1F7E2} ${coveredCount} covered</span>
-                    <span class="ss-coverage-stat ss-coverage-partial">\u{1F7E1} ${partialCount} partial</span>
-                    <span class="ss-coverage-stat ss-coverage-missing">\u{1F534} ${missingCount} missing</span>
+                <div class="shardwright-coverage-summary">
+                    <span class="shardwright-coverage-stat shardwright-coverage-covered">\u{1F7E2} ${coveredCount} covered</span>
+                    <span class="shardwright-coverage-stat shardwright-coverage-partial">\u{1F7E1} ${partialCount} partial</span>
+                    <span class="shardwright-coverage-stat shardwright-coverage-missing">\u{1F534} ${missingCount} missing</span>
                 </div>
 
-                <div class="ss-summary-review-content">
-                    <div class="ss-events-panel">
-                        <div class="ss-panel-header">
+                <div class="shardwright-summary-review-content">
+                    <div class="shardwright-events-panel">
+                        <div class="shardwright-panel-header">
                             <h4>Selected Events</h4>
-                            <span class="ss-event-count">(${selectedEvents.length})</span>
+                            <span class="shardwright-event-count">(${selectedEvents.length})</span>
                         </div>
-                        <div class="ss-events-list-readonly" id="ss-events-reference">
+                        <div class="shardwright-events-list-readonly" id="shardwright-events-reference">
                             ${buildEventsListHTML(selectedEvents, coverageAnalysis)}
                         </div>
                     </div>
 
-                    <div class="ss-summary-panel">
-                        <div class="ss-panel-header">
+                    <div class="shardwright-summary-panel">
+                        <div class="shardwright-panel-header">
                             <h4>Generated Summary</h4>
-                            <button id="ss-toggle-edit" class="menu_button">Edit</button>
+                            <button id="shardwright-toggle-edit" class="menu_button">Edit</button>
                         </div>
-                        <div id="ss-summary-preview" class="ss-summary-preview">
+                        <div id="shardwright-summary-preview" class="shardwright-summary-preview">
                             <pre>${escapeHtml(summary)}</pre>
                         </div>
-                        <textarea id="ss-summary-editor" class="ss-summary-editor text_pole" style="display: none;">${escapeHtml(summary)}</textarea>
+                        <textarea id="shardwright-summary-editor" class="shardwright-summary-editor text_pole" style="display: none;">${escapeHtml(summary)}</textarea>
                     </div>
                 </div>
             ` : `
-                <div class="ss-summary-review-content-simple">
-                    <div class="ss-summary-panel ss-summary-panel-full">
-                        <div class="ss-panel-header">
+                <div class="shardwright-summary-review-content-simple">
+                    <div class="shardwright-summary-panel shardwright-summary-panel-full">
+                        <div class="shardwright-panel-header">
                             <h4>Generated Summary</h4>
-                            <button id="ss-toggle-edit" class="menu_button">Edit</button>
+                            <button id="shardwright-toggle-edit" class="menu_button">Edit</button>
                         </div>
-                        <div id="ss-summary-preview" class="ss-summary-preview">
+                        <div id="shardwright-summary-preview" class="shardwright-summary-preview">
                             <pre>${escapeHtml(summary)}</pre>
                         </div>
-                        <textarea id="ss-summary-editor" class="ss-summary-editor text_pole" style="display: none;">${escapeHtml(summary)}</textarea>
+                        <textarea id="shardwright-summary-editor" class="shardwright-summary-editor text_pole" style="display: none;">${escapeHtml(summary)}</textarea>
                     </div>
                 </div>
             `}
 
-            <div class="ss-regenerate-section">
-                <div class="ss-regenerate-header">
+            <div class="shardwright-regenerate-section">
+                <div class="shardwright-regenerate-header">
                     <h4>Regenerate with Note</h4>
-                    <span class="ss-regenerate-hint">Add instructions to refine the summary</span>
+                    <span class="shardwright-regenerate-hint">Add instructions to refine the summary</span>
                 </div>
-                <div class="ss-regenerate-controls">
-                    <input type="text" id="ss-regenerate-note"
+                <div class="shardwright-regenerate-controls">
+                    <input type="text" id="shardwright-regenerate-note"
                            class="text_pole"
                            placeholder="e.g., emphasize the wolf's eye color, add more detail about the battle" />
-                    <button id="ss-regenerate-btn" class="menu_button">Regenerate</button>
+                    <button id="shardwright-regenerate-btn" class="menu_button">Regenerate</button>
                 </div>
             </div>
 
-            <div class="ss-archive-section">
+            <div class="shardwright-archive-section">
                 <h4>Output Options</h4>
-                <div class="ss-archive-options">
-                    <label class="ss-archive-option">
-                        <input type="checkbox" id="ss-inject-context" checked />
+                <div class="shardwright-archive-options">
+                    <label class="shardwright-archive-option">
+                        <input type="checkbox" id="shardwright-inject-context" checked />
                         <span>Inject to context</span>
                     </label>
-                    <label class="ss-archive-option ${ragEnabled ? '' : 'ss-disabled'}" ${ragEnabled ? '' : 'title="Enable RAG to use warm archive"'}>
-                        <input type="checkbox" id="ss-archive-warm" ${ragEnabled ? '' : 'disabled'} />
+                    <label class="shardwright-archive-option ${ragEnabled ? '' : 'shardwright-disabled'}" ${ragEnabled ? '' : 'title="Enable RAG to use warm archive"'}>
+                        <input type="checkbox" id="shardwright-archive-warm" ${ragEnabled ? '' : 'disabled'} />
                         <span>Archive to warm storage (RAG-retrievable)</span>
                     </label>
-                    <label class="ss-archive-option">
-                        <input type="checkbox" id="ss-archive-cold" />
+                    <label class="shardwright-archive-option">
+                        <input type="checkbox" id="shardwright-archive-cold" />
                         <span>Save to local cold archive (history only, not RAG-retrievable)</span>
                     </label>
                 </div>
@@ -202,7 +202,7 @@ function updateCoverageDisplay(modalState) {
     const newCoverage = analyzeEventCoverage(modalState.selectedEvents, modalState.editedSummary);
     modalState.coverageAnalysis = newCoverage;
 
-    const container = document.getElementById('ss-events-reference');
+    const container = document.getElementById('shardwright-events-reference');
     if (container) {
         container.innerHTML = buildEventsListHTML(modalState.selectedEvents, newCoverage);
     }
@@ -212,12 +212,12 @@ function updateCoverageDisplay(modalState) {
     const partialCount = newCoverage.filter(c => c.status === 'partial').length;
     const missingCount = newCoverage.filter(c => c.status === 'missing').length;
 
-    const summaryEl = document.querySelector('.ss-coverage-summary');
+    const summaryEl = document.querySelector('.shardwright-coverage-summary');
     if (summaryEl) {
         summaryEl.innerHTML = `
-            <span class="ss-coverage-stat ss-coverage-covered">\u{1F7E2} ${coveredCount} covered</span>
-            <span class="ss-coverage-stat ss-coverage-partial">\u{1F7E1} ${partialCount} partial</span>
-            <span class="ss-coverage-stat ss-coverage-missing">\u{1F534} ${missingCount} missing</span>
+            <span class="shardwright-coverage-stat shardwright-coverage-covered">\u{1F7E2} ${coveredCount} covered</span>
+            <span class="shardwright-coverage-stat shardwright-coverage-partial">\u{1F7E1} ${partialCount} partial</span>
+            <span class="shardwright-coverage-stat shardwright-coverage-missing">\u{1F534} ${missingCount} missing</span>
         `;
     }
 }
@@ -227,7 +227,7 @@ function updateCoverageDisplay(modalState) {
  */
 function updateTokenDisplay(modalState) {
     modalState.tokenCount = estimateTokenCount(modalState.editedSummary);
-    const tokenDisplay = document.querySelector('.ss-token-count');
+    const tokenDisplay = document.querySelector('.shardwright-token-count');
     if (tokenDisplay) {
         tokenDisplay.textContent = modalState.tokenCount;
     }
@@ -252,9 +252,9 @@ function autoResizeTextarea(textarea) {
  */
 function setupModalHandlers(modalState, regenerateCallback) {
     // Edit toggle
-    const editBtn = document.getElementById('ss-toggle-edit');
-    const preview = document.getElementById('ss-summary-preview');
-    const editor = document.getElementById('ss-summary-editor');
+    const editBtn = document.getElementById('shardwright-toggle-edit');
+    const preview = document.getElementById('shardwright-summary-preview');
+    const editor = document.getElementById('shardwright-summary-editor');
 
     if (editBtn && preview && editor) {
         editBtn.addEventListener('click', () => {
@@ -294,7 +294,7 @@ function setupModalHandlers(modalState, regenerateCallback) {
     }
 
     // Regenerate note input
-    const noteInput = document.getElementById('ss-regenerate-note');
+    const noteInput = document.getElementById('shardwright-regenerate-note');
     if (noteInput) {
         noteInput.addEventListener('input', (e) => {
             modalState.userNote = e.target.value;
@@ -302,7 +302,7 @@ function setupModalHandlers(modalState, regenerateCallback) {
     }
 
     // Regenerate button
-    const regenerateBtn = document.getElementById('ss-regenerate-btn');
+    const regenerateBtn = document.getElementById('shardwright-regenerate-btn');
     if (regenerateBtn && regenerateCallback) {
         regenerateBtn.addEventListener('click', async () => {
             if (!modalState.userNote.trim()) {
@@ -320,8 +320,8 @@ function setupModalHandlers(modalState, regenerateCallback) {
                 modalState.originalSummary = newSummary;
 
                 // Update display
-                const preview = document.getElementById('ss-summary-preview');
-                const editor = document.getElementById('ss-summary-editor');
+                const preview = document.getElementById('shardwright-summary-preview');
+                const editor = document.getElementById('shardwright-summary-editor');
                 if (preview) preview.innerHTML = `<pre>${escapeHtml(newSummary)}</pre>`;
                 if (editor) {
                     editor.value = newSummary;
@@ -330,7 +330,7 @@ function setupModalHandlers(modalState, regenerateCallback) {
 
                 // Ensure we're in preview mode
                 if (modalState.isEditing) {
-                    const editBtn = document.getElementById('ss-toggle-edit');
+                    const editBtn = document.getElementById('shardwright-toggle-edit');
                     if (editBtn) editBtn.click();
                 }
 
@@ -339,7 +339,7 @@ function setupModalHandlers(modalState, regenerateCallback) {
                 updateTokenDisplay(modalState);
 
                 // Clear the note
-                const noteInput = document.getElementById('ss-regenerate-note');
+                const noteInput = document.getElementById('shardwright-regenerate-note');
                 if (noteInput) noteInput.value = '';
                 modalState.userNote = '';
 
@@ -354,21 +354,21 @@ function setupModalHandlers(modalState, regenerateCallback) {
     }
 
     // Archive options
-    const injectCheckbox = document.getElementById('ss-inject-context');
+    const injectCheckbox = document.getElementById('shardwright-inject-context');
     if (injectCheckbox) {
         injectCheckbox.addEventListener('change', (e) => {
             modalState.archiveOptions.injectToContext = e.target.checked;
         });
     }
 
-    const warmCheckbox = document.getElementById('ss-archive-warm');
+    const warmCheckbox = document.getElementById('shardwright-archive-warm');
     if (warmCheckbox) {
         warmCheckbox.addEventListener('change', (e) => {
             modalState.archiveOptions.archiveWarm = e.target.checked;
         });
     }
 
-    const coldCheckbox = document.getElementById('ss-archive-cold');
+    const coldCheckbox = document.getElementById('shardwright-archive-cold');
     if (coldCheckbox) {
         coldCheckbox.addEventListener('change', (e) => {
             modalState.archiveOptions.archiveCold = e.target.checked;

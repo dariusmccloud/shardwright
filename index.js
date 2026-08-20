@@ -13,6 +13,14 @@ import {
 } from '../../../extensions.js';
 import { POPUP_RESULT } from '../../../popup.js';
 import { showSsConfirm } from './ui/common/modal-base.js';
+import {
+    SHARDWRIGHT_INTERCEPTOR_GLOBAL,
+    registerShardwrightInterceptor,
+} from './core/shardwright-runtime-identity.js';
+import {
+    migrateShardwrightBrowserState,
+    migrateShardwrightSettingsIdentity,
+} from './core/shardwright-settings-migration.js';
 
 // Core modules
 import { log } from './core/logger.js';
@@ -52,8 +60,7 @@ import {
     initBackend,
 } from './core/rag/index.js';
 
-const MODULE_NAME = 'SummarySharder';
-const GENERATE_INTERCEPTOR_KEY = 'summary_sharder_rearrangeChat';
+const MODULE_NAME = 'shardwright';
 const defaultSettings = getDefaultSettings();
 
 // Runtime settings
@@ -547,6 +554,15 @@ function onChatChanged() {
                 return;
             }
 
+            await profileLoadStage(loadTrace, 'reconcile-corpus-integrity', async () => {
+                await reconcileCorpusIntegrity({
+                    reason: 'chat-changed',
+                });
+                return {
+                    completed: true,
+                };
+            });
+
             await profileLoadStage(loadTrace, 'merge-detected-hidden-ranges', async () => {
                 mergeDetectedHiddenRanges();
                 return {
@@ -559,15 +575,6 @@ function onChatChanged() {
                 await applyVisibilitySettings(settings);
                 return {
                     rangeCount: getChatRanges().length,
-                };
-            });
-
-            await profileLoadStage(loadTrace, 'reconcile-corpus-integrity', async () => {
-                await reconcileCorpusIntegrity({
-                    reason: 'chat-changed',
-                });
-                return {
-                    completed: true,
                 };
             });
 
@@ -593,9 +600,9 @@ function onChatLoaded(eventData) {
 
     const context = SillyTavern.getContext?.() || null;
     const detail = eventData?.detail || {};
-    const latestTrace = globalThis.summarySharderLoadProfiler?.getTraces?.()?.[0] || null;
+    const latestTrace = globalThis.Shardwright?.loadProfiler?.getTraces?.()?.[0] || null;
 
-    log.log('[SummarySharder][CHAT_LOADED]', {
+    log.log('[shardwright][CHAT_LOADED]', {
         at: new Date().toISOString(),
         chatId: context?.chatId || '',
         detailId: detail?.id ?? null,
@@ -674,18 +681,19 @@ async function autoInitRemoteBackend(currentSettings) {
 jQuery(async () => {
     log.log('Initializing...');
 
-    // Load saved settings from extension_settings
-    if (!extension_settings.summary_sharder) {
-        extension_settings.summary_sharder = { ...defaultSettings };
-    }
-
-    // Merge saved settings with defaults
+    await migrateShardwrightBrowserState({
+        localStorage: globalThis.localStorage,
+        sessionStorage: globalThis.sessionStorage,
+    });
+    const identitySettings = await migrateShardwrightSettingsIdentity({
+        extensionSettings: extension_settings,
+        defaults: defaultSettings,
+        normalizeSettings: migrateSettings,
+    });
     settings = {
         ...defaultSettings,
-        ...extension_settings.summary_sharder,
+        ...identitySettings,
     };
-
-    // Run migration for any old settings formats
     migrateSettings(settings);
     saveSettings(settings);
     setLastSummarizedIndexCallback(setLastSummarizedIndex);
@@ -893,10 +901,10 @@ jQuery(async () => {
 
     // Apply visibility on load (use async to properly await)
     setTimeout(async () => {
-        await applyVisibilitySettings(settings);
         await reconcileCorpusIntegrity({
             reason: 'initial-load',
         });
+        await applyVisibilitySettings(settings);
         cacheCurrentChatState();
     }, 1000);
 
@@ -929,10 +937,10 @@ jQuery(async () => {
     initCollectionLifecycle();
 
     // Register retrieval interceptor for generation pipeline.
-    globalThis[GENERATE_INTERCEPTOR_KEY] = rearrangeChat;
-    if (typeof globalThis[GENERATE_INTERCEPTOR_KEY] !== 'function') {
+    registerShardwrightInterceptor(rearrangeChat, globalThis);
+    if (typeof globalThis[SHARDWRIGHT_INTERCEPTOR_GLOBAL] !== 'function') {
         log.warn(
-            `Failed to register generation interceptor "${GENERATE_INTERCEPTOR_KEY}". ` +
+            `Failed to register generation interceptor "${SHARDWRIGHT_INTERCEPTOR_GLOBAL}". ` +
             `RAG retrieval will not run on send. Ensure manifest.generate_interceptor matches this key.`
         );
     }

@@ -1,5 +1,5 @@
 /**
- * Theme data/state management for Summary Sharder
+ * Theme data/state management for Shardwright
  */
 
 import { BUILTIN_THEMES } from '../../common/builtin-themes.js';
@@ -31,36 +31,36 @@ let currentTheme = 'default';
  * Required color properties for theme validation
  */
 const REQUIRED_COLORS = [
-    '--ss-primary',
-    '--ss-bg-primary',
-    '--ss-bg-secondary',
-    '--ss-text-primary',
-    '--ss-border',
-    '--ss-success',
-    '--ss-warning',
-    '--ss-error',
+    '--shardwright-primary',
+    '--shardwright-bg-primary',
+    '--shardwright-bg-secondary',
+    '--shardwright-text-primary',
+    '--shardwright-border',
+    '--shardwright-success',
+    '--shardwright-warning',
+    '--shardwright-error',
 ];
 
 /**
  * All valid color properties
  */
 const VALID_COLOR_PROPS = [
-    '--ss-primary', '--ss-primary-hover', '--ss-primary-active',
-    '--ss-bg-primary', '--ss-bg-secondary', '--ss-bg-tertiary', '--ss-bg-input',
-    '--ss-text-primary', '--ss-text-secondary', '--ss-text-muted',
-    '--ss-border', '--ss-border-focus',
-    '--ss-success', '--ss-warning', '--ss-error', '--ss-info',
-    '--ss-weight-critical', '--ss-weight-major', '--ss-weight-moderate',
-    '--ss-weight-minor', '--ss-weight-trivial',
-    '--ss-nsfw-accent', '--ss-highlight', '--ss-quote',
-    '--ss-shadow', '--ss-shadow-lg',
-    '--ss-transition',
-    '--ss-text-hint', '--ss-rescue-bg', '--ss-rescue-bg-hover',
-    '--ss-stop-hover', '--ss-overlay-bg', '--ss-focus-glow',
+    '--shardwright-primary', '--shardwright-primary-hover', '--shardwright-primary-active',
+    '--shardwright-bg-primary', '--shardwright-bg-secondary', '--shardwright-bg-tertiary', '--shardwright-bg-input',
+    '--shardwright-text-primary', '--shardwright-text-secondary', '--shardwright-text-muted',
+    '--shardwright-border', '--shardwright-border-focus',
+    '--shardwright-success', '--shardwright-warning', '--shardwright-error', '--shardwright-info',
+    '--shardwright-weight-critical', '--shardwright-weight-major', '--shardwright-weight-moderate',
+    '--shardwright-weight-minor', '--shardwright-weight-trivial',
+    '--shardwright-nsfw-accent', '--shardwright-highlight', '--shardwright-quote',
+    '--shardwright-shadow', '--shardwright-shadow-lg',
+    '--shardwright-transition',
+    '--shardwright-text-hint', '--shardwright-rescue-bg', '--shardwright-rescue-bg-hover',
+    '--shardwright-stop-hover', '--shardwright-overlay-bg', '--shardwright-focus-glow',
 
     // Typography (optional)
-    '--ss-font-primary', '--ss-font-secondary', '--ss-font-muted', '--ss-font-hint',
-    '--ss-font-size-primary', '--ss-font-size-secondary', '--ss-font-size-muted', '--ss-font-size-hint',
+    '--shardwright-font-primary', '--shardwright-font-secondary', '--shardwright-font-muted', '--shardwright-font-hint',
+    '--shardwright-font-size-primary', '--shardwright-font-size-secondary', '--shardwright-font-size-muted', '--shardwright-font-size-hint',
 ];
 
 /**
@@ -104,14 +104,14 @@ export function applyTheme(themeId) {
     // Apply CSS custom properties to extension elements only (not :root)
     // Target the main settings panel and all modals
     const targetSelectors = [
-        '#summary-sharder-settings',
-        '#summary-sharder-panel',
-        '.ss-modal',
-        '[class*="ss-"][class*="-modal"]',
-        '.popup.ss-owned-popup',
-        '.ss-fab',
-        '.ss-fab-panels',
-        '.ss-fab-shard-overlay'
+        '#shardwright-settings',
+        '#shardwright-panel',
+        '.shardwright-modal',
+        '[class*="shardwright-"][class*="-modal"]',
+        '.popup.shardwright-owned-popup',
+        '.shardwright-fab',
+        '.shardwright-fab-panels',
+        '.shardwright-fab-shard-overlay'
     ];
 
     // Apply to existing elements
@@ -125,7 +125,7 @@ export function applyTheme(themeId) {
 
     // Also apply to popup wrappers that contain our modals (for popup-controls buttons)
     document.querySelectorAll('.popup').forEach(popup => {
-        if (popup.classList.contains('ss-owned-popup') || popup.querySelector('[class*="ss-"][class*="-modal"]')) {
+        if (popup.classList.contains('shardwright-owned-popup') || popup.querySelector('[class*="shardwright-"][class*="-modal"]')) {
             Object.entries(selectedTheme.colors).forEach(([property, value]) => {
                 popup.style.setProperty(property, value);
             });
@@ -133,13 +133,13 @@ export function applyTheme(themeId) {
     });
 
     // Also inject a dynamic style block for future elements (modals that don't exist yet)
-    let dynamicStyleEl = document.getElementById('ss-theme-dynamic-vars');
+    let dynamicStyleEl = document.getElementById('shardwright-theme-dynamic-vars');
     if (dynamicStyleEl) {
         // Remove existing to ensure it's at the end (after main styles)
         dynamicStyleEl.remove();
     }
     dynamicStyleEl = document.createElement('style');
-    dynamicStyleEl.id = 'ss-theme-dynamic-vars';
+    dynamicStyleEl.id = 'shardwright-theme-dynamic-vars';
     document.head.appendChild(dynamicStyleEl);
 
     // Build CSS for dynamic application to future elements
@@ -150,26 +150,26 @@ export function applyTheme(themeId) {
 
     dynamicStyleEl.textContent = `
         /* Theme override styles - higher specificity */
-        html #summary-sharder-settings,
-        html #summary-sharder-panel,
-        html .ss-modal,
-        html [class*="ss-"][class*="-modal"],
-        html .popup.ss-owned-popup,
-        html .popup:has([class*="ss-"][class*="-modal"]),
-        html .ss-fab,
-        html .ss-fab-panels,
-        html .ss-fab-shard-overlay {
+        html #shardwright-settings,
+        html #shardwright-panel,
+        html .shardwright-modal,
+        html [class*="shardwright-"][class*="-modal"],
+        html .popup.shardwright-owned-popup,
+        html .popup:has([class*="shardwright-"][class*="-modal"]),
+        html .shardwright-fab,
+        html .shardwright-fab-panels,
+        html .shardwright-fab-shard-overlay {
             ${cssVars}
         }
     `;
 
     // Remove all theme classes
     Object.keys(themes).forEach(id => {
-        document.body.classList.remove(`ss-theme-${id}`);
+        document.body.classList.remove(`shardwright-theme-${id}`);
     });
 
     // Add current theme class
-    document.body.classList.add(`ss-theme-${themeId}`);
+    document.body.classList.add(`shardwright-theme-${themeId}`);
 
     // Handle extra styles
     removeExtraStyles();
@@ -179,7 +179,7 @@ export function applyTheme(themeId) {
 
     currentTheme = themeId;
 
-    window.dispatchEvent(new CustomEvent('ss-theme-changed', {
+    window.dispatchEvent(new CustomEvent('shardwright-theme-changed', {
         detail: { theme: themeId }
     }));
 }
@@ -204,7 +204,7 @@ export function getCustomThemes() {
 function injectExtraStyles(css) {
     removeExtraStyles();
     const style = document.createElement('style');
-    style.id = 'ss-theme-extra-styles';
+    style.id = 'shardwright-theme-extra-styles';
     style.textContent = css;
     document.head.appendChild(style);
 }
@@ -213,7 +213,7 @@ function injectExtraStyles(css) {
  * Remove extra theme styles
  */
 function removeExtraStyles() {
-    const existing = document.getElementById('ss-theme-extra-styles');
+    const existing = document.getElementById('shardwright-theme-extra-styles');
     if (existing) existing.remove();
 }
 

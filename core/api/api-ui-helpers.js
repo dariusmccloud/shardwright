@@ -10,7 +10,7 @@ function nextOperationId(feature) {
 }
 
 export function dispatchUiOperationState(detail) {
-    window.dispatchEvent(new CustomEvent('ss-ui-operation-state', { detail }));
+    window.dispatchEvent(new CustomEvent('shardwright-ui-operation-state', { detail }));
 }
 
 /**
@@ -37,7 +37,7 @@ export function startUiOperation({
         opId,
     });
 
-    window.dispatchEvent(new CustomEvent('ss-operation-started'));
+    window.dispatchEvent(new CustomEvent('shardwright-operation-started'));
     return opId;
 }
 
@@ -89,7 +89,7 @@ export function endUiOperation({
         opId,
     });
 
-    window.dispatchEvent(new CustomEvent('ss-operation-ended'));
+    window.dispatchEvent(new CustomEvent('shardwright-operation-ended'));
 }
 
 /**

@@ -3,100 +3,100 @@ export const VARIABLES_CSS = `
    SECTION 1: CSS VARIABLES & THEMING
    ========================================================================== */
 
-#summary-sharder-settings,
-#summary-sharder-panel,
-.ss-modal,
-[class*="ss-"][class*="-modal"],
-.popup:has([class*="ss-"][class*="-modal"]),
-.popup.ss-owned-popup,
-.ss-fab,
-.ss-fab-panels,
-.ss-fab-generating,
-.ss-info-hint-popover {
+#shardwright-settings,
+#shardwright-panel,
+.shardwright-modal,
+[class*="shardwright-"][class*="-modal"],
+.popup:has([class*="shardwright-"][class*="-modal"]),
+.popup.shardwright-owned-popup,
+.shardwright-fab,
+.shardwright-fab-panels,
+.shardwright-fab-generating,
+.shardwright-info-hint-popover {
     /* Primary colors */
-    --ss-primary: var(--SmartThemeQuoteColor, rgba(198, 198, 198, 1));
-    --ss-primary-hover: var(--SmartThemeQuoteColor, rgba(128, 128, 128, 1));
-    --ss-primary-active: var(--SmartThemeQuoteColor, rgba(198, 198, 198, 1));
+    --shardwright-primary: var(--SmartThemeQuoteColor, rgba(198, 198, 198, 1));
+    --shardwright-primary-hover: var(--SmartThemeQuoteColor, rgba(128, 128, 128, 1));
+    --shardwright-primary-active: var(--SmartThemeQuoteColor, rgba(198, 198, 198, 1));
 
     /* Background colors */
-    --ss-bg-primary: var(--SmartThemeBlurTintColor, rgba(0, 0, 0, 0.45));
-    --ss-bg-secondary: rgba(0, 0, 0, 0.2);
-    --ss-bg-tertiary: rgba(0, 0, 0, 0.3);
-    --ss-bg-input: rgba(0, 0, 0, 0.3);
+    --shardwright-bg-primary: var(--SmartThemeBlurTintColor, rgba(0, 0, 0, 0.45));
+    --shardwright-bg-secondary: rgba(0, 0, 0, 0.2);
+    --shardwright-bg-tertiary: rgba(0, 0, 0, 0.3);
+    --shardwright-bg-input: rgba(0, 0, 0, 0.3);
 
     /* Text colors */
-    --ss-text-primary: var(--SmartThemeBodyColor, #ffffff);
-    --ss-text-secondary: color-mix(in srgb, var(--ss-text-primary) 72%, transparent);
-    --ss-text-muted: color-mix(in srgb, var(--ss-text-primary) 52%, transparent);
-    --ss-text-hint: color-mix(in srgb, var(--ss-text-primary) 45%, transparent);
-    --ss-quote: var(--SmartThemeQuoteColor, #b4a7d6);
+    --shardwright-text-primary: var(--SmartThemeBodyColor, #ffffff);
+    --shardwright-text-secondary: color-mix(in srgb, var(--shardwright-text-primary) 72%, transparent);
+    --shardwright-text-muted: color-mix(in srgb, var(--shardwright-text-primary) 52%, transparent);
+    --shardwright-text-hint: color-mix(in srgb, var(--shardwright-text-primary) 45%, transparent);
+    --shardwright-quote: var(--SmartThemeQuoteColor, #b4a7d6);
 
     /* Border colors */
-    --ss-border: color-mix(in srgb, var(--ss-text-primary) 16%, transparent);
-    --ss-border-focus: var(--ss-primary);
+    --shardwright-border: color-mix(in srgb, var(--shardwright-text-primary) 16%, transparent);
+    --shardwright-border-focus: var(--shardwright-primary);
 
     /* Status colors */
-    --ss-success: #4caf50;
-    --ss-warning: #ff9800;
-    --ss-error: #f44336;
-    --ss-info: #2196f3;
+    --shardwright-success: #4caf50;
+    --shardwright-warning: #ff9800;
+    --shardwright-error: #f44336;
+    --shardwright-info: #2196f3;
 
     /* Shadows */
-    --ss-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-    --ss-shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.4);
+    --shardwright-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    --shardwright-shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.4);
 
     /* Effects */
-    --ss-highlight: color-mix(in srgb, var(--ss-primary) 22%, transparent);
-    --ss-overlay-bg: rgba(0, 0, 0, 0.6);
-    --ss-focus-glow: color-mix(in srgb, var(--ss-primary) 28%, transparent);
-    --ss-nsfw-accent: #ff6b9d;
-    --ss-consolidation: #9b59b6;
+    --shardwright-highlight: color-mix(in srgb, var(--shardwright-primary) 22%, transparent);
+    --shardwright-overlay-bg: rgba(0, 0, 0, 0.6);
+    --shardwright-focus-glow: color-mix(in srgb, var(--shardwright-primary) 28%, transparent);
+    --shardwright-nsfw-accent: #ff6b9d;
+    --shardwright-consolidation: #9b59b6;
 
     /* Motion */
-    --ss-transition: 0.2s ease;
+    --shardwright-transition: 0.2s ease;
 
     /* Action buttons */
-    --ss-rescue-bg: #9b59b6;
-    --ss-rescue-bg-hover: #8e44ad;
-    --ss-stop-bg: #e74c3c;
-    --ss-stop-hover: #c0392b;
+    --shardwright-rescue-bg: #9b59b6;
+    --shardwright-rescue-bg-hover: #8e44ad;
+    --shardwright-stop-bg: #e74c3c;
+    --shardwright-stop-hover: #c0392b;
 
     /* Weight colors */
-    --ss-weight-critical: #ff4444;
-    --ss-weight-major: #ff8c00;
-    --ss-weight-moderate: #ffd700;
-    --ss-weight-minor: #90ee90;
-    --ss-weight-trivial: #d3d3d3;
+    --shardwright-weight-critical: #ff4444;
+    --shardwright-weight-major: #ff8c00;
+    --shardwright-weight-moderate: #ffd700;
+    --shardwright-weight-minor: #90ee90;
+    --shardwright-weight-trivial: #d3d3d3;
 
     /* Font aliases used across modules */
-    --ss-font-secondary: var(--ss-font-primary, var(--mainFontFamily, inherit));
-    --ss-font-size-secondary: var(--ss-font-size-primary, var(--mainFontSize, inherit));
-    --ss-font-muted: var(--ss-font-primary, var(--mainFontFamily, inherit));
-    --ss-font-size-muted: 0.9em;
-    --ss-font-hint: var(--ss-font-primary, var(--mainFontFamily, inherit));
-    --ss-font-size-hint: 0.85em;
+    --shardwright-font-secondary: var(--shardwright-font-primary, var(--mainFontFamily, inherit));
+    --shardwright-font-size-secondary: var(--shardwright-font-size-primary, var(--mainFontSize, inherit));
+    --shardwright-font-muted: var(--shardwright-font-primary, var(--mainFontFamily, inherit));
+    --shardwright-font-size-muted: 0.9em;
+    --shardwright-font-hint: var(--shardwright-font-primary, var(--mainFontFamily, inherit));
+    --shardwright-font-size-hint: 0.85em;
 }
 
 /* Font normalization for SS surfaces */
-#summary-sharder-settings,
-#summary-sharder-panel,
-.ss-modal,
-[class*="ss-"][class*="-modal"],
-.popup:has([class*="ss-"][class*="-modal"]),
-.popup.ss-owned-popup,
-.ss-fab,
-.ss-fab-panels {
-    font-family: var(--ss-font-primary, var(--mainFontFamily, var(--mainFont, inherit)));
-    font-size: var(--ss-font-size-primary, var(--mainFontSize, inherit));
+#shardwright-settings,
+#shardwright-panel,
+.shardwright-modal,
+[class*="shardwright-"][class*="-modal"],
+.popup:has([class*="shardwright-"][class*="-modal"]),
+.popup.shardwright-owned-popup,
+.shardwright-fab,
+.shardwright-fab-panels {
+    font-family: var(--shardwright-font-primary, var(--mainFontFamily, var(--mainFont, inherit)));
+    font-size: var(--shardwright-font-size-primary, var(--mainFontSize, inherit));
 }
 
-#summary-sharder-settings :is(button, input, select, textarea),
-#summary-sharder-panel :is(button, input, select, textarea),
-.ss-modal :is(button, input, select, textarea),
-[class*="ss-"][class*="-modal"] :is(button, input, select, textarea),
-.popup:has([class*="ss-"][class*="-modal"]) :is(button, input, select, textarea),
-.popup.ss-owned-popup :is(button, input, select, textarea),
-.ss-fab-panels :is(button, input, select, textarea) {
+#shardwright-settings :is(button, input, select, textarea),
+#shardwright-panel :is(button, input, select, textarea),
+.shardwright-modal :is(button, input, select, textarea),
+[class*="shardwright-"][class*="-modal"] :is(button, input, select, textarea),
+.popup:has([class*="shardwright-"][class*="-modal"]) :is(button, input, select, textarea),
+.popup.shardwright-owned-popup :is(button, input, select, textarea),
+.shardwright-fab-panels :is(button, input, select, textarea) {
     font-family: inherit;
     font-size: inherit;
 }
@@ -109,93 +109,93 @@ export const VARIABLES_CSS = `
    ========================================================================== */
 
 /* Range sliders */
-#summary-sharder-settings input[type="range"],
-#summary-sharder-panel input[type="range"],
-.ss-modal input[type="range"],
-[class*="ss-"][class*="-modal"] input[type="range"],
-.popup:has([class*="ss-"][class*="-modal"]) input[type="range"],
-.ss-fab input[type="range"],
-.ss-fab-panels input[type="range"],
-.ss-fab-generating input[type="range"] {
-    background: var(--ss-border) !important;
+#shardwright-settings input[type="range"],
+#shardwright-panel input[type="range"],
+.shardwright-modal input[type="range"],
+[class*="shardwright-"][class*="-modal"] input[type="range"],
+.popup:has([class*="shardwright-"][class*="-modal"]) input[type="range"],
+.shardwright-fab input[type="range"],
+.shardwright-fab-panels input[type="range"],
+.shardwright-fab-generating input[type="range"] {
+    background: var(--shardwright-border) !important;
     box-shadow: none !important;
     filter: none !important;
     outline: none !important;
 }
 
-#summary-sharder-settings .ss-range-pair,
-#summary-sharder-panel .ss-range-pair,
-.ss-modal .ss-range-pair,
-[class*="ss-"][class*="-modal"] .ss-range-pair,
-.popup:has([class*="ss-"][class*="-modal"]) .ss-range-pair,
-.ss-fab .ss-range-pair,
-.ss-fab-panels .ss-range-pair,
-.ss-fab-generating .ss-range-pair {
+#shardwright-settings .shardwright-range-pair,
+#shardwright-panel .shardwright-range-pair,
+.shardwright-modal .shardwright-range-pair,
+[class*="shardwright-"][class*="-modal"] .shardwright-range-pair,
+.popup:has([class*="shardwright-"][class*="-modal"]) .shardwright-range-pair,
+.shardwright-fab .shardwright-range-pair,
+.shardwright-fab-panels .shardwright-range-pair,
+.shardwright-fab-generating .shardwright-range-pair {
     display: grid !important;
     grid-template-columns: minmax(0, 1fr) auto auto !important;
     column-gap: 8px !important;
     align-items: center !important;
 }
 
-#summary-sharder-settings .ss-range-number,
-#summary-sharder-panel .ss-range-number,
-.ss-modal .ss-range-number,
-[class*="ss-"][class*="-modal"] .ss-range-number,
-.popup:has([class*="ss-"][class*="-modal"]) .ss-range-number,
-.ss-fab .ss-range-number,
-.ss-fab-panels .ss-range-number,
-.ss-fab-generating .ss-range-number {
+#shardwright-settings .shardwright-range-number,
+#shardwright-panel .shardwright-range-number,
+.shardwright-modal .shardwright-range-number,
+[class*="shardwright-"][class*="-modal"] .shardwright-range-number,
+.popup:has([class*="shardwright-"][class*="-modal"]) .shardwright-range-number,
+.shardwright-fab .shardwright-range-number,
+.shardwright-fab-panels .shardwright-range-number,
+.shardwright-fab-generating .shardwright-range-number {
     width: 6ch !important;
     min-width: 6ch !important;
     text-align: right !important;
 }
 
-#summary-sharder-settings .ss-range-unit,
-#summary-sharder-panel .ss-range-unit,
-.ss-modal .ss-range-unit,
-[class*="ss-"][class*="-modal"] .ss-range-unit,
-.popup:has([class*="ss-"][class*="-modal"]) .ss-range-unit,
-.ss-fab .ss-range-unit,
-.ss-fab-panels .ss-range-unit,
-.ss-fab-generating .ss-range-unit {
+#shardwright-settings .shardwright-range-unit,
+#shardwright-panel .shardwright-range-unit,
+.shardwright-modal .shardwright-range-unit,
+[class*="shardwright-"][class*="-modal"] .shardwright-range-unit,
+.popup:has([class*="shardwright-"][class*="-modal"]) .shardwright-range-unit,
+.shardwright-fab .shardwright-range-unit,
+.shardwright-fab-panels .shardwright-range-unit,
+.shardwright-fab-generating .shardwright-range-unit {
     white-space: nowrap !important;
 }
 
 /* Range slider thumbs */
-#summary-sharder-settings input[type="range"]::-webkit-slider-thumb,
-#summary-sharder-panel input[type="range"]::-webkit-slider-thumb,
-.ss-modal input[type="range"]::-webkit-slider-thumb,
-[class*="ss-"][class*="-modal"] input[type="range"]::-webkit-slider-thumb,
-.popup:has([class*="ss-"][class*="-modal"]) input[type="range"]::-webkit-slider-thumb,
-.ss-fab input[type="range"]::-webkit-slider-thumb,
-.ss-fab-panels input[type="range"]::-webkit-slider-thumb,
-.ss-fab-generating input[type="range"]::-webkit-slider-thumb {
-    background: var(--ss-primary) !important;
-    border: 2px solid var(--ss-bg-primary) !important;
+#shardwright-settings input[type="range"]::-webkit-slider-thumb,
+#shardwright-panel input[type="range"]::-webkit-slider-thumb,
+.shardwright-modal input[type="range"]::-webkit-slider-thumb,
+[class*="shardwright-"][class*="-modal"] input[type="range"]::-webkit-slider-thumb,
+.popup:has([class*="shardwright-"][class*="-modal"]) input[type="range"]::-webkit-slider-thumb,
+.shardwright-fab input[type="range"]::-webkit-slider-thumb,
+.shardwright-fab-panels input[type="range"]::-webkit-slider-thumb,
+.shardwright-fab-generating input[type="range"]::-webkit-slider-thumb {
+    background: var(--shardwright-primary) !important;
+    border: 2px solid var(--shardwright-bg-primary) !important;
     box-shadow: none !important;
 }
 
 /* Checkboxes */
-#summary-sharder-settings input[type="checkbox"],
-#summary-sharder-panel input[type="checkbox"],
-.ss-modal input[type="checkbox"],
-[class*="ss-"][class*="-modal"] input[type="checkbox"],
-.popup:has([class*="ss-"][class*="-modal"]) input[type="checkbox"],
-.ss-fab input[type="checkbox"],
-.ss-fab-panels input[type="checkbox"],
-.ss-fab-generating input[type="checkbox"] {
-    accent-color: var(--ss-primary) !important;
+#shardwright-settings input[type="checkbox"],
+#shardwright-panel input[type="checkbox"],
+.shardwright-modal input[type="checkbox"],
+[class*="shardwright-"][class*="-modal"] input[type="checkbox"],
+.popup:has([class*="shardwright-"][class*="-modal"]) input[type="checkbox"],
+.shardwright-fab input[type="checkbox"],
+.shardwright-fab-panels input[type="checkbox"],
+.shardwright-fab-generating input[type="checkbox"] {
+    accent-color: var(--shardwright-primary) !important;
 }
 
 /* Checkbox labels: custom skin to avoid host-theme checkbox/tick overrides */
-#summary-sharder-settings .checkbox_label input[type="checkbox"],
-#summary-sharder-panel .checkbox_label input[type="checkbox"],
-.ss-modal .checkbox_label input[type="checkbox"],
-[class*="ss-"][class*="-modal"] .checkbox_label input[type="checkbox"],
-.popup:has([class*="ss-"][class*="-modal"]) .checkbox_label input[type="checkbox"],
-.ss-fab .checkbox_label input[type="checkbox"],
-.ss-fab-panels .checkbox_label input[type="checkbox"],
-.ss-fab-generating .checkbox_label input[type="checkbox"] {
+#shardwright-settings .checkbox_label input[type="checkbox"],
+#shardwright-panel .checkbox_label input[type="checkbox"],
+.shardwright-modal .checkbox_label input[type="checkbox"],
+[class*="shardwright-"][class*="-modal"] .checkbox_label input[type="checkbox"],
+.popup:has([class*="shardwright-"][class*="-modal"]) .checkbox_label input[type="checkbox"],
+.shardwright-fab .checkbox_label input[type="checkbox"],
+.shardwright-fab-panels .checkbox_label input[type="checkbox"],
+.shardwright-fab-generating .checkbox_label input[type="checkbox"] {
     appearance: none !important;
     -webkit-appearance: none !important;
     width: 16px !important;
@@ -203,8 +203,8 @@ export const VARIABLES_CSS = `
     min-width: 16px !important;
     margin: 0 !important;
     border-radius: 3px !important;
-    border: 1px solid var(--ss-border) !important;
-    background: var(--ss-bg-tertiary) !important;
+    border: 1px solid var(--shardwright-border) !important;
+    background: var(--shardwright-bg-tertiary) !important;
     box-shadow: none !important;
     filter: none !important;
     display: inline-grid !important;
@@ -213,93 +213,93 @@ export const VARIABLES_CSS = `
     position: relative !important;
 }
 
-#summary-sharder-settings .checkbox_label input[type="checkbox"]::before,
-#summary-sharder-panel .checkbox_label input[type="checkbox"]::before,
-.ss-modal .checkbox_label input[type="checkbox"]::before,
-[class*="ss-"][class*="-modal"] .checkbox_label input[type="checkbox"]::before,
-.popup:has([class*="ss-"][class*="-modal"]) .checkbox_label input[type="checkbox"]::before,
-.ss-fab .checkbox_label input[type="checkbox"]::before,
-.ss-fab-panels .checkbox_label input[type="checkbox"]::before,
-.ss-fab-generating .checkbox_label input[type="checkbox"]::before {
+#shardwright-settings .checkbox_label input[type="checkbox"]::before,
+#shardwright-panel .checkbox_label input[type="checkbox"]::before,
+.shardwright-modal .checkbox_label input[type="checkbox"]::before,
+[class*="shardwright-"][class*="-modal"] .checkbox_label input[type="checkbox"]::before,
+.popup:has([class*="shardwright-"][class*="-modal"]) .checkbox_label input[type="checkbox"]::before,
+.shardwright-fab .checkbox_label input[type="checkbox"]::before,
+.shardwright-fab-panels .checkbox_label input[type="checkbox"]::before,
+.shardwright-fab-generating .checkbox_label input[type="checkbox"]::before {
     content: '' !important;
     width: 9px !important;
     height: 9px !important;
     transform: scale(0) !important;
-    transition: transform var(--ss-transition) !important;
+    transition: transform var(--shardwright-transition) !important;
     clip-path: polygon(14% 44%, 0 59%, 43% 100%, 100% 22%, 84% 8%, 43% 69%) !important;
-    background: var(--ss-bg-primary) !important;
+    background: var(--shardwright-bg-primary) !important;
 }
 
-#summary-sharder-settings .checkbox_label input[type="checkbox"]:checked,
-#summary-sharder-panel .checkbox_label input[type="checkbox"]:checked,
-.ss-modal .checkbox_label input[type="checkbox"]:checked,
-[class*="ss-"][class*="-modal"] .checkbox_label input[type="checkbox"]:checked,
-.popup:has([class*="ss-"][class*="-modal"]) .checkbox_label input[type="checkbox"]:checked,
-.ss-fab .checkbox_label input[type="checkbox"]:checked,
-.ss-fab-panels .checkbox_label input[type="checkbox"]:checked,
-.ss-fab-generating .checkbox_label input[type="checkbox"]:checked {
-    background: var(--ss-primary) !important;
-    border-color: var(--ss-primary) !important;
+#shardwright-settings .checkbox_label input[type="checkbox"]:checked,
+#shardwright-panel .checkbox_label input[type="checkbox"]:checked,
+.shardwright-modal .checkbox_label input[type="checkbox"]:checked,
+[class*="shardwright-"][class*="-modal"] .checkbox_label input[type="checkbox"]:checked,
+.popup:has([class*="shardwright-"][class*="-modal"]) .checkbox_label input[type="checkbox"]:checked,
+.shardwright-fab .checkbox_label input[type="checkbox"]:checked,
+.shardwright-fab-panels .checkbox_label input[type="checkbox"]:checked,
+.shardwright-fab-generating .checkbox_label input[type="checkbox"]:checked {
+    background: var(--shardwright-primary) !important;
+    border-color: var(--shardwright-primary) !important;
 }
 
-#summary-sharder-settings .checkbox_label input[type="checkbox"]:checked::before,
-#summary-sharder-panel .checkbox_label input[type="checkbox"]:checked::before,
-.ss-modal .checkbox_label input[type="checkbox"]:checked::before,
-[class*="ss-"][class*="-modal"] .checkbox_label input[type="checkbox"]:checked::before,
-.popup:has([class*="ss-"][class*="-modal"]) .checkbox_label input[type="checkbox"]:checked::before,
-.ss-fab .checkbox_label input[type="checkbox"]:checked::before,
-.ss-fab-panels .checkbox_label input[type="checkbox"]:checked::before,
-.ss-fab-generating .checkbox_label input[type="checkbox"]:checked::before {
+#shardwright-settings .checkbox_label input[type="checkbox"]:checked::before,
+#shardwright-panel .checkbox_label input[type="checkbox"]:checked::before,
+.shardwright-modal .checkbox_label input[type="checkbox"]:checked::before,
+[class*="shardwright-"][class*="-modal"] .checkbox_label input[type="checkbox"]:checked::before,
+.popup:has([class*="shardwright-"][class*="-modal"]) .checkbox_label input[type="checkbox"]:checked::before,
+.shardwright-fab .checkbox_label input[type="checkbox"]:checked::before,
+.shardwright-fab-panels .checkbox_label input[type="checkbox"]:checked::before,
+.shardwright-fab-generating .checkbox_label input[type="checkbox"]:checked::before {
     transform: scale(1) !important;
 }
 
-#summary-sharder-settings .checkbox_label input[type="checkbox"]:focus-visible,
-#summary-sharder-panel .checkbox_label input[type="checkbox"]:focus-visible,
-.ss-modal .checkbox_label input[type="checkbox"]:focus-visible,
-[class*="ss-"][class*="-modal"] .checkbox_label input[type="checkbox"]:focus-visible,
-.popup:has([class*="ss-"][class*="-modal"]) .checkbox_label input[type="checkbox"]:focus-visible,
-.ss-fab .checkbox_label input[type="checkbox"]:focus-visible,
-.ss-fab-panels .checkbox_label input[type="checkbox"]:focus-visible,
-.ss-fab-generating .checkbox_label input[type="checkbox"]:focus-visible {
-    outline: 1px solid var(--ss-border-focus) !important;
+#shardwright-settings .checkbox_label input[type="checkbox"]:focus-visible,
+#shardwright-panel .checkbox_label input[type="checkbox"]:focus-visible,
+.shardwright-modal .checkbox_label input[type="checkbox"]:focus-visible,
+[class*="shardwright-"][class*="-modal"] .checkbox_label input[type="checkbox"]:focus-visible,
+.popup:has([class*="shardwright-"][class*="-modal"]) .checkbox_label input[type="checkbox"]:focus-visible,
+.shardwright-fab .checkbox_label input[type="checkbox"]:focus-visible,
+.shardwright-fab-panels .checkbox_label input[type="checkbox"]:focus-visible,
+.shardwright-fab-generating .checkbox_label input[type="checkbox"]:focus-visible {
+    outline: 1px solid var(--shardwright-border-focus) !important;
     outline-offset: 2px !important;
 }
 
-#summary-sharder-settings .checkbox_label input[type="checkbox"]:disabled,
-#summary-sharder-panel .checkbox_label input[type="checkbox"]:disabled,
-.ss-modal .checkbox_label input[type="checkbox"]:disabled,
-[class*="ss-"][class*="-modal"] .checkbox_label input[type="checkbox"]:disabled,
-.popup:has([class*="ss-"][class*="-modal"]) .checkbox_label input[type="checkbox"]:disabled,
-.ss-fab .checkbox_label input[type="checkbox"]:disabled,
-.ss-fab-panels .checkbox_label input[type="checkbox"]:disabled,
-.ss-fab-generating .checkbox_label input[type="checkbox"]:disabled {
+#shardwright-settings .checkbox_label input[type="checkbox"]:disabled,
+#shardwright-panel .checkbox_label input[type="checkbox"]:disabled,
+.shardwright-modal .checkbox_label input[type="checkbox"]:disabled,
+[class*="shardwright-"][class*="-modal"] .checkbox_label input[type="checkbox"]:disabled,
+.popup:has([class*="shardwright-"][class*="-modal"]) .checkbox_label input[type="checkbox"]:disabled,
+.shardwright-fab .checkbox_label input[type="checkbox"]:disabled,
+.shardwright-fab-panels .checkbox_label input[type="checkbox"]:disabled,
+.shardwright-fab-generating .checkbox_label input[type="checkbox"]:disabled {
     opacity: 0.6 !important;
     cursor: not-allowed !important;
 }
 
 /* Tag controls */
-#summary-sharder-settings .ss-tag-input,
-#summary-sharder-panel .ss-tag-input,
-.ss-modal .ss-tag-input,
-[class*="ss-"][class*="-modal"] .ss-tag-input,
-.popup:has([class*="ss-"][class*="-modal"]) .ss-tag-input,
-.ss-fab .ss-tag-input,
-.ss-fab-panels .ss-tag-input,
-.ss-fab-generating .ss-tag-input {
-    background: var(--ss-bg-input) !important;
-    border: 1px solid var(--ss-border) !important;
+#shardwright-settings .shardwright-tag-input,
+#shardwright-panel .shardwright-tag-input,
+.shardwright-modal .shardwright-tag-input,
+[class*="shardwright-"][class*="-modal"] .shardwright-tag-input,
+.popup:has([class*="shardwright-"][class*="-modal"]) .shardwright-tag-input,
+.shardwright-fab .shardwright-tag-input,
+.shardwright-fab-panels .shardwright-tag-input,
+.shardwright-fab-generating .shardwright-tag-input {
+    background: var(--shardwright-bg-input) !important;
+    border: 1px solid var(--shardwright-border) !important;
     box-shadow: none !important;
     filter: none !important;
 }
 
-#summary-sharder-settings .ss-tag-remove,
-#summary-sharder-panel .ss-tag-remove,
-.ss-modal .ss-tag-remove,
-[class*="ss-"][class*="-modal"] .ss-tag-remove,
-.popup:has([class*="ss-"][class*="-modal"]) .ss-tag-remove,
-.ss-fab .ss-tag-remove,
-.ss-fab-panels .ss-tag-remove,
-.ss-fab-generating .ss-tag-remove {
+#shardwright-settings .shardwright-tag-remove,
+#shardwright-panel .shardwright-tag-remove,
+.shardwright-modal .shardwright-tag-remove,
+[class*="shardwright-"][class*="-modal"] .shardwright-tag-remove,
+.popup:has([class*="shardwright-"][class*="-modal"]) .shardwright-tag-remove,
+.shardwright-fab .shardwright-tag-remove,
+.shardwright-fab-panels .shardwright-tag-remove,
+.shardwright-fab-generating .shardwright-tag-remove {
     appearance: none !important;
     -webkit-appearance: none !important;
     border: none !important;
@@ -318,14 +318,14 @@ export const VARIABLES_CSS = `
 }
 
 /* Info hint button */
-#summary-sharder-settings .ss-info-hint-btn,
-#summary-sharder-panel .ss-info-hint-btn,
-.ss-modal .ss-info-hint-btn,
-[class*="ss-"][class*="-modal"] .ss-info-hint-btn,
-.popup:has([class*="ss-"][class*="-modal"]) .ss-info-hint-btn,
-.ss-fab .ss-info-hint-btn,
-.ss-fab-panels .ss-info-hint-btn,
-.ss-fab-generating .ss-info-hint-btn {
+#shardwright-settings .shardwright-info-hint-btn,
+#shardwright-panel .shardwright-info-hint-btn,
+.shardwright-modal .shardwright-info-hint-btn,
+[class*="shardwright-"][class*="-modal"] .shardwright-info-hint-btn,
+.popup:has([class*="shardwright-"][class*="-modal"]) .shardwright-info-hint-btn,
+.shardwright-fab .shardwright-info-hint-btn,
+.shardwright-fab-panels .shardwright-info-hint-btn,
+.shardwright-fab-generating .shardwright-info-hint-btn {
     appearance: none !important;
     -webkit-appearance: none !important;
     border: none !important;
@@ -338,14 +338,14 @@ export const VARIABLES_CSS = `
     padding: 0 !important;
 }
 
-#summary-sharder-settings .ss-tag,
-#summary-sharder-panel .ss-tag,
-.ss-modal .ss-tag,
-[class*="ss-"][class*="-modal"] .ss-tag,
-.popup:has([class*="ss-"][class*="-modal"]) .ss-tag,
-.ss-fab .ss-tag,
-.ss-fab-panels .ss-tag,
-.ss-fab-generating .ss-tag {
+#shardwright-settings .shardwright-tag,
+#shardwright-panel .shardwright-tag,
+.shardwright-modal .shardwright-tag,
+[class*="shardwright-"][class*="-modal"] .shardwright-tag,
+.popup:has([class*="shardwright-"][class*="-modal"]) .shardwright-tag,
+.shardwright-fab .shardwright-tag,
+.shardwright-fab-panels .shardwright-tag,
+.shardwright-fab-generating .shardwright-tag {
     display: inline-flex !important;
     align-items: center !important;
     gap: 4px !important;
@@ -353,26 +353,26 @@ export const VARIABLES_CSS = `
     border-radius: 3px !important;
     background:
         linear-gradient(rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.08)),
-        var(--ss-bg-secondary) !important;
-    border: 1px solid var(--ss-border) !important;
+        var(--shardwright-bg-secondary) !important;
+    border: 1px solid var(--shardwright-border) !important;
 }
 
-#summary-sharder-settings .ss-tag-input-field,
-#summary-sharder-settings .ss-tag-input input,
-#summary-sharder-panel .ss-tag-input-field,
-#summary-sharder-panel .ss-tag-input input,
-.ss-modal .ss-tag-input-field,
-.ss-modal .ss-tag-input input,
-[class*="ss-"][class*="-modal"] .ss-tag-input-field,
-[class*="ss-"][class*="-modal"] .ss-tag-input input,
-.popup:has([class*="ss-"][class*="-modal"]) .ss-tag-input-field,
-.popup:has([class*="ss-"][class*="-modal"]) .ss-tag-input input,
-.ss-fab .ss-tag-input-field,
-.ss-fab .ss-tag-input input,
-.ss-fab-panels .ss-tag-input-field,
-.ss-fab-panels .ss-tag-input input,
-.ss-fab-generating .ss-tag-input-field,
-.ss-fab-generating .ss-tag-input input {
+#shardwright-settings .shardwright-tag-input-field,
+#shardwright-settings .shardwright-tag-input input,
+#shardwright-panel .shardwright-tag-input-field,
+#shardwright-panel .shardwright-tag-input input,
+.shardwright-modal .shardwright-tag-input-field,
+.shardwright-modal .shardwright-tag-input input,
+[class*="shardwright-"][class*="-modal"] .shardwright-tag-input-field,
+[class*="shardwright-"][class*="-modal"] .shardwright-tag-input input,
+.popup:has([class*="shardwright-"][class*="-modal"]) .shardwright-tag-input-field,
+.popup:has([class*="shardwright-"][class*="-modal"]) .shardwright-tag-input input,
+.shardwright-fab .shardwright-tag-input-field,
+.shardwright-fab .shardwright-tag-input input,
+.shardwright-fab-panels .shardwright-tag-input-field,
+.shardwright-fab-panels .shardwright-tag-input input,
+.shardwright-fab-generating .shardwright-tag-input-field,
+.shardwright-fab-generating .shardwright-tag-input input {
     appearance: none !important;
     -webkit-appearance: none !important;
     background: transparent !important;
@@ -383,66 +383,66 @@ export const VARIABLES_CSS = `
 }
 
 /* Links */
-#summary-sharder-settings a,
-#summary-sharder-panel a,
-.ss-modal a,
-[class*="ss-"][class*="-modal"] a,
-.popup:has([class*="ss-"][class*="-modal"]) a,
-.ss-fab a,
-.ss-fab-panels a,
-.ss-fab-generating a {
-    color: var(--ss-primary) !important;
+#shardwright-settings a,
+#shardwright-panel a,
+.shardwright-modal a,
+[class*="shardwright-"][class*="-modal"] a,
+.popup:has([class*="shardwright-"][class*="-modal"]) a,
+.shardwright-fab a,
+.shardwright-fab-panels a,
+.shardwright-fab-generating a {
+    color: var(--shardwright-primary) !important;
 }
 
-#summary-sharder-settings a:hover,
-#summary-sharder-panel a:hover,
-.ss-modal a:hover,
-[class*="ss-"][class*="-modal"] a:hover,
-.popup:has([class*="ss-"][class*="-modal"]) a:hover,
-.ss-fab a:hover,
-.ss-fab-panels a:hover,
-.ss-fab-generating a:hover {
-    color: var(--ss-primary-hover) !important;
+#shardwright-settings a:hover,
+#shardwright-panel a:hover,
+.shardwright-modal a:hover,
+[class*="shardwright-"][class*="-modal"] a:hover,
+.popup:has([class*="shardwright-"][class*="-modal"]) a:hover,
+.shardwright-fab a:hover,
+.shardwright-fab-panels a:hover,
+.shardwright-fab-generating a:hover {
+    color: var(--shardwright-primary-hover) !important;
 }
 
 /* Text selection */
-#summary-sharder-settings ::selection,
-#summary-sharder-panel ::selection,
-.ss-modal ::selection,
-[class*="ss-"][class*="-modal"] ::selection,
-.popup:has([class*="ss-"][class*="-modal"]) ::selection,
-.ss-fab ::selection,
-.ss-fab-panels ::selection,
-.ss-fab-generating ::selection {
-    background-color: var(--ss-highlight) !important;
+#shardwright-settings ::selection,
+#shardwright-panel ::selection,
+.shardwright-modal ::selection,
+[class*="shardwright-"][class*="-modal"] ::selection,
+.popup:has([class*="shardwright-"][class*="-modal"]) ::selection,
+.shardwright-fab ::selection,
+.shardwright-fab-panels ::selection,
+.shardwright-fab-generating ::selection {
+    background-color: var(--shardwright-highlight) !important;
 }
 
 /* Headings */
-#summary-sharder-settings :is(h1, h3),
-#summary-sharder-panel :is(h1, h3),
-.ss-modal :is(h1, h3),
-[class*="ss-"][class*="-modal"] :is(h1, h3),
-.popup:has([class*="ss-"][class*="-modal"]) :is(h1, h3),
-.ss-fab :is(h1, h3),
-.ss-fab-panels :is(h1, h3),
-.ss-fab-generating :is(h1, h3) {
-    color: var(--ss-text-primary) !important;
-    border-color: var(--ss-border) !important;
+#shardwright-settings :is(h1, h3),
+#shardwright-panel :is(h1, h3),
+.shardwright-modal :is(h1, h3),
+[class*="shardwright-"][class*="-modal"] :is(h1, h3),
+.popup:has([class*="shardwright-"][class*="-modal"]) :is(h1, h3),
+.shardwright-fab :is(h1, h3),
+.shardwright-fab-panels :is(h1, h3),
+.shardwright-fab-generating :is(h1, h3) {
+    color: var(--shardwright-text-primary) !important;
+    border-color: var(--shardwright-border) !important;
 }
 
 /* Textarea caret */
-#summary-sharder-settings textarea,
-#summary-sharder-panel textarea,
-.ss-modal textarea,
-[class*="ss-"][class*="-modal"] textarea,
-.popup:has([class*="ss-"][class*="-modal"]) textarea,
-.ss-fab textarea,
-.ss-fab-panels textarea,
-.ss-fab-generating textarea {
-    caret-color: var(--ss-primary) !important;
+#shardwright-settings textarea,
+#shardwright-panel textarea,
+.shardwright-modal textarea,
+[class*="shardwright-"][class*="-modal"] textarea,
+.popup:has([class*="shardwright-"][class*="-modal"]) textarea,
+.shardwright-fab textarea,
+.shardwright-fab-panels textarea,
+.shardwright-fab-generating textarea {
+    caret-color: var(--shardwright-primary) !important;
 }
 
-.ss-hidden {
+.shardwright-hidden {
     display: none !important;
 }
 `;

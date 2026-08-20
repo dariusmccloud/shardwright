@@ -23,7 +23,7 @@ test('archiveMessage preserves prior prompt visibility when archiving a shown me
     assert.equal(changed, true);
     assert.equal(message.is_system, true);
     assert.equal(isArchivedMessage(message), true);
-    assert.deepEqual(message.extra.summary_sharder.archive, {
+    assert.deepEqual(message.extra.shardwright.archive, {
         isArchived: true,
         archivedAt: '2026-06-23T00:00:00.000Z',
         promptVisibilityBeforeArchive: ARCHIVE_PROMPT_VISIBILITY_SHOWN,
@@ -40,14 +40,14 @@ test('archiveMessage preserves prior hidden visibility when archiving a hidden m
         archivedAt: '2026-06-23T00:00:00.000Z',
     });
 
-    assert.equal(message.extra.summary_sharder.archive.promptVisibilityBeforeArchive, ARCHIVE_PROMPT_VISIBILITY_HIDDEN);
+    assert.equal(message.extra.shardwright.archive.promptVisibilityBeforeArchive, ARCHIVE_PROMPT_VISIBILITY_HIDDEN);
 });
 
 test('archiveMessage is idempotent for already archived messages', () => {
     const message = {
         is_system: true,
         extra: {
-            summary_sharder: {
+            shardwright: {
                 archive: {
                     isArchived: true,
                     archivedAt: '2026-06-23T00:00:00.000Z',
@@ -62,7 +62,7 @@ test('archiveMessage is idempotent for already archived messages', () => {
     });
 
     assert.equal(changed, false);
-    assert.deepEqual(message.extra.summary_sharder.archive, {
+    assert.deepEqual(message.extra.shardwright.archive, {
         isArchived: true,
         archivedAt: '2026-06-23T00:00:00.000Z',
         promptVisibilityBeforeArchive: ARCHIVE_PROMPT_VISIBILITY_SHOWN,
@@ -73,7 +73,7 @@ test('restoreArchivedMessage clears archive metadata and restores shown state', 
     const message = {
         is_system: true,
         extra: {
-            summary_sharder: {
+            shardwright: {
                 archive: {
                     isArchived: true,
                     archivedAt: '2026-06-23T00:00:00.000Z',
@@ -94,7 +94,7 @@ test('restoreArchivedMessage restores prior hidden state when message was hidden
     const message = {
         is_system: true,
         extra: {
-            summary_sharder: {
+            shardwright: {
                 archive: {
                     isArchived: true,
                     archivedAt: '2026-06-23T00:00:00.000Z',
@@ -108,16 +108,16 @@ test('restoreArchivedMessage restores prior hidden state when message was hidden
     restoreArchivedMessage(message);
 
     assert.equal(message.is_system, true);
-    assert.equal(message.extra.summary_sharder.archive, undefined);
-    assert.equal(message.extra.summary_sharder.evidencePolicy, 'include');
+    assert.equal(message.extra.shardwright.archive, undefined);
+    assert.equal(message.extra.shardwright.evidencePolicy, 'include');
 });
 
 test('collectArchivedMessageIndices returns only archived message positions', () => {
     const messages = [
         {},
-        { extra: { summary_sharder: { archive: { isArchived: true } } } },
-        { extra: { summary_sharder: { archive: { isArchived: false } } } },
-        { extra: { summary_sharder: { archive: { isArchived: true } } } },
+        { extra: { shardwright: { archive: { isArchived: true } } } },
+        { extra: { shardwright: { archive: { isArchived: false } } } },
+        { extra: { shardwright: { archive: { isArchived: true } } } },
     ];
 
     assert.deepEqual(collectArchivedMessageIndices(messages), [1, 3]);

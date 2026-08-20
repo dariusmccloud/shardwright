@@ -1,9 +1,11 @@
 /**
- * RAG Chunking helpers for Summary Sharder.
+ * RAG Chunking helpers for Shardwright.
  * Supports message chunking strategies, shard chunk creation, and scene tagging.
  */
 
 import { normalizeExtractionResponse } from '../summarization/sharder-pipeline.js';
+import { buildChunkHash } from './chunk-hash.js';
+export { buildChunkHash } from './chunk-hash.js';
 import { ragLog } from '../logger.js';
 
 export const CHUNK_BEHAVIORS = {
@@ -79,36 +81,6 @@ const CUMULATIVE_EVENT_WEIGHT_IMPORTANCE = new Map([
     ['🟢', 40],
     ['⚪', 20],
 ]);
-
-function fnv1a32(input, seed = 2166136261) {
-    let hash = seed >>> 0;
-    const str = String(input || '');
-    for (let i = 0; i < str.length; i++) {
-        hash ^= str.charCodeAt(i);
-        hash = Math.imul(hash, 16777619);
-    }
-    return hash >>> 0;
-}
-
-/**
- * Build deterministic numeric chunk hash (safe uint53).
- * Similharity's Qdrant backend currently coerces hashes via parseInt(),
- * so decimal numeric hashes are required for consistent insert/delete/get behavior.
- * @param {string} input
- * @returns {number}
- */
-export function buildChunkHash(input) {
-    const base = String(input || '');
-    const h1 = fnv1a32(`a|${base}`);
-    const h2 = fnv1a32(`b|${base}`);
-
-    // Keep within Number.MAX_SAFE_INTEGER.
-    const hi21 = h1 & 0x001fffff;
-    const lo32 = h2 >>> 0;
-    const value = (hi21 * 4294967296) + lo32;
-
-    return value > 0 ? value : 1;
-}
 
 /**
  * Normalize speaker label from a message object.

@@ -1,11 +1,12 @@
 /**
- * Retrieval pipeline for Summary Sharder RAG.
- * Registers as generate interceptor via globalThis.summary_sharder_rearrangeChat.
+ * Retrieval pipeline for Shardwright RAG.
+ * Registers as generate interceptor via globalThis.shardwright_rearrangeChat.
  */
 
 import { setExtensionPrompt } from '../../../../../../script.js';
 import { extension_settings } from '../../../../../extensions.js';
-import { getActiveCollectionIds, getWriteTargetCollectionId, getShardCollectionId, getStandardCollectionId } from './collection-manager.js';
+import { world_names, loadWorldInfo } from '../../../../../world-info.js';
+import { getActiveCollectionIdentityState, getWriteTargetCollectionId, getShardCollectionId, getStandardCollectionId } from './collection-manager.js';
 import { rerankDocuments } from './reranker-client.js';
 import { getCollectionMetadataMap, getCollectionQuerySettingsMap, hybridQuery, listChunks, queryChunks } from './vector-client.js';
 import { keywordBoost, runClientHybridFusion, scoreAndRank } from './scoring.js';
@@ -42,9 +43,26 @@ import {
     stripLeadingSectionHeader,
     stripSectionByHeading,
 } from './retrieval-shared.js';
-import { excludeArchitecturalResults, filterResultsByOriginBoundary } from './architectural-rag-boundary.js';
+import {
+    excludeArchitecturalResults,
+    filterResultsByOriginBoundary,
+    getArchitecturalRagAdmissionRefusal,
+} from './architectural-rag-boundary.js';
+import {
+    ARCHITECTURAL_RETRIEVAL_OPERATIONS,
+    assertArchitecturalRetrievalOperation,
+    buildArchitecturalAuthoritySourceMap,
+    filterArchitecturalRetrievalResults,
+    prepareArchitecturalRetrievalInjection,
+    reconcileArchitecturalContinuity,
+    shapeArchitecturalRetrievalResults,
+} from './architectural-rag-retrieval.js';
+import { ARCHITECTURAL_PROFILE, normalizeSharderProfile } from '../summarization/sharder-section-registry.js';
+import { getCurrentChatShardManifests } from '../summarization/shard-integrity-runtime.js';
+import { buildChunkHash } from './chunk-hash.js';
+import { classifySavedShardText } from '../summarization/saved-shard-identity.js';
 
-export const EXTENSION_PROMPT_TAG_SS = '5_summary_sharder_rag';
+export const EXTENSION_PROMPT_TAG_SHARDWRIGHT = '5_shardwright_rag';
 
 /** @type {Object|null} Last successful RAG injection snapshot. */
 let lastInjectionData = null;
@@ -61,6 +79,38 @@ const FALLBACK_CACHE_TTL = 30000; // 30 seconds
 
 function normalizeChatId(chatId) {
     return String(chatId || '').trim().replace(/\.jsonl$/i, '').replace(/\.json$/i, '').trim();
+}
+
+async function collectPersistedArchitecturalOutputHashes(settings) {
+    const outputs = [];
+    const context = globalThis.SillyTavern?.getContext?.() || null;
+    for (const message of (Array.isArray(context?.chat) ? context.chat : [])) {
+        const sourceUid = String(message?.send_date || '').trim();
+        const shardInfo = classifySavedShardText(message?.mes || '');
+        if (sourceUid && shardInfo?.profile === ARCHITECTURAL_PROFILE) {
+            outputs.push({ sourceUid, sourceContentHash: String(buildChunkHash(shardInfo.body)) });
+        }
+    }
+    const selected = Array.isArray(settings?.rag?.vectorizationLorebookNames)
+        ? settings.rag.vectorizationLorebookNames
+        : [];
+    if (settings?.rag?.useLorebooksForVectorization === true) {
+        for (const name of selected.map((item) => String(item || '').trim()).filter((item) => world_names.includes(item))) {
+            try {
+                const data = await loadWorldInfo(name);
+                for (const entry of Object.values(data?.entries || {})) {
+                    const sourceUid = String(entry?.uid || entry?.id || '').trim();
+                    const shardInfo = classifySavedShardText(entry?.content || entry?.memo || '');
+                    if (sourceUid && shardInfo?.profile === ARCHITECTURAL_PROFILE) {
+                        outputs.push({ sourceUid, sourceContentHash: String(buildChunkHash(shardInfo.body)) });
+                    }
+                }
+            } catch (error) {
+                ragLog.warn(`Architectural retrieval could not verify lorebook source ${name}.`, error?.message || error);
+            }
+        }
+    }
+    return outputs;
 }
 
 function getCurrentRetrievalOrigin(settings) {
@@ -765,7 +815,7 @@ function formatInjectionText(template, results) {
  */
 function clearExtensionPrompt() {
     if (typeof setExtensionPrompt === 'function') {
-        setExtensionPrompt(EXTENSION_PROMPT_TAG_SS, '', 0, 0);
+        setExtensionPrompt(EXTENSION_PROMPT_TAG_SHARDWRIGHT, '', 0, 0);
     }
 }
 
@@ -780,22 +830,22 @@ function applyInjection(text, rag) {
     const mode = rag?.injectionMode ?? 'extension_prompt';
     if (mode === 'variable') {
         clearExtensionPrompt();
-        const varName = rag?.injectionVariableName || 'ss_rag_memory';
+        const varName = rag?.injectionVariableName || 'shardwright_rag_memory';
         globalThis.SillyTavern?.getContext()?.variables?.local?.set(varName, text || '');
     } else {
         if (typeof setExtensionPrompt !== 'function') return;
-        setExtensionPrompt(EXTENSION_PROMPT_TAG_SS, text || '', Number(rag?.position) || 0, Number(rag?.depth) || 0);
+        setExtensionPrompt(EXTENSION_PROMPT_TAG_SHARDWRIGHT, text || '', Number(rag?.position) || 0, Number(rag?.depth) || 0);
     }
 }
 
 /**
- * Clear Summary Sharder RAG prompt injection (both extension prompt and variable).
+ * Clear Shardwright RAG prompt injection (both extension prompt and variable).
  * @param {Object} [rag]
  */
 export function clearRagPromptInjection(rag) {
     clearExtensionPrompt();
     if (rag?.injectionMode === 'variable') {
-        const varName = rag?.injectionVariableName || 'ss_rag_memory';
+        const varName = rag?.injectionVariableName || 'shardwright_rag_memory';
         globalThis.SillyTavern?.getContext()?.variables?.local?.set(varName, '');
     }
 }
@@ -810,13 +860,23 @@ export function clearRagPromptInjection(rag) {
  */
 export async function rearrangeChat(chat, contextSize, abort, type) {
     try {
-        const settings = extension_settings?.summary_sharder;
+        const settings = extension_settings?.shardwright;
         const rag = getActiveRagSettings(settings);
         const isSharder = settings?.sharderMode === true;
+        const isArchitectural = isSharder
+            && normalizeSharderProfile(settings?.sharderProfile) === ARCHITECTURAL_PROFILE;
 
         if (type === 'quiet' || !rag?.enabled) {
             clearRagPromptInjection(rag);
             lastInjectionData = null;
+            return chat;
+        }
+
+        const architecturalRefusal = isArchitectural ? null : getArchitecturalRagAdmissionRefusal({ settings });
+        if (architecturalRefusal) {
+            clearRagPromptInjection(rag);
+            lastInjectionData = null;
+            ragLog.warn(architecturalRefusal.message, architecturalRefusal);
             return chat;
         }
 
@@ -836,19 +896,31 @@ export async function rearrangeChat(chat, contextSize, abort, type) {
         const useClientHybrid = wantsHybrid && !useNativeHybrid;
 
         const overfetchMultiplier = Math.max(1, Number(rag.hybridOverfetchMultiplier) || 4);
+        const insertCount = Math.max(1, Number(rag.insertCount) || 5);
         const topK = Math.max(1, (Number(rag.insertCount) || 5) * (wantsHybrid ? overfetchMultiplier : 4));
         const threshold = Math.max(0, Math.min(1, Number(rag.scoreThreshold) || 0));
 
         // Multi-collection: query all bound collections in parallel, deduplicate results.
         // writeTargetCollectionId is used for continuity-style fallback fetches
         // (superseding/rolling/anchors/latest), which must stay scoped to this chat.
-        const collectionIds = getActiveCollectionIds(null, settings);
+        const collectionIdentityState = getActiveCollectionIdentityState(null, settings);
+        const collectionIds = collectionIdentityState.canonicalIds;
         const writeTargetCollectionId = getWriteTargetCollectionId(null, settings);
         const origin = {
             ...getCurrentRetrievalOrigin(settings),
             collectionId: writeTargetCollectionId,
         };
+        const architecturalAuthoritySources = isArchitectural
+            ? buildArchitecturalAuthoritySourceMap(
+                getCurrentChatShardManifests(),
+                await collectPersistedArchitecturalOutputHashes(settings),
+            )
+            : null;
+        if (isArchitectural) {
+            assertArchitecturalRetrievalOperation(ARCHITECTURAL_RETRIEVAL_OPERATIONS.SEARCH);
+        }
 
+        const architecturalDiagnostics = [];
         const querySettingsByCollection = await getCollectionQuerySettingsMap(collectionIds, rag);
         const querySettled = await Promise.allSettled(
             collectionIds.map(async (id) => {
@@ -862,9 +934,36 @@ export async function rearrangeChat(chat, contextSize, abort, type) {
                 };
             })
         );
-        const shardResults = querySettled.flatMap((result) => {
+        const shardResults = querySettled.flatMap((result, collectionIndex) => {
             if (result.status !== 'fulfilled' || !Array.isArray(result.value?.response?.results)) {
+                if (isArchitectural && result.status === 'rejected') {
+                    ragLog.warn('Architectural retrieval backend query failed; continuing without results from that collection.', result.reason?.message || result.reason);
+                    architecturalDiagnostics.push({
+                        code: 'ARCH_RAG_QUERY_BACKEND_FAILED',
+                        collectionId: collectionIds[collectionIndex] || '',
+                        message: String(result.reason?.message || result.reason || 'Architectural retrieval query failed.'),
+                    });
+                } else if (isArchitectural) {
+                    architecturalDiagnostics.push({
+                        code: 'ARCH_RAG_QUERY_RESPONSE_INVALID',
+                        collectionId: result.value?.collectionId || collectionIds[collectionIndex] || '',
+                    });
+                }
                 return [];
+            }
+            if (isArchitectural) {
+                if (result.value.response.results.length === 0) {
+                    architecturalDiagnostics.push({
+                        code: 'ARCH_RAG_QUERY_EMPTY',
+                        collectionId: result.value.collectionId || '',
+                    });
+                }
+                const filtered = filterArchitecturalRetrievalResults(
+                    result.value.response.results,
+                    architecturalAuthoritySources,
+                );
+                architecturalDiagnostics.push(...filtered.diagnostics);
+                return filtered.eligible;
             }
             return filterResultsForOrigin(
                 result.value.response.results,
@@ -876,12 +975,54 @@ export async function rearrangeChat(chat, contextSize, abort, type) {
             ragLog.debug(`Multi-collection retrieval: queried ${collectionIds.length} collections, got ${shardResults.length} raw results`);
         }
 
-        let merged = dedupeResults(shardResults);
+        let merged = isArchitectural
+            ? shapeArchitecturalRetrievalResults(shardResults)
+            : dedupeResults(shardResults);
+        let architecturalLatestCurrent = null;
+
+        if (isArchitectural && architecturalDiagnostics.length > 0) {
+            ragLog.warn('Architectural retrieval excluded invalid, stale, or mixed-profile projection results.', architecturalDiagnostics);
+        }
+
+        if (isArchitectural) {
+            try {
+                const { items } = await listChunks(writeTargetCollectionId, rag, {
+                    limit: 100,
+                    metadataFilter: buildScopedMetadataFilter(origin, { shardProfile: ARCHITECTURAL_PROFILE }),
+                });
+                const continuity = filterArchitecturalRetrievalResults(items || [], architecturalAuthoritySources);
+                architecturalDiagnostics.push(...continuity.diagnostics);
+                if (!Array.isArray(items) || items.length === 0) {
+                    architecturalDiagnostics.push({
+                        code: 'ARCH_RAG_CONTINUITY_EMPTY',
+                        collectionId: writeTargetCollectionId,
+                    });
+                }
+                merged = reconcileArchitecturalContinuity(merged, continuity.eligible);
+                architecturalLatestCurrent = merged.find((item) => item?.metadata?.sectionType === 'current') || null;
+            } catch (error) {
+                ragLog.warn('Architectural continuity fallback failed; query-derived evidence remains available.', error?.message || error);
+                architecturalDiagnostics.push({
+                    code: 'ARCH_RAG_CONTINUITY_BACKEND_FAILED',
+                    collectionId: writeTargetCollectionId,
+                    message: String(error?.message || error || 'Architectural continuity fetch failed.'),
+                });
+            }
+        }
 
         // Fallback: If non-sharder mode, ensure the latest N summaries are included
         // to prevent recent context from being lost if it doesn't match query keywords.
         // Uses primary collection only — "latest" is scoped to this chat's own output.
-        if (!isSharder) {
+        if (isArchitectural) {
+            const latestCurrent = shapeArchitecturalRetrievalResults(
+                merged.filter((item) => item?.metadata?.sectionType === 'current'),
+            ).slice(0, 1);
+            const currentHashes = new Set(latestCurrent.map((item) => item?.hash || item?.text));
+            merged = [
+                ...latestCurrent,
+                ...merged.filter((item) => !currentHashes.has(item?.hash || item?.text)),
+            ].slice(0, insertCount);
+        } else if (!isSharder) {
             try {
                 const { items: latestItems } = await listChunks(writeTargetCollectionId, rag, {
                     limit: Math.max(1, Number(rag.insertCount) || 5),
@@ -909,17 +1050,22 @@ export async function rearrangeChat(chat, contextSize, abort, type) {
 
         merged = applyImportanceBoost(merged);
         merged = merged.filter(item => (Number(item?.score) || 0) >= threshold);
+        if (isArchitectural && architecturalLatestCurrent) {
+            merged = shapeArchitecturalRetrievalResults([...merged, architecturalLatestCurrent]);
+        }
 
         // Scene expansion only applies to Sharder Mode (which has [S{n}:{n}] scene codes).
         // Uses the primary collection — scene codes are specific to this chat's own summaries.
-        const sceneExpanded = isSharder ? await expandByScene(settings, shardResults, writeTargetCollectionId, origin) : [];
+        const sceneExpanded = isSharder && !isArchitectural
+            ? await expandByScene(settings, shardResults, writeTargetCollectionId, origin)
+            : [];
 
         merged = dedupeResults([...merged, ...sceneExpanded]);
 
         // Fallback: If no superseding chunk was found by the initial query, fetch the latest one explicitly.
         // This ensures the "Current State" summary is always available if it exists in the collection.
         // Uses primary collection only — superseding chunks are chat-specific.
-        if (isSharder && !merged.some(item => item?.metadata?.chunkBehavior === 'superseding')) {
+        if (isSharder && !isArchitectural && !merged.some(item => item?.metadata?.chunkBehavior === 'superseding')) {
             const latest = await fetchLatestSuperseding(writeTargetCollectionId, rag, origin);
             if (latest) {
                 merged.push(latest);
@@ -927,9 +1073,9 @@ export async function rearrangeChat(chat, contextSize, abort, type) {
             }
         }
 
-        const queryRolling = isSharder ? dedupeLatestRolling(merged) : [];
-        const queryAnchors = isSharder ? collectLatestAnchors(merged) : [];
-        const queryDevelopments = isSharder ? collectLatestDevelopments(merged) : [];
+        const queryRolling = isSharder && !isArchitectural ? dedupeLatestRolling(merged) : [];
+        const queryAnchors = isSharder && !isArchitectural ? collectLatestAnchors(merged) : [];
+        const queryDevelopments = isSharder && !isArchitectural ? collectLatestDevelopments(merged) : [];
         let rollingPinned = [];
         let rollingPinnedCompacted = [];
         let anchorsPinned = [];
@@ -942,7 +1088,7 @@ export async function rearrangeChat(chat, contextSize, abort, type) {
         let anchorsFallbackHasMore = false;
         let developmentsFallbackFetched = 0;
         let developmentsFallbackHasMore = false;
-        if (isSharder) {
+        if (isSharder && !isArchitectural) {
             // Fallback fetches use primary collection — rolling/anchors/developments
             // are generated by this chat's own summarization pipeline.
             const [fallbackRolling, fallbackAnchors, fallbackDevelopments] = await Promise.all([
@@ -971,6 +1117,12 @@ export async function rearrangeChat(chat, contextSize, abort, type) {
 
         const rerankMeta = await applyReranker(merged, queryText, rag);
         merged = rerankMeta.results;
+        if (isArchitectural && rag?.reranker?.enabled) {
+            assertArchitecturalRetrievalOperation(ARCHITECTURAL_RETRIEVAL_OPERATIONS.RERANK);
+            if (!rerankMeta.metadata?.applied && rerankMeta.metadata?.error) {
+                ragLog.warn('Architectural re-ranker failed; preserving explicitly labelled vector-ranked evidence.', rerankMeta.metadata.error);
+            }
+        }
 
         const rerankerApplied = !!rerankMeta.metadata?.applied;
 
@@ -988,8 +1140,6 @@ export async function rearrangeChat(chat, contextSize, abort, type) {
         // Always prioritize the latest superseding chunk to ensure it's not sliced out by the reranker/limit.
         const superseding = merged.filter(item => item?.metadata?.chunkBehavior === 'superseding');
         const others = merged.filter(item => item?.metadata?.chunkBehavior !== 'superseding');
-        const insertCount = Math.max(1, Number(rag.insertCount) || 5);
-
         // Two-tier slicing for Standard mode: Recent + Relevant
         if (!isSharder) {
             const recentCount = Math.min(insertCount, Number(rag.recentSummaryCount) || 0);
@@ -1012,9 +1162,11 @@ export async function rearrangeChat(chat, contextSize, abort, type) {
         }
 
         // Final sorting: Scene grouping for Sharder, Chronological for Standard
-        merged = isSharder ? orderWithSceneGrouping(merged) : merged.sort(compareChronologically);
+        merged = isArchitectural
+            ? shapeArchitecturalRetrievalResults(merged)
+            : (isSharder ? orderWithSceneGrouping(merged) : merged.sort(compareChronologically));
 
-        if (isSharder && (rollingPinnedCompacted.length > 0 || anchorsPinnedCompacted.length > 0 || developmentsPinnedCompacted.length > 0)) {
+        if (isSharder && !isArchitectural && (rollingPinnedCompacted.length > 0 || anchorsPinnedCompacted.length > 0 || developmentsPinnedCompacted.length > 0)) {
             let mergedShaped = merged;
             if (rollingPinnedCompacted.length > 0) {
                 mergedShaped = mergedShaped.filter(item => item?.metadata?.chunkBehavior !== 'rolling');
@@ -1028,13 +1180,23 @@ export async function rearrangeChat(chat, contextSize, abort, type) {
             merged = dedupeResults([...mergedShaped, ...rollingPinnedCompacted, ...anchorsPinnedCompacted, ...developmentsPinnedCompacted]);
         }
 
-        const injection = formatInjectionText(rag.template, merged);
+        let injection;
+        if (isArchitectural) {
+            const finalBoundary = prepareArchitecturalRetrievalInjection(merged, architecturalAuthoritySources);
+            merged = finalBoundary.results;
+            architecturalDiagnostics.push(...finalBoundary.diagnostics);
+            injection = finalBoundary.injectionText;
+        } else {
+            injection = formatInjectionText(rag.template, merged);
+        }
         applyInjection(injection, rag);
 
         lastInjectionData = {
             timestamp: Date.now(),
             queryText,
             collectionIds: [...collectionIds],
+            quarantinedCollectionIds: collectionIdentityState.quarantined,
+            mixedCollectionIdentityInput: collectionIdentityState.mixedIdentityInput,
             writeTargetCollectionId,
             entries: merged.map(item => ({
                 text: item?.text || '',
@@ -1045,7 +1207,7 @@ export async function rearrangeChat(chat, contextSize, abort, type) {
             injectionMode: rag.injectionMode ?? 'extension_prompt',
             position: rag.injectionMode === 'variable' ? null : (Number(rag.position) || 0),
             depth: rag.injectionMode === 'variable' ? null : (Number(rag.depth) || 0),
-            variableName: rag.injectionMode === 'variable' ? (rag.injectionVariableName || 'ss_rag_memory') : null,
+            variableName: rag.injectionMode === 'variable' ? (rag.injectionVariableName || 'shardwright_rag_memory') : null,
             template: rag.template || 'Recalled memories:\n{{text}}',
             injectionText: injection,
             scoringMethod: rag.scoringMethod || 'keyword',
@@ -1054,6 +1216,8 @@ export async function rearrangeChat(chat, contextSize, abort, type) {
             rerankerApplied: !!rerankMeta.metadata?.applied,
             rerankerMode: rerankMeta.metadata?.mode || 'none',
             mode: isSharder ? 'sharder' : 'standard',
+            profile: isArchitectural ? ARCHITECTURAL_PROFILE : 'narrative',
+            architecturalDiagnostics: isArchitectural ? architecturalDiagnostics : [],
         };
 
         ragLog.log(`Retrieval: ${merged.length} results (${shardResults.length} queried across ${collectionIds.length} collection(s), reranker=${!!rerankMeta.metadata?.applied})`);
@@ -1085,6 +1249,7 @@ export async function rearrangeChat(chat, contextSize, abort, type) {
     } catch (error) {
         ragLog.warn('Retrieval failed:', error?.message || error);
         clearExtensionPrompt();
+        lastInjectionData = null;
     }
 
     return chat;

@@ -58,7 +58,7 @@ function Wait-ForHealth([hashtable]$HostSpec, [int]$Attempts = 60) {
     for ($i = 0; $i -lt $Attempts; $i++) {
         Start-Sleep -Seconds 1
         try {
-            Invoke-WebRequest -Uri "http://127.0.0.1:$($HostSpec.Port)/api/plugins/summary-sharder-memory/health" -UseBasicParsing -TimeoutSec 2 | Out-Null
+            Invoke-WebRequest -Uri "http://127.0.0.1:$($HostSpec.Port)/api/plugins/shardwright-memory/health" -UseBasicParsing -TimeoutSec 2 | Out-Null
             return
         } catch {}
     }
@@ -297,7 +297,7 @@ function Get-PublicationDbState {
     )
 
     $script = @'
-import { createAdapter, getStoragePaths, readOperationalStateMarker, resolveOperationalDbPath } from "__ROOT_URL__/tools/server-plugin/summary-sharder-memory/core.js";
+import { createAdapter, getStoragePaths, readOperationalStateMarker, resolveOperationalDbPath } from "__ROOT_URL__/tools/server-plugin/shardwright-memory/core.js";
 
 const userRoot = process.env.SUMMARY_SHARDER_USER_ROOT;
 const ids = JSON.parse(process.env.SUMMARY_SHARDER_IDS || "{}");
@@ -752,7 +752,7 @@ function Get-PersistedSemanticFingerprint($DbState) {
 }
 
 if ($InstallPayload) {
-    & powershell -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'install-summary-sharder-memory.ps1') | Out-Null
+    & powershell -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'install-shardwright-memory.ps1') | Out-Null
 }
 
 if ($RestartHosts) {
@@ -766,7 +766,7 @@ $results = @()
 foreach ($hostSpec in $hosts) {
     Reset-AuthorityStorage -HostSpec $HostSpec
 
-    $base = "http://127.0.0.1:$($hostSpec.Port)/api/plugins/summary-sharder-memory"
+    $base = "http://127.0.0.1:$($hostSpec.Port)/api/plugins/shardwright-memory"
     $health = Invoke-JsonRequest -Method 'GET' -Uri "$base/health" -TimeoutSec 15
     $capabilities = Invoke-JsonRequest -Method 'GET' -Uri "$base/capabilities" -TimeoutSec 15
 

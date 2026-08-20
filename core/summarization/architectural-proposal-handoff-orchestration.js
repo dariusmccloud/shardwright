@@ -1,7 +1,7 @@
 export async function prepareArchitecturalProposalHandoff(options = {}, deps = {}) {
     const savedOutputUID = String(options.savedOutputUID || '').trim();
     if (!options.didSave || !savedOutputUID) {
-        return { outcome: 'NOT_SAVED', savedOutputUID, interpretationRevisionId: '', userMessage: '' };
+        return { outcome: 'NOT_SAVED', savedOutputUID, interpretationRevisionId: '', userMessage: '', operatorStatus: null };
     }
     const authorityResult = options.authorityResult || null;
     if (!authorityResult?.committed && authorityResult?.reason) {
@@ -24,6 +24,8 @@ export async function prepareArchitecturalProposalHandoff(options = {}, deps = {
             savedOutputUID,
             interpretationRevisionId: '',
             userMessage,
+            operatorStatus: launch?.operatorStatus || null,
+            synthesisRunId: String(launch?.synthesisRunId || '').trim(),
         };
     }
     return {
@@ -36,6 +38,10 @@ export async function prepareArchitecturalProposalHandoff(options = {}, deps = {
 
 export function openPreparedArchitecturalProposalHandoff(handoff, deps = {}) {
     const interpretationRevisionId = String(handoff?.interpretationRevisionId || '').trim();
+    if (handoff?.outcome === 'BLOCKED' && handoff?.operatorStatus && handoff?.synthesisRunId) {
+        void deps.openRequirements?.(handoff.synthesisRunId, handoff.operatorStatus);
+        return false;
+    }
     if (handoff?.outcome !== 'READY_TO_OPEN' || !interpretationRevisionId) return false;
     void deps.openReview({ interpretationRevisionId, detailView: 'review' });
     return true;

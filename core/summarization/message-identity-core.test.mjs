@@ -98,7 +98,7 @@ test('reconcileMessageIdentityState adopts missing ids and preserves existing an
             send_date: '2026-04-15T06:53:36.798Z',
             mes: 'Waiting.',
             extra: {
-                summary_sharder: {
+                shardwright: {
                     messageIdentity: {
                         schemaVersion: 1,
                         messageId: 'msg_550e8400e29b41d4a716446655440000',
@@ -117,13 +117,13 @@ test('reconcileMessageIdentityState adopts missing ids and preserves existing an
     });
 
     assert.equal(result.status, IDENTITY_STATUS_VALUES.COMPLETE);
-    assert.equal(messages[0].extra.summary_sharder.evidencePolicy, EVIDENCE_POLICY_INCLUDE);
-    assert.match(messages[0].extra.summary_sharder.messageIdentity.messageId, /^msg_[0-9a-f]{32}$/u);
-    assert.equal(messages[1].extra.summary_sharder.messageIdentity.messageId, 'msg_550e8400e29b41d4a716446655440000');
-    assert.ok(messages[0].extra.summary_sharder.messageIdentity.initFingerprint.startsWith('sha256:'));
-    assert.ok(messages[0].extra.summary_sharder.messageIdentity.revisionHash.startsWith('sha256:'));
-    assert.equal(chatMetadata.summary_sharder.messageIdentity.identifiedCount, 2);
-    assert.equal(chatMetadata.summary_sharder.messageIdentity.unidentifiedCount, 0);
+    assert.equal(messages[0].extra.shardwright.evidencePolicy, EVIDENCE_POLICY_INCLUDE);
+    assert.match(messages[0].extra.shardwright.messageIdentity.messageId, /^msg_[0-9a-f]{32}$/u);
+    assert.equal(messages[1].extra.shardwright.messageIdentity.messageId, 'msg_550e8400e29b41d4a716446655440000');
+    assert.ok(messages[0].extra.shardwright.messageIdentity.initFingerprint.startsWith('sha256:'));
+    assert.ok(messages[0].extra.shardwright.messageIdentity.revisionHash.startsWith('sha256:'));
+    assert.equal(chatMetadata.shardwright.messageIdentity.identifiedCount, 2);
+    assert.equal(chatMetadata.shardwright.messageIdentity.unidentifiedCount, 0);
 });
 
 test('reconcileMessageIdentityState preserves lastReconciledAt when semantic identity state is unchanged', async () => {
@@ -152,7 +152,7 @@ test('reconcileMessageIdentityState preserves lastReconciledAt when semantic ide
     });
 
     assert.equal(first.changed, true);
-    assert.equal(chatMetadata.summary_sharder.messageIdentity.lastReconciledAt, 1782210204120);
+    assert.equal(chatMetadata.shardwright.messageIdentity.lastReconciledAt, 1782210204120);
 
     const second = await reconcileMessageIdentityState(messages, {
         chatMetadata,
@@ -164,7 +164,7 @@ test('reconcileMessageIdentityState preserves lastReconciledAt when semantic ide
     assert.equal(second.messagesChanged, false);
     assert.equal(second.metadataChanged, false);
     assert.equal(second.changed, false);
-    assert.equal(chatMetadata.summary_sharder.messageIdentity.lastReconciledAt, 1782210204120);
+    assert.equal(chatMetadata.shardwright.messageIdentity.lastReconciledAt, 1782210204120);
 });
 
 test('reconcileMessageIdentityState falls back when secure Web Crypto is unavailable', async () => {
@@ -186,10 +186,10 @@ test('reconcileMessageIdentityState falls back when secure Web Crypto is unavail
     });
 
     assert.equal(result.status, IDENTITY_STATUS_VALUES.COMPLETE);
-    assert.match(messages[0].extra.summary_sharder.messageIdentity.messageId, /^msg_[0-9a-f]{32}$/u);
-    assert.match(messages[0].extra.summary_sharder.messageIdentity.initFingerprint, /^sha256:[0-9a-f]{64}$/u);
-    assert.match(messages[0].extra.summary_sharder.messageIdentity.revisionHash, /^sha256:[0-9a-f]{64}$/u);
-    assert.match(chatMetadata.summary_sharder.messageIdentity.corpusRevisionHash, /^sha256:[0-9a-f]{64}$/u);
+    assert.match(messages[0].extra.shardwright.messageIdentity.messageId, /^msg_[0-9a-f]{32}$/u);
+    assert.match(messages[0].extra.shardwright.messageIdentity.initFingerprint, /^sha256:[0-9a-f]{64}$/u);
+    assert.match(messages[0].extra.shardwright.messageIdentity.revisionHash, /^sha256:[0-9a-f]{64}$/u);
+    assert.match(chatMetadata.shardwright.messageIdentity.corpusRevisionHash, /^sha256:[0-9a-f]{64}$/u);
 });
 
 test('reconcileMessageIdentityState surfaces deterministic fingerprint collisions', async () => {
@@ -227,7 +227,7 @@ test('reconcileMessageDeletionTombstones records removed anchored ids without te
             send_date: '2026-04-15T06:53:36.798Z',
             mes: 'Hello',
             extra: {
-                summary_sharder: {
+                shardwright: {
                     messageIdentity: {
                         messageId: 'msg_550e8400e29b41d4a716446655440000',
                         initFingerprint: 'sha256:init',
@@ -243,8 +243,8 @@ test('reconcileMessageDeletionTombstones records removed anchored ids without te
     });
 
     assert.equal(result.added, 1);
-    assert.equal(chatMetadata.summary_sharder.messageTombstones.length, 1);
-    assert.deepEqual(chatMetadata.summary_sharder.messageTombstones[0], {
+    assert.equal(chatMetadata.shardwright.messageTombstones.length, 1);
+    assert.deepEqual(chatMetadata.shardwright.messageTombstones[0], {
         schemaVersion: 1,
         messageId: 'msg_550e8400e29b41d4a716446655440000',
         deletedAt: '2026-06-23T00:00:00.000Z',

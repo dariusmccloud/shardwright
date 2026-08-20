@@ -1,5 +1,5 @@
 /**
- * RAG Debug/Testing Modal for Summary Sharder
+ * RAG Debug/Testing Modal for Shardwright
  */
 
 import { Popup, POPUP_TYPE } from '../../../../../../popup.js';
@@ -71,16 +71,16 @@ function renderTabState(state) {
 
 function renderHealthCard(title, status, detail, latencyMs) {
     const stateClass = status === 'ok' ? 'ok' : (status === 'warn' ? 'warn' : 'error');
-    return `<div class="ss-rag-debug-health-card ${stateClass}"><div class="ss-rag-debug-health-title">${escapeHtml(title)}</div><div class="ss-rag-debug-health-state">${escapeHtml(detail || '')}</div><div class="ss-rag-debug-health-meta">Latency: ${Number(latencyMs || 0).toFixed(1)} ms</div></div>`;
+    return `<div class="shardwright-rag-debug-health-card ${stateClass}"><div class="shardwright-rag-debug-health-title">${escapeHtml(title)}</div><div class="shardwright-rag-debug-health-state">${escapeHtml(detail || '')}</div><div class="shardwright-rag-debug-health-meta">Latency: ${Number(latencyMs || 0).toFixed(1)} ms</div></div>`;
 }
 
 function renderBarRows(map) {
     const entries = [...map.entries()].sort((a, b) => b[1] - a[1]);
-    if (entries.length === 0) return '<p class="ss-hint ss-rag-inline-hint">No data.</p>';
+    if (entries.length === 0) return '<p class="shardwright-hint shardwright-rag-inline-hint">No data.</p>';
     const cap = Math.max(1, ...entries.map(e => e[1]), 1);
     return entries.map(([name, count]) => {
         const width = Math.max(2, Math.round((count / cap) * 100));
-        return `<div class="ss-rag-debug-bar-row"><span class="name">${escapeHtml(name)}</span><span class="bar"><span class="ss-rag-debug-bar-fill" data-width="${width}"></span></span><span class="count">${count}</span></div>`;
+        return `<div class="shardwright-rag-debug-bar-row"><span class="name">${escapeHtml(name)}</span><span class="bar"><span class="shardwright-rag-debug-bar-fill" data-width="${width}"></span></span><span class="count">${count}</span></div>`;
     }).join('');
 }
 
@@ -89,7 +89,7 @@ function applyBarWidths(container) {
         return;
     }
 
-    for (const fill of container.querySelectorAll('.ss-rag-debug-bar-fill[data-width]')) {
+    for (const fill of container.querySelectorAll('.shardwright-rag-debug-bar-fill[data-width]')) {
         const width = Number(fill.getAttribute('data-width'));
         const clamped = Number.isFinite(width) ? Math.max(0, Math.min(100, width)) : 0;
         fill.style.width = `${clamped}%`;
@@ -97,23 +97,23 @@ function applyBarWidths(container) {
 }
 
 function renderInspectorItems(items) {
-    if (!Array.isArray(items) || items.length === 0) return '<p class="ss-hint ss-rag-inline-hint">No chunks match current filters.</p>';
+    if (!Array.isArray(items) || items.length === 0) return '<p class="shardwright-hint shardwright-rag-inline-hint">No chunks match current filters.</p>';
     return items.map(item => {
         const score = Number(item?.score);
         const hasScore = Number.isFinite(score);
-        const scoreSpan = hasScore ? `<span class="ss-rag-debug-item-score">score = ${score.toFixed(4)}</span>` : '';
-        const snippetClass = hasScore ? 'ss-rag-debug-item-snippet' : 'ss-rag-debug-item-snippet no-score';
-        return `<details class="ss-rag-debug-item"><summary><span class="badge">${escapeHtml(getBehavior(item))}</span>${scoreSpan}<span class="${snippetClass}">${escapeHtml(truncate(item?.text || '', 140))}</span></summary><div class="ss-rag-debug-item-body"><div><strong>scene:</strong> ${escapeHtml(getScene(item))}</div><div><strong>importance:</strong> ${escapeHtml(String(item?.metadata?.importance ?? 'n/a'))}</div><pre>${escapeHtml(String(item?.text || ''))}</pre><pre>${escapeHtml(JSON.stringify(item?.metadata || {}, null, 2))}</pre></div></details>`;
+        const scoreSpan = hasScore ? `<span class="shardwright-rag-debug-item-score">score = ${score.toFixed(4)}</span>` : '';
+        const snippetClass = hasScore ? 'shardwright-rag-debug-item-snippet' : 'shardwright-rag-debug-item-snippet no-score';
+        return `<details class="shardwright-rag-debug-item"><summary><span class="badge">${escapeHtml(getBehavior(item))}</span>${scoreSpan}<span class="${snippetClass}">${escapeHtml(truncate(item?.text || '', 140))}</span></summary><div class="shardwright-rag-debug-item-body"><div><strong>scene:</strong> ${escapeHtml(getScene(item))}</div><div><strong>importance:</strong> ${escapeHtml(String(item?.metadata?.importance ?? 'n/a'))}</div><pre>${escapeHtml(String(item?.text || ''))}</pre><pre>${escapeHtml(JSON.stringify(item?.metadata || {}, null, 2))}</pre></div></details>`;
     }).join('');
 }
 
 function renderRawQueryResults(items) {
-    if (!Array.isArray(items) || items.length === 0) return '<p class="ss-hint ss-rag-inline-hint">No raw vector results.</p>';
-    return `<h4>Raw Vector Results</h4>${items.map(item => `<div class="ss-rag-debug-row"><div>score = ${Number(item?.score || 0).toFixed(4)}</div><div>${escapeHtml(truncate(item?.text || '', 180))}</div></div>`).join('')}`;
+    if (!Array.isArray(items) || items.length === 0) return '<p class="shardwright-hint shardwright-rag-inline-hint">No raw vector results.</p>';
+    return `<h4>Raw Vector Results</h4>${items.map(item => `<div class="shardwright-rag-debug-row"><div>score = ${Number(item?.score || 0).toFixed(4)}</div><div>${escapeHtml(truncate(item?.text || '', 180))}</div></div>`).join('')}`;
 }
 
 function renderScoredQueryResults(items, breakdown, bm25Terms) {
-    if (!Array.isArray(items) || items.length === 0) return '<p class="ss-hint ss-rag-inline-hint">No scored results.</p>';
+    if (!Array.isArray(items) || items.length === 0) return '<p class="shardwright-hint shardwright-rag-inline-hint">No scored results.</p>';
     const bmByHash = new Map((bm25Terms || []).map(row => [String(row?.hash || ''), row]));
     const breakdownByHash = new Map((breakdown || []).map(row => [String(row?.hash || ''), row]));
     return `<h4>Scored / Ranked</h4>${items.map(item => {
@@ -121,16 +121,16 @@ function renderScoredQueryResults(items, breakdown, bm25Terms) {
         const bm = bmByHash.get(String(item?.hash || ''));
         const s = entry?.steps;
         const termsText = (bm?.terms || []).filter(t => t.tf > 0).map(t => `${t.term}(tf=${t.tf}, idf=${t.idf.toFixed(2)})`).join(', ') || 'none';
-        return `<details class="ss-rag-debug-item"><summary><span>${Number(item?.score || 0).toFixed(4)}</span><span>${escapeHtml(truncate(item?.text || '', 170))}</span></summary><div class="ss-rag-debug-score-step"><div>Base vector:</div><div>${Number(s?.base || 0).toFixed(4)}</div><div>+ Keyword boost:</div><div>${Number(s?.keyword?.before || 0).toFixed(4)} -> ${Number(s?.keyword?.after || 0).toFixed(4)}</div><div>+ BM25:</div><div>${Number(s?.bm25?.after || 0).toFixed(4)}</div><div> Terms:</div><div>${escapeHtml(termsText)}</div><div>+ Importance:</div><div>imp=${s?.importance?.importance ?? 'n/a'}, boost=${Number(s?.importance?.boost || 0).toFixed(4)}</div></div></details>`;
+        return `<details class="shardwright-rag-debug-item"><summary><span>${Number(item?.score || 0).toFixed(4)}</span><span>${escapeHtml(truncate(item?.text || '', 170))}</span></summary><div class="shardwright-rag-debug-score-step"><div>Base vector:</div><div>${Number(s?.base || 0).toFixed(4)}</div><div>+ Keyword boost:</div><div>${Number(s?.keyword?.before || 0).toFixed(4)} -> ${Number(s?.keyword?.after || 0).toFixed(4)}</div><div>+ BM25:</div><div>${Number(s?.bm25?.after || 0).toFixed(4)}</div><div> Terms:</div><div>${escapeHtml(termsText)}</div><div>+ Importance:</div><div>imp=${s?.importance?.importance ?? 'n/a'}, boost=${Number(s?.importance?.boost || 0).toFixed(4)}</div></div></details>`;
     }).join('')}`;
 }
 
 function renderPipelineStages(stages) {
-    if (!Array.isArray(stages) || stages.length === 0) return '<p class="ss-hint ss-rag-inline-hint">Run a pipeline trace to see stage output.</p>';
+    if (!Array.isArray(stages) || stages.length === 0) return '<p class="shardwright-hint shardwright-rag-inline-hint">Run a pipeline trace to see stage output.</p>';
     return stages.map((stage, idx) => {
         const dropped = Array.isArray(stage?.metadata?.droppedReasons) ? stage.metadata.droppedReasons.length : 0;
         const sample = (stage?.results || []).slice(0, 8);
-        return `<details class="ss-rag-debug-stage" ${idx < 2 ? 'open' : ''}><summary><span class="badge">${idx + 1}</span><span>${escapeHtml(stage.stageName || 'stage')}</span><span>${Number(stage.durationMs || 0).toFixed(2)} ms</span><span>Input: ${stage.inputCount} -> Output: ${stage.outputCount}${dropped > 0 ? ` | Removed: ${dropped}` : ''}</span></summary><div class="ss-rag-debug-item-body"><pre>${escapeHtml(JSON.stringify(stage.metadata || {}, null, 2))}</pre>${sample.map(item => `<div class="ss-rag-debug-row"><div>score = ${Number(item?.score || 0).toFixed(4)}</div><div>${escapeHtml(truncate(item?.text || '', 220))}</div></div>`).join('')}</div></details>`;
+        return `<details class="shardwright-rag-debug-stage" ${idx < 2 ? 'open' : ''}><summary><span class="badge">${idx + 1}</span><span>${escapeHtml(stage.stageName || 'stage')}</span><span>${Number(stage.durationMs || 0).toFixed(2)} ms</span><span>Input: ${stage.inputCount} -> Output: ${stage.outputCount}${dropped > 0 ? ` | Removed: ${dropped}` : ''}</span></summary><div class="shardwright-rag-debug-item-body"><pre>${escapeHtml(JSON.stringify(stage.metadata || {}, null, 2))}</pre>${sample.map(item => `<div class="shardwright-rag-debug-row"><div>score = ${Number(item?.score || 0).toFixed(4)}</div><div>${escapeHtml(truncate(item?.text || '', 220))}</div></div>`).join('')}</div></details>`;
     }).join('');
 }
 
@@ -147,7 +147,7 @@ function downloadJson(filename, payload) {
 }
 
 function resolveDebugContext(input) {
-    const liveSettings = extension_settings?.summary_sharder || {};
+    const liveSettings = extension_settings?.shardwright || {};
     const hasSettingsShape = !!input && typeof input === 'object' && (
         Object.prototype.hasOwnProperty.call(input, 'rag')
         || Object.prototype.hasOwnProperty.call(input, 'ragStandard')
@@ -184,12 +184,12 @@ function resolveDebugContext(input) {
 
 function renderModalHtml(state) {
     const tab = state.activeTab;
-    const tabBtn = (id, label) => `<button type="button" class="ss-rag-debug-tab ${tab === id ? 'active' : ''}" data-tab="${id}">${label}</button>`;
+    const tabBtn = (id, label) => `<button type="button" class="shardwright-rag-debug-tab ${tab === id ? 'active' : ''}" data-tab="${id}">${label}</button>`;
     return `
-        <div class="ss-rag-modal ss-rag-debug-modal">
-            <h3 class="ss-rag-title">RAG Debug & Testing</h3>
-            <p class="ss-hint ss-rag-inline-hint">Diagnostics only. No prompt injection is performed from this modal.</p>
-            <div class="ss-rag-debug-tabs">
+        <div class="shardwright-rag-modal shardwright-rag-debug-modal">
+            <h3 class="shardwright-rag-title">RAG Debug & Testing</h3>
+            <p class="shardwright-hint shardwright-rag-inline-hint">Diagnostics only. No prompt injection is performed from this modal.</p>
+            <div class="shardwright-rag-debug-tabs">
                 ${tabBtn('health', 'Health')}
                 ${tabBtn('embedding', 'Embedding')}
                 ${tabBtn('inspector', 'Inspector')}
@@ -197,38 +197,38 @@ function renderModalHtml(state) {
                 ${tabBtn('pipeline', 'Pipeline')}
                 ${tabBtn('reranker', 'Re-ranker')}
             </div>
-            <div class="ss-rag-debug-tab-panel ${tab === 'health' ? 'active' : ''}" data-tab-panel="health">
-                <div class="ss-rag-actions-row"><input id="ss-rag-debug-refresh-health" class="menu_button" type="button" value="Refresh All" /></div>
-                <div id="ss-rag-debug-health-grid" class="ss-rag-debug-health-grid"></div>
+            <div class="shardwright-rag-debug-tab-panel ${tab === 'health' ? 'active' : ''}" data-tab-panel="health">
+                <div class="shardwright-rag-actions-row"><input id="shardwright-rag-debug-refresh-health" class="menu_button" type="button" value="Refresh All" /></div>
+                <div id="shardwright-rag-debug-health-grid" class="shardwright-rag-debug-health-grid"></div>
             </div>
-            <div class="ss-rag-debug-tab-panel ${tab === 'embedding' ? 'active' : ''}" data-tab-panel="embedding">
-                <div class="ss-rag-grid-two"><div class="ss-block"><label for="ss-rag-debug-embed-a">Text A</label><textarea id="ss-rag-debug-embed-a" class="text_pole ss-rag-template"></textarea></div><div class="ss-block"><label for="ss-rag-debug-embed-b">Text B</label><textarea id="ss-rag-debug-embed-b" class="text_pole ss-rag-template"></textarea></div></div>
-                <div class="ss-rag-actions-row"><input id="ss-rag-debug-embed-generate" class="menu_button" type="button" value="Generate Embedding" /><input id="ss-rag-debug-embed-compare" class="menu_button" type="button" value="Compare Similarity" /></div>
-                <div id="ss-rag-debug-embed-result" class="ss-rag-debug-block"></div>
+            <div class="shardwright-rag-debug-tab-panel ${tab === 'embedding' ? 'active' : ''}" data-tab-panel="embedding">
+                <div class="shardwright-rag-grid-two"><div class="shardwright-block"><label for="shardwright-rag-debug-embed-a">Text A</label><textarea id="shardwright-rag-debug-embed-a" class="text_pole shardwright-rag-template"></textarea></div><div class="shardwright-block"><label for="shardwright-rag-debug-embed-b">Text B</label><textarea id="shardwright-rag-debug-embed-b" class="text_pole shardwright-rag-template"></textarea></div></div>
+                <div class="shardwright-rag-actions-row"><input id="shardwright-rag-debug-embed-generate" class="menu_button" type="button" value="Generate Embedding" /><input id="shardwright-rag-debug-embed-compare" class="menu_button" type="button" value="Compare Similarity" /></div>
+                <div id="shardwright-rag-debug-embed-result" class="shardwright-rag-debug-block"></div>
             </div>
-            <div class="ss-rag-debug-tab-panel ${tab === 'inspector' ? 'active' : ''}" data-tab-panel="inspector">
-                <div class="ss-rag-grid-two"><div class="ss-block"><label for="ss-rag-debug-inspector-behavior">Behavior</label><select id="ss-rag-debug-inspector-behavior" class="text_pole"><option value="all">All</option><option value="superseding">Superseding</option><option value="cumulative">Cumulative</option><option value="rolling">Rolling</option><option value="legacy">Legacy</option></select></div><div class="ss-block"><label for="ss-rag-debug-inspector-scene">Scene Code</label><input id="ss-rag-debug-inspector-scene" class="text_pole" type="text" /></div></div>
-                <div class="ss-rag-actions-row"><input id="ss-rag-debug-inspector-refresh" class="menu_button" type="button" value="Refresh Inspector" /><input id="ss-rag-debug-inspector-prev" class="menu_button" type="button" value="Previous Page" /><input id="ss-rag-debug-inspector-next" class="menu_button" type="button" value="Next Page" /></div>
-                <p id="ss-rag-debug-inspector-page" class="ss-hint ss-rag-inline-hint"></p>
-                <div id="ss-rag-debug-inspector-distribution" class="ss-rag-debug-block"></div>
-                <div id="ss-rag-debug-inspector-items" class="ss-rag-debug-list"></div>
+            <div class="shardwright-rag-debug-tab-panel ${tab === 'inspector' ? 'active' : ''}" data-tab-panel="inspector">
+                <div class="shardwright-rag-grid-two"><div class="shardwright-block"><label for="shardwright-rag-debug-inspector-behavior">Behavior</label><select id="shardwright-rag-debug-inspector-behavior" class="text_pole"><option value="all">All</option><option value="superseding">Superseding</option><option value="cumulative">Cumulative</option><option value="rolling">Rolling</option><option value="legacy">Legacy</option></select></div><div class="shardwright-block"><label for="shardwright-rag-debug-inspector-scene">Scene Code</label><input id="shardwright-rag-debug-inspector-scene" class="text_pole" type="text" /></div></div>
+                <div class="shardwright-rag-actions-row"><input id="shardwright-rag-debug-inspector-refresh" class="menu_button" type="button" value="Refresh Inspector" /><input id="shardwright-rag-debug-inspector-prev" class="menu_button" type="button" value="Previous Page" /><input id="shardwright-rag-debug-inspector-next" class="menu_button" type="button" value="Next Page" /></div>
+                <p id="shardwright-rag-debug-inspector-page" class="shardwright-hint shardwright-rag-inline-hint"></p>
+                <div id="shardwright-rag-debug-inspector-distribution" class="shardwright-rag-debug-block"></div>
+                <div id="shardwright-rag-debug-inspector-items" class="shardwright-rag-debug-list"></div>
             </div>
-            <div class="ss-rag-debug-tab-panel ${tab === 'query' ? 'active' : ''}" data-tab-panel="query">
-                <div class="ss-rag-grid-two"><div class="ss-block"><label for="ss-rag-debug-query-text">Query Text</label><textarea id="ss-rag-debug-query-text" class="text_pole ss-rag-template"></textarea></div><div class="ss-rag-grid-two"><div class="ss-block"><label for="ss-rag-debug-query-topk">Top K</label><input id="ss-rag-debug-query-topk" class="text_pole" type="number" min="1" value="${Math.max(1, Number(state.rag.insertCount) || 5)}" /></div><div class="ss-block"><label for="ss-rag-debug-query-threshold">Threshold</label><input id="ss-rag-debug-query-threshold" class="text_pole" type="number" min="0" max="1" step="0.01" value="${Number(state.rag.scoreThreshold ?? 0)}" /></div></div></div>
-                <div class="ss-rag-actions-row"><input id="ss-rag-debug-query-run" class="menu_button" type="button" value="Run Query" /></div>
-                <div class="ss-rag-debug-split"><div id="ss-rag-debug-query-raw" class="ss-rag-debug-block"></div><div id="ss-rag-debug-query-scored" class="ss-rag-debug-block"></div></div>
+            <div class="shardwright-rag-debug-tab-panel ${tab === 'query' ? 'active' : ''}" data-tab-panel="query">
+                <div class="shardwright-rag-grid-two"><div class="shardwright-block"><label for="shardwright-rag-debug-query-text">Query Text</label><textarea id="shardwright-rag-debug-query-text" class="text_pole shardwright-rag-template"></textarea></div><div class="shardwright-rag-grid-two"><div class="shardwright-block"><label for="shardwright-rag-debug-query-topk">Top K</label><input id="shardwright-rag-debug-query-topk" class="text_pole" type="number" min="1" value="${Math.max(1, Number(state.rag.insertCount) || 5)}" /></div><div class="shardwright-block"><label for="shardwright-rag-debug-query-threshold">Threshold</label><input id="shardwright-rag-debug-query-threshold" class="text_pole" type="number" min="0" max="1" step="0.01" value="${Number(state.rag.scoreThreshold ?? 0)}" /></div></div></div>
+                <div class="shardwright-rag-actions-row"><input id="shardwright-rag-debug-query-run" class="menu_button" type="button" value="Run Query" /></div>
+                <div class="shardwright-rag-debug-split"><div id="shardwright-rag-debug-query-raw" class="shardwright-rag-debug-block"></div><div id="shardwright-rag-debug-query-scored" class="shardwright-rag-debug-block"></div></div>
             </div>
-            <div class="ss-rag-debug-tab-panel ${tab === 'pipeline' ? 'active' : ''}" data-tab-panel="pipeline">
-                <div class="ss-rag-grid-two"><div class="ss-block"><label class="checkbox_label"><input id="ss-rag-debug-ov-scene" type="checkbox" ${state.rag.sceneExpansion !== false ? 'checked' : ''} /><span>Scene Expansion</span></label></div><div class="ss-block"><label for="ss-rag-debug-ov-scoring">Scoring Method</label><select id="ss-rag-debug-ov-scoring" class="text_pole"><option value="keyword" ${state.rag.scoringMethod === 'keyword' ? 'selected' : ''}>Keyword</option><option value="bm25" ${state.rag.scoringMethod === 'bm25' ? 'selected' : ''}>BM25</option><option value="hybrid" ${state.rag.scoringMethod === 'hybrid' ? 'selected' : ''}>Hybrid</option></select></div></div>
-                <div class="ss-rag-actions-row"><input id="ss-rag-debug-pipeline-run" class="menu_button" type="button" value="Run Pipeline Trace" /><input id="ss-rag-debug-pipeline-export" class="menu_button" type="button" value="Export JSON" /></div>
-                <p id="ss-rag-debug-pipeline-meta" class="ss-hint ss-rag-inline-hint"></p>
-                <div id="ss-rag-debug-pipeline-stages" class="ss-rag-debug-list"></div>
-                <pre id="ss-rag-debug-pipeline-injection" class="ss-rag-debug-injection-preview"></pre>
+            <div class="shardwright-rag-debug-tab-panel ${tab === 'pipeline' ? 'active' : ''}" data-tab-panel="pipeline">
+                <div class="shardwright-rag-grid-two"><div class="shardwright-block"><label class="checkbox_label"><input id="shardwright-rag-debug-ov-scene" type="checkbox" ${state.rag.sceneExpansion !== false ? 'checked' : ''} /><span>Scene Expansion</span></label></div><div class="shardwright-block"><label for="shardwright-rag-debug-ov-scoring">Scoring Method</label><select id="shardwright-rag-debug-ov-scoring" class="text_pole"><option value="keyword" ${state.rag.scoringMethod === 'keyword' ? 'selected' : ''}>Keyword</option><option value="bm25" ${state.rag.scoringMethod === 'bm25' ? 'selected' : ''}>BM25</option><option value="hybrid" ${state.rag.scoringMethod === 'hybrid' ? 'selected' : ''}>Hybrid</option></select></div></div>
+                <div class="shardwright-rag-actions-row"><input id="shardwright-rag-debug-pipeline-run" class="menu_button" type="button" value="Run Pipeline Trace" /><input id="shardwright-rag-debug-pipeline-export" class="menu_button" type="button" value="Export JSON" /></div>
+                <p id="shardwright-rag-debug-pipeline-meta" class="shardwright-hint shardwright-rag-inline-hint"></p>
+                <div id="shardwright-rag-debug-pipeline-stages" class="shardwright-rag-debug-list"></div>
+                <pre id="shardwright-rag-debug-pipeline-injection" class="shardwright-rag-debug-injection-preview"></pre>
             </div>
-            <div class="ss-rag-debug-tab-panel ${tab === 'reranker' ? 'active' : ''}" data-tab-panel="reranker">
-                <div class="ss-rag-grid-two"><div class="ss-block"><label for="ss-rag-debug-reranker-query">Query</label><textarea id="ss-rag-debug-reranker-query" class="text_pole ss-rag-template"></textarea></div><div class="ss-block"><label for="ss-rag-debug-reranker-docs">Documents (one per line)</label><textarea id="ss-rag-debug-reranker-docs" class="text_pole ss-rag-template"></textarea></div></div>
-                <div class="ss-rag-actions-row"><input id="ss-rag-debug-reranker-run" class="menu_button" type="button" value="Test Re-ranker" /></div>
-                <div id="ss-rag-debug-reranker-result" class="ss-rag-debug-block"></div>
+            <div class="shardwright-rag-debug-tab-panel ${tab === 'reranker' ? 'active' : ''}" data-tab-panel="reranker">
+                <div class="shardwright-rag-grid-two"><div class="shardwright-block"><label for="shardwright-rag-debug-reranker-query">Query</label><textarea id="shardwright-rag-debug-reranker-query" class="text_pole shardwright-rag-template"></textarea></div><div class="shardwright-block"><label for="shardwright-rag-debug-reranker-docs">Documents (one per line)</label><textarea id="shardwright-rag-debug-reranker-docs" class="text_pole shardwright-rag-template"></textarea></div></div>
+                <div class="shardwright-rag-actions-row"><input id="shardwright-rag-debug-reranker-run" class="menu_button" type="button" value="Test Re-ranker" /></div>
+                <div id="shardwright-rag-debug-reranker-result" class="shardwright-rag-debug-block"></div>
             </div>
         </div>
     `;
@@ -264,38 +264,38 @@ export async function openRagDebugModal(settingsOrDraft) {
 
     requestAnimationFrame(async () => {
         const dom = {
-            healthGrid: document.getElementById('ss-rag-debug-health-grid'),
-            refreshHealth: document.getElementById('ss-rag-debug-refresh-health'),
-            embedA: document.getElementById('ss-rag-debug-embed-a'),
-            embedB: document.getElementById('ss-rag-debug-embed-b'),
-            embedGenerate: document.getElementById('ss-rag-debug-embed-generate'),
-            embedCompare: document.getElementById('ss-rag-debug-embed-compare'),
-            embedResult: document.getElementById('ss-rag-debug-embed-result'),
-            inspectorBehavior: document.getElementById('ss-rag-debug-inspector-behavior'),
-            inspectorScene: document.getElementById('ss-rag-debug-inspector-scene'),
-            inspectorRefresh: document.getElementById('ss-rag-debug-inspector-refresh'),
-            inspectorPrev: document.getElementById('ss-rag-debug-inspector-prev'),
-            inspectorNext: document.getElementById('ss-rag-debug-inspector-next'),
-            inspectorPage: document.getElementById('ss-rag-debug-inspector-page'),
-            inspectorDistribution: document.getElementById('ss-rag-debug-inspector-distribution'),
-            inspectorItems: document.getElementById('ss-rag-debug-inspector-items'),
-            queryText: document.getElementById('ss-rag-debug-query-text'),
-            queryTopK: document.getElementById('ss-rag-debug-query-topk'),
-            queryThreshold: document.getElementById('ss-rag-debug-query-threshold'),
-            queryRun: document.getElementById('ss-rag-debug-query-run'),
-            queryRaw: document.getElementById('ss-rag-debug-query-raw'),
-            queryScored: document.getElementById('ss-rag-debug-query-scored'),
-            ovScene: document.getElementById('ss-rag-debug-ov-scene'),
-            ovScoring: document.getElementById('ss-rag-debug-ov-scoring'),
-            pipelineRun: document.getElementById('ss-rag-debug-pipeline-run'),
-            pipelineExport: document.getElementById('ss-rag-debug-pipeline-export'),
-            pipelineMeta: document.getElementById('ss-rag-debug-pipeline-meta'),
-            pipelineStages: document.getElementById('ss-rag-debug-pipeline-stages'),
-            pipelineInjection: document.getElementById('ss-rag-debug-pipeline-injection'),
-            rerankerQuery: document.getElementById('ss-rag-debug-reranker-query'),
-            rerankerDocs: document.getElementById('ss-rag-debug-reranker-docs'),
-            rerankerRun: document.getElementById('ss-rag-debug-reranker-run'),
-            rerankerResult: document.getElementById('ss-rag-debug-reranker-result'),
+            healthGrid: document.getElementById('shardwright-rag-debug-health-grid'),
+            refreshHealth: document.getElementById('shardwright-rag-debug-refresh-health'),
+            embedA: document.getElementById('shardwright-rag-debug-embed-a'),
+            embedB: document.getElementById('shardwright-rag-debug-embed-b'),
+            embedGenerate: document.getElementById('shardwright-rag-debug-embed-generate'),
+            embedCompare: document.getElementById('shardwright-rag-debug-embed-compare'),
+            embedResult: document.getElementById('shardwright-rag-debug-embed-result'),
+            inspectorBehavior: document.getElementById('shardwright-rag-debug-inspector-behavior'),
+            inspectorScene: document.getElementById('shardwright-rag-debug-inspector-scene'),
+            inspectorRefresh: document.getElementById('shardwright-rag-debug-inspector-refresh'),
+            inspectorPrev: document.getElementById('shardwright-rag-debug-inspector-prev'),
+            inspectorNext: document.getElementById('shardwright-rag-debug-inspector-next'),
+            inspectorPage: document.getElementById('shardwright-rag-debug-inspector-page'),
+            inspectorDistribution: document.getElementById('shardwright-rag-debug-inspector-distribution'),
+            inspectorItems: document.getElementById('shardwright-rag-debug-inspector-items'),
+            queryText: document.getElementById('shardwright-rag-debug-query-text'),
+            queryTopK: document.getElementById('shardwright-rag-debug-query-topk'),
+            queryThreshold: document.getElementById('shardwright-rag-debug-query-threshold'),
+            queryRun: document.getElementById('shardwright-rag-debug-query-run'),
+            queryRaw: document.getElementById('shardwright-rag-debug-query-raw'),
+            queryScored: document.getElementById('shardwright-rag-debug-query-scored'),
+            ovScene: document.getElementById('shardwright-rag-debug-ov-scene'),
+            ovScoring: document.getElementById('shardwright-rag-debug-ov-scoring'),
+            pipelineRun: document.getElementById('shardwright-rag-debug-pipeline-run'),
+            pipelineExport: document.getElementById('shardwright-rag-debug-pipeline-export'),
+            pipelineMeta: document.getElementById('shardwright-rag-debug-pipeline-meta'),
+            pipelineStages: document.getElementById('shardwright-rag-debug-pipeline-stages'),
+            pipelineInjection: document.getElementById('shardwright-rag-debug-pipeline-injection'),
+            rerankerQuery: document.getElementById('shardwright-rag-debug-reranker-query'),
+            rerankerDocs: document.getElementById('shardwright-rag-debug-reranker-docs'),
+            rerankerRun: document.getElementById('shardwright-rag-debug-reranker-run'),
+            rerankerResult: document.getElementById('shardwright-rag-debug-reranker-result'),
         };
 
         for (const btn of document.querySelectorAll('[data-tab]')) {
@@ -307,7 +307,7 @@ export async function openRagDebugModal(settingsOrDraft) {
 
         const refreshHealth = async () => {
             const runId = ++state.runIds.health;
-            dom.healthGrid.innerHTML = '<p class="ss-hint ss-rag-inline-hint">Running checks...</p>';
+            dom.healthGrid.innerHTML = '<p class="shardwright-hint shardwright-rag-inline-hint">Running checks...</p>';
             const t1 = performance.now();
             const plugin = await checkPluginAvailability();
             if (runId !== state.runIds.health) return;
@@ -320,7 +320,7 @@ export async function openRagDebugModal(settingsOrDraft) {
             let embedDims = 0;
             let embedError = '';
             try {
-                const embedding = await testEmbeddingConnection(state.rag, 'Summary Sharder debug test');
+                const embedding = await testEmbeddingConnection(state.rag, 'Shardwright debug test');
                 embedOk = !!embedding?.success;
                 embedDims = Number(embedding?.dimensions) || 0;
             } catch (error) {
@@ -348,7 +348,7 @@ export async function openRagDebugModal(settingsOrDraft) {
         const refreshInspector = async (resetOffset = false) => {
             if (resetOffset) state.inspector.offset = 0;
             const runId = ++state.runIds.inspector;
-            dom.inspectorItems.innerHTML = '<p class="ss-hint ss-rag-inline-hint">Loading chunks...</p>';
+            dom.inspectorItems.innerHTML = '<p class="shardwright-hint shardwright-rag-inline-hint">Loading chunks...</p>';
             const response = await listChunks(state.writeTargetCollectionId, state.rag, { offset: state.inspector.offset, limit: INSPECTOR_PAGE_SIZE });
             if (runId !== state.runIds.inspector) return;
 
@@ -379,7 +379,7 @@ export async function openRagDebugModal(settingsOrDraft) {
             const text = String(dom.embedA?.value || '').trim();
             if (!text) return void toastr.warning('Enter Text A first');
             const runId = ++state.runIds.embedding;
-            dom.embedResult.innerHTML = '<p class="ss-hint ss-rag-inline-hint">Generating embedding...</p>';
+            dom.embedResult.innerHTML = '<p class="shardwright-hint shardwright-rag-inline-hint">Generating embedding...</p>';
             const t0 = performance.now();
             try {
                 const vec = await getEmbeddingVector(state.rag, text);
@@ -389,7 +389,7 @@ export async function openRagDebugModal(settingsOrDraft) {
                 const tail = vec.slice(Math.max(0, dims - 10)).map(n => Number(n).toFixed(5)).join(', ');
                 dom.embedResult.innerHTML = `<div><strong>Dimensions:</strong> ${dims}</div><div><strong>Generation time:</strong> ${(performance.now() - t0).toFixed(1)} ms</div><div><strong>First 10:</strong> <code>${escapeHtml(head)}</code></div><div><strong>Last 10:</strong> <code>${escapeHtml(tail)}</code></div>`;
             } catch (error) {
-                dom.embedResult.innerHTML = `<p class="ss-hint ss-rag-inline-hint">Embedding failed: ${escapeHtml(error?.message || error)}</p>`;
+                dom.embedResult.innerHTML = `<p class="shardwright-hint shardwright-rag-inline-hint">Embedding failed: ${escapeHtml(error?.message || error)}</p>`;
             }
         });
 
@@ -398,7 +398,7 @@ export async function openRagDebugModal(settingsOrDraft) {
             const b = String(dom.embedB?.value || '').trim();
             if (!a || !b) return void toastr.warning('Enter both Text A and Text B');
             const runId = ++state.runIds.embedding;
-            dom.embedResult.innerHTML = '<p class="ss-hint ss-rag-inline-hint">Comparing embeddings...</p>';
+            dom.embedResult.innerHTML = '<p class="shardwright-hint shardwright-rag-inline-hint">Comparing embeddings...</p>';
             const t0 = performance.now();
             try {
                 const [vecA, vecB] = await Promise.all([getEmbeddingVector(state.rag, a), getEmbeddingVector(state.rag, b)]);
@@ -406,7 +406,7 @@ export async function openRagDebugModal(settingsOrDraft) {
                 const sim = cosineSimilarity(vecA, vecB);
                 dom.embedResult.innerHTML = `<div><strong>Vector A:</strong> ${vecA.length} dims</div><div><strong>Vector B:</strong> ${vecB.length} dims</div><div><strong>Cosine similarity:</strong> ${sim.toFixed(4)} (${scoreLabel(sim)})</div><div><strong>Total time:</strong> ${(performance.now() - t0).toFixed(1)} ms</div>`;
             } catch (error) {
-                dom.embedResult.innerHTML = `<p class="ss-hint ss-rag-inline-hint">Comparison failed: ${escapeHtml(error?.message || error)}</p>`;
+                dom.embedResult.innerHTML = `<p class="shardwright-hint shardwright-rag-inline-hint">Comparison failed: ${escapeHtml(error?.message || error)}</p>`;
             }
         });
 
@@ -435,8 +435,8 @@ export async function openRagDebugModal(settingsOrDraft) {
             const queryText = String(dom.queryText?.value || '').trim();
             if (!queryText) return void toastr.warning('Enter query text first');
             const runId = ++state.runIds.query;
-            dom.queryRaw.innerHTML = '<p class="ss-hint ss-rag-inline-hint">Querying...</p>';
-            dom.queryScored.innerHTML = '<p class="ss-hint ss-rag-inline-hint">Scoring...</p>';
+            dom.queryRaw.innerHTML = '<p class="shardwright-hint shardwright-rag-inline-hint">Querying...</p>';
+            dom.queryScored.innerHTML = '<p class="shardwright-hint shardwright-rag-inline-hint">Scoring...</p>';
 
             const topK = Math.max(1, Number(dom.queryTopK?.value) || Math.max(1, Number(state.rag.insertCount) || 5));
             const rawThreshold = String(dom.queryThreshold?.value ?? '').trim();
@@ -469,7 +469,7 @@ export async function openRagDebugModal(settingsOrDraft) {
 
         dom.pipelineRun?.addEventListener('click', async () => {
             const runId = ++state.runIds.pipeline;
-            dom.pipelineStages.innerHTML = '<p class="ss-hint ss-rag-inline-hint">Running pipeline trace...</p>';
+            dom.pipelineStages.innerHTML = '<p class="shardwright-hint shardwright-rag-inline-hint">Running pipeline trace...</p>';
             dom.pipelineInjection.textContent = '';
             const result = await runDebugPipeline({
                 settings: state.settings,
@@ -499,7 +499,7 @@ export async function openRagDebugModal(settingsOrDraft) {
             const reranker = state.rag?.reranker || {};
             const url = String(reranker.apiUrl || '').trim();
             if (!reranker.enabled || !url) {
-                dom.rerankerResult.innerHTML = '<p class="ss-hint ss-rag-inline-hint">Re-ranker is not configured.</p>';
+                dom.rerankerResult.innerHTML = '<p class="shardwright-hint shardwright-rag-inline-hint">Re-ranker is not configured.</p>';
                 return;
             }
             const query = String(dom.rerankerQuery?.value || '').trim();
@@ -507,13 +507,13 @@ export async function openRagDebugModal(settingsOrDraft) {
             if (!query || docs.length === 0) return void toastr.warning('Enter query and at least one document');
 
             const runId = ++state.runIds.reranker;
-            dom.rerankerResult.innerHTML = '<p class="ss-hint ss-rag-inline-hint">Testing re-ranker...</p>';
+            dom.rerankerResult.innerHTML = '<p class="shardwright-hint shardwright-rag-inline-hint">Testing re-ranker...</p>';
 
             const t0 = performance.now();
             const result = await rerankDocuments(query, docs, state.rag, { topK: docs.length });
             if (runId !== state.runIds.reranker) return;
             if (!result.success) {
-                dom.rerankerResult.innerHTML = `<p class="ss-hint ss-rag-inline-hint">Re-ranker failed: ${escapeHtml(result.error || 'request failed')}</p>`;
+                dom.rerankerResult.innerHTML = `<p class="shardwright-hint shardwright-rag-inline-hint">Re-ranker failed: ${escapeHtml(result.error || 'request failed')}</p>`;
                 return;
             }
 
@@ -531,12 +531,12 @@ export async function openRagDebugModal(settingsOrDraft) {
                 <div><strong>Direct score array:</strong> ${diagnostics.hasDirectScores === true ? 'yes' : 'no'}</div>
                 <div><strong>Ranked entry count:</strong> ${Number(diagnostics.rankedEntryCount || 0)}</div>
                 <div><strong>Scored entry count:</strong> ${Number(diagnostics.scoredEntryCount || 0)}</div>
-                <details class="ss-rag-debug-item" open>
+                <details class="shardwright-rag-debug-item" open>
                     <summary><span>Provider response preview</span></summary>
-                    <div class="ss-rag-debug-item-body"><pre>${escapeHtml(rawPreview)}</pre></div>
+                    <div class="shardwright-rag-debug-item-body"><pre>${escapeHtml(rawPreview)}</pre></div>
                 </details>
-                <div class="ss-rag-debug-list">
-                    ${ranked.map((row, idx) => `<div class="ss-rag-debug-row"><div>#${idx + 1} score = ${Number(row?.score ?? 0).toFixed(4)}</div><div>${escapeHtml(truncate(row?.document || '', 260))}</div></div>`).join('')}
+                <div class="shardwright-rag-debug-list">
+                    ${ranked.map((row, idx) => `<div class="shardwright-rag-debug-row"><div>#${idx + 1} score = ${Number(row?.score ?? 0).toFixed(4)}</div><div>${escapeHtml(truncate(row?.document || '', 260))}</div></div>`).join('')}
                 </div>
             `;
         });
@@ -544,7 +544,7 @@ export async function openRagDebugModal(settingsOrDraft) {
         await refreshHealth();
         await refreshInspector(true);
         if (state.rag?.reranker?.enabled !== true || !String(state.rag?.reranker?.apiUrl || '').trim()) {
-            dom.rerankerResult.innerHTML = '<p class="ss-hint ss-rag-inline-hint">Re-ranker not configured.</p>';
+            dom.rerankerResult.innerHTML = '<p class="shardwright-hint shardwright-rag-inline-hint">Re-ranker not configured.</p>';
         }
     });
 

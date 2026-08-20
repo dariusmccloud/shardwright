@@ -67,9 +67,9 @@ function getPercentile(sortedValues, fraction) {
 export function createFabPanels({ anchorRect, panelMarkupById, mobileScalePercent = 100, onAction }) {
     const mobileScaleFactor = mobileScalePercent / 100;
     const root = document.createElement('div');
-    root.className = 'ss-fab-panels ss-fab-wheel-hidden';
+    root.className = 'shardwright-fab-panels shardwright-fab-wheel-hidden';
     root.setAttribute('role', 'dialog');
-    root.setAttribute('aria-label', 'Summary Sharder quick actions');
+    root.setAttribute('aria-label', 'Shardwright quick actions');
 
     const panelElements = new Map();
     const wheelButtons = new Map();
@@ -135,8 +135,8 @@ export function createFabPanels({ anchorRect, panelMarkupById, mobileScalePercen
         const startedAt = performance.now();
         try {
             // Close on backdrop click (sheet mode)
-            if (event.target === root && root.classList.contains('ss-fab-sheet-active')) {
-                const activePanel = root.querySelector('.ss-fab-panel.is-active');
+            if (event.target === root && root.classList.contains('shardwright-fab-sheet-active')) {
+                const activePanel = root.querySelector('.shardwright-fab-panel.is-active');
                 if (activePanel) {
                     const panelId = activePanel.dataset.panelId;
                     if (panelId) {
@@ -169,8 +169,8 @@ export function createFabPanels({ anchorRect, panelMarkupById, mobileScalePercen
 
     const onKeydown = (event) => {
         // Close sheet on Escape key
-        if (event.key === 'Escape' && root.classList.contains('ss-fab-sheet-active')) {
-            const activePanel = root.querySelector('.ss-fab-panel.is-active');
+        if (event.key === 'Escape' && root.classList.contains('shardwright-fab-sheet-active')) {
+            const activePanel = root.querySelector('.shardwright-fab-panel.is-active');
             if (activePanel) {
                 const panelId = activePanel.dataset.panelId;
                 if (panelId) {
@@ -280,8 +280,8 @@ export function createFabPanels({ anchorRect, panelMarkupById, mobileScalePercen
             if (button) {
                 button.style.setProperty('left', `${anchor.x}px`, 'important');
                 button.style.setProperty('top', `${anchor.y}px`, 'important');
-                button.style.setProperty('--ss-wheel-rotation', `${angleDeg}deg`);
-                button.style.setProperty('--ss-wheel-icon-rotation', `${-angleDeg}deg`);
+                button.style.setProperty('--shardwright-wheel-rotation', `${angleDeg}deg`);
+                button.style.setProperty('--shardwright-wheel-icon-rotation', `${-angleDeg}deg`);
             }
 
             const buttonRect = wheelButtonSizeById.get(panelId) || getScaledWheelButtonFallback();
@@ -332,35 +332,35 @@ export function createFabPanels({ anchorRect, panelMarkupById, mobileScalePercen
     }
 
     function applySheetMode(panel) {
-        panel.classList.add('ss-fab-panel-sheet');
+        panel.classList.add('shardwright-fab-panel-sheet');
         panel.dataset.arrow = 'none';
         panel.style.left = '';
         panel.style.top = '';
-        panel.style.setProperty('--ss-fab-arrow-offset', '0px');
+        panel.style.setProperty('--shardwright-fab-arrow-offset', '0px');
 
         // ARIA for sheet mode
         panel.setAttribute('role', 'dialog');
         panel.setAttribute('aria-modal', 'true');
 
         // Mark container for backdrop
-        const container = panel.closest('.ss-fab-panels');
+        const container = panel.closest('.shardwright-fab-panels');
         if (container) {
-            container.classList.add('ss-fab-sheet-active');
+            container.classList.add('shardwright-fab-sheet-active');
             container.setAttribute('aria-hidden', 'false');
         }
     }
 
     function applyPopoverMode(panel, placement) {
-        panel.classList.remove('ss-fab-panel-sheet');
+        panel.classList.remove('shardwright-fab-panel-sheet');
         panel.style.left = `${placement.x}px`;
         panel.style.top = `${placement.y}px`;
         panel.dataset.arrow = placement.arrowSide;
-        panel.style.setProperty('--ss-fab-arrow-offset', `${placement.arrowOffset}px`);
+        panel.style.setProperty('--shardwright-fab-arrow-offset', `${placement.arrowOffset}px`);
 
         // Remove backdrop
-        const container = panel.closest('.ss-fab-panels');
+        const container = panel.closest('.shardwright-fab-panels');
         if (container) {
-            container.classList.remove('ss-fab-sheet-active');
+            container.classList.remove('shardwright-fab-sheet-active');
         }
     }
 
@@ -439,8 +439,8 @@ export function createFabPanels({ anchorRect, panelMarkupById, mobileScalePercen
             return wheelAnchors.get(panelId) || null;
         },
         setWheelVisible(visible) {
-            root.classList.toggle('ss-fab-wheel-hidden', !visible);
-            root.classList.toggle('ss-fab-wheel-visible', visible);
+            root.classList.toggle('shardwright-fab-wheel-hidden', !visible);
+            root.classList.toggle('shardwright-fab-wheel-visible', visible);
         },
         updatePanel(panelId, panelMarkup) {
             const panel = panelElements.get(panelId);
@@ -504,7 +504,7 @@ export function createFabPanels({ anchorRect, panelMarkupById, mobileScalePercen
             panelMeasureCache.clear();
             wheelButtonSizeById.clear();
             wheelButtonSizeDirty = true;
-            root.classList.remove('ss-fab-sheet-active');
+            root.classList.remove('shardwright-fab-sheet-active');
             root.setAttribute('aria-hidden', 'true');
             root.removeEventListener('click', onClick);
             root.removeEventListener('keydown', onKeydown);
@@ -517,15 +517,15 @@ function buildWheelButtons(root, wheelButtons) {
     PANEL_ORDER.forEach((panelId, index) => {
         const button = document.createElement('button');
         button.type = 'button';
-        button.className = `ss-fab-wheel-btn ss-fab-wheel-btn-${panelId}`;
+        button.className = `shardwright-fab-wheel-btn shardwright-fab-wheel-btn-${panelId}`;
         button.dataset.fabWheel = panelId;
         button.setAttribute('aria-label', `${PANEL_TITLES[panelId]} panel`);
         button.setAttribute('aria-expanded', 'false');
-        button.style.setProperty('--ss-wheel-index', `${index}`);
+        button.style.setProperty('--shardwright-wheel-index', `${index}`);
         button.title = PANEL_TITLES[panelId];
 
         const icon = document.createElement('i');
-        icon.className = `ss-fab-wheel-icon fa-solid ${PANEL_ICONS[panelId]}`;
+        icon.className = `shardwright-fab-wheel-icon fa-solid ${PANEL_ICONS[panelId]}`;
         icon.setAttribute('aria-hidden', 'true');
 
         button.appendChild(icon);
@@ -537,7 +537,7 @@ function buildWheelButtons(root, wheelButtons) {
 function buildPanels(root, panelMarkupById, panelElements) {
     PANEL_ORDER.forEach((panelId) => {
         const panel = document.createElement('section');
-        panel.className = `ss-fab-panel ss-fab-panel-${panelId}`;
+        panel.className = `shardwright-fab-panel shardwright-fab-panel-${panelId}`;
         panel.dataset.panelId = panelId;
         panel.dataset.arrow = 'left';
         panel.innerHTML = buildPanelShell(panelMarkupById[panelId]);
@@ -547,7 +547,7 @@ function buildPanels(root, panelMarkupById, panelElements) {
 }
 
 function buildPanelShell(innerMarkup) {
-    return `<div class="ss-fab-panel-body">${innerMarkup}</div>`;
+    return `<div class="shardwright-fab-panel-body">${innerMarkup}</div>`;
 }
 
 function getAnchorCenter(anchorRect) {
@@ -653,15 +653,15 @@ function shouldUseSheetMode(placement, isMobileViewport) {
 
 function hidePanel(panel, clearSheetBackdrop = false) {
     panel.classList.remove('is-active');
-    panel.classList.remove('ss-fab-panel-sheet');
+    panel.classList.remove('shardwright-fab-panel-sheet');
     panel.removeAttribute('aria-modal');
     panel.style.left = '-9999px';
     panel.style.top = '-9999px';
 
     if (clearSheetBackdrop) {
-        const container = panel.closest('.ss-fab-panels');
+        const container = panel.closest('.shardwright-fab-panels');
         if (container) {
-            container.classList.remove('ss-fab-sheet-active');
+            container.classList.remove('shardwright-fab-sheet-active');
         }
     }
 }
@@ -669,13 +669,13 @@ function hidePanel(panel, clearSheetBackdrop = false) {
 function measurePanel(panel) {
     const startedAt = performance.now();
     const wasActive = panel.classList.contains('is-active');
-    const wasSheet = panel.classList.contains('ss-fab-panel-sheet');
+    const wasSheet = panel.classList.contains('shardwright-fab-panel-sheet');
     const previousLeft = panel.style.left;
     const previousTop = panel.style.top;
     const previousVisibility = panel.style.visibility;
 
     if (wasSheet) {
-        panel.classList.remove('ss-fab-panel-sheet');
+        panel.classList.remove('shardwright-fab-panel-sheet');
     }
     if (!wasActive) {
         panel.classList.add('is-active');
@@ -697,7 +697,7 @@ function measurePanel(panel) {
         panel.classList.remove('is-active');
     }
     if (wasSheet) {
-        panel.classList.add('ss-fab-panel-sheet');
+        panel.classList.add('shardwright-fab-panel-sheet');
     }
 
     recordFabPanelsPerfSample('measurePanel', performance.now() - startedAt);

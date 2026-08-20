@@ -1,5 +1,5 @@
 /**
- * Banned keyword filtering for Summary Sharder.
+ * Banned keyword filtering for Shardwright.
  * Filters keywords from lorebook entries and RAG vector metadata.
  */
 

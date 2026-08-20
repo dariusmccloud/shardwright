@@ -1,111 +1,111 @@
 export const THEMES_CSS = `
 /* Theme Modal Styles */
-.ss-themes-modal {
+.shardwright-themes-modal {
     padding: 20px;
     min-width: 600px;
     max-width: 900px;
 }
 
-.ss-themes-header {
+.shardwright-themes-header {
     text-align: center;
     margin-bottom: 20px;
 }
 
-.ss-themes-header h3 {
+.shardwright-themes-header h3 {
     margin: 0 0 8px 0;
     font-size: 1.4em;
 }
 
-.ss-themes-header p {
+.shardwright-themes-header p {
     margin: 0;
-    color: var(--ss-text-muted);
+    color: var(--shardwright-text-muted);
 }
 
 /* Controls bar */
-.ss-themes-controls {
+.shardwright-themes-controls {
     display: flex;
     gap: 10px;
     justify-content: center;
     margin-bottom: 20px;
     padding: 15px;
-    background: var(--ss-bg-secondary);
+    background: var(--shardwright-bg-secondary);
     border-radius: 8px;
     flex-wrap: wrap;
 }
 
-.ss-themes-controls .menu_button {
+.shardwright-themes-controls .menu_button {
     display: flex;
     align-items: center;
     gap: 6px;
 }
 
-.ss-themes-controls .menu_button:disabled {
+.shardwright-themes-controls .menu_button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
 
 /* Sections */
-.ss-themes-section {
+.shardwright-themes-section {
     margin-bottom: 25px;
 }
 
-.ss-themes-section h4 {
+.shardwright-themes-section h4 {
     margin: 0 0 15px 0;
     padding-bottom: 8px;
-    border-bottom: 1px solid var(--ss-border);
-    color: var(--ss-text-primary);
+    border-bottom: 1px solid var(--shardwright-border);
+    color: var(--shardwright-text-primary);
 }
 
 /* Grid */
-.ss-themes-grid {
+.shardwright-themes-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 15px;
 }
 
 /* Theme cards */
-.ss-theme-card {
-    background: var(--ss-bg-secondary);
-    border: 2px solid var(--ss-border);
+.shardwright-theme-card {
+    background: var(--shardwright-bg-secondary);
+    border: 2px solid var(--shardwright-border);
     border-radius: 10px;
     padding: 0;
     overflow: hidden;
     display: flex;
-    transition: all var(--ss-transition);
+    transition: all var(--shardwright-transition);
 }
 
-.ss-theme-card:hover {
-    border-color: var(--ss-primary);
+.shardwright-theme-card:hover {
+    border-color: var(--shardwright-primary);
     transform: translateY(-2px);
-    box-shadow: var(--ss-shadow);
+    box-shadow: var(--shardwright-shadow);
 }
 
-.ss-theme-card-active {
-    border-color: var(--ss-primary);
-    background: var(--ss-highlight);
+.shardwright-theme-card-active {
+    border-color: var(--shardwright-primary);
+    background: var(--shardwright-highlight);
 }
 
 /* Preview section */
-.ss-theme-preview {
+.shardwright-theme-preview {
     width: 100%;
     display: flex;
     flex-direction: column;
     min-height: 100%;
-    font-family: var(--ss-card-font-primary, inherit);
-    font-size: var(--ss-card-size-primary, 1em);
-    color: var(--ss-card-text-primary, inherit);
+    font-family: var(--shardwright-card-font-primary, inherit);
+    font-size: var(--shardwright-card-size-primary, 1em);
+    color: var(--shardwright-card-text-primary, inherit);
 }
 
 /* Keep preview cards isolated from active body theme / extraStyles */
-.ss-themes-modal.ss-modal .ss-theme-preview,
-.ss-themes-modal.ss-modal .ss-theme-preview * {
+.shardwright-themes-modal.shardwright-modal .shardwright-theme-preview,
+.shardwright-themes-modal.shardwright-modal .shardwright-theme-preview * {
     text-shadow: none;
 }
 
-.ss-theme-preview-header {
+.shardwright-theme-preview-header {
     padding: 6px 10px;
-    font-family: var(--ss-card-font-secondary, var(--ss-card-font-primary, inherit));
-    font-size: var(--ss-card-size-secondary, 0.85em);
+    font-family: var(--shardwright-card-font-secondary, var(--shardwright-card-font-primary, inherit));
+    font-size: var(--shardwright-card-size-secondary, 0.85em);
     font-weight: 600;
     display: flex;
     align-items: center;
@@ -114,7 +114,7 @@ export const THEMES_CSS = `
     overflow: hidden;
 }
 
-.ss-theme-preview-body {
+.shardwright-theme-preview-body {
     padding: 12px;
     display: flex;
     flex-direction: column;
@@ -123,7 +123,7 @@ export const THEMES_CSS = `
     flex: 1;
 }
 
-.ss-preview-button {
+.shardwright-preview-button {
     padding: 5px 14px;
     border-radius: 4px;
     font-size: 0.75em;
@@ -131,8 +131,8 @@ export const THEMES_CSS = `
 }
 
 /* Badges */
-.ss-builtin-badge,
-.ss-custom-badge {
+.shardwright-builtin-badge,
+.shardwright-custom-badge {
     font-size: 0.7em;
     padding: 2px 6px;
     border-radius: 3px;
@@ -141,40 +141,40 @@ export const THEMES_CSS = `
     white-space: nowrap;
 }
 
-.ss-builtin-badge {
-    background: var(--ss-info);
+.shardwright-builtin-badge {
+    background: var(--shardwright-info);
     color: white;
 }
 
-.ss-custom-badge {
-    background: var(--ss-success);
+.shardwright-custom-badge {
+    background: var(--shardwright-success);
     color: white;
 }
 
 /* Theme info */
-.ss-theme-info {
+.shardwright-theme-info {
     margin-top: 8px;
     margin-bottom: 10px;
 }
 
-.ss-theme-info h4 {
+.shardwright-theme-info h4 {
     margin: 0 0 4px 0;
-    font-family: var(--ss-card-font-primary, inherit);
-    font-size: var(--ss-card-size-primary, 1em);
+    font-family: var(--shardwright-card-font-primary, inherit);
+    font-size: var(--shardwright-card-size-primary, 1em);
     border: none;
     padding: 0;
-    color: var(--ss-card-text-primary, inherit);
+    color: var(--shardwright-card-text-primary, inherit);
 }
 
-.ss-theme-info p {
+.shardwright-theme-info p {
     margin: 0;
-    font-family: var(--ss-card-font-muted, var(--ss-card-font-secondary, inherit));
-    font-size: var(--ss-card-size-muted, 0.8em);
-    color: var(--ss-card-text-muted, var(--ss-text-muted));
+    font-family: var(--shardwright-card-font-muted, var(--shardwright-card-font-secondary, inherit));
+    font-size: var(--shardwright-card-size-muted, 0.8em);
+    color: var(--shardwright-card-text-muted, var(--shardwright-text-muted));
 }
 
 /* Actions row */
-.ss-theme-actions {
+.shardwright-theme-actions {
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
@@ -182,251 +182,251 @@ export const THEMES_CSS = `
     margin-top: auto;
 }
 
-.ss-theme-actions .menu_button {
+.shardwright-theme-actions .menu_button {
     padding: 5px 10px;
-    font-family: var(--ss-card-font-secondary, var(--ss-card-font-primary, inherit));
-    font-size: var(--ss-card-size-secondary, 0.85em);
+    font-family: var(--shardwright-card-font-secondary, var(--shardwright-card-font-primary, inherit));
+    font-size: var(--shardwright-card-size-secondary, 0.85em);
     min-height: auto;
     line-height: 1.2;
     width: auto;
 }
 
-.ss-themes-modal.ss-modal .ss-theme-preview .menu_button {
-    background: var(--ss-bg-secondary) !important;
-    color: var(--ss-text-primary) !important;
-    border: 1px solid var(--ss-border) !important;
+.shardwright-themes-modal.shardwright-modal .shardwright-theme-preview .menu_button {
+    background: var(--shardwright-bg-secondary) !important;
+    color: var(--shardwright-text-primary) !important;
+    border: 1px solid var(--shardwright-border) !important;
     border-radius: 4px !important;
     box-shadow: none !important;
     text-transform: none !important;
-    transition: all var(--ss-transition, 0.2s ease) !important;
+    transition: all var(--shardwright-transition, 0.2s ease) !important;
 }
 
-.ss-themes-modal.ss-modal .ss-theme-preview .menu_button:hover:not(:disabled) {
-    background: var(--ss-highlight) !important;
-    border-color: var(--ss-primary) !important;
-    color: var(--ss-primary) !important;
+.shardwright-themes-modal.shardwright-modal .shardwright-theme-preview .menu_button:hover:not(:disabled) {
+    background: var(--shardwright-highlight) !important;
+    border-color: var(--shardwright-primary) !important;
+    color: var(--shardwright-primary) !important;
 }
 
-.ss-themes-modal.ss-modal .ss-theme-preview .menu_button:active {
-    background: var(--ss-primary-active, var(--ss-primary)) !important;
-    color: var(--ss-bg-primary) !important;
+.shardwright-themes-modal.shardwright-modal .shardwright-theme-preview .menu_button:active {
+    background: var(--shardwright-primary-active, var(--shardwright-primary)) !important;
+    color: var(--shardwright-bg-primary) !important;
 }
 
-.ss-theme-actions .ss-apply-theme-btn {
+.shardwright-theme-actions .shardwright-apply-theme-btn {
     flex: 1 1 auto;
 }
 
-.ss-theme-actions .ss-export-theme-btn,
-.ss-theme-actions .ss-duplicate-theme-btn,
-.ss-theme-actions .ss-delete-theme-btn,
-.ss-theme-actions .ss-edit-theme-btn {
+.shardwright-theme-actions .shardwright-export-theme-btn,
+.shardwright-theme-actions .shardwright-duplicate-theme-btn,
+.shardwright-theme-actions .shardwright-delete-theme-btn,
+.shardwright-theme-actions .shardwright-edit-theme-btn {
     flex: 0 0 auto;
     min-width: 2.1em;
     padding-left: 8px;
     padding-right: 8px;
 }
 
-.ss-theme-active-badge {
-    background: var(--ss-success);
+.shardwright-theme-active-badge {
+    background: var(--shardwright-success);
     color: white;
     padding: 5px 12px;
     border-radius: 4px;
-    font-family: var(--ss-card-font-secondary, var(--ss-card-font-primary, inherit));
-    font-size: var(--ss-card-size-secondary, 0.85em);
+    font-family: var(--shardwright-card-font-secondary, var(--shardwright-card-font-primary, inherit));
+    font-size: var(--shardwright-card-size-secondary, 0.85em);
     font-weight: 600;
 }
 
 /* No custom themes message */
-.ss-no-custom-themes {
+.shardwright-no-custom-themes {
     text-align: center;
     padding: 30px;
-    color: var(--ss-text-muted);
+    color: var(--shardwright-text-muted);
     font-style: italic;
     grid-column: 1 / -1;
 }
 
 /* Footer */
-.ss-themes-footer {
-    border-top: 1px solid var(--ss-border);
+.shardwright-themes-footer {
+    border-top: 1px solid var(--shardwright-border);
     padding-top: 15px;
     margin-top: 10px;
 }
 
-.ss-themes-hint {
+.shardwright-themes-hint {
     display: flex;
     align-items: center;
     gap: 8px;
     margin: 0;
     font-size: 0.85em;
-    color: var(--ss-text-muted);
+    color: var(--shardwright-text-muted);
 }
 
 /* Import Modal */
-.ss-import-modal {
+.shardwright-import-modal {
     padding: 20px;
     min-width: 500px;
 }
 
-.ss-import-modal h3 {
+.shardwright-import-modal h3 {
     margin: 0 0 10px 0;
 }
 
-.ss-import-file-section {
+.shardwright-import-file-section {
     display: flex;
     align-items: center;
     gap: 10px;
     margin-bottom: 15px;
     padding: 10px;
-    background: var(--ss-bg-secondary);
+    background: var(--shardwright-bg-secondary);
     border-radius: 6px;
 }
 
-.ss-file-name {
+.shardwright-file-name {
     font-size: 0.9em;
-    color: var(--ss-text-muted);
+    color: var(--shardwright-text-muted);
 }
 
-.ss-import-text-section {
+.shardwright-import-text-section {
     margin-bottom: 15px;
 }
 
-.ss-import-text-section label {
+.shardwright-import-text-section label {
     display: block;
     margin-bottom: 6px;
     font-weight: 500;
 }
 
-.ss-import-text-section textarea {
+.shardwright-import-text-section textarea {
     width: 100%;
     font-family: monospace;
     font-size: 12px;
-    background: var(--ss-bg-input);
-    border: 1px solid var(--ss-border);
+    background: var(--shardwright-bg-input);
+    border: 1px solid var(--shardwright-border);
     border-radius: 4px;
     padding: 10px;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
     resize: vertical;
 }
 
-.ss-import-actions {
+.shardwright-import-actions {
     display: flex;
     justify-content: flex-end;
 }
 
 /* Create Theme Modal */
-.ss-create-theme-modal {
+.shardwright-create-theme-modal {
     padding: 20px;
     min-width: 400px;
 }
 
-.ss-create-theme-modal h3 {
+.shardwright-create-theme-modal h3 {
     margin: 0 0 10px 0;
 }
 
-.ss-create-form {
+.shardwright-create-form {
     display: flex;
     flex-direction: column;
     gap: 12px;
     margin-bottom: 15px;
 }
 
-.ss-form-group {
+.shardwright-form-group {
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
 
-.ss-form-group label {
+.shardwright-form-group label {
     font-size: 0.9em;
     font-weight: 500;
 }
 
-.ss-form-group input,
-.ss-form-group select {
+.shardwright-form-group input,
+.shardwright-form-group select {
     padding: 8px 10px;
-    background: var(--ss-bg-input);
-    border: 1px solid var(--ss-border);
+    background: var(--shardwright-bg-input);
+    border: 1px solid var(--shardwright-border);
     border-radius: 4px;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
 }
 
-.ss-form-group input:focus,
-.ss-form-group select:focus {
-    border-color: var(--ss-border-focus);
+.shardwright-form-group input:focus,
+.shardwright-form-group select:focus {
+    border-color: var(--shardwright-border-focus);
     outline: none;
 }
 
-.ss-create-actions {
+.shardwright-create-actions {
     display: flex;
     justify-content: flex-end;
 }
 
 /* Confirm delete modal */
-.ss-confirm-delete {
+.shardwright-confirm-delete {
     padding: 20px;
     text-align: center;
 }
 
-.ss-confirm-delete h3 {
+.shardwright-confirm-delete h3 {
     margin: 0 0 15px 0;
 }
 
-.ss-confirm-delete .ss-warning-text {
-    color: var(--ss-error);
+.shardwright-confirm-delete .shardwright-warning-text {
+    color: var(--shardwright-error);
     font-size: 0.9em;
 }
 
 /* Mobile adjustments */
 @media (max-width: 768px) {
-    .ss-themes-modal {
+    .shardwright-themes-modal {
         min-width: auto;
         padding: 15px;
     }
 
-    .ss-themes-grid {
+    .shardwright-themes-grid {
         grid-template-columns: 1fr;
     }
 
-    .ss-themes-controls {
+    .shardwright-themes-controls {
         flex-direction: column;
     }
 
-    .ss-theme-actions {
+    .shardwright-theme-actions {
         justify-content: center;
     }
 
-    .ss-import-modal,
-    .ss-create-theme-modal {
+    .shardwright-import-modal,
+    .shardwright-create-theme-modal {
         min-width: auto;
     }
 }
 /* bg-primary dropdown controls */
-.ss-color-editor-modal .ss-bg-primary-controls {
+.shardwright-color-editor-modal .shardwright-bg-primary-controls {
     display: flex;
     flex-direction: column;
     flex: 1;
     min-width: 0;
 }
 
-.ss-color-editor-modal .ss-bg-primary-controls select {
+.shardwright-color-editor-modal .shardwright-bg-primary-controls select {
     padding: 5px 8px;
     font-size: 0.85em;
-    background: var(--ss-bg-input);
-    border: 1px solid var(--ss-border);
+    background: var(--shardwright-bg-input);
+    border: 1px solid var(--shardwright-border);
     border-radius: 4px;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
     width: 100%;
     min-width: 0;
 }
 
-.ss-color-editor-modal .ss-bg-primary-custom {
+.shardwright-color-editor-modal .shardwright-bg-primary-custom {
     display: flex;
     align-items: center;
     gap: 6px;
 }
 
     /* Color Editor Modal */
-.ss-color-editor-modal {
+.shardwright-color-editor-modal {
     box-sizing: border-box;
     width: min(900px, calc(100vw - 32px));
     padding: 20px;
@@ -435,75 +435,75 @@ export const THEMES_CSS = `
     overflow-y: auto;
 }
 
-.ss-color-editor-modal .ss-editor-header {
+.shardwright-color-editor-modal .shardwright-editor-header {
     margin-bottom: 15px;
 }
 
-.ss-color-editor-modal .ss-editor-header h3 {
+.shardwright-color-editor-modal .shardwright-editor-header h3 {
     margin: 0 0 5px 0;
 }
 
-.ss-color-editor-modal .ss-editor-header p {
+.shardwright-color-editor-modal .shardwright-editor-header p {
     margin: 0;
     font-size: 0.9em;
-    color: var(--ss-text-muted);
+    color: var(--shardwright-text-muted);
 }
 
-.ss-color-editor-modal .ss-editor-meta {
-    background: var(--ss-bg-secondary);
+.shardwright-color-editor-modal .shardwright-editor-meta {
+    background: var(--shardwright-bg-secondary);
     border-radius: 6px;
     padding: 12px;
     margin-bottom: 15px;
 }
 
-.ss-color-editor-modal .ss-meta-row {
+.shardwright-color-editor-modal .shardwright-meta-row {
     display: flex;
     align-items: center;
     gap: 10px;
     margin-bottom: 8px;
 }
 
-.ss-color-editor-modal .ss-meta-row:last-child {
+.shardwright-color-editor-modal .shardwright-meta-row:last-child {
     margin-bottom: 0;
 }
 
-.ss-color-editor-modal .ss-meta-row label {
+.shardwright-color-editor-modal .shardwright-meta-row label {
     width: 120px;
     font-weight: 500;
     flex-shrink: 0;
 }
 
-.ss-color-editor-modal .ss-meta-row input {
+.shardwright-color-editor-modal .shardwright-meta-row input {
     flex: 1;
     padding: 6px 10px;
-    background: var(--ss-bg-input);
-    border: 1px solid var(--ss-border);
+    background: var(--shardwright-bg-input);
+    border: 1px solid var(--shardwright-border);
     border-radius: 4px;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
 }
 
-.ss-color-editor-modal .ss-color-groups {
+.shardwright-color-editor-modal .shardwright-color-groups {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 15px;
     margin-bottom: 15px;
 }
 
-.ss-color-editor-modal .ss-color-group {
-    background: var(--ss-bg-secondary);
+.shardwright-color-editor-modal .shardwright-color-group {
+    background: var(--shardwright-bg-secondary);
     border-radius: 6px;
     padding: 12px;
 }
 
-.ss-color-editor-modal .ss-color-group h4 {
+.shardwright-color-editor-modal .shardwright-color-group h4 {
     margin: 0 0 10px 0;
     font-size: 0.95em;
-    color: var(--ss-text-primary);
-    border-bottom: 1px solid var(--ss-border);
+    color: var(--shardwright-text-primary);
+    border-bottom: 1px solid var(--shardwright-border);
     padding-bottom: 6px;
 }
 
-.ss-color-editor-modal .ss-color-row {
+.shardwright-color-editor-modal .shardwright-color-row {
     display: grid;
     grid-template-columns: 1fr auto;
     align-items: center;
@@ -511,171 +511,171 @@ export const THEMES_CSS = `
     gap: 8px;
 }
 
-.ss-color-editor-modal .ss-color-row:last-child {
+.shardwright-color-editor-modal .shardwright-color-row:last-child {
     margin-bottom: 0;
 }
 
-.ss-color-editor-modal .ss-color-row > label {
+.shardwright-color-editor-modal .shardwright-color-row > label {
     font-size: 0.85em;
-    color: var(--ss-text-secondary);
+    color: var(--shardwright-text-secondary);
     flex: 1;
     min-width: 80px;
 }
 
-.ss-color-editor-modal .ss-color-desc {
+.shardwright-color-editor-modal .shardwright-color-desc {
     grid-column: 1 / -1;
     font-size: 11px;
-    color: var(--ss-text-muted);
+    color: var(--shardwright-text-muted);
     margin: -2px 0 4px;
     line-height: 1.3;
 }
 
-.ss-color-editor-modal .ss-color-inputs {
+.shardwright-color-editor-modal .shardwright-color-inputs {
     display: flex;
     align-items: center;
     gap: 6px;
     min-width: 0;
 }
 
-.ss-color-editor-modal .ss-color-row.ss-shadow-row {
+.shardwright-color-editor-modal .shardwright-color-row.shardwright-shadow-row {
     grid-template-columns: 1fr;
     align-items: stretch;
 }
 
-.ss-color-editor-modal .ss-shadow-editor {
+.shardwright-color-editor-modal .shardwright-shadow-editor {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-.ss-color-editor-modal .ss-shadow-layer {
-    border: 1px solid var(--ss-border);
+.shardwright-color-editor-modal .shardwright-shadow-layer {
+    border: 1px solid var(--shardwright-border);
     border-radius: 6px;
     padding: 8px;
-    background: var(--ss-bg-tertiary);
+    background: var(--shardwright-bg-tertiary);
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-.ss-color-editor-modal .ss-shadow-layer-head {
+.shardwright-color-editor-modal .shardwright-shadow-layer-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
 }
 
-.ss-color-editor-modal .ss-shadow-layer-title {
+.shardwright-color-editor-modal .shardwright-shadow-layer-title {
     font-size: 0.82em;
     font-weight: 600;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
 }
 
-.ss-color-editor-modal .ss-shadow-inset-toggle {
+.shardwright-color-editor-modal .shardwright-shadow-inset-toggle {
     display: inline-flex;
     align-items: center;
     gap: 4px;
     font-size: 0.8em;
-    color: var(--ss-text-secondary);
+    color: var(--shardwright-text-secondary);
     user-select: none;
 }
 
-.ss-color-editor-modal .ss-shadow-metrics {
+.shardwright-color-editor-modal .shardwright-shadow-metrics {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 6px;
     width: 100%;
 }
 
-.ss-color-editor-modal .ss-shadow-metric-field {
+.shardwright-color-editor-modal .shardwright-shadow-metric-field {
     display: flex;
     flex-direction: column;
     gap: 4px;
     min-width: 0;
 }
 
-.ss-color-editor-modal .ss-shadow-metric-field > span {
+.shardwright-color-editor-modal .shardwright-shadow-metric-field > span {
     font-size: 0.75em;
-    color: var(--ss-text-muted);
+    color: var(--shardwright-text-muted);
     min-width: 0;
 }
 
-.ss-color-editor-modal .ss-shadow-metric {
+.shardwright-color-editor-modal .shardwright-shadow-metric {
     width: 100%;
     min-width: 0;
     box-sizing: border-box;
     padding: 4px 6px;
-    background: var(--ss-bg-input);
-    border: 1px solid var(--ss-border);
+    background: var(--shardwright-bg-input);
+    border: 1px solid var(--shardwright-border);
     border-radius: 4px;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
     font-size: 0.82em;
 }
 
-.ss-color-editor-modal .ss-shadow-metric:focus {
-    border-color: var(--ss-border-focus);
+.shardwright-color-editor-modal .shardwright-shadow-metric:focus {
+    border-color: var(--shardwright-border-focus);
     outline: none;
 }
 
-.ss-color-editor-modal .ss-shadow-color-inputs {
+.shardwright-color-editor-modal .shardwright-shadow-color-inputs {
     flex-wrap: wrap;
 }
 
-.ss-color-editor-modal .ss-shadow-color-text {
+.shardwright-color-editor-modal .shardwright-shadow-color-text {
     width: 170px;
     min-width: 0;
     padding: 5px 8px;
     font-family: monospace;
     font-size: 0.82em;
-    background: var(--ss-bg-input);
-    border: 1px solid var(--ss-border);
+    background: var(--shardwright-bg-input);
+    border: 1px solid var(--shardwright-border);
     border-radius: 4px;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
 }
 
-.ss-color-editor-modal .ss-shadow-color-text:focus {
-    border-color: var(--ss-border-focus);
+.shardwright-color-editor-modal .shardwright-shadow-color-text:focus {
+    border-color: var(--shardwright-border-focus);
     outline: none;
 }
 
-.ss-color-editor-modal .ss-shadow-raw-row {
+.shardwright-color-editor-modal .shardwright-shadow-raw-row {
     margin-top: 2px;
     display: grid;
     grid-template-columns: 1fr;
     gap: 6px;
 }
 
-.ss-color-editor-modal .ss-shadow-raw-row .ss-color-inputs {
+.shardwright-color-editor-modal .shardwright-shadow-raw-row .shardwright-color-inputs {
     width: 100%;
 }
 
-.ss-color-editor-modal .ss-shadow-raw-row .ss-color-text {
+.shardwright-color-editor-modal .shardwright-shadow-raw-row .shardwright-color-text {
     width: 100%;
 }
 
-.ss-font-suggest {
+.shardwright-font-suggest {
     position: fixed;
     z-index: 10050;
     max-height: 250px;
     overflow-y: auto;
-    background: var(--ss-bg-secondary);
-    border: 1px solid var(--ss-border);
+    background: var(--shardwright-bg-secondary);
+    border: 1px solid var(--shardwright-border);
     border-radius: 6px;
-    box-shadow: var(--ss-shadow-lg);
+    box-shadow: var(--shardwright-shadow-lg);
     padding: 4px;
 }
 
-.ss-font-suggest[hidden] {
+.shardwright-font-suggest[hidden] {
     display: none;
 }
 
-.ss-font-suggest-item {
+.shardwright-font-suggest-item {
     display: block;
     width: 100%;
     text-align: left;
     border: 1px solid transparent;
     background: transparent;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
     padding: 6px 8px;
     border-radius: 4px;
     cursor: pointer;
@@ -684,166 +684,166 @@ export const THEMES_CSS = `
     text-transform: none;
 }
 
-.ss-font-suggest-item:hover,
-.ss-font-suggest-item.active {
-    background: var(--ss-highlight);
-    border-color: var(--ss-primary);
-    color: var(--ss-primary);
+.shardwright-font-suggest-item:hover,
+.shardwright-font-suggest-item.active {
+    background: var(--shardwright-highlight);
+    border-color: var(--shardwright-primary);
+    color: var(--shardwright-primary);
 }
 
-.ss-font-suggest-empty {
+.shardwright-font-suggest-empty {
     padding: 6px 8px;
-    color: var(--ss-text-muted);
+    color: var(--shardwright-text-muted);
     font-size: 0.82em;
 }
 
-.ss-color-editor-modal .ss-text-row-group {
+.shardwright-color-editor-modal .shardwright-text-row-group {
     padding: 4px 0 10px;
-    border-bottom: 1px solid var(--ss-border);
+    border-bottom: 1px solid var(--shardwright-border);
     margin-bottom: 10px;
 }
 
-.ss-color-editor-modal .ss-text-row-group:last-child {
+.shardwright-color-editor-modal .shardwright-text-row-group:last-child {
     margin-bottom: 0;
     padding-bottom: 0;
     border-bottom: none;
 }
 
-.ss-color-editor-modal .ss-text-group-title {
+.shardwright-color-editor-modal .shardwright-text-group-title {
     font-size: 0.85em;
     font-weight: 600;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
     margin: 0 0 6px 0;
 }
 
-.ss-color-editor-modal .ss-typo-font,
-.ss-color-editor-modal .ss-typo-size {
+.shardwright-color-editor-modal .shardwright-typo-font,
+.shardwright-color-editor-modal .shardwright-typo-size {
     width: 100%;
     padding: 5px 8px;
-    background: var(--ss-bg-input);
-    border: 1px solid var(--ss-border);
+    background: var(--shardwright-bg-input);
+    border: 1px solid var(--shardwright-border);
     border-radius: 4px;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
 }
 
-.ss-color-editor-modal .ss-typo-font:focus,
-.ss-color-editor-modal .ss-typo-size:focus {
-    border-color: var(--ss-border-focus);
+.shardwright-color-editor-modal .shardwright-typo-font:focus,
+.shardwright-color-editor-modal .shardwright-typo-size:focus {
+    border-color: var(--shardwright-border-focus);
     outline: none;
 }
 
-.ss-color-editor-modal .ss-color-picker {
+.shardwright-color-editor-modal .shardwright-color-picker {
     width: 32px;
     height: 32px;
     padding: 0;
-    border: 1px solid var(--ss-border);
+    border: 1px solid var(--shardwright-border);
     border-radius: 4px;
     cursor: pointer;
     background: transparent;
 }
 
-.ss-color-editor-modal .ss-color-picker::-webkit-color-swatch-wrapper {
+.shardwright-color-editor-modal .shardwright-color-picker::-webkit-color-swatch-wrapper {
     padding: 2px;
 }
 
-.ss-color-editor-modal .ss-color-picker::-webkit-color-swatch {
+.shardwright-color-editor-modal .shardwright-color-picker::-webkit-color-swatch {
     border-radius: 2px;
     border: none;
 }
 
-.ss-color-editor-modal .ss-alpha-slider {
+.shardwright-color-editor-modal .shardwright-alpha-slider {
     width: 60px;
     height: 6px;
     cursor: pointer;
-    accent-color: var(--ss-primary);
+    accent-color: var(--shardwright-primary);
 }
 
-.ss-color-editor-modal .ss-alpha-label {
+.shardwright-color-editor-modal .shardwright-alpha-label {
     font-size: 0.75em;
     font-family: monospace;
-    color: var(--ss-text-muted);
+    color: var(--shardwright-text-muted);
     min-width: 30px;
     text-align: right;
 }
 
-.ss-color-editor-modal .ss-color-text {
+.shardwright-color-editor-modal .shardwright-color-text {
     width: 140px;
     min-width: 0;
     padding: 5px 8px;
     font-family: monospace;
     font-size: 0.85em;
-    background: var(--ss-bg-input);
-    border: 1px solid var(--ss-border);
+    background: var(--shardwright-bg-input);
+    border: 1px solid var(--shardwright-border);
     border-radius: 4px;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
 }
 
-.ss-color-editor-modal .ss-color-text:focus {
-    border-color: var(--ss-border-focus);
+.shardwright-color-editor-modal .shardwright-color-text:focus {
+    border-color: var(--shardwright-border-focus);
     outline: none;
 }
 
-.ss-color-editor-modal .ss-editor-extra {
-    background: var(--ss-bg-secondary);
+.shardwright-color-editor-modal .shardwright-editor-extra {
+    background: var(--shardwright-bg-secondary);
     border-radius: 6px;
     padding: 12px;
     margin-bottom: 15px;
 }
 
-.ss-color-editor-modal .ss-editor-extra h4 {
+.shardwright-color-editor-modal .shardwright-editor-extra h4 {
     margin: 0 0 8px 0;
     font-size: 0.95em;
 }
 
-.ss-color-editor-modal .ss-editor-extra textarea {
+.shardwright-color-editor-modal .shardwright-editor-extra textarea {
     width: 100%;
     font-family: monospace;
     font-size: 0.85em;
-    background: var(--ss-bg-input);
-    border: 1px solid var(--ss-border);
+    background: var(--shardwright-bg-input);
+    border: 1px solid var(--shardwright-border);
     border-radius: 4px;
     padding: 8px;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
     resize: vertical;
 }
 
-.ss-editor-footer-actions {
+.shardwright-editor-footer-actions {
     display: flex;
     gap: 10px;
     margin-right: auto;
 }
 
-.ss-editor-footer-actions .ss-save-theme-btn {
-    background: var(--ss-primary);
+.shardwright-editor-footer-actions .shardwright-save-theme-btn {
+    background: var(--shardwright-primary);
     color: white;
-    border-color: var(--ss-primary);
+    border-color: var(--shardwright-primary);
 }
 
-.ss-editor-footer-actions .ss-save-theme-btn:hover {
-    background: var(--ss-primary-hover);
+.shardwright-editor-footer-actions .shardwright-save-theme-btn:hover {
+    background: var(--shardwright-primary-hover);
 }
 
 /* Mobile adjustments */
 @media (max-width: 768px) {
-    .popup:has(.ss-color-editor-modal).wide_dialogue_popup {
+    .popup:has(.shardwright-color-editor-modal).wide_dialogue_popup {
         box-sizing: border-box;
         min-width: 0 !important;
         width: calc(100dvw - 12px) !important;
         max-width: calc(100dvw - 12px) !important;
     }
 
-    .popup:has(.ss-color-editor-modal) .popup-content {
+    .popup:has(.shardwright-color-editor-modal) .popup-content {
         padding: 0 4px;
     }
 
-    .popup:has(.ss-color-editor-modal) .popup-controls {
+    .popup:has(.shardwright-color-editor-modal) .popup-controls {
         width: 100%;
         justify-content: space-between;
         gap: 8px;
         flex-wrap: wrap;
     }
 
-    .ss-color-editor-modal {
+    .shardwright-color-editor-modal {
         width: 100%;
         max-width: 100%;
         min-width: 0;
@@ -851,71 +851,71 @@ export const THEMES_CSS = `
         padding: 15px;
     }
 
-    .ss-color-editor-modal .ss-color-groups {
+    .shardwright-color-editor-modal .shardwright-color-groups {
         grid-template-columns: 1fr;
     }
 
-    .ss-color-editor-modal .ss-color-row {
+    .shardwright-color-editor-modal .shardwright-color-row {
         grid-template-columns: 1fr;
         align-items: flex-start;
     }
 
-    .ss-color-editor-modal .ss-color-inputs {
+    .shardwright-color-editor-modal .shardwright-color-inputs {
         width: 100%;
         flex-wrap: wrap;
     }
 
-    .ss-color-editor-modal .ss-color-text {
+    .shardwright-color-editor-modal .shardwright-color-text {
         flex: 1 1 120px;
         width: 100%;
     }
 
-    .ss-color-editor-modal .ss-shadow-metrics {
+    .shardwright-color-editor-modal .shardwright-shadow-metrics {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .ss-color-editor-modal .ss-shadow-color-text {
+    .shardwright-color-editor-modal .shardwright-shadow-color-text {
         flex: 1 1 140px;
         width: 100%;
     }
 
-    .ss-font-suggest {
+    .shardwright-font-suggest {
         max-width: calc(100vw - 16px);
         max-height: 40vh;
     }
 
-    .ss-font-suggest-item {
+    .shardwright-font-suggest-item {
         padding: 8px 10px;
     }
 
-    .ss-color-editor-modal .ss-bg-primary-custom {
+    .shardwright-color-editor-modal .shardwright-bg-primary-custom {
         width: 100%;
         flex-wrap: wrap;
     }
 
-    .ss-color-editor-modal .ss-typo-font,
-    .ss-color-editor-modal .ss-typo-size {
+    .shardwright-color-editor-modal .shardwright-typo-font,
+    .shardwright-color-editor-modal .shardwright-typo-size {
         width: 100%;
     }
 
-    .ss-editor-footer-actions {
+    .shardwright-editor-footer-actions {
         flex-direction: column;
     }
 
-    .ss-editor-footer-actions .menu_button {
+    .shardwright-editor-footer-actions .menu_button {
         width: 100%;
     }
 
-    .ss-color-editor-modal .ss-meta-row {
+    .shardwright-color-editor-modal .shardwright-meta-row {
         flex-direction: column;
         align-items: flex-start;
     }
 
-    .ss-color-editor-modal .ss-meta-row label {
+    .shardwright-color-editor-modal .shardwright-meta-row label {
         width: auto;
     }
 
-    .ss-color-editor-modal .ss-meta-row input {
+    .shardwright-color-editor-modal .shardwright-meta-row input {
         width: 100%;
     }
 }

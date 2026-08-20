@@ -1,4 +1,5 @@
 import { Popup, POPUP_RESULT, POPUP_TYPE } from '../../../../../../popup.js';
+import { chat, chat_metadata, showMoreMessages } from '../../../../../../../script.js';
 import {
     bootstrapStandardInterpretivePublicationPolicy,
     createInterpretiveRevision,
@@ -6,6 +7,7 @@ import {
     executeInterpretivePublicationAuthorization,
     getInterpretiveCandidate,
     getInterpretivePublicationOperatorState,
+    loadArchitecturalAuthorityScope,
     listInterpretiveDelegationPolicies,
     listInterpretiveReviews,
     publishInterpretiveMemory,
@@ -54,6 +56,11 @@ import {
     getPublishedRevisionActionProjection,
     getRevisionOrigin,
 } from './interpretive-review-revision-state.js';
+import {
+    describeInterpretiveSourceNavigationStatus,
+    resolveInterpretiveSourceOccurrence,
+} from './interpretive-source-navigation.js';
+import { renderInterpretiveEvidenceSection } from './interpretive-evidence-view.js';
 
 const REVIEW_STATUS_OPTIONS = Object.freeze([
     { value: '', label: 'All statuses' },
@@ -125,7 +132,7 @@ function renderBadge(value, { prefix = '', fallback = 'n/a' } = {}) {
     const text = String(value || '').trim() || fallback;
     const stateClass = text.toLowerCase().replace(/[^a-z0-9]+/gu, '-');
     const label = prefix ? `${prefix}${text}` : text;
-    return `<span class="ss-interpretive-review-badge state-${escapeHtml(stateClass)}">${escapeHtml(label)}</span>`;
+    return `<span class="shardwright-interpretive-review-badge state-${escapeHtml(stateClass)}">${escapeHtml(label)}</span>`;
 }
 
 function normalizeActionLabel(value) {
@@ -137,9 +144,9 @@ function normalizeActionLabel(value) {
 
 function renderKeyValueGrid(rows) {
     return `
-        <div class="ss-interpretive-review-grid">
+        <div class="shardwright-interpretive-review-grid">
             ${rows.map(({ label, value }) => `
-                <div class="ss-interpretive-review-card">
+                <div class="shardwright-interpretive-review-card">
                     <strong>${escapeHtml(label)}</strong>
                     <div>${value}</div>
                 </div>
@@ -152,12 +159,12 @@ function renderCollapsibleSection(title, description, content, options = {}) {
     const open = options.open === true;
     const extraClass = String(options.extraClass || '').trim();
     return `
-        <details class="ss-interpretive-review-section ss-review-section ss-review-section--disclosure ss-interpretive-review-disclosure${extraClass ? ` ${escapeHtml(extraClass)}` : ''}"${open ? ' open' : ''}>
-            <summary class="ss-review-section__header ss-interpretive-review-disclosure-summary">
-                <span class="ss-review-section__title ss-interpretive-review-disclosure-title">${escapeHtml(title)}</span>
-                ${description ? `<span class="ss-review-section__description ss-interpretive-review-disclosure-description">${escapeHtml(description)}</span>` : ''}
+        <details class="shardwright-interpretive-review-section shardwright-review-section shardwright-review-section--disclosure shardwright-interpretive-review-disclosure${extraClass ? ` ${escapeHtml(extraClass)}` : ''}"${open ? ' open' : ''}>
+            <summary class="shardwright-review-section__header shardwright-interpretive-review-disclosure-summary">
+                <span class="shardwright-review-section__title shardwright-interpretive-review-disclosure-title">${escapeHtml(title)}</span>
+                ${description ? `<span class="shardwright-review-section__description shardwright-interpretive-review-disclosure-description">${escapeHtml(description)}</span>` : ''}
             </summary>
-            <div class="ss-review-section__body ss-interpretive-review-disclosure-body">
+            <div class="shardwright-review-section__body shardwright-interpretive-review-disclosure-body">
                 ${content}
             </div>
         </details>
@@ -169,14 +176,14 @@ function renderStaticSection(title, description, content, options = {}) {
     const sectionKey = String(options.sectionKey || '').trim();
     return `
         <div
-            class="ss-interpretive-review-section ss-review-section ss-review-section--static ss-interpretive-review-static-section${extraClass ? ` ${escapeHtml(extraClass)}` : ''}"
+            class="shardwright-interpretive-review-section shardwright-review-section shardwright-review-section--static shardwright-interpretive-review-static-section${extraClass ? ` ${escapeHtml(extraClass)}` : ''}"
             ${sectionKey ? `data-review-section="${escapeHtml(sectionKey)}"` : ''}
         >
-            <div class="ss-review-section__header ss-interpretive-review-static-header">
-                <div class="ss-review-section__title">${escapeHtml(title)}</div>
-                ${description ? `<div class="ss-review-section__description">${escapeHtml(description)}</div>` : ''}
+            <div class="shardwright-review-section__header shardwright-interpretive-review-static-header">
+                <div class="shardwright-review-section__title">${escapeHtml(title)}</div>
+                ${description ? `<div class="shardwright-review-section__description">${escapeHtml(description)}</div>` : ''}
             </div>
-            <div class="ss-review-section__body">
+            <div class="shardwright-review-section__body">
                 ${content}
             </div>
         </div>
@@ -198,7 +205,7 @@ function renderCopyableCode(value, options = {}) {
     return `
         <button
             type="button"
-            class="ss-interpretive-review-copyable"
+            class="shardwright-interpretive-review-copyable"
             data-copy-value="${escapeHtml(normalized)}"
             title="Copy exact value"
             aria-label="Copy ${escapeHtml(normalized)}">
@@ -207,15 +214,50 @@ function renderCopyableCode(value, options = {}) {
     `;
 }
 
+function getCurrentArchitecturalChatInstanceId() {
+    return String(chat_metadata?.summary_sharder?.architecturalMemoryBinding?.chatInstanceId || '').trim();
+}
+
+function resolveCurrentSourceOccurrence(link) {
+    return resolveInterpretiveSourceOccurrence({
+        chatInstanceId: link?.chatInstanceId,
+        messageId: link?.messageId,
+        currentChatInstanceId: getCurrentArchitecturalChatInstanceId(),
+        messages: chat,
+    });
+}
+
+function renderSourceOccurrenceControl(link, sourceValue, options = {}) {
+    const resolution = resolveCurrentSourceOccurrence(link);
+    const explanation = describeInterpretiveSourceNavigationStatus(resolution.status, options);
+    if (resolution.status !== 'EXACT') {
+        return `
+            ${renderCopyableCode(sourceValue, { emptyLabel: 'n/a' })}
+            ${explanation ? `<span class="shardwright-interpretive-source-navigation-status" title="${escapeHtml(explanation)}">${escapeHtml(explanation)}</span>` : ''}
+        `;
+    }
+    return `
+        <button
+            type="button"
+            class="shardwright-interpretive-source-navigation"
+            data-source-chat-instance-id="${escapeHtml(String(link?.chatInstanceId || '').trim())}"
+            data-source-message-id="${escapeHtml(String(link?.messageId || '').trim())}"
+            title="${escapeHtml(explanation)}">
+            Open source
+        </button>
+        ${renderCopyableCode(sourceValue, { emptyLabel: 'n/a' })}
+    `;
+}
+
 function renderAuditTable(rows) {
     const filteredRows = Array.isArray(rows)
         ? rows.filter((row) => row && String(row.value || '').trim())
         : [];
     if (filteredRows.length === 0) {
-        return '<div class="ss-hint">No details available.</div>';
+        return '<div class="shardwright-hint">No details available.</div>';
     }
     return `
-        <table class="ss-interpretive-review-audit-table">
+        <table class="shardwright-interpretive-review-audit-table">
             <tbody>
                 ${filteredRows.map((row) => `
                     <tr>
@@ -233,14 +275,14 @@ function renderStatusMatrix(rows) {
         ? rows.filter((row) => row && String(row.value || '').trim())
         : [];
     if (filteredRows.length === 0) {
-        return '<div class="ss-hint">No details available.</div>';
+        return '<div class="shardwright-hint">No details available.</div>';
     }
     return `
-        <div class="ss-interpretive-review-status-strip">
+        <div class="shardwright-interpretive-review-status-strip">
             ${filteredRows.map((row) => `
-                <div class="ss-interpretive-review-status-strip-cell">
-                    <div class="ss-interpretive-review-status-strip-label">${escapeHtml(row.label || '')}</div>
-                    <div class="ss-interpretive-review-status-strip-value">${row.value}</div>
+                <div class="shardwright-interpretive-review-status-strip-cell">
+                    <div class="shardwright-interpretive-review-status-strip-label">${escapeHtml(row.label || '')}</div>
+                    <div class="shardwright-interpretive-review-status-strip-value">${row.value}</div>
                 </div>
             `).join('')}
         </div>
@@ -250,19 +292,19 @@ function renderStatusMatrix(rows) {
 function renderPolicyAuditSummary(continuityTargetId, operatorAvailableActions, operatorBlockingReasons, options = {}) {
     const includeBlockingReasons = options.includeBlockingReasons !== false;
     return `
-        <div class="ss-interpretive-review-list">
-            <div class="ss-interpretive-review-card ss-interpretive-review-policy-audit-card">
+        <div class="shardwright-interpretive-review-list">
+            <div class="shardwright-interpretive-review-card shardwright-interpretive-review-policy-audit-card">
                 <strong>Memory Line</strong>
-                <div class="ss-interpretive-review-summary-note">${renderCopyableCode(continuityTargetId, { emptyLabel: 'n/a' })}</div>
+                <div class="shardwright-interpretive-review-summary-note">${renderCopyableCode(continuityTargetId, { emptyLabel: 'n/a' })}</div>
             </div>
-            <div class="ss-interpretive-review-card ss-interpretive-review-policy-audit-card">
+            <div class="shardwright-interpretive-review-card shardwright-interpretive-review-policy-audit-card">
                 <strong>Available Lifecycle Actions</strong>
-                <div class="ss-interpretive-review-summary-note">${renderServerReasonList(operatorAvailableActions, 'None')}</div>
+                <div class="shardwright-interpretive-review-summary-note">${renderServerReasonList(operatorAvailableActions, 'None')}</div>
             </div>
             ${includeBlockingReasons ? `
-                <div class="ss-interpretive-review-card ss-interpretive-review-policy-audit-card">
+                <div class="shardwright-interpretive-review-card shardwright-interpretive-review-policy-audit-card">
                     <strong>Blocking Reasons</strong>
-                    <div class="ss-interpretive-review-summary-note">${renderServerReasonList(operatorBlockingReasons, 'None')}</div>
+                    <div class="shardwright-interpretive-review-summary-note">${renderServerReasonList(operatorBlockingReasons, 'None')}</div>
                 </div>
             ` : ''}
         </div>
@@ -278,36 +320,41 @@ function renderAuditSection(title, rows, options = {}) {
             content,
             {
                 open: options.open === true,
-                extraClass: `ss-interpretive-review-audit-section ${String(options.extraClass || '').trim()}`.trim(),
+                extraClass: `shardwright-interpretive-review-audit-section ${String(options.extraClass || '').trim()}`.trim(),
             },
         );
     }
     return `
-        <div class="ss-interpretive-review-section ss-review-section ss-review-section--static ss-interpretive-review-static-section ss-interpretive-review-audit-section">
-            <div class="ss-review-section__header ss-interpretive-review-static-header">
-                <div class="ss-review-section__title">${escapeHtml(title)}</div>
-                ${options.description ? `<div class="ss-review-section__description">${escapeHtml(options.description)}</div>` : ''}
+        <div class="shardwright-interpretive-review-section shardwright-review-section shardwright-review-section--static shardwright-interpretive-review-static-section shardwright-interpretive-review-audit-section">
+            <div class="shardwright-review-section__header shardwright-interpretive-review-static-header">
+                <div class="shardwright-review-section__title">${escapeHtml(title)}</div>
+                ${options.description ? `<div class="shardwright-review-section__description">${escapeHtml(options.description)}</div>` : ''}
             </div>
-            <div class="ss-review-section__body">
+            <div class="shardwright-review-section__body">
                 ${content}
             </div>
         </div>
     `;
 }
 
-function renderEvidenceBindingsTable(groundingLinks) {
+function renderEvidenceBindingsTable(groundingLinks, options = {}) {
     if (!Array.isArray(groundingLinks) || groundingLinks.length === 0) {
-        return '<div class="ss-hint">No bound source records.</div>';
+        return '<div class="shardwright-hint">No bound source records.</div>';
     }
     return `
-        <div class="ss-interpretive-review-evidence-table-wrap">
-            <table class="ss-interpretive-review-audit-table ss-interpretive-review-evidence-table">
+        <div class="shardwright-interpretive-review-speaker-key" aria-label="Speaker identity key">
+            <span><strong>User:</strong> persona</span>
+            <span><strong>Character:</strong> character card file</span>
+            <span><strong>System:</strong> system-classified message on behalf of character</span>
+        </div>
+        <div class="shardwright-interpretive-review-evidence-table-wrap">
+            <table class="shardwright-interpretive-review-audit-table shardwright-interpretive-review-evidence-table">
                 <thead>
                     <tr>
+                        <th scope="col">Speaker</th>
                         <th scope="col">Role</th>
                         <th scope="col">Source Type</th>
                         <th scope="col">Source</th>
-                        <th scope="col">Speaker</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -320,10 +367,14 @@ function renderEvidenceBindingsTable(groundingLinks) {
                         const speakerValue = String(link?.speakerEntityId || '').trim();
                         return `
                             <tr>
+                                <td>${renderCopyableCode(speakerValue, { emptyLabel: 'n/a' })}</td>
                                 <td>${renderBadge(role, { fallback: role || 'n/a' })}</td>
                                 <td>${renderBadge(sourceType, { fallback: sourceType || 'n/a' })}</td>
-                                <td>${renderCopyableCode(sourceValue, { emptyLabel: 'n/a' })}</td>
-                                <td>${renderCopyableCode(speakerValue, { emptyLabel: 'n/a' })}</td>
+                                <td class="shardwright-interpretive-review-evidence-source">${sourceType === 'SOURCE_OCCURRENCE'
+                                    ? renderSourceOccurrenceControl(link, sourceValue, {
+                                        chatLocator: options.chatLocatorsByInstanceId?.get?.(String(link?.chatInstanceId || '').trim()) || '',
+                                    })
+                                    : renderCopyableCode(sourceValue, { emptyLabel: 'n/a' })}</td>
                             </tr>
                         `;
                     }).join('')}
@@ -346,7 +397,7 @@ function hasMeaningfulGroundingDetails(details) {
 
 function renderReasonCodes(reasonCodes, options = {}) {
     if (!Array.isArray(reasonCodes) || reasonCodes.length === 0) {
-        return '<span class="ss-hint">No reason codes.</span>';
+        return '<span class="shardwright-hint">No reason codes.</span>';
     }
     const label = String(options.label || '').trim();
     const badges = reasonCodes.map((code) => {
@@ -360,18 +411,18 @@ function renderReasonCodes(reasonCodes, options = {}) {
         return badge.replace('<span ', `<span title="${escapeHtml(description)}" `);
     }).join('');
     return `
-        <div class="ss-interpretive-review-history-block">
-            ${label ? `<div class="ss-interpretive-review-history-block-label">${escapeHtml(label)}</div>` : ''}
-            <div class="ss-interpretive-review-inline-meta">${badges}</div>
+        <div class="shardwright-interpretive-review-history-block">
+            ${label ? `<div class="shardwright-interpretive-review-history-block-label">${escapeHtml(label)}</div>` : ''}
+            <div class="shardwright-interpretive-review-inline-meta">${badges}</div>
         </div>
     `;
 }
 
 function renderServerReasonList(items, emptyLabel = 'None') {
     if (!Array.isArray(items) || items.length === 0) {
-        return `<span class="ss-hint">${escapeHtml(emptyLabel)}</span>`;
+        return `<span class="shardwright-hint">${escapeHtml(emptyLabel)}</span>`;
     }
-    return `<div class="ss-interpretive-review-inline-meta">${items.map((item) => {
+    return `<div class="shardwright-interpretive-review-inline-meta">${items.map((item) => {
         const normalized = String(item || '').trim();
         const label = INTERPRETIVE_REASON_CODE_LABELS.get(normalized) || formatLifecycleBlockingReason(normalized);
         return renderBadge(label, { fallback: normalized || 'n/a' });
@@ -380,12 +431,12 @@ function renderServerReasonList(items, emptyLabel = 'None') {
 
 function renderBlockedActionList(entries, emptyLabel = 'None') {
     if (!Array.isArray(entries) || entries.length === 0) {
-        return `<span class="ss-hint">${escapeHtml(emptyLabel)}</span>`;
+        return `<span class="shardwright-hint">${escapeHtml(emptyLabel)}</span>`;
     }
     return `
-        <div class="ss-interpretive-review-list">
+        <div class="shardwright-interpretive-review-list">
             ${entries.map((entry) => `
-                <div class="ss-interpretive-review-card">
+                <div class="shardwright-interpretive-review-card">
                     <strong>${escapeHtml(formatLifecycleActionLabel(entry.action || ''))}</strong>
                     <div>${renderServerReasonList(entry.blockingReasons, 'None')}</div>
                 </div>
@@ -396,17 +447,17 @@ function renderBlockedActionList(entries, emptyLabel = 'None') {
 
 function renderReasonCodeSelector({ conditional = false } = {}) {
     return `
-        <div class="ss-interpretive-review-reason-groups"${conditional ? ' data-field="reasonCodeGroups" hidden' : ''}>
+        <div class="shardwright-interpretive-review-reason-groups"${conditional ? ' data-field="reasonCodeGroups" hidden' : ''}>
             <input type="hidden" name="reasonCodes" value="" />
             ${INTERPRETIVE_REASON_CODE_GROUPS.map((group) => `
-                <section class="ss-interpretive-review-reason-group">
-                    <div class="ss-interpretive-review-reason-group-header">
+                <section class="shardwright-interpretive-review-reason-group">
+                    <div class="shardwright-interpretive-review-reason-group-header">
                         <strong>${escapeHtml(group.title)}</strong>
-                        <details class="ss-interpretive-review-inline-help">
+                        <details class="shardwright-interpretive-review-inline-help">
                             <summary aria-label="Explain ${escapeHtml(group.title)}">?</summary>
-                            <div class="ss-interpretive-review-inline-help-body">
+                            <div class="shardwright-interpretive-review-inline-help-body">
                                 ${group.codes.map((entry) => `
-                                    <div class="ss-interpretive-review-inline-help-row">
+                                    <div class="shardwright-interpretive-review-inline-help-row">
                                         <strong>${escapeHtml(entry.label)}</strong>
                                         <span>${escapeHtml(entry.description)}</span>
                                     </div>
@@ -414,11 +465,11 @@ function renderReasonCodeSelector({ conditional = false } = {}) {
                             </div>
                         </details>
                     </div>
-                    <div class="ss-interpretive-token-palette">
+                    <div class="shardwright-interpretive-token-palette">
                         ${group.codes.map((entry) => `
                             <button
                                 type="button"
-                                class="ss-interpretive-token-button"
+                                class="shardwright-interpretive-token-button"
                                 data-reason-code="${escapeHtml(entry.value)}"
                                 aria-pressed="false"
                                 title="${escapeHtml(entry.description)}">
@@ -428,7 +479,7 @@ function renderReasonCodeSelector({ conditional = false } = {}) {
                     </div>
                 </section>
             `).join('')}
-            <div class="ss-hint" data-field-hint="reasonCodeGroups"></div>
+            <div class="shardwright-hint" data-field-hint="reasonCodeGroups"></div>
         </div>
     `;
 }
@@ -444,7 +495,7 @@ function renderTechnicalDetailsSection(rows, options = {}) {
         options.title || 'Technical details',
         options.description || 'Shows the exact identifiers and audit fields without crowding the main view.',
         renderKeyValueGrid(filteredRows),
-        { extraClass: `ss-interpretive-review-subsection ${String(options.extraClass || '').trim()}`.trim() },
+        { extraClass: `shardwright-interpretive-review-subsection ${String(options.extraClass || '').trim()}`.trim() },
     );
 }
 
@@ -453,7 +504,7 @@ function renderActionStatus(status, kind) {
         return '';
     }
     return `
-        <div class="ss-interpretive-action-status tone-${escapeHtml(status.tone || 'info')}">
+        <div class="shardwright-interpretive-action-status tone-${escapeHtml(status.tone || 'info')}">
             ${escapeHtml(status.message)}
         </div>
     `;
@@ -467,7 +518,7 @@ function buildNonPublishingTooltip(formKind) {
 
 function renderProvenance(provenance, policiesById) {
     if (!provenance) {
-        return '<div class="ss-hint">No recorded provenance.</div>';
+        return '<div class="shardwright-hint">No recorded provenance.</div>';
     }
     const delegationPolicy = provenance.delegationPolicyId
         ? policiesById.get(provenance.delegationPolicyId)
@@ -503,12 +554,12 @@ function renderRevisionOriginCard(origin) {
         return '';
     }
     return `
-        <div class="ss-interpretive-review-card ss-interpretive-review-status-card">
+        <div class="shardwright-interpretive-review-card shardwright-interpretive-review-status-card">
             <strong>Revision origin</strong>
-            <div class="ss-interpretive-review-badge-row">
+            <div class="shardwright-interpretive-review-badge-row">
                 ${renderBadge(origin.label)}
             </div>
-            <div class="ss-interpretive-review-summary-note">${escapeHtml(origin.summary || '')}</div>
+            <div class="shardwright-interpretive-review-summary-note">${escapeHtml(origin.summary || '')}</div>
         </div>
     `;
 }
@@ -570,33 +621,33 @@ function renderHistoryActionCard({
         ? extraLines.filter((line) => String(line || '').trim())
         : [];
     return `
-        <div class="ss-interpretive-review-card ss-interpretive-review-history-card">
-            <div class="ss-interpretive-review-history-heading">
+        <div class="shardwright-interpretive-review-card shardwright-interpretive-review-history-card">
+            <div class="shardwright-interpretive-review-history-heading">
                 <strong>${escapeHtml(title)}</strong>
-                ${timestamp ? `<div class="ss-hint">${escapeHtml(formatTimestamp(timestamp))}</div>` : ''}
+                ${timestamp ? `<div class="shardwright-hint">${escapeHtml(formatTimestamp(timestamp))}</div>` : ''}
             </div>
-            <div class="ss-interpretive-review-inline-meta${compact ? ' ss-interpretive-review-inline-meta--compact' : ''}">
+            <div class="shardwright-interpretive-review-inline-meta${compact ? ' shardwright-interpretive-review-inline-meta--compact' : ''}">
                 ${compact ? '' : renderBadge(dispositionLabel || 'Submitted')}
                 ${roleLabel ? renderBadge(roleLabel) : ''}
             </div>
             ${historyContextLabel ? `
-                <div class="ss-interpretive-review-history-block">
-                    <div class="ss-interpretive-review-history-block-label">${escapeHtml(contextLabel)}</div>
-                    <div class="ss-interpretive-review-summary-note">${escapeHtml(compactProvenance)}</div>
+                <div class="shardwright-interpretive-review-history-block">
+                    <div class="shardwright-interpretive-review-history-block-label">${escapeHtml(contextLabel)}</div>
+                    <div class="shardwright-interpretive-review-summary-note">${escapeHtml(compactProvenance)}</div>
                 </div>
             ` : ''}
             ${Array.isArray(reasonCodes) && reasonCodes.length > 0 ? renderReasonCodes(reasonCodes, { label: 'Selected concerns' }) : ''}
             ${normalizedCommentary
                 ? `
-                    <div class="ss-interpretive-review-history-block">
-                        <div class="ss-interpretive-review-history-block-label">${escapeHtml(commentaryLabel)}</div>
-                        <div class="ss-interpretive-review-statement">${escapeHtml(normalizedCommentary)}</div>
+                    <div class="shardwright-interpretive-review-history-block">
+                        <div class="shardwright-interpretive-review-history-block-label">${escapeHtml(commentaryLabel)}</div>
+                        <div class="shardwright-interpretive-review-statement">${escapeHtml(normalizedCommentary)}</div>
                     </div>
                 `
                 : ''
             }
             ${filteredExtraLines.length > 0 ? `
-                <div class="ss-interpretive-review-history-meta">
+                <div class="shardwright-interpretive-review-history-meta">
                     ${filteredExtraLines.map((line) => `<div>${escapeHtml(line)}</div>`).join('')}
                 </div>
             ` : ''}
@@ -607,25 +658,25 @@ function renderHistoryActionCard({
 
 function renderGroundingLinks(groundingLinks) {
     if (!Array.isArray(groundingLinks) || groundingLinks.length === 0) {
-        return '<div class="ss-hint">No evidence linked yet.</div>';
+        return '<div class="shardwright-hint">No evidence linked yet.</div>';
     }
     return `
-        <div class="ss-interpretive-review-list">
+        <div class="shardwright-interpretive-review-list">
             ${groundingLinks.map((link) => `
-                <div class="ss-interpretive-review-card">
+                <div class="shardwright-interpretive-review-card">
                     <strong>${escapeHtml(link.groundingRole || 'GROUNDING')}</strong>
-                    <div class="ss-interpretive-review-inline-meta">
+                    <div class="shardwright-interpretive-review-inline-meta">
                         ${renderBadge(link.groundingAssessment)}
                         ${renderBadge(link.basisType)}
                     </div>
                     <div><code>${escapeHtml(link.basisRecordId || 'n/a')}</code></div>
-                    <div class="ss-hint">
+                    <div class="shardwright-hint">
                         chat=<code>${escapeHtml(link.chatInstanceId || 'n/a')}</code>,
                         msg=<code>${escapeHtml(link.messageId || 'n/a')}</code>,
                         speaker=<code>${escapeHtml(link.speakerEntityId || 'n/a')}</code>
                     </div>
                     ${hasMeaningfulGroundingDetails(link.details)
-                        ? `<pre class="ss-interpretive-review-pre">${escapeHtml(JSON.stringify(link.details, null, 2))}</pre>`
+                        ? `<pre class="shardwright-interpretive-review-pre">${escapeHtml(JSON.stringify(link.details, null, 2))}</pre>`
                         : ''
                     }
                 </div>
@@ -660,7 +711,7 @@ function renderHistorySubmissionDetails(provenance, policiesById) {
     ], {
         title: 'Recorded provenance',
         description: '',
-        extraClass: 'ss-interpretive-review-history-subdetails',
+        extraClass: 'shardwright-interpretive-review-history-subdetails',
     });
 }
 
@@ -700,21 +751,21 @@ function collectReferencedPolicyIds(interpretation) {
 
 function renderDelegationPolicies(policies) {
     if (!Array.isArray(policies) || policies.length === 0) {
-        return '<div class="ss-hint">No delegation policies referenced here.</div>';
+        return '<div class="shardwright-hint">No delegation policies referenced here.</div>';
     }
     return `
-        <div class="ss-interpretive-review-list">
+        <div class="shardwright-interpretive-review-list">
             ${policies.map((policy) => `
-                <div class="ss-interpretive-review-card">
+                <div class="shardwright-interpretive-review-card">
                     <strong><code>${escapeHtml(policy.delegationPolicyId)}</code> v${escapeHtml(String(policy.policyVersion))}</strong>
-                    <div class="ss-interpretive-review-inline-meta">
+                    <div class="shardwright-interpretive-review-inline-meta">
                         ${renderBadge(policy.policyState)}
                         ${renderBadge(policy.evidenceRequirement)}
                     </div>
                     <div>Principal: <code>${escapeHtml(policy.principalEntityId || 'n/a')}</code></div>
                     <div>Delegate: <code>${escapeHtml(policy.delegateEntityId || 'n/a')}</code></div>
                     <div>Allowed Actions: ${renderStringList(policy.allowedActions, 'None')}</div>
-                    <div class="ss-hint">Scope <code>${escapeHtml(policy.memoryScopeId || 'n/a')}</code>, continuity <code>${escapeHtml(policy.continuityTargetId || 'n/a')}</code></div>
+                    <div class="shardwright-hint">Scope <code>${escapeHtml(policy.memoryScopeId || 'n/a')}</code>, continuity <code>${escapeHtml(policy.continuityTargetId || 'n/a')}</code></div>
                 </div>
             `).join('')}
         </div>
@@ -843,9 +894,9 @@ function renderActionForm({
     const submitTooltip = buildNonPublishingTooltip(formKind);
 
     return `
-        <div class="ss-interpretive-review-card ss-interpretive-action-card">
+        <div class="shardwright-interpretive-review-card shardwright-interpretive-action-card">
             ${renderActionStatus(actionStatus, formKind)}
-            <form class="ss-interpretive-action-form"
+            <form class="shardwright-interpretive-action-form"
                 data-form-kind="${escapeHtml(formKind)}"
                 data-action-kind="${escapeHtml(actionKind)}"
                 data-owner-id="${escapeHtml(ownerId)}"
@@ -862,8 +913,8 @@ function renderActionForm({
                 data-default-actor-id="${escapeHtml(currentActorId || '')}">
                 <input type="hidden" name="submittedByActorId" value="${escapeHtml(defaultActorId)}" />
 
-                <div class="ss-interpretive-review-form-grid">
-                    <label class="ss-interpretive-review-field">
+                <div class="shardwright-interpretive-review-form-grid">
+                    <label class="shardwright-interpretive-review-field">
                         <span>Decision</span>
                         <select class="text_pole" name="${formKind === 'review' ? 'disposition' : 'state'}">
                             ${selectOptions.map((entry) => `
@@ -872,59 +923,59 @@ function renderActionForm({
                         </select>
                     </label>
 
-                    <label class="ss-interpretive-review-field">
+                    <label class="shardwright-interpretive-review-field">
                         <span>Recording mode</span>
                         <select class="text_pole" name="submissionMode">
                             ${renderSubmissionModeOptions(modeOptions, defaultMode)}
                         </select>
                     </label>
 
-                    <label class="ss-interpretive-review-field" data-field="delegationPolicyId"${defaultMode === 'TRUSTED_DELEGATE' && hasApplicablePolicies ? '' : ' hidden'}>
+                    <label class="shardwright-interpretive-review-field" data-field="delegationPolicyId"${defaultMode === 'TRUSTED_DELEGATE' && hasApplicablePolicies ? '' : ' hidden'}>
                         <span>Delegation policy</span>
                         <select class="text_pole" name="delegationPolicyId">
                             ${buildDelegationPolicyOptions(applicablePolicies)}
                         </select>
-                        <span class="ss-hint">Trusted delegation needs a matching active policy.</span>
+                        <span class="shardwright-hint">Trusted delegation needs a matching active policy.</span>
                     </label>
 
-                    <div class="ss-interpretive-review-field ss-interpretive-review-static-note" data-field="delegationPolicyUnavailable"${defaultMode === 'TRUSTED_DELEGATE' && !hasApplicablePolicies ? '' : ' hidden'}>
+                    <div class="shardwright-interpretive-review-field shardwright-interpretive-review-static-note" data-field="delegationPolicyUnavailable"${defaultMode === 'TRUSTED_DELEGATE' && !hasApplicablePolicies ? '' : ' hidden'}>
                         <span>Delegation policy</span>
-                        <span class="ss-hint">No matching active delegation policy is available for this action. Use a direct mode or add a policy first.</span>
+                        <span class="shardwright-hint">No matching active delegation policy is available for this action. Use a direct mode or add a policy first.</span>
                     </div>
                 </div>
 
-                <label class="ss-interpretive-review-field" data-field="subjectEvidenceRefs"${governedFieldState.showEvidenceField ? '' : ' hidden'}>
+                <label class="shardwright-interpretive-review-field" data-field="subjectEvidenceRefs"${governedFieldState.showEvidenceField ? '' : ' hidden'}>
                     <span>Subject Evidence References</span>
                     <textarea class="text_pole" rows="2" name="subjectEvidenceRefs" placeholder="One reference per line or comma-separated">${escapeHtml(autoSubjectEvidenceRefs.join('\n'))}</textarea>
-                    <span class="ss-hint" data-field-hint="subjectEvidenceRefs">
+                    <span class="shardwright-hint" data-field-hint="subjectEvidenceRefs">
                         ${escapeHtml(governedFieldState.evidenceHint)}
                     </span>
                 </label>
 
                 ${renderReasonCodeSelector({ conditional: true })}
 
-                <label class="ss-interpretive-review-field ss-interpretive-review-comment-field">
+                <label class="shardwright-interpretive-review-field shardwright-interpretive-review-comment-field">
                     <span data-field-label="commentary">Comment</span>
                     <textarea class="text_pole" rows="3" name="commentary" placeholder="Optional notes or context."></textarea>
-                    <span class="ss-hint" data-field-hint="commentary"></span>
+                    <span class="shardwright-hint" data-field-hint="commentary"></span>
                 </label>
 
                 ${formKind === 'review' ? `
-                    <div class="ss-interpretive-review-section" data-field="revisedCandidate"${shouldShowInterpretiveRevisionEditor(formKind, defaultDispositionValue) ? '' : ' hidden'}>
+                    <div class="shardwright-interpretive-review-section" data-field="revisedCandidate"${shouldShowInterpretiveRevisionEditor(formKind, defaultDispositionValue) ? '' : ' hidden'}>
                         <h4>Child revision</h4>
-                        <div class="ss-hint">This records the review on the parent revision and creates a new child revision for the next step.</div>
-                        <div class="ss-interpretive-review-card">
+                        <div class="shardwright-hint">This records the review on the parent revision and creates a new child revision for the next step.</div>
+                        <div class="shardwright-interpretive-review-card">
                             <strong>Parent statement</strong>
-                            <div class="ss-interpretive-review-statement">${escapeHtml(interpretation.statement || '')}</div>
+                            <div class="shardwright-interpretive-review-statement">${escapeHtml(interpretation.statement || '')}</div>
                         </div>
-                        <label class="ss-interpretive-review-field">
+                        <label class="shardwright-interpretive-review-field">
                             <span>Child statement</span>
                             <textarea class="text_pole" rows="5" name="revisedStatement" placeholder="Enter the narrower approved statement.">${escapeHtml(interpretation.statement || '')}</textarea>
                         </label>
                     </div>
                 ` : ''}
 
-                <div class="ss-interpretive-review-form-actions">
+                <div class="shardwright-interpretive-review-form-actions">
                     <input class="menu_button" type="submit" value="${escapeHtml(submitLabel)}" title="${escapeHtml(submitTooltip)}" />
                 </div>
             </form>
@@ -944,13 +995,13 @@ function renderPublicationActionForm({
 }) {
     const attributes = buildDatasetAttributes(dataset);
     return `
-        <div class="ss-interpretive-review-card ss-interpretive-action-card">
+        <div class="shardwright-interpretive-review-card shardwright-interpretive-action-card">
             <strong>${escapeHtml(title)}</strong>
-            ${description ? `<div class="ss-hint">${escapeHtml(description)}</div>` : ''}
+            ${description ? `<div class="shardwright-hint">${escapeHtml(description)}</div>` : ''}
             ${renderActionStatus(actionStatus, formKind)}
-            <form class="ss-interpretive-action-form" data-form-kind="${escapeHtml(formKind)}" ${attributes}>
+            <form class="shardwright-interpretive-action-form" data-form-kind="${escapeHtml(formKind)}" ${attributes}>
                 ${fieldsHtml}
-                <div class="ss-interpretive-review-form-actions">
+                <div class="shardwright-interpretive-review-form-actions">
                     <input class="menu_button" type="submit" value="${escapeHtml(submitLabel)}"${disabled ? ' disabled' : ''} />
                 </div>
             </form>
@@ -1006,11 +1057,11 @@ function renderLifecycleGovernanceForm({
     const attributes = buildDatasetAttributes(dataset);
 
     return `
-        <div class="ss-interpretive-review-card ss-interpretive-action-card">
+        <div class="shardwright-interpretive-review-card shardwright-interpretive-action-card">
             <strong>${escapeHtml(title)}</strong>
-            ${description ? `<div class="ss-hint">${escapeHtml(description)}</div>` : ''}
+            ${description ? `<div class="shardwright-hint">${escapeHtml(description)}</div>` : ''}
             ${renderActionStatus(actionStatus, formKind)}
-            <form class="ss-interpretive-action-form"
+            <form class="shardwright-interpretive-action-form"
                 data-form-kind="${escapeHtml(formKind)}"
                 data-action-kind="${escapeHtml(actionKind)}"
                 data-owner-id="${escapeHtml(ownerId)}"
@@ -1026,25 +1077,25 @@ function renderLifecycleGovernanceForm({
                     { label: 'Recorded by', value: `<input type="hidden" name="submittedByActorId" value="${escapeHtml(defaultActorId)}" /><code>${escapeHtml(defaultActorId)}</code>` },
                 ])}
 
-                <div class="ss-interpretive-review-form-grid">
-                    <label class="ss-interpretive-review-field" data-field="delegationPolicyId"${defaultMode === 'TRUSTED_DELEGATE' && hasApplicablePolicies ? '' : ' hidden'}>
+                <div class="shardwright-interpretive-review-form-grid">
+                    <label class="shardwright-interpretive-review-field" data-field="delegationPolicyId"${defaultMode === 'TRUSTED_DELEGATE' && hasApplicablePolicies ? '' : ' hidden'}>
                         <span>Delegation policy</span>
                         <select class="text_pole" name="delegationPolicyId">
                             ${buildDelegationPolicyOptions(applicablePolicies)}
                         </select>
-                        <span class="ss-hint">Trusted delegation locks to the exact policy version and hash on submit.</span>
+                        <span class="shardwright-hint">Trusted delegation locks to the exact policy version and hash on submit.</span>
                     </label>
 
-                    <div class="ss-interpretive-review-field ss-interpretive-review-static-note" data-field="delegationPolicyUnavailable"${defaultMode === 'TRUSTED_DELEGATE' && !hasApplicablePolicies ? '' : ' hidden'}>
+                    <div class="shardwright-interpretive-review-field shardwright-interpretive-review-static-note" data-field="delegationPolicyUnavailable"${defaultMode === 'TRUSTED_DELEGATE' && !hasApplicablePolicies ? '' : ' hidden'}>
                         <span>Delegation policy</span>
-                        <span class="ss-hint">No matching active delegation policy is available for this action. Use a direct mode or add a policy first.</span>
+                        <span class="shardwright-hint">No matching active delegation policy is available for this action. Use a direct mode or add a policy first.</span>
                     </div>
                 </div>
 
-                <label class="ss-interpretive-review-field" data-field="subjectEvidenceRefs"${governedFieldState.showEvidenceField ? '' : ' hidden'}>
+                <label class="shardwright-interpretive-review-field" data-field="subjectEvidenceRefs"${governedFieldState.showEvidenceField ? '' : ' hidden'}>
                     <span>Subject Evidence References</span>
                     <textarea class="text_pole" rows="2" name="subjectEvidenceRefs" placeholder="One reference per line or comma-separated">${escapeHtml(autoSubjectEvidenceRefs.join('\n'))}</textarea>
-                    <span class="ss-hint" data-field-hint="subjectEvidenceRefs">
+                    <span class="shardwright-hint" data-field-hint="subjectEvidenceRefs">
                         ${escapeHtml(governedFieldState.evidenceHint)}
                     </span>
                 </label>
@@ -1053,12 +1104,12 @@ function renderLifecycleGovernanceForm({
 
                 ${renderReasonCodeSelector()}
 
-                <label class="ss-interpretive-review-field ss-interpretive-review-comment-field">
+                <label class="shardwright-interpretive-review-field shardwright-interpretive-review-comment-field">
                     <span>Comment</span>
                     <textarea class="text_pole" rows="3" name="commentary" placeholder="Add any notes or context."></textarea>
                 </label>
 
-                <div class="ss-interpretive-review-form-actions">
+                <div class="shardwright-interpretive-review-form-actions">
                     <input class="menu_button" type="submit" value="${escapeHtml(submitLabel)}" />
                 </div>
             </form>
@@ -1089,10 +1140,10 @@ function renderReviewRecords(interpretation, policiesById, selectedReviewRequest
             .map((entry) => [entry.reviewRequestId, entry]),
     );
     if (requests.length === 0) {
-        return '<div class="ss-hint">No review requests yet.</div>';
+        return '<div class="shardwright-hint">No review requests yet.</div>';
     }
     return `
-        <div class="ss-interpretive-review-list">
+        <div class="shardwright-interpretive-review-list">
             ${requests.map((request) => {
                 const disposition = dispositionsByRequestId.get(request.reviewRequestId) || null;
                 const showForm = revisionMatchesSelection
@@ -1102,26 +1153,26 @@ function renderReviewRecords(interpretation, policiesById, selectedReviewRequest
                     ? 'Context owner'
                     : 'Relational participant';
                 return `
-                    <div class="ss-interpretive-review-card">
+                    <div class="shardwright-interpretive-review-card">
                         <strong>${escapeHtml(request.reviewerRole || 'Reviewer')}</strong>
-                        <div class="ss-interpretive-review-inline-meta">
+                        <div class="shardwright-interpretive-review-inline-meta">
                             ${renderBadge(request.status)}
                             <code>${escapeHtml(request.reviewerEntityId || 'n/a')}</code>
                         </div>
-                        <div class="ss-hint">Requested ${escapeHtml(formatTimestamp(request.createdAt))}</div>
-                        <div class="ss-hint">Envelope <code>${escapeHtml(request.reviewEnvelopeHash || 'n/a')}</code></div>
+                        <div class="shardwright-hint">Requested ${escapeHtml(formatTimestamp(request.createdAt))}</div>
+                        <div class="shardwright-hint">Envelope <code>${escapeHtml(request.reviewEnvelopeHash || 'n/a')}</code></div>
                         ${disposition ? `
-                            <div class="ss-interpretive-review-section">
+                            <div class="shardwright-interpretive-review-section">
                                 <h4>Decision</h4>
-                                <div class="ss-interpretive-review-inline-meta">
+                                <div class="shardwright-interpretive-review-inline-meta">
                                     ${renderBadge(disposition.disposition)}
                                 </div>
                                 ${renderReasonCodes(disposition.reasonCodes)}
-                                <div class="ss-interpretive-review-statement">${escapeHtml(disposition.commentary || '(no commentary)')}</div>
-                                <div class="ss-hint">Submitted ${escapeHtml(formatTimestamp(disposition.submittedAt))}</div>
+                                <div class="shardwright-interpretive-review-statement">${escapeHtml(disposition.commentary || '(no commentary)')}</div>
+                                <div class="shardwright-hint">Submitted ${escapeHtml(formatTimestamp(disposition.submittedAt))}</div>
                                 ${renderProvenance(disposition.provenance, policiesById)}
                             </div>
-                        ` : '<div class="ss-hint">No decision has been submitted.</div>'}
+                        ` : '<div class="shardwright-hint">No decision has been submitted.</div>'}
                         ${showForm ? renderActionForm({
                             formKind: 'review',
                             ownerId: request.reviewerEntityId,
@@ -1154,9 +1205,9 @@ function renderSubjectDispositionSection(interpretation, policiesById, currentAc
             { label: 'Updated', value: escapeHtml(formatTimestamp(recordedSubjectDisposition.updatedAt)) },
         ])}
         ${renderReasonCodes(recordedSubjectDisposition.reasonCodes)}
-        <div class="ss-interpretive-review-card ss-interpretive-review-statement">${escapeHtml(recordedSubjectDisposition.commentary || '(no commentary)')}</div>
+        <div class="shardwright-interpretive-review-card shardwright-interpretive-review-statement">${escapeHtml(recordedSubjectDisposition.commentary || '(no commentary)')}</div>
         ${renderProvenance(recordedSubjectDisposition.provenance, policiesById)}
-    ` : '<div class="ss-hint">No subject decision has been recorded.</div>';
+    ` : '<div class="shardwright-hint">No subject decision has been recorded.</div>';
 
     const blocked = pendingRequests.length > 0
         || interpretation.reviewState === 'BLOCKED'
@@ -1169,11 +1220,11 @@ function renderSubjectDispositionSection(interpretation, policiesById, currentAc
         && interpretation.childRevisionIds.length > 0;
 
     const formHtml = recordedSubjectDisposition
-        ? '<div class="ss-hint">The subject decision is already recorded for this revision. Any further subject action needs a new governed revision or lifecycle step, not an overwrite.</div>'
+        ? '<div class="shardwright-hint">The subject decision is already recorded for this revision. Any further subject action needs a new governed revision or lifecycle step, not an overwrite.</div>'
         : blocked
-        ? '<div class="ss-hint">The subject decision is still blocked until every required review is complete.</div>'
+        ? '<div class="shardwright-hint">The subject decision is still blocked until every required review is complete.</div>'
         : supersededByChild
-            ? '<div class="ss-hint">The decision moved to the child revision created by Approve with edit. Review that revision instead of changing the parent.</div>'
+            ? '<div class="shardwright-hint">The decision moved to the child revision created by Approve with edit. Review that revision instead of changing the parent.</div>'
             : renderActionForm({
             formKind: 'subject',
             ownerId: interpretation.memorySubjectId,
@@ -1187,7 +1238,7 @@ function renderSubjectDispositionSection(interpretation, policiesById, currentAc
 
     return `
         ${subjectDispositionHtml}
-        <div class="ss-interpretive-review-section">
+        <div class="shardwright-interpretive-review-section">
             <h4>Record subject decision</h4>
             ${formHtml}
         </div>
@@ -1196,18 +1247,18 @@ function renderSubjectDispositionSection(interpretation, policiesById, currentAc
 
 function renderPublicationPolicyCards(policies) {
     if (!Array.isArray(policies) || policies.length === 0) {
-        return '<div class="ss-hint">No active publication policy matches this interpretation type.</div>';
+        return '<div class="shardwright-hint">No active publication policy matches this interpretation type.</div>';
     }
     return `
-        <div class="ss-interpretive-review-list">
+        <div class="shardwright-interpretive-review-list">
             ${policies.map((policy) => `
-                <div class="ss-interpretive-review-card">
+                <div class="shardwright-interpretive-review-card">
                     <strong><code>${escapeHtml(policy.publicationPolicyId)}</code></strong>
-                    <div class="ss-interpretive-review-inline-meta">
+                    <div class="shardwright-interpretive-review-inline-meta">
                         ${renderBadge(policy.policyState)}
                         ${renderBadge(policy.continuityTargetType)}
                     </div>
-                    <div class="ss-interpretive-review-summary-note">Version ${escapeHtml(policy.policyVersion != null ? `v${policy.policyVersion}` : 'n/a')}</div>
+                    <div class="shardwright-interpretive-review-summary-note">Version ${escapeHtml(policy.policyVersion != null ? `v${policy.policyVersion}` : 'n/a')}</div>
                     <div>Required Final Subject State: ${renderBadge(policy.requiredFinalSubjectState)}</div>
                     <div>Required Grounding Outcome: ${renderBadge(policy.requiredGroundingOutcome)}</div>
                     <div>Permitted Types: ${renderStringList(policy.permittedInterpretationTypes, 'None')}</div>
@@ -1219,7 +1270,7 @@ function renderPublicationPolicyCards(policies) {
 
 function renderQualificationCard(qualification, options = {}) {
     if (!qualification) {
-        return '<div class="ss-hint">No qualification has been recorded yet.</div>';
+        return '<div class="shardwright-hint">No qualification has been recorded yet.</div>';
     }
     const standardPolicyId = options.standardPolicy?.publicationPolicyId || null;
     const standardPolicyVersion = options.standardPolicy?.policyVersion ?? null;
@@ -1230,9 +1281,9 @@ function renderQualificationCard(qualification, options = {}) {
         && qualification.continuityTargetId === continuityTargetId;
     const refusalCodes = Array.isArray(qualification.refusalCodes) ? qualification.refusalCodes : [];
     return `
-        <div class="ss-interpretive-review-card">
+        <div class="shardwright-interpretive-review-card">
             <strong>${matchesStandardPolicy ? 'Latest eligibility check' : 'Previous eligibility check'}</strong>
-            ${matchesStandardPolicy ? '' : '<div class="ss-hint">This result was recorded for a different policy or memory line and does not control the next publication step.</div>'}
+            ${matchesStandardPolicy ? '' : '<div class="shardwright-hint">This result was recorded for a different policy or memory line and does not control the next publication step.</div>'}
             ${renderKeyValueGrid([
                 { label: 'Verdict', value: renderBadge(qualification.eligibilityVerdict) },
                 { label: 'Policy', value: `<code>${escapeHtml(qualification.publicationPolicyId)}</code> v${escapeHtml(String(qualification.policyVersion))}` },
@@ -1249,10 +1300,10 @@ function renderQualificationCard(qualification, options = {}) {
 
 function renderAuthorizationCard(authorization) {
     if (!authorization) {
-        return '<div class="ss-hint">No publication authorization has been recorded yet.</div>';
+        return '<div class="shardwright-hint">No publication authorization has been recorded yet.</div>';
     }
     return `
-        <div class="ss-interpretive-review-card">
+        <div class="shardwright-interpretive-review-card">
             <strong>Latest publication authorization</strong>
             ${renderKeyValueGrid([
                 { label: 'Status', value: renderBadge(authorization.status) },
@@ -1275,9 +1326,9 @@ function renderPublicationGuidanceCard(guidedFlow) {
         : refusalCodes;
     if (status === 'ALREADY_PUBLISHED') {
         return `
-            <div class="ss-interpretive-review-card">
+            <div class="shardwright-interpretive-review-card">
                 <strong>Already published</strong>
-                <div class="ss-interpretive-review-summary-note">No additional publication action is required.</div>
+                <div class="shardwright-interpretive-review-summary-note">No additional publication action is required.</div>
                 ${visibleRefusalCodes.length > 0 ? `
                     <div>
                         <strong>Technical refusal codes</strong>
@@ -1288,9 +1339,9 @@ function renderPublicationGuidanceCard(guidedFlow) {
         `;
     }
     return `
-        <div class="ss-interpretive-review-card">
+        <div class="shardwright-interpretive-review-card">
             <strong>${escapeHtml(guidedFlow.headline || 'Publication guidance')}</strong>
-            <div class="ss-interpretive-review-summary-note">${escapeHtml(guidedFlow.detail || '')}</div>
+            <div class="shardwright-interpretive-review-summary-note">${escapeHtml(guidedFlow.detail || '')}</div>
             ${refusalCodes.length > 0 ? `
                 <div>
                     <strong>Technical refusal codes</strong>
@@ -1317,12 +1368,12 @@ function renderDnmRecordCard(record, options = {}) {
     const blockedActions = Array.isArray(record.operatorState?.blockedActions) ? record.operatorState.blockedActions : [];
     const blockingReasons = Array.isArray(record.operatorState?.blockingReasons) ? record.operatorState.blockingReasons : [];
     return `
-        <div class="ss-interpretive-review-card">
+        <div class="shardwright-interpretive-review-card">
             <strong>${escapeHtml(descriptor.title)}</strong>
-            <div class="ss-interpretive-review-inline-meta">${statusBadges.join('')}</div>
+            <div class="shardwright-interpretive-review-inline-meta">${statusBadges.join('')}</div>
             ${renderKeyValueGrid(rows)}
-            <div class="ss-hint">${escapeHtml(descriptor.summary)}</div>
-            <div class="ss-interpretive-review-statement">${escapeHtml(record.publishedStatement || '(no statement)')}</div>
+            <div class="shardwright-hint">${escapeHtml(descriptor.summary)}</div>
+            <div class="shardwright-interpretive-review-statement">${escapeHtml(record.publishedStatement || '(no statement)')}</div>
             ${options.showOperatorState && availableActions.length > 0 ? `
                 <div><strong>Lawful actions now</strong></div>
                 <div>${renderServerReasonList(availableActions, 'None')}</div>
@@ -1336,18 +1387,18 @@ function renderDnmRecordCard(record, options = {}) {
                 <div>${renderServerReasonList(blockingReasons, 'None')}</div>
             ` : ''}
             ${Array.isArray(record.deltaReviews) && record.deltaReviews.length > 0 ? `
-                <div class="ss-interpretive-review-section">
+                <div class="shardwright-interpretive-review-section">
                     <h4>Delta Reviews</h4>
-                    <div class="ss-interpretive-review-list">
+                    <div class="shardwright-interpretive-review-list">
                         ${record.deltaReviews.map((review) => `
-                            <div class="ss-interpretive-review-card">
+                            <div class="shardwright-interpretive-review-card">
                                 <strong><code>${escapeHtml(review.deltaReviewId)}</code></strong>
-                                <div class="ss-interpretive-review-inline-meta">
+                                <div class="shardwright-interpretive-review-inline-meta">
                                     ${renderBadge(review.deltaState)}
                                     ${renderBadge(review.provenance?.submissionMode || 'n/a')}
                                 </div>
                                 ${renderReasonCodes(review.reasonCodes)}
-                                <div class="ss-interpretive-review-statement">${escapeHtml(review.commentary || '(no commentary)')}</div>
+                                <div class="shardwright-interpretive-review-statement">${escapeHtml(review.commentary || '(no commentary)')}</div>
                                 ${renderProvenance(review.provenance, new Map())}
                             </div>
                         `).join('')}
@@ -1374,21 +1425,21 @@ function renderPublicationHistoryCard(entry) {
         statusBadges.push(renderBadge('Current active'));
     }
     return `
-        <div class="ss-interpretive-review-card ss-interpretive-review-history-card">
-            <div class="ss-interpretive-review-history-heading">
+        <div class="shardwright-interpretive-review-card shardwright-interpretive-review-history-card">
+            <div class="shardwright-interpretive-review-history-heading">
                 <strong>${escapeHtml(entry.title || 'Published memory')}</strong>
-                ${entry.timestamp ? `<div class="ss-hint">${escapeHtml(formatTimestamp(entry.timestamp))}</div>` : ''}
+                ${entry.timestamp ? `<div class="shardwright-hint">${escapeHtml(formatTimestamp(entry.timestamp))}</div>` : ''}
             </div>
-            <div class="ss-interpretive-review-inline-meta ss-interpretive-review-inline-meta--compact">
+            <div class="shardwright-interpretive-review-inline-meta shardwright-interpretive-review-inline-meta--compact">
                 ${statusBadges.join('')}
             </div>
-            <div class="ss-interpretive-review-history-block">
-                <div class="ss-interpretive-review-history-block-label">Event summary</div>
-                <div class="ss-interpretive-review-summary-note">${escapeHtml(entry.summary || 'No publication summary available.')}</div>
+            <div class="shardwright-interpretive-review-history-block">
+                <div class="shardwright-interpretive-review-history-block-label">Event summary</div>
+                <div class="shardwright-interpretive-review-summary-note">${escapeHtml(entry.summary || 'No publication summary available.')}</div>
             </div>
-            <div class="ss-interpretive-review-history-block">
-                <div class="ss-interpretive-review-history-block-label">Published statement</div>
-                <div class="ss-interpretive-review-statement">${escapeHtml(record.publishedStatement || '(no statement)')}</div>
+            <div class="shardwright-interpretive-review-history-block">
+                <div class="shardwright-interpretive-review-history-block-label">Published statement</div>
+                <div class="shardwright-interpretive-review-statement">${escapeHtml(record.publishedStatement || '(no statement)')}</div>
             </div>
             ${renderTechnicalDetailsSection([
                 { label: 'Published Record ID', value: renderCopyableCode(record.dnmRecordId, { emptyLabel: 'n/a' }) },
@@ -1397,7 +1448,7 @@ function renderPublicationHistoryCard(entry) {
                 { label: 'Authorization', value: renderCopyableCode(record.authorizationId, { emptyLabel: 'n/a' }) },
             ], {
                 title: 'Technical details',
-                extraClass: 'ss-interpretive-review-history-subdetails',
+                extraClass: 'shardwright-interpretive-review-history-subdetails',
             })}
         </div>
     `;
@@ -1405,7 +1456,7 @@ function renderPublicationHistoryCard(entry) {
 
 function renderPublicationOperatorSection(interpretation, operatorState, policiesById, options = {}) {
     if (!operatorState) {
-        return '<div class="ss-hint">Lifecycle controls are unavailable for this memory.</div>';
+        return '<div class="shardwright-hint">Lifecycle controls are unavailable for this memory.</div>';
     }
 
     const matchingPolicies = Array.isArray(operatorState.matchingPolicies) ? operatorState.matchingPolicies : [];
@@ -1460,11 +1511,11 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
                 subjectDispositionRecordId: interpretation.subjectDisposition?.subjectDispositionId || '',
             },
             fieldsHtml: `
-                <label class="ss-interpretive-review-field">
+                <label class="shardwright-interpretive-review-field">
                     <span>Publication policy</span>
                     <input class="text_pole" type="text" value="${escapeHtml(`${guidedPolicyId || 'n/a'}${guidedPolicyVersion ? ` v${guidedPolicyVersion}` : ''}`)}" readonly />
                 </label>
-                <label class="ss-interpretive-review-field">
+                <label class="shardwright-interpretive-review-field">
                     <span>Continuity Target</span>
                     <input class="text_pole" type="text" name="continuityTargetId" value="${escapeHtml(continuityTargetId || '')}" readonly />
                 </label>
@@ -1485,7 +1536,7 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
                 interpretationRevisionId: childRevisionId,
             },
             fieldsHtml: childRevisionId ? `
-                <label class="ss-interpretive-review-field">
+                <label class="shardwright-interpretive-review-field">
                     <span>Latest revision</span>
                     <input class="text_pole" type="text" value="${escapeHtml(childRevisionId)}" readonly />
                 </label>
@@ -1510,15 +1561,15 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
                 subjectDispositionRecordId: interpretation.subjectDisposition?.subjectDispositionId || '',
             },
             fieldsHtml: `
-                <label class="ss-interpretive-review-field">
+                <label class="shardwright-interpretive-review-field">
                     <span>Publication policy</span>
                     <input class="text_pole" type="text" value="${escapeHtml(`${standardPolicy?.publicationPolicyId || latestEligibleQualification?.publicationPolicyId || 'n/a'}${standardPolicy?.policyVersion ? ` v${standardPolicy.policyVersion}` : ''}`)}" readonly />
                 </label>
-                <label class="ss-interpretive-review-field">
+                <label class="shardwright-interpretive-review-field">
                     <span>Continuity Target</span>
                     <input class="text_pole" type="text" value="${escapeHtml(continuityTargetId || '')}" readonly />
                 </label>
-                <label class="ss-interpretive-review-field">
+                <label class="shardwright-interpretive-review-field">
                     <span>Published by</span>
                     <input class="text_pole" type="text" value="${escapeHtml(options.currentActorId || '')}" readonly />
                 </label>
@@ -1544,10 +1595,10 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
                 parentStatement: interpretation.statement || '',
             },
             extraFieldsHtml: `
-                <label class="ss-interpretive-review-field" data-field="revisedCandidate">
+                <label class="shardwright-interpretive-review-field" data-field="revisedCandidate">
                     <span>Revised statement</span>
                     <textarea class="text_pole" rows="5" name="revisedStatement" placeholder="Enter the revised published statement.">${escapeHtml(interpretation.statement || '')}</textarea>
-                    <span class="ss-hint">The new revision keeps the current statement as parent context and records only the updated wording.</span>
+                    <span class="shardwright-hint">The new revision keeps the current statement as parent context and records only the updated wording.</span>
                 </label>
             `,
         }));
@@ -1607,8 +1658,8 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
                     showContinuityTarget: true,
                     showAuthorization: true,
                 })}
-            ` : '<div class="ss-hint">No published memory exists yet for this memory line.</div>',
-            { extraClass: 'ss-interpretive-review-lifecycle-section', sectionKey: 'current-published-memory' },
+            ` : '<div class="shardwright-hint">No published memory exists yet for this memory line.</div>',
+            { extraClass: 'shardwright-interpretive-review-lifecycle-section', sectionKey: 'current-published-memory' },
         )}
 
         ${renderStaticSection(
@@ -1628,20 +1679,20 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
                     includeBlockingReasons: !suppressPublishedRedundancy,
                 })}
                 ${actionForms.length > 0 ? `
-                    <div class="ss-interpretive-review-primary-action">
+                    <div class="shardwright-interpretive-review-primary-action">
                         <div><strong>${primaryActionHeading}</strong></div>
-                        <div class="ss-interpretive-review-list">${actionForms.join('')}</div>
+                        <div class="shardwright-interpretive-review-list">${actionForms.join('')}</div>
                     </div>
                 ` : ''}
                 ${lifecycleNavigationForms.length > 0 ? `
-                    <div class="ss-interpretive-review-primary-action">
+                    <div class="shardwright-interpretive-review-primary-action">
                         <div><strong>Navigation</strong></div>
-                        <div class="ss-interpretive-review-list">${lifecycleNavigationForms.join('')}</div>
+                        <div class="shardwright-interpretive-review-list">${lifecycleNavigationForms.join('')}</div>
                     </div>
                 ` : ''}
                 ${showGuidanceCard ? renderPublicationGuidanceCard(guidedFlow) : ''}
                 ${latestQualificationCard}
-                ${actionForms.length === 0 && !suppressPublishedRedundancy ? '<div class="ss-hint">No lifecycle actions are currently lawful for this memory.</div>' : ''}
+                ${actionForms.length === 0 && !suppressPublishedRedundancy ? '<div class="shardwright-hint">No lifecycle actions are currently lawful for this memory.</div>' : ''}
                 ${(operatorBlockedActions.length > 0 || operatorBlockingReasons.length > 0) && !suppressPublishedRedundancy ? renderCollapsibleSection(
                     'Why other steps are unavailable',
                     'Hidden by default to keep only actionable lifecycle work in the main path.',
@@ -1655,10 +1706,10 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
                             <div>${renderServerReasonList(operatorBlockingReasons, 'None')}</div>
                         ` : ''}
                     `,
-                    { extraClass: 'ss-interpretive-review-subsection' },
+                    { extraClass: 'shardwright-interpretive-review-subsection' },
                 ) : ''}
             `,
-            { extraClass: 'ss-interpretive-review-lifecycle-section' },
+            { extraClass: 'shardwright-interpretive-review-lifecycle-section' },
         )}
 
         ${renderStaticSection(
@@ -1667,22 +1718,22 @@ function renderPublicationOperatorSection(interpretation, operatorState, policie
             `
                 ${renderPublicationPolicyCards(matchingPolicies)}
             `,
-            { extraClass: 'ss-interpretive-review-lifecycle-section' },
+            { extraClass: 'shardwright-interpretive-review-lifecycle-section' },
         )}
 
         ${renderStaticSection(
             'Publication History',
             'Shows eligibility, authorization, publication, supersession, and withdrawal over time.',
             publicationHistoryRecords.length > 0 ? `
-                <div class="ss-interpretive-review-list">
+                <div class="shardwright-interpretive-review-list">
                     ${buildPublicationHistoryEntries(recordsForTarget, activeRecord)
                         .map((entry) => renderPublicationHistoryCard(entry))
                         .join('')}
                 </div>
-            ` : `<div class="ss-hint">${activeRecord
+            ` : `<div class="shardwright-hint">${activeRecord
                 ? 'No earlier publication events have been recorded for this memory line.'
                 : 'No publication events have been recorded for this memory line.'}</div>`,
-            { extraClass: 'ss-interpretive-review-lifecycle-section', sectionKey: 'publication-history' },
+            { extraClass: 'shardwright-interpretive-review-lifecycle-section', sectionKey: 'publication-history' },
         )}
     `;
 }
@@ -1720,14 +1771,14 @@ function renderQueueGroupItem(group, selectedReviewRequestId, selectedInterpreta
 
     return `
         <div
-            class="ss-interpretive-review-item ss-interpretive-review-group-item${groupSelected ? ' active' : ''}"
+            class="shardwright-interpretive-review-item shardwright-interpretive-review-group-item${groupSelected ? ' active' : ''}"
             data-interpretation-revision-id="${escapeHtml(group.interpretationRevisionId)}">
-            <div class="ss-interpretive-review-item-title">
+            <div class="shardwright-interpretive-review-item-title">
                 <span>${escapeHtml(formatRevisionLabel(group.interpretationRevisionId))}</span>
-                <span class="ss-interpretive-review-inline-meta">${revisionWorkflowBadge}</span>
+                <span class="shardwright-interpretive-review-inline-meta">${revisionWorkflowBadge}</span>
             </div>
-            ${createdAt ? `<div class="ss-hint">${escapeHtml(formatTimestamp(createdAt))}</div>` : ''}
-            <div class="ss-interpretive-review-group-rows">
+            ${createdAt ? `<div class="shardwright-hint">${escapeHtml(formatTimestamp(createdAt))}</div>` : ''}
+            <div class="shardwright-interpretive-review-group-rows">
                 ${reviews.map((review) => `
                     ${(() => {
                         const reviewRequestId = String(review?.reviewRequestId || '').trim();
@@ -1737,14 +1788,14 @@ function renderQueueGroupItem(group, selectedReviewRequestId, selectedInterpreta
                         return `
                     <button
                         type="button"
-                        class="ss-interpretive-review-group-row-button${rowSelected ? ' active' : ''}"
+                        class="shardwright-interpretive-review-group-row-button${rowSelected ? ' active' : ''}"
                         data-review-request-id="${escapeHtml(review.reviewRequestId)}"
                         data-interpretation-revision-id="${escapeHtml(group.interpretationRevisionId)}">
-                        <div class="ss-interpretive-review-group-row-main">
-                            <span class="ss-interpretive-review-group-name">${escapeHtml(formatHumanEntityLabel(review.reviewerEntityId || ''))}</span>
-                            <span class="ss-hint">${escapeHtml(formatHumanRoleLabel(review.reviewerRole || 'REVIEWER'))}</span>
+                        <div class="shardwright-interpretive-review-group-row-main">
+                            <span class="shardwright-interpretive-review-group-name">${escapeHtml(formatHumanEntityLabel(review.reviewerEntityId || ''))}</span>
+                            <span class="shardwright-hint">${escapeHtml(formatHumanRoleLabel(review.reviewerRole || 'REVIEWER'))}</span>
                         </div>
-                        <div class="ss-interpretive-review-inline-meta">
+                        <div class="shardwright-interpretive-review-inline-meta">
                             ${renderBadge(formatHumanStateLabel(review.status))}
                         </div>
                     </button>
@@ -1764,11 +1815,11 @@ function renderDetailTabs(selectedView) {
         { id: 'technical', label: 'Technical Details' },
     ];
     return `
-        <div class="ss-interpretive-review-detail-tabs" role="tablist" aria-label="Memory review views">
+        <div class="shardwright-interpretive-review-detail-tabs" role="tablist" aria-label="Memory review views">
             ${views.map((view) => `
                 <button
                     type="button"
-                    class="ss-interpretive-review-detail-tab${selectedView === view.id ? ' active' : ''}"
+                    class="shardwright-interpretive-review-detail-tab${selectedView === view.id ? ' active' : ''}"
                     data-detail-view="${escapeHtml(view.id)}"
                     role="tab"
                     aria-selected="${selectedView === view.id ? 'true' : 'false'}">
@@ -1781,9 +1832,9 @@ function renderDetailTabs(selectedView) {
 
 function renderSummaryFacts(rows) {
     return `
-        <div class="ss-interpretive-review-facts">
+        <div class="shardwright-interpretive-review-facts">
             ${rows.map(({ label, value }) => `
-                <div class="ss-interpretive-review-fact">
+                <div class="shardwright-interpretive-review-fact">
                     <span><strong>${escapeHtml(label)}:</strong> ${value}</span>
                 </div>
             `).join('')}
@@ -1813,57 +1864,6 @@ function formatHumanEntityLabel(value) {
         .filter(Boolean)
         .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
         .join(' ');
-}
-
-function formatEvidenceFindingRoleLabel(value) {
-    const normalized = String(value || '').trim().toUpperCase();
-    if (normalized === 'PRIMARY') return 'Primary evidence';
-    if (normalized === 'SUPPORTING') return 'Supporting evidence';
-    if (normalized === 'COUNTEREVIDENCE') return 'Contrary evidence';
-    return formatHumanReadableEnumLabel(normalized);
-}
-
-function formatEvidenceFindingSupportLabel(value) {
-    const normalized = String(value || '').trim().toUpperCase();
-    if (normalized === 'SUPPORTED') return 'Supported';
-    if (normalized === 'PARTIALLY_SUPPORTED') return 'Partially supported';
-    if (normalized === 'CONTRADICTED') return 'Contradicted';
-    if (normalized === 'NEUTRAL') return 'Neutral';
-    return formatHumanReadableEnumLabel(normalized);
-}
-
-function renderEvidenceFindingDomains(domains) {
-    if (!Array.isArray(domains) || domains.length === 0) {
-        return '';
-    }
-    return domains.map((domain) => renderBadge(formatHumanReadableEnumLabel(domain))).join('');
-}
-
-function renderEvidenceFindingCard(finding) {
-    const roleBadge = renderBadge(formatEvidenceFindingRoleLabel(finding?.role));
-    const supportBadge = renderBadge(formatEvidenceFindingSupportLabel(finding?.supportLevel));
-    const domainBadges = renderEvidenceFindingDomains(finding?.domains);
-    const basisRefs = Array.isArray(finding?.basisRefs) ? finding.basisRefs : [];
-    return `
-        <div class="ss-interpretive-review-card ss-interpretive-review-status-card ss-interpretive-review-evidence-finding">
-            <div class="ss-interpretive-review-inline-meta">
-                ${roleBadge}
-                ${supportBadge}
-                ${domainBadges}
-            </div>
-            <div class="ss-interpretive-review-summary-note">${escapeHtml(String(finding?.summary || '').trim() || 'No readable finding summary recorded.')}</div>
-            <div class="ss-interpretive-review-evidence-meta">
-                <div class="ss-interpretive-review-evidence-meta-row">
-                    <strong>Source</strong>
-                    <span>${escapeHtml(String(finding?.sourceLabel || '').trim() || 'n/a')}</span>
-                </div>
-                <div class="ss-interpretive-review-evidence-meta-row">
-                    <strong>Basis refs</strong>
-                    <span>${renderStringList(basisRefs, 'None recorded')}</span>
-                </div>
-            </div>
-        </div>
-    `;
 }
 
 function formatHumanRoleLabel(value) {
@@ -2086,11 +2086,11 @@ function renderSelectedReviewerSummary(interpretation, selectedReviewRequestId, 
         ? `${formatHumanStateLabel(disposition.disposition)} by ${reviewerLabel}.`
         : `Pending response from ${reviewerLabel}.`;
     return `
-        <div class="ss-interpretive-review-card ss-interpretive-review-status-card">
-            <div class="ss-interpretive-review-summary-note">
+        <div class="shardwright-interpretive-review-card shardwright-interpretive-review-status-card">
+            <div class="shardwright-interpretive-review-summary-note">
                 <strong>Review response:</strong> ${escapeHtml(contextLine)}
             </div>
-            ${commentary ? `<div class="ss-interpretive-review-summary-note">${escapeHtml(commentary)}</div>` : ''}
+            ${commentary ? `<div class="shardwright-interpretive-review-summary-note">${escapeHtml(commentary)}</div>` : ''}
         </div>
     `;
 }
@@ -2170,45 +2170,6 @@ function buildNoActionSummary(interpretation, operatorState) {
     return 'No actions available.';
 }
 
-function renderHumanEvidenceSection(interpretation) {
-    const groundingLinks = Array.isArray(interpretation?.groundingLinks) ? interpretation.groundingLinks : [];
-    const evidenceFindings = Array.isArray(interpretation?.evidenceFindings) ? interpretation.evidenceFindings : [];
-    const evidenceFindingState = String(interpretation?.evidenceFindingState || '').trim().toUpperCase();
-    const boundCount = groundingLinks.length;
-    const boundLabel = boundCount === 1 ? '1 bound source' : `${boundCount} bound sources`;
-    const findingCount = evidenceFindings.length;
-    const findingLabel = findingCount === 1 ? '1 readable finding' : `${findingCount} readable findings`;
-    const hasReadableFindings = evidenceFindingState === 'AVAILABLE' && findingCount > 0;
-    const summaryText = hasReadableFindings
-        ? `${findingLabel.charAt(0).toUpperCase()}${findingLabel.slice(1)} derived from ${boundLabel}.`
-        : (boundCount > 0
-            ? `${boundLabel.charAt(0).toUpperCase()}${boundLabel.slice(1)} are attached. Human-readable findings are not available for this candidate yet.`
-            : 'No bound evidence is available for this candidate yet.');
-    const hintText = hasReadableFindings
-        ? 'Open Technical Details to inspect the exact bound source records for each finding.'
-        : (boundCount > 0
-            ? 'Open Technical Details to inspect the exact bound source records.'
-            : 'See Technical Details for source information.');
-    return `
-        <div class="ss-interpretive-review-section ss-review-section ss-review-section--static">
-            <div class="ss-review-section__header">
-                <div class="ss-review-section__title">Evidence</div>
-            </div>
-            <div class="ss-review-section__body ss-interpretive-review-evidence-body">
-                <div class="ss-interpretive-review-card ss-interpretive-review-status-card ss-interpretive-review-evidence-note">
-                    <div class="ss-interpretive-review-summary-note">${escapeHtml(summaryText)}</div>
-                    <div class="ss-hint">${escapeHtml(hintText)}</div>
-                </div>
-                ${hasReadableFindings
-                    ? `<div class="ss-interpretive-review-list ss-interpretive-review-evidence-findings">
-                        ${evidenceFindings.map((finding) => renderEvidenceFindingCard(finding)).join('')}
-                    </div>`
-                    : ''}
-            </div>
-        </div>
-    `;
-}
-
 function renderReviewOverviewCard(interpretation, operatorState) {
     const participantLabels = Array.isArray(interpretation.materialParticipantEntityIds)
         ? interpretation.materialParticipantEntityIds
@@ -2217,11 +2178,11 @@ function renderReviewOverviewCard(interpretation, operatorState) {
         : [];
 
     return `
-        <div class="ss-interpretive-review-card ss-interpretive-review-overview">
-            <div class="ss-review-section__header">
-                <div class="ss-review-section__title">Review overview</div>
+        <div class="shardwright-interpretive-review-card shardwright-interpretive-review-overview">
+            <div class="shardwright-review-section__header">
+                <div class="shardwright-review-section__title">Review overview</div>
             </div>
-            <div class="ss-interpretive-review-overview-grid">
+            <div class="shardwright-interpretive-review-overview-grid">
                 ${renderSummaryFacts([
                     { label: 'Type', value: escapeHtml(formatInterpretationTypeLabel(interpretation.type || 'Interpretive')) },
                     { label: 'Context owner', value: escapeHtml(formatHumanEntityLabel(interpretation.memorySubjectId)) },
@@ -2297,10 +2258,10 @@ function renderReviewResponseSummary(interpretation, selectedReviewRequestId = '
         selectedInterpretationRevisionId,
     );
     if (entries.length === 0) {
-        return '<div class="ss-hint">No reviews yet.</div>';
+        return '<div class="shardwright-hint">No reviews yet.</div>';
     }
     return `
-        <div class="ss-interpretive-review-list">
+        <div class="shardwright-interpretive-review-list">
             ${entries.map((entry) => renderHistoryActionCard(entry)).join('')}
         </div>
     `;
@@ -2318,11 +2279,11 @@ function renderSubmittedActionsHistory(
         selectedInterpretationRevisionId,
     );
     if (entries.length === 0) {
-        return '<div class="ss-hint">No actions recorded yet.</div>';
+        return '<div class="shardwright-hint">No actions recorded yet.</div>';
     }
 
     return `
-        <div class="ss-interpretive-review-list">
+        <div class="shardwright-interpretive-review-list">
             ${entries.map((entry) => renderHistoryActionCard({
                 ...entry,
                 bodyHtml: renderHistorySubmissionDetails(entry.provenance, policiesById),
@@ -2377,7 +2338,7 @@ function renderCurrentActionSurface(interpretation, policiesById, options = {}) 
                 title: 'Decision details',
                 description: '',
                 content: `
-                    <div class="ss-hint">
+                    <div class="shardwright-hint">
                         The final subject decision belongs to ${escapeHtml(subjectLabel || 'the context owner')}.
                         Select that reviewer entry to record the decision for this revision.
                     </div>
@@ -2405,7 +2366,7 @@ function renderCurrentActionSurface(interpretation, policiesById, options = {}) 
 
 function renderCandidateDetail(interpretation, policiesById, options = {}) {
     if (!interpretation) {
-        return '<div class="ss-interpretive-review-detail-empty ss-hint">Select a request to inspect it.</div>';
+        return '<div class="shardwright-interpretive-review-detail-empty shardwright-hint">Select a request to inspect it.</div>';
     }
 
     const relatedPolicyIds = collectReferencedPolicyIds(interpretation);
@@ -2452,7 +2413,7 @@ function renderCandidateDetail(interpretation, policiesById, options = {}) {
         interpretation,
         options.publicationOperatorState,
     ));
-    const evidenceSection = renderHumanEvidenceSection(interpretation);
+    const evidenceSection = renderInterpretiveEvidenceSection(interpretation);
     const hasReviewHistory = Array.isArray(interpretation.reviewDispositions) && interpretation.reviewDispositions.length > 0;
     const hasSubjectHistory = !!interpretation.subjectDisposition;
     const hasLineageHistory = !!interpretation.parentRevisionId
@@ -2460,20 +2421,20 @@ function renderCandidateDetail(interpretation, policiesById, options = {}) {
         || (Array.isArray(interpretation.childRevisionIds) && interpretation.childRevisionIds.length > 0);
 
     const reviewView = `
-        <div class="ss-interpretive-review-review-column">
+        <div class="shardwright-interpretive-review-review-column">
             ${renderReviewOverviewCard(interpretation, options.publicationOperatorState)}
 
-            <div class="ss-interpretive-review-section ss-review-section ss-review-section--static ss-interpretive-review-static-section ss-interpretive-review-review-main">
-                <div class="ss-review-section__header ss-interpretive-review-static-header">
-                    <div class="ss-review-section__title ss-interpretive-review-disclosure-title">${escapeHtml(reviewHeadingLabel)}</div>
+            <div class="shardwright-interpretive-review-section shardwright-review-section shardwright-review-section--static shardwright-interpretive-review-static-section shardwright-interpretive-review-review-main">
+                <div class="shardwright-review-section__header shardwright-interpretive-review-static-header">
+                    <div class="shardwright-review-section__title shardwright-interpretive-review-disclosure-title">${escapeHtml(reviewHeadingLabel)}</div>
                 </div>
-                <div class="ss-interpretive-review-context">${escapeHtml(interpretation.statement || '')}</div>
-                <div class="ss-interpretive-review-context-support">
-                    <div class="ss-interpretive-review-context-why"><strong>${escapeHtml(whyReviewLabel)}:</strong> ${escapeHtml(buildWhyReviewSummary(interpretation))}</div>
+                <div class="shardwright-interpretive-review-context">${escapeHtml(interpretation.statement || '')}</div>
+                <div class="shardwright-interpretive-review-context-support">
+                    <div class="shardwright-interpretive-review-context-why"><strong>${escapeHtml(whyReviewLabel)}:</strong> ${escapeHtml(buildWhyReviewSummary(interpretation))}</div>
                 </div>
             </div>
 
-            <div class="ss-interpretive-review-review-main">
+            <div class="shardwright-interpretive-review-review-main">
                 ${evidenceSection}
                 ${renderSelectedReviewerSummary(
                     interpretation,
@@ -2484,29 +2445,29 @@ function renderCandidateDetail(interpretation, policiesById, options = {}) {
         </div>
 
         ${currentActionSurface?.content ? `
-            <div class="ss-interpretive-review-section ss-review-section ss-review-section--static ss-interpretive-review-action-surface">
-                <div class="ss-review-section__header">
-                    <div class="ss-review-section__title">${escapeHtml(currentActionSurface.title || 'Review details')}</div>
+            <div class="shardwright-interpretive-review-section shardwright-review-section shardwright-review-section--static shardwright-interpretive-review-action-surface">
+                <div class="shardwright-review-section__header">
+                    <div class="shardwright-review-section__title">${escapeHtml(currentActionSurface.title || 'Review details')}</div>
                     ${currentActionSurface.description
-                        ? `<div class="ss-review-section__description">${escapeHtml(currentActionSurface.description)}</div>`
+                        ? `<div class="shardwright-review-section__description">${escapeHtml(currentActionSurface.description)}</div>`
                         : ''}
                 </div>
-                <div class="ss-review-section__body">
+                <div class="shardwright-review-section__body">
                     ${currentActionSurface.content}
                 </div>
             </div>
         ` : `
-            <div class="ss-interpretive-review-card ss-interpretive-review-status-card">
+            <div class="shardwright-interpretive-review-card shardwright-interpretive-review-status-card">
                 <strong>Review status</strong>
-                <div class="ss-interpretive-review-summary-note">${escapeHtml(noActionSummary)}</div>
+                <div class="shardwright-interpretive-review-summary-note">${escapeHtml(noActionSummary)}</div>
             </div>
         `}
     `;
 
     const historyView = (!hasReviewHistory && !hasSubjectHistory && !hasLineageHistory) ? `
-        <div class="ss-interpretive-review-card ss-interpretive-review-status-card">
+        <div class="shardwright-interpretive-review-card shardwright-interpretive-review-status-card">
             <strong>No actions taken</strong>
-            <div class="ss-interpretive-review-summary-note">Pending: Initial review required.</div>
+            <div class="shardwright-interpretive-review-summary-note">Pending: Initial review required.</div>
         </div>
     ` : `
         ${hasReviewHistory ? renderCollapsibleSection(
@@ -2545,7 +2506,7 @@ function renderCandidateDetail(interpretation, policiesById, options = {}) {
         ${(Array.isArray(interpretation.childRevisionIds) && interpretation.childRevisionIds.length > 0) ? renderCollapsibleSection(
             'Child revisions',
             'Keeps the correction lineage visible so edited descendants do not erase the parent proposal.',
-            `<div class="ss-interpretive-review-card">${renderStringList(interpretation.childRevisionIds, 'None')}</div>`,
+            `<div class="shardwright-interpretive-review-card">${renderStringList(interpretation.childRevisionIds, 'None')}</div>`,
             { open: true },
         ) : ''}
     `;
@@ -2626,7 +2587,10 @@ function renderCandidateDetail(interpretation, policiesById, options = {}) {
 
         ${renderAuditSection(
             'Evidence Bindings',
-            renderEvidenceBindingsTable(interpretation.groundingLinks),
+            renderEvidenceBindingsTable(interpretation.groundingLinks, {
+                ...options,
+                memorySubjectId: interpretation.memorySubjectId,
+            }),
             { description: 'Exact source bindings for this candidate. References stay copyable even when no direct navigation exists.' },
         )}
 
@@ -2654,31 +2618,31 @@ function renderCandidateDetail(interpretation, policiesById, options = {}) {
     );
 
     return `
-        <div class="ss-interpretive-review-detail-header">
-            <div class="ss-interpretive-review-detail-header-main">
-                <div class="ss-interpretive-review-detail-header-top">
+        <div class="shardwright-interpretive-review-detail-header">
+            <div class="shardwright-interpretive-review-detail-header-main">
+                <div class="shardwright-interpretive-review-detail-header-top">
                     <div>
-                        <div class="ss-hint">${escapeHtml(formatRevisionLabel(interpretation.interpretationRevisionId))}</div>
-                        ${selectedReviewRequest ? `<div class="ss-hint">${escapeHtml(formatHumanEntityLabel(selectedReviewRequest.reviewerEntityId || ''))} · ${escapeHtml(formatHumanRoleLabel(selectedReviewRequest.reviewerRole || 'REVIEWER'))}</div>` : ''}
+                        <div class="shardwright-hint">${escapeHtml(formatRevisionLabel(interpretation.interpretationRevisionId))}</div>
+                        ${selectedReviewRequest ? `<div class="shardwright-hint">${escapeHtml(formatHumanEntityLabel(selectedReviewRequest.reviewerEntityId || ''))} · ${escapeHtml(formatHumanRoleLabel(selectedReviewRequest.reviewerRole || 'REVIEWER'))}</div>` : ''}
                     </div>
-                    <div class="ss-interpretive-review-inline-meta">
+                    <div class="shardwright-interpretive-review-inline-meta">
                         ${currentStateBadge}
                     </div>
                 </div>
                 ${renderDetailTabs(selectedView)}
             </div>
         </div>
-        <div class="ss-interpretive-review-detail-body">
-            <div class="ss-interpretive-review-detail-view${selectedView === 'review' ? ' active' : ''}" data-detail-view-panel="review">
+        <div class="shardwright-interpretive-review-detail-body">
+            <div class="shardwright-interpretive-review-detail-view${selectedView === 'review' ? ' active' : ''}" data-detail-view-panel="review">
                 ${reviewView}
             </div>
-            <div class="ss-interpretive-review-detail-view${selectedView === 'history' ? ' active' : ''}" data-detail-view-panel="history">
+            <div class="shardwright-interpretive-review-detail-view${selectedView === 'history' ? ' active' : ''}" data-detail-view-panel="history">
                 ${historyView}
             </div>
-            <div class="ss-interpretive-review-detail-view${selectedView === 'technical' ? ' active' : ''}" data-detail-view-panel="technical">
+            <div class="shardwright-interpretive-review-detail-view${selectedView === 'technical' ? ' active' : ''}" data-detail-view-panel="technical">
                 ${technicalView}
             </div>
-            <div class="ss-interpretive-review-detail-view${selectedView === 'lifecycle' ? ' active' : ''}" data-detail-view-panel="lifecycle">
+            <div class="shardwright-interpretive-review-detail-view${selectedView === 'lifecycle' ? ' active' : ''}" data-detail-view-panel="lifecycle">
                 ${lifecycleView}
             </div>
         </div>
@@ -2691,41 +2655,41 @@ function renderModalHtml(state) {
     `).join('');
 
     return `
-        <div class="ss-interpretive-review-modal">
-            <div class="ss-interpretive-review-toolbar">
-                <div class="ss-interpretive-review-toolbar-intro">
+        <div class="shardwright-interpretive-review-modal">
+            <div class="shardwright-interpretive-review-toolbar">
+                <div class="shardwright-interpretive-review-toolbar-intro">
                     <h3>Memory Review</h3>
-                    <p class="ss-hint">Review and manage proposed memory updates.</p>
+                    <p class="shardwright-hint">Review and manage proposed memory updates.</p>
                 </div>
-                <div class="ss-interpretive-review-toolbar-actions">
-                    <div class="ss-interpretive-review-toolbar-buttons">
-                        <input id="ss-interpretive-review-expand-toggle" class="menu_button" type="button" value="Expand All" />
-                        <input id="ss-interpretive-review-fullscreen-toggle" class="menu_button" type="button" value="Fullscreen" />
-                        <input id="ss-interpretive-review-close-toggle" class="menu_button" type="button" value="Close" />
+                <div class="shardwright-interpretive-review-toolbar-actions">
+                    <div class="shardwright-interpretive-review-toolbar-buttons">
+                        <input id="shardwright-interpretive-review-expand-toggle" class="menu_button" type="button" value="Expand All" />
+                        <input id="shardwright-interpretive-review-fullscreen-toggle" class="menu_button" type="button" value="Fullscreen" />
+                        <input id="shardwright-interpretive-review-close-toggle" class="menu_button" type="button" value="Close" />
                     </div>
                 </div>
             </div>
 
-            <div class="ss-interpretive-review-layout">
-                <div class="ss-interpretive-review-column">
-                    <div class="ss-interpretive-review-queue">
-                        <div class="ss-interpretive-review-queue-header">
+            <div class="shardwright-interpretive-review-layout">
+                <div class="shardwright-interpretive-review-column">
+                    <div class="shardwright-interpretive-review-queue">
+                        <div class="shardwright-interpretive-review-queue-header">
                             <strong>Requests</strong>
-                            <input id="ss-interpretive-review-refresh" class="menu_button" type="button" value="Refresh" />
+                            <input id="shardwright-interpretive-review-refresh" class="menu_button" type="button" value="Refresh" />
                         </div>
-                        <div class="ss-interpretive-review-queue-controls">
-                            <label for="ss-interpretive-review-status-filter">Filter</label>
-                            <select id="ss-interpretive-review-status-filter" class="text_pole">${statusOptions}</select>
+                        <div class="shardwright-interpretive-review-queue-controls">
+                            <label for="shardwright-interpretive-review-status-filter">Filter</label>
+                            <select id="shardwright-interpretive-review-status-filter" class="text_pole">${statusOptions}</select>
                         </div>
-                        <div id="ss-interpretive-review-queue-list" class="ss-interpretive-review-queue-list">
-                            <div class="ss-interpretive-review-queue-empty ss-hint">Loading requests...</div>
+                        <div id="shardwright-interpretive-review-queue-list" class="shardwright-interpretive-review-queue-list">
+                            <div class="shardwright-interpretive-review-queue-empty shardwright-hint">Loading requests...</div>
                         </div>
                     </div>
                 </div>
 
-                <div class="ss-interpretive-review-column">
-                    <div id="ss-interpretive-review-detail" class="ss-interpretive-review-detail">
-                        <div class="ss-interpretive-review-detail-empty ss-hint">Select a request to inspect it.</div>
+                <div class="shardwright-interpretive-review-column">
+                    <div id="shardwright-interpretive-review-detail" class="shardwright-interpretive-review-detail">
+                        <div class="shardwright-interpretive-review-detail-empty shardwright-hint">Select a request to inspect it.</div>
                     </div>
                 </div>
             </div>
@@ -2744,6 +2708,8 @@ export async function openInterpretiveReviewModal(initialOptions = {}) {
         candidateCache: new Map(),
         publicationOperatorCache: new Map(),
         policiesByScopeId: new Map(),
+        chatLocatorsByScopeId: new Map(),
+        chatLocatorsByInstanceId: new Map(),
         activeInterpretation: null,
         activePublicationOperatorState: null,
         activePoliciesById: new Map(),
@@ -2760,20 +2726,20 @@ export async function openInterpretiveReviewModal(initialOptions = {}) {
     const showPromise = popup.show();
 
     requestAnimationFrame(() => {
-        const modalRoot = document.querySelector('.ss-interpretive-review-modal');
+        const modalRoot = document.querySelector('.shardwright-interpretive-review-modal');
         const popupRoot = popup?.dlg || modalRoot?.closest('.popup') || null;
         const popupContent = popupRoot?.querySelector('.popup-content') || null;
-        const statusFilter = document.getElementById('ss-interpretive-review-status-filter');
-        const refreshButton = document.getElementById('ss-interpretive-review-refresh');
-        const fullscreenButton = document.getElementById('ss-interpretive-review-fullscreen-toggle');
-        const expandToggleButton = document.getElementById('ss-interpretive-review-expand-toggle');
-        const closeButton = document.getElementById('ss-interpretive-review-close-toggle');
-        const queueList = document.getElementById('ss-interpretive-review-queue-list');
-        const detailRoot = document.getElementById('ss-interpretive-review-detail');
+        const statusFilter = document.getElementById('shardwright-interpretive-review-status-filter');
+        const refreshButton = document.getElementById('shardwright-interpretive-review-refresh');
+        const fullscreenButton = document.getElementById('shardwright-interpretive-review-fullscreen-toggle');
+        const expandToggleButton = document.getElementById('shardwright-interpretive-review-expand-toggle');
+        const closeButton = document.getElementById('shardwright-interpretive-review-close-toggle');
+        const queueList = document.getElementById('shardwright-interpretive-review-queue-list');
+        const detailRoot = document.getElementById('shardwright-interpretive-review-detail');
 
         const renderDetailError = (message) => {
             if (!detailRoot) return;
-            detailRoot.innerHTML = `<div class="ss-interpretive-review-detail-empty ss-hint">${escapeHtml(message)}</div>`;
+            detailRoot.innerHTML = `<div class="shardwright-interpretive-review-detail-empty shardwright-hint">${escapeHtml(message)}</div>`;
             updateExpandToggle();
         };
 
@@ -2781,7 +2747,7 @@ export async function openInterpretiveReviewModal(initialOptions = {}) {
             if (!queueList) return;
             const groups = buildFilteredQueueGroups(state.reviews, state.filters.status);
             if (groups.length === 0) {
-                queueList.innerHTML = '<div class="ss-interpretive-review-queue-empty ss-hint">No revisions matched the current filter.</div>';
+                queueList.innerHTML = '<div class="shardwright-interpretive-review-queue-empty shardwright-hint">No revisions matched the current filter.</div>';
                 return;
             }
             queueList.innerHTML = groups.map((group) => {
@@ -2810,6 +2776,28 @@ export async function openInterpretiveReviewModal(initialOptions = {}) {
             const policyMap = new Map(policies.map((policy) => [policy.delegationPolicyId, policy]));
             state.policiesByScopeId.set(scopeId, policyMap);
             return policyMap;
+        };
+
+        const loadSourceChatLocatorsForCandidate = async (interpretation) => {
+            const scopeId = String(interpretation?.memoryScopeId || '').trim();
+            if (!scopeId || state.chatLocatorsByScopeId.has(scopeId)) {
+                return;
+            }
+            try {
+                const response = await loadArchitecturalAuthorityScope(scopeId);
+                const bindings = response?.scope?.chatBindings
+                    || response?.registry?.chatBindings
+                    || response?.chatBindings
+                    || {};
+                const entries = Object.values(bindings).map((binding) => [
+                    String(binding?.chatInstanceId || '').trim(),
+                    String(binding?.chatLocator || '').trim(),
+                ]).filter(([chatInstanceId, chatLocator]) => chatInstanceId && chatLocator);
+                state.chatLocatorsByScopeId.set(scopeId, new Map(entries));
+                entries.forEach(([chatInstanceId, chatLocator]) => state.chatLocatorsByInstanceId.set(chatInstanceId, chatLocator));
+            } catch {
+                state.chatLocatorsByScopeId.set(scopeId, new Map());
+            }
         };
 
         const enrichReviewsWithCandidateStates = async (reviews) => {
@@ -2899,6 +2887,7 @@ export async function openInterpretiveReviewModal(initialOptions = {}) {
                 actionStatus: state.actionStatus,
                 publicationOperatorState: state.activePublicationOperatorState,
                 detailView: state.detailView,
+                chatLocatorsByInstanceId: state.chatLocatorsByInstanceId,
             });
             const pendingSectionKey = String(state.pendingDetailSectionKey || '').trim();
             state.pendingDetailSectionKey = null;
@@ -2973,6 +2962,7 @@ export async function openInterpretiveReviewModal(initialOptions = {}) {
             }
             state.selectedInterpretationRevisionId = normalizedId;
             state.activeInterpretation = interpretation;
+            await loadSourceChatLocatorsForCandidate(interpretation);
             state.activePoliciesById = await loadPoliciesForCandidate(interpretation);
             await loadPublicationOperatorState(interpretation);
             renderCurrentDetail();
@@ -3017,7 +3007,7 @@ export async function openInterpretiveReviewModal(initialOptions = {}) {
             }
 
             if (detailRoot) {
-                detailRoot.innerHTML = '<div class="ss-interpretive-review-detail-empty ss-hint">Loading candidate details...</div>';
+                detailRoot.innerHTML = '<div class="shardwright-interpretive-review-detail-empty shardwright-hint">Loading candidate details...</div>';
             }
 
             try {
@@ -3029,7 +3019,7 @@ export async function openInterpretiveReviewModal(initialOptions = {}) {
 
         const refreshReviews = async ({ preserveDetail = false } = {}) => {
             if (queueList) {
-                queueList.innerHTML = '<div class="ss-interpretive-review-queue-empty ss-hint">Loading requests...</div>';
+                queueList.innerHTML = '<div class="shardwright-interpretive-review-queue-empty shardwright-hint">Loading requests...</div>';
             }
             try {
                 const response = await listInterpretiveReviews({});
@@ -3065,7 +3055,7 @@ export async function openInterpretiveReviewModal(initialOptions = {}) {
                 renderDetailError('No revisions matched the current filter.');
             } catch (error) {
                 if (queueList) {
-                    queueList.innerHTML = `<div class="ss-interpretive-review-queue-empty ss-hint">Could not load review requests: ${escapeHtml(error?.message || error)}</div>`;
+                    queueList.innerHTML = `<div class="shardwright-interpretive-review-queue-empty shardwright-hint">Could not load review requests: ${escapeHtml(error?.message || error)}</div>`;
                 }
                 renderDetailError('Review queue is unavailable.');
             }
@@ -3247,15 +3237,15 @@ export async function openInterpretiveReviewModal(initialOptions = {}) {
         }
 
         function syncActionForms() {
-            detailRoot?.querySelectorAll('.ss-interpretive-action-form').forEach((form) => syncActionForm(form));
+            detailRoot?.querySelectorAll('.shardwright-interpretive-action-form').forEach((form) => syncActionForm(form));
         }
 
         function updateExpandToggle() {
             if (!expandToggleButton || !detailRoot) {
                 return;
             }
-            const activePanel = detailRoot.querySelector('.ss-interpretive-review-detail-view.active') || detailRoot;
-            const disclosures = [...activePanel.querySelectorAll('.ss-interpretive-review-disclosure')];
+            const activePanel = detailRoot.querySelector('.shardwright-interpretive-review-detail-view.active') || detailRoot;
+            const disclosures = [...activePanel.querySelectorAll('.shardwright-interpretive-review-disclosure')];
             if (disclosures.length === 0) {
                 expandToggleButton.disabled = true;
                 expandToggleButton.value = 'Expand All';
@@ -3267,13 +3257,13 @@ export async function openInterpretiveReviewModal(initialOptions = {}) {
         }
 
         function setInlineFormStatus(form, tone, message) {
-            let status = form.parentElement.querySelector('.ss-interpretive-action-status');
+            let status = form.parentElement.querySelector('.shardwright-interpretive-action-status');
             if (!status) {
                 status = document.createElement('div');
-                status.className = 'ss-interpretive-action-status';
+                status.className = 'shardwright-interpretive-action-status';
                 form.parentElement.insertBefore(status, form);
             }
-            status.className = `ss-interpretive-action-status tone-${tone}`;
+            status.className = `shardwright-interpretive-action-status tone-${tone}`;
             status.textContent = message;
         }
 
@@ -3758,8 +3748,8 @@ export async function openInterpretiveReviewModal(initialOptions = {}) {
         });
 
         const applyFullscreenState = (expanded) => {
-            modalRoot?.classList.toggle('ss-interpretive-review-fullscreen', expanded);
-            popupRoot?.classList.toggle('ss-interpretive-review-popup-fullscreen', expanded);
+            modalRoot?.classList.toggle('shardwright-interpretive-review-fullscreen', expanded);
+            popupRoot?.classList.toggle('shardwright-interpretive-review-popup-fullscreen', expanded);
             if (popupRoot) {
                 if (expanded) {
                     popupRoot.style.width = 'calc(100vw - 12px)';
@@ -3788,7 +3778,7 @@ export async function openInterpretiveReviewModal(initialOptions = {}) {
         };
 
         fullscreenButton?.addEventListener('click', () => {
-            const nextExpanded = !(modalRoot?.classList.contains('ss-interpretive-review-fullscreen'));
+            const nextExpanded = !(modalRoot?.classList.contains('shardwright-interpretive-review-fullscreen'));
             applyFullscreenState(nextExpanded);
         });
 
@@ -3800,8 +3790,8 @@ export async function openInterpretiveReviewModal(initialOptions = {}) {
             if (!detailRoot) {
                 return;
             }
-            const activePanel = detailRoot.querySelector('.ss-interpretive-review-detail-view.active') || detailRoot;
-            const disclosures = [...activePanel.querySelectorAll('.ss-interpretive-review-disclosure')];
+            const activePanel = detailRoot.querySelector('.shardwright-interpretive-review-detail-view.active') || detailRoot;
+            const disclosures = [...activePanel.querySelectorAll('.shardwright-interpretive-review-disclosure')];
             if (disclosures.length === 0) {
                 updateExpandToggle();
                 return;
@@ -3818,12 +3808,41 @@ export async function openInterpretiveReviewModal(initialOptions = {}) {
         });
 
         detailRoot?.addEventListener('toggle', (event) => {
-            if (event.target instanceof HTMLDetailsElement && event.target.classList.contains('ss-interpretive-review-disclosure')) {
+            if (event.target instanceof HTMLDetailsElement && event.target.classList.contains('shardwright-interpretive-review-disclosure')) {
                 updateExpandToggle();
             }
         }, true);
 
-        detailRoot?.addEventListener('click', (event) => {
+        detailRoot?.addEventListener('click', async (event) => {
+            const sourceButton = event.target.closest('[data-source-chat-instance-id][data-source-message-id]');
+            if (sourceButton) {
+                event.preventDefault();
+                const link = {
+                    chatInstanceId: sourceButton.getAttribute('data-source-chat-instance-id'),
+                    messageId: sourceButton.getAttribute('data-source-message-id'),
+                };
+                const resolution = resolveCurrentSourceOccurrence(link);
+                if (resolution.status !== 'EXACT') {
+                    globalThis.toastr?.warning?.(describeInterpretiveSourceNavigationStatus(resolution.status));
+                    return;
+                }
+                const firstRenderedIndex = Number(document.querySelector('#chat .mes[mesid]')?.getAttribute('mesid'));
+                if (Number.isFinite(firstRenderedIndex) && resolution.messageIndex < firstRenderedIndex) {
+                    await showMoreMessages(firstRenderedIndex - resolution.messageIndex);
+                }
+                popup.complete(POPUP_RESULT.AFFIRMATIVE);
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    const target = document.querySelector(`#chat .mes[mesid="${resolution.messageIndex}"]`);
+                    if (!target) {
+                        globalThis.toastr?.error?.('Exact source message could not be displayed.');
+                        return;
+                    }
+                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    target.classList.add('shardwright-interpretive-source-target');
+                    globalThis.setTimeout(() => target.classList.remove('shardwright-interpretive-source-target'), 4000);
+                }));
+                return;
+            }
             const copyButton = event.target.closest('[data-copy-value]');
             if (copyButton) {
                 event.preventDefault();
@@ -3838,7 +3857,7 @@ export async function openInterpretiveReviewModal(initialOptions = {}) {
             const reasonButton = event.target.closest('[data-reason-code]');
             if (reasonButton) {
                 event.preventDefault();
-                const form = reasonButton.closest('.ss-interpretive-action-form');
+                const form = reasonButton.closest('.shardwright-interpretive-action-form');
                 const reasonCode = String(reasonButton.getAttribute('data-reason-code') || '').trim();
                 toggleReasonCodeSelection(form, reasonCode);
                 reasonButton.focus();
@@ -3847,7 +3866,7 @@ export async function openInterpretiveReviewModal(initialOptions = {}) {
             const tokenButton = event.target.closest('[data-token-target][data-token-value]');
             if (tokenButton) {
                 event.preventDefault();
-                const form = tokenButton.closest('.ss-interpretive-action-form');
+                const form = tokenButton.closest('.shardwright-interpretive-action-form');
                 const targetName = String(tokenButton.getAttribute('data-token-target') || '').trim();
                 const tokenValue = String(tokenButton.getAttribute('data-token-value') || '').trim();
                 const field = form?.querySelector(`[name="${targetName}"]`);
@@ -3883,7 +3902,7 @@ export async function openInterpretiveReviewModal(initialOptions = {}) {
         });
 
         detailRoot?.addEventListener('change', (event) => {
-            const form = event.target.closest('.ss-interpretive-action-form');
+            const form = event.target.closest('.shardwright-interpretive-action-form');
             if (!form) return;
             if (event.target.name === 'submissionMode') {
                 const ownerId = String(form.dataset.ownerId || '').trim();
@@ -3908,7 +3927,7 @@ export async function openInterpretiveReviewModal(initialOptions = {}) {
         });
 
         detailRoot?.addEventListener('submit', async (event) => {
-            const form = event.target.closest('.ss-interpretive-action-form');
+            const form = event.target.closest('.shardwright-interpretive-action-form');
             if (!form) return;
             event.preventDefault();
             if (form.dataset.formKind === 'review') {

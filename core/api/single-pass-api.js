@@ -1,5 +1,5 @@
 /**
- * Sharder orchestration for Summary Sharder.
+ * Sharder orchestration for Shardwright.
  */
 
 import { getAllMessages } from '../chat/chat-state.js';

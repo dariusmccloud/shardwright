@@ -9,7 +9,7 @@ export function startSharderHeadlessOperation(startIndex, endIndex, deps) {
 
     const opId = startUiOperation({
         feature: 'sharder',
-        primaryButton: 'ss-run-single-pass',
+        primaryButton: 'shardwright-run-single-pass',
         disabled: true,
         label: 'Running Sharder...',
         lockButtons: [],
@@ -77,7 +77,7 @@ export function cleanupSharderHeadlessOperation(state, deps) {
         clearAbortController();
         endUiOperation({
             feature: 'sharder',
-            primaryButton: 'ss-run-single-pass',
+            primaryButton: 'shardwright-run-single-pass',
             disabled: false,
             label: originalText,
             lockButtons: [],

@@ -1,5 +1,5 @@
 /**
- * Range Manager for Summary Sharder
+ * Range Manager for Shardwright
  * Handles range validation against current chat state
  */
 

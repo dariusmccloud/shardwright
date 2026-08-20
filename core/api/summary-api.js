@@ -1,5 +1,5 @@
 /**
- * API communication for Summary Sharder
+ * API communication for Shardwright
  */
 import { getActivePrompt } from '../summarization/prompts.js';
 import { buildLengthInstruction } from '../summarization/length-utils.js';
@@ -182,7 +182,7 @@ function isFirstSummaryForChat() {
 function hasPromptChangedSinceLastRun(settings) {
     const currentPromptName = settings.activePromptName;
     const context = SillyTavern.getContext();
-    const metadata = context?.chat_metadata?.summary_sharder || {};
+    const metadata = context?.chat_metadata?.shardwright || {};
     const lastPromptName = metadata.lastUsedPromptName;
 
     // First run or prompt changed
@@ -200,10 +200,10 @@ function savePromptNameToMetadata(settings) {
     const context = SillyTavern.getContext();
     if (!context?.chat_metadata) return;
 
-    if (!context.chat_metadata.summary_sharder) {
-        context.chat_metadata.summary_sharder = {};
+    if (!context.chat_metadata.shardwright) {
+        context.chat_metadata.shardwright = {};
     }
-    context.chat_metadata.summary_sharder.lastUsedPromptName = settings.activePromptName;
+    context.chat_metadata.shardwright.lastUsedPromptName = settings.activePromptName;
 }
 
 /**
@@ -446,7 +446,7 @@ export async function runSummarization(startIndex, endIndex, settings, isQueueCo
         operationStarted = true;
         opId = startUiOperation({
             feature: 'summary',
-            primaryButton: 'ss-run-summarize',
+            primaryButton: 'shardwright-run-summarize',
             disabled: true,
             label: 'Summarizing...',
             lockButtons: [],
@@ -666,7 +666,7 @@ KEYWORDS: keyword1, keyword2, keyword3, keyword4, keyword5`;
             clearAbortController();
             endUiOperation({
                 feature: 'summary',
-                primaryButton: 'ss-run-summarize',
+                primaryButton: 'shardwright-run-summarize',
                 disabled: false,
                 label: originalText,
                 lockButtons: [],

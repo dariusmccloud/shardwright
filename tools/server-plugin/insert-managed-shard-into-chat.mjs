@@ -141,10 +141,10 @@ function ensureSummarySharderRoot(headerRecord) {
     if (!headerRecord.chat_metadata || typeof headerRecord.chat_metadata !== 'object') {
         headerRecord.chat_metadata = {};
     }
-    if (!headerRecord.chat_metadata.summary_sharder || typeof headerRecord.chat_metadata.summary_sharder !== 'object') {
-        headerRecord.chat_metadata.summary_sharder = {};
+    if (!headerRecord.chat_metadata.shardwright || typeof headerRecord.chat_metadata.shardwright !== 'object') {
+        headerRecord.chat_metadata.shardwright = {};
     }
-    return headerRecord.chat_metadata.summary_sharder;
+    return headerRecord.chat_metadata.shardwright;
 }
 
 function extractManagedShardBody(text) {
@@ -216,7 +216,7 @@ async function buildInsertedMessage({
         send_date: trimString(outputUID),
         mes: wrappedBody,
         extra: {
-            summary_sharder: {
+            shardwright: {
                 speakerIdentity,
                 evidencePolicy: 'include',
                 messageIdentity: {
@@ -229,11 +229,11 @@ async function buildInsertedMessage({
         },
     };
 
-    message.extra.summary_sharder.messageIdentity.initFingerprint = await buildMessageInitFingerprint(message, {
+    message.extra.shardwright.messageIdentity.initFingerprint = await buildMessageInitFingerprint(message, {
         speakerIdentity,
         cryptoApi,
     });
-    message.extra.summary_sharder.messageIdentity.revisionHash = await buildMessageRevisionHash(message, {
+    message.extra.shardwright.messageIdentity.revisionHash = await buildMessageRevisionHash(message, {
         speakerIdentity,
         cryptoApi,
     });
@@ -278,7 +278,7 @@ function sameWarningIdentitySet(a, b) {
 }
 
 function getMessageId(message) {
-    return trimString(message?.extra?.summary_sharder?.messageIdentity?.messageId);
+    return trimString(message?.extra?.shardwright?.messageIdentity?.messageId);
 }
 
 async function ensureNoExistingManagedShard(messages, manifests, startIndex, endIndex, options = {}) {
@@ -525,7 +525,7 @@ function atomicReplaceText(filePath, text) {
 }
 
 function collectArtifactSummary(records, outputUID) {
-    const header = records[0]?.chat_metadata?.summary_sharder || {};
+    const header = records[0]?.chat_metadata?.shardwright || {};
     const messages = records.slice(1);
     const insertionIndex = messages.findIndex((message) => trimString(message?.send_date) === trimString(outputUID));
     return {

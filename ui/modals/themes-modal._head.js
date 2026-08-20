@@ -1,5 +1,5 @@
 /**
- * Themes Modal for Summary Sharder
+ * Themes Modal for Shardwright
  * Provides theme switching with import/export/delete functionality
  */
 
@@ -35,36 +35,36 @@ let currentTheme = 'default';
  * Required color properties for theme validation
  */
 const REQUIRED_COLORS = [
-    '--ss-primary',
-    '--ss-bg-primary',
-    '--ss-bg-secondary',
-    '--ss-text-primary',
-    '--ss-border',
-    '--ss-success',
-    '--ss-warning',
-    '--ss-error',
+    '--shardwright-primary',
+    '--shardwright-bg-primary',
+    '--shardwright-bg-secondary',
+    '--shardwright-text-primary',
+    '--shardwright-border',
+    '--shardwright-success',
+    '--shardwright-warning',
+    '--shardwright-error',
 ];
 
 /**
  * All valid color properties
  */
 const VALID_COLOR_PROPS = [
-    '--ss-primary', '--ss-primary-hover', '--ss-primary-active',
-    '--ss-bg-primary', '--ss-bg-secondary', '--ss-bg-tertiary', '--ss-bg-input',
-    '--ss-text-primary', '--ss-text-secondary', '--ss-text-muted',
-    '--ss-border', '--ss-border-focus',
-    '--ss-success', '--ss-warning', '--ss-error', '--ss-info',
-    '--ss-weight-critical', '--ss-weight-major', '--ss-weight-moderate',
-    '--ss-weight-minor', '--ss-weight-trivial',
-    '--ss-nsfw-accent', '--ss-highlight', '--ss-quote',
-    '--ss-shadow', '--ss-shadow-lg',
-    '--ss-transition',
-    '--ss-text-hint', '--ss-rescue-bg', '--ss-rescue-bg-hover',
-    '--ss-stop-hover', '--ss-overlay-bg', '--ss-focus-glow',
+    '--shardwright-primary', '--shardwright-primary-hover', '--shardwright-primary-active',
+    '--shardwright-bg-primary', '--shardwright-bg-secondary', '--shardwright-bg-tertiary', '--shardwright-bg-input',
+    '--shardwright-text-primary', '--shardwright-text-secondary', '--shardwright-text-muted',
+    '--shardwright-border', '--shardwright-border-focus',
+    '--shardwright-success', '--shardwright-warning', '--shardwright-error', '--shardwright-info',
+    '--shardwright-weight-critical', '--shardwright-weight-major', '--shardwright-weight-moderate',
+    '--shardwright-weight-minor', '--shardwright-weight-trivial',
+    '--shardwright-nsfw-accent', '--shardwright-highlight', '--shardwright-quote',
+    '--shardwright-shadow', '--shardwright-shadow-lg',
+    '--shardwright-transition',
+    '--shardwright-text-hint', '--shardwright-rescue-bg', '--shardwright-rescue-bg-hover',
+    '--shardwright-stop-hover', '--shardwright-overlay-bg', '--shardwright-focus-glow',
 
     // Typography (optional)
-    '--ss-font-primary', '--ss-font-secondary', '--ss-font-muted', '--ss-font-hint',
-    '--ss-font-size-primary', '--ss-font-size-secondary', '--ss-font-size-muted', '--ss-font-size-hint',
+    '--shardwright-font-primary', '--shardwright-font-secondary', '--shardwright-font-muted', '--shardwright-font-hint',
+    '--shardwright-font-size-primary', '--shardwright-font-size-secondary', '--shardwright-font-size-muted', '--shardwright-font-size-hint',
 ];
 
 /**
@@ -108,10 +108,10 @@ export function applyTheme(themeId) {
     // Apply CSS custom properties to extension elements only (not :root)
     // Target the main settings panel and all modals
     const targetSelectors = [
-        '#summary-sharder-settings',
-        '#summary-sharder-panel',
-        '.ss-modal',
-        '[class*="ss-"][class*="-modal"]'
+        '#shardwright-settings',
+        '#shardwright-panel',
+        '.shardwright-modal',
+        '[class*="shardwright-"][class*="-modal"]'
     ];
 
     // Apply to existing elements
@@ -125,7 +125,7 @@ export function applyTheme(themeId) {
 
     // Also apply to popup wrappers that contain our modals (for popup-controls buttons)
     document.querySelectorAll('.popup').forEach(popup => {
-        if (popup.querySelector('[class*="ss-"][class*="-modal"]')) {
+        if (popup.querySelector('[class*="shardwright-"][class*="-modal"]')) {
             Object.entries(selectedTheme.colors).forEach(([property, value]) => {
                 popup.style.setProperty(property, value);
             });
@@ -133,13 +133,13 @@ export function applyTheme(themeId) {
     });
 
     // Also inject a dynamic style block for future elements (modals that don't exist yet)
-    let dynamicStyleEl = document.getElementById('ss-theme-dynamic-vars');
+    let dynamicStyleEl = document.getElementById('shardwright-theme-dynamic-vars');
     if (dynamicStyleEl) {
         // Remove existing to ensure it's at the end (after main styles)
         dynamicStyleEl.remove();
     }
     dynamicStyleEl = document.createElement('style');
-    dynamicStyleEl.id = 'ss-theme-dynamic-vars';
+    dynamicStyleEl.id = 'shardwright-theme-dynamic-vars';
     document.head.appendChild(dynamicStyleEl);
 
     // Build CSS for dynamic application to future elements
@@ -150,22 +150,22 @@ export function applyTheme(themeId) {
 
     dynamicStyleEl.textContent = `
         /* Theme override styles - higher specificity */
-        html #summary-sharder-settings,
-        html #summary-sharder-panel,
-        html .ss-modal,
-        html [class*="ss-"][class*="-modal"],
-        html .popup:has([class*="ss-"][class*="-modal"]) {
+        html #shardwright-settings,
+        html #shardwright-panel,
+        html .shardwright-modal,
+        html [class*="shardwright-"][class*="-modal"],
+        html .popup:has([class*="shardwright-"][class*="-modal"]) {
             ${cssVars}
         }
     `;
 
     // Remove all theme classes
     Object.keys(themes).forEach(id => {
-        document.body.classList.remove(`ss-theme-${id}`);
+        document.body.classList.remove(`shardwright-theme-${id}`);
     });
 
     // Add current theme class
-    document.body.classList.add(`ss-theme-${themeId}`);
+    document.body.classList.add(`shardwright-theme-${themeId}`);
 
     // Handle extra styles
     removeExtraStyles();
@@ -175,7 +175,7 @@ export function applyTheme(themeId) {
 
     currentTheme = themeId;
 
-    window.dispatchEvent(new CustomEvent('ss-theme-changed', {
+    window.dispatchEvent(new CustomEvent('shardwright-theme-changed', {
         detail: { theme: themeId }
     }));
 }
@@ -193,7 +193,7 @@ export function getCurrentTheme() {
 function injectExtraStyles(themeId, css) {
     removeExtraStyles();
     const style = document.createElement('style');
-    style.id = 'ss-theme-extra-styles';
+    style.id = 'shardwright-theme-extra-styles';
     style.textContent = css;
     document.head.appendChild(style);
 }
@@ -202,7 +202,7 @@ function injectExtraStyles(themeId, css) {
  * Remove extra theme styles
  */
 function removeExtraStyles() {
-    const existing = document.getElementById('ss-theme-extra-styles');
+    const existing = document.getElementById('shardwright-theme-extra-styles');
     if (existing) existing.remove();
 }
 
@@ -213,10 +213,10 @@ function removeExtraStyles() {
  */
 function applyLivePreview(prop, value) {
     const targetSelectors = [
-        '#summary-sharder-settings',
-        '#summary-sharder-panel',
-        '.ss-modal',
-        '[class*="ss-"][class*="-modal"]'
+        '#shardwright-settings',
+        '#shardwright-panel',
+        '.shardwright-modal',
+        '[class*="shardwright-"][class*="-modal"]'
     ];
 
     const shouldRemove = value === null || value === undefined || value === '';
@@ -233,7 +233,7 @@ function applyLivePreview(prop, value) {
 
     // Also apply to popup wrappers that contain our modals (for popup-controls buttons)
     document.querySelectorAll('.popup').forEach(popup => {
-        if (popup.querySelector('[class*="ss-"][class*="-modal"]')) {
+        if (popup.querySelector('[class*="shardwright-"][class*="-modal"]')) {
             if (shouldRemove) {
                 popup.style.removeProperty(prop);
             } else {
@@ -521,46 +521,46 @@ export async function duplicateTheme(themeId, newId, newName, settings, saveSett
  * Build theme card HTML
  */
 function buildThemeCard(themeId, theme, isActive) {
-    const activeClass = isActive ? 'ss-theme-card-active' : '';
+    const activeClass = isActive ? 'shardwright-theme-card-active' : '';
     const isBuiltin = theme.builtin || BUILTIN_THEMES[themeId];
 
     return `
-        <div class="ss-theme-card ${activeClass}" data-theme="${escapeHtml(themeId)}">
-            <div class="ss-theme-preview" style="
-                background: ${theme.colors['--ss-bg-primary']};
-                border: 2px solid ${theme.colors['--ss-primary']};
+        <div class="shardwright-theme-card ${activeClass}" data-theme="${escapeHtml(themeId)}">
+            <div class="shardwright-theme-preview" style="
+                background: ${theme.colors['--shardwright-bg-primary']};
+                border: 2px solid ${theme.colors['--shardwright-primary']};
             ">
-                <div class="ss-theme-preview-header" style="
-                    background: ${theme.colors['--ss-bg-secondary']};
-                    color: ${theme.colors['--ss-text-primary']};
-                    border-bottom: 1px solid ${theme.colors['--ss-border']};
+                <div class="shardwright-theme-preview-header" style="
+                    background: ${theme.colors['--shardwright-bg-secondary']};
+                    color: ${theme.colors['--shardwright-text-primary']};
+                    border-bottom: 1px solid ${theme.colors['--shardwright-border']};
                 ">
-                    <span style="color: ${theme.colors['--ss-primary']}">●</span>
+                    <span style="color: ${theme.colors['--shardwright-primary']}">●</span>
                     ${escapeHtml(theme.preview)} ${escapeHtml(theme.name)}
-                    ${isBuiltin ? '<span class="ss-builtin-badge">Built-in</span>' : '<span class="ss-custom-badge">Custom</span>'}
+                    ${isBuiltin ? '<span class="shardwright-builtin-badge">Built-in</span>' : '<span class="shardwright-custom-badge">Custom</span>'}
                 </div>
-                <div class="ss-theme-preview-body">
-                    <div class="ss-preview-button" style="
-                        background: ${theme.colors['--ss-primary']};
-                        color: ${theme.colors['--ss-bg-primary']};
+                <div class="shardwright-theme-preview-body">
+                    <div class="shardwright-preview-button" style="
+                        background: ${theme.colors['--shardwright-primary']};
+                        color: ${theme.colors['--shardwright-bg-primary']};
                     ">
                         Button
                     </div>
                 </div>
             </div>
-            <div class="ss-theme-info">
+            <div class="shardwright-theme-info">
                 <h4>${escapeHtml(theme.name)}</h4>
                 <p>${escapeHtml(theme.description || '')}</p>
             </div>
-            <div class="ss-theme-actions">
+            <div class="shardwright-theme-actions">
                 ${isActive
-                    ? '<span class="ss-theme-active-badge">✓ Active</span>'
-                    : `<button class="menu_button ss-apply-theme-btn" data-theme="${escapeHtml(themeId)}">Apply</button>`
+                    ? '<span class="shardwright-theme-active-badge">✓ Active</span>'
+                    : `<button class="menu_button shardwright-apply-theme-btn" data-theme="${escapeHtml(themeId)}">Apply</button>`
                 }
-                <button class="menu_button ss-export-theme-btn" data-theme="${escapeHtml(themeId)}" title="Export">📤</button>
-                <button class="menu_button ss-duplicate-theme-btn" data-theme="${escapeHtml(themeId)}" title="Duplicate">📋</button>
-                ${!isBuiltin ? `<button class="menu_button ss-delete-theme-btn" data-theme="${escapeHtml(themeId)}" title="Delete">🗑️</button>` : ''}
-                ${!isBuiltin ? `<button class="menu_button ss-edit-theme-btn" data-theme="${escapeHtml(themeId)}" title="Edit Colors">🎨</button>` : ''}
+                <button class="menu_button shardwright-export-theme-btn" data-theme="${escapeHtml(themeId)}" title="Export">📤</button>
+                <button class="menu_button shardwright-duplicate-theme-btn" data-theme="${escapeHtml(themeId)}" title="Duplicate">📋</button>
+                ${!isBuiltin ? `<button class="menu_button shardwright-delete-theme-btn" data-theme="${escapeHtml(themeId)}" title="Delete">🗑️</button>` : ''}
+                ${!isBuiltin ? `<button class="menu_button shardwright-edit-theme-btn" data-theme="${escapeHtml(themeId)}" title="Edit Colors">🎨</button>` : ''}
             </div>
         </div>
     `;
@@ -582,44 +582,44 @@ function buildModalHTML(currentThemeId) {
         .join('');
     
     return `
-        <div class="ss-themes-modal ss-modal">
-            <div class="ss-themes-header">
+        <div class="shardwright-themes-modal shardwright-modal">
+            <div class="shardwright-themes-header">
                 <h3>🎨 Extension Themes</h3>
-                <p>Customize the look and feel of Summary Sharder</p>
+                <p>Customize the look and feel of Shardwright</p>
             </div>
             
             <!-- Import/Export Controls -->
-            <div class="ss-themes-controls">
-                <button class="menu_button ss-import-theme-btn">
+            <div class="shardwright-themes-controls">
+                <button class="menu_button shardwright-import-theme-btn">
                     <i class="fa fa-upload"></i> Import Theme
                 </button>
-                <button class="menu_button ss-export-all-btn" ${Object.keys(customThemes).length === 0 ? 'disabled' : ''}>
+                <button class="menu_button shardwright-export-all-btn" ${Object.keys(customThemes).length === 0 ? 'disabled' : ''}>
                     <i class="fa fa-download"></i> Export All Custom
                 </button>
-                <button class="menu_button ss-create-theme-btn">
+                <button class="menu_button shardwright-create-theme-btn">
                     <i class="fa fa-plus"></i> Create New
                 </button>
             </div>
             
             <!-- Built-in Themes -->
-            <div class="ss-themes-section">
+            <div class="shardwright-themes-section">
                 <h4>📦 Built-in Themes</h4>
-                <div class="ss-themes-grid">
+                <div class="shardwright-themes-grid">
                     ${builtinCards}
                 </div>
             </div>
             
             <!-- Custom Themes -->
-            <div class="ss-themes-section">
+            <div class="shardwright-themes-section">
                 <h4>🎨 Custom Themes ${Object.keys(customThemes).length > 0 ? `(${Object.keys(customThemes).length})` : ''}</h4>
-                <div class="ss-themes-grid">
-                    ${customCards || '<p class="ss-no-custom-themes">No custom themes yet. Import one or create your own!</p>'}
+                <div class="shardwright-themes-grid">
+                    ${customCards || '<p class="shardwright-no-custom-themes">No custom themes yet. Import one or create your own!</p>'}
                 </div>
             </div>
             
-            <div class="ss-themes-footer">
-                <p class="ss-themes-hint">
-                    <span class="ss-info-icon">ℹ️</span>
+            <div class="shardwright-themes-footer">
+                <p class="shardwright-themes-hint">
+                    <span class="shardwright-info-icon">ℹ️</span>
                     Your theme preference and custom themes are saved automatically.
                 </p>
             </div>
@@ -632,34 +632,34 @@ function buildModalHTML(currentThemeId) {
  */
 async function showImportDialog(settings, saveSettingsFn, refreshModalFn) {
     const importHtml = `
-        <div class="ss-import-modal ss-modal">
+        <div class="shardwright-import-modal shardwright-modal">
             <h3>📥 Import Theme</h3>
             <p>Paste theme JSON below or upload a file:</p>
             
-            <div class="ss-import-file-section">
-                <input type="file" id="ss-theme-file-input" accept=".json" style="display: none;">
-                <button class="menu_button ss-upload-file-btn">
+            <div class="shardwright-import-file-section">
+                <input type="file" id="shardwright-theme-file-input" accept=".json" style="display: none;">
+                <button class="menu_button shardwright-upload-file-btn">
                     <i class="fa fa-folder-open"></i> Choose File
                 </button>
-                <span class="ss-file-name">No file selected</span>
+                <span class="shardwright-file-name">No file selected</span>
             </div>
             
-            <div class="ss-import-text-section">
+            <div class="shardwright-import-text-section">
                 <label>Or paste JSON:</label>
-                <textarea id="ss-theme-json-input" rows="12" placeholder='{
+                <textarea id="shardwright-theme-json-input" rows="12" placeholder='{
   "id": "my-theme",
   "name": "My Theme",
   "description": "A custom theme",
   "preview": "🎨",
   "colors": {
-    "--ss-primary": "#ff6600",
+    "--shardwright-primary": "#ff6600",
     ...
   }
 }'></textarea>
             </div>
             
-            <div class="ss-import-actions">
-                <button class="menu_button ss-do-import-btn">Import</button>
+            <div class="shardwright-import-actions">
+                <button class="menu_button shardwright-do-import-btn">Import</button>
             </div>
         </div>
     `;
@@ -673,13 +673,13 @@ async function showImportDialog(settings, saveSettingsFn, refreshModalFn) {
     const showPromise = popup.show();
     
     // Wait for DOM to be ready
-    await waitForElement('.ss-import-modal');
+    await waitForElement('.shardwright-import-modal');
     
     // File upload handler
-    const fileInput = document.getElementById('ss-theme-file-input');
-    const uploadBtn = document.querySelector('.ss-upload-file-btn');
-    const fileNameSpan = document.querySelector('.ss-file-name');
-    const jsonInput = document.getElementById('ss-theme-json-input');
+    const fileInput = document.getElementById('shardwright-theme-file-input');
+    const uploadBtn = document.querySelector('.shardwright-upload-file-btn');
+    const fileNameSpan = document.querySelector('.shardwright-file-name');
+    const jsonInput = document.getElementById('shardwright-theme-json-input');
     
     uploadBtn?.addEventListener('click', () => fileInput?.click());
     
@@ -696,7 +696,7 @@ async function showImportDialog(settings, saveSettingsFn, refreshModalFn) {
     });
     
     // Import button handler
-    document.querySelector('.ss-do-import-btn')?.addEventListener('click', async () => {
+    document.querySelector('.shardwright-do-import-btn')?.addEventListener('click', async () => {
         const json = jsonInput?.value?.trim();
         if (!json) {
             toastr.warning('Please enter theme JSON or upload a file');
@@ -723,34 +723,34 @@ async function showImportDialog(settings, saveSettingsFn, refreshModalFn) {
  */
 async function showCreateDialog(settings, saveSettingsFn, refreshModalFn) {
     const createHtml = `
-        <div class="ss-create-theme-modal ss-modal">
+        <div class="shardwright-create-theme-modal shardwright-modal">
             <h3>✨ Create New Theme</h3>
             <p>Create a new theme based on an existing one, then customize it.</p>
             
-            <div class="ss-create-form">
-                <div class="ss-form-group">
+            <div class="shardwright-create-form">
+                <div class="shardwright-form-group">
                     <label>Theme ID (lowercase, no spaces):</label>
-                    <input type="text" id="ss-new-theme-id" placeholder="my-custom-theme">                    
+                    <input type="text" id="shardwright-new-theme-id" placeholder="my-custom-theme">
                 </div>
                 
-                <div class="ss-form-group">
+                <div class="shardwright-form-group">
                     <label>Theme Name:</label>
-                    <input type="text" id="ss-new-theme-name" placeholder="My Custom Theme">
+                    <input type="text" id="shardwright-new-theme-name" placeholder="My Custom Theme">
                 </div>
                 
-                <div class="ss-form-group">
+                <div class="shardwright-form-group">
                     <label>Description:</label>
-                    <input type="text" id="ss-new-theme-desc" placeholder="A brief description of your theme">
+                    <input type="text" id="shardwright-new-theme-desc" placeholder="A brief description of your theme">
                 </div>
                 
-                <div class="ss-form-group">
+                <div class="shardwright-form-group">
                     <label>Preview Emoji:</label>
-                    <input type="text" id="ss-new-theme-emoji" value="🎨" maxlength="2">
+                    <input type="text" id="shardwright-new-theme-emoji" value="🎨" maxlength="2">
                 </div>
                 
-                <div class="ss-form-group">
+                <div class="shardwright-form-group">
                     <label>Base Theme (copy colors from):</label>
-                    <select id="ss-base-theme">
+                    <select id="shardwright-base-theme">
                         ${Object.entries(getThemes()).map(([id, t]) => 
                             `<option value="${id}">${t.name}</option>`
                         ).join('')}
@@ -758,8 +758,8 @@ async function showCreateDialog(settings, saveSettingsFn, refreshModalFn) {
                 </div>
             </div>
             
-            <div class="ss-create-actions">
-                <button class="menu_button ss-do-create-btn">Create Theme</button>
+            <div class="shardwright-create-actions">
+                <button class="menu_button shardwright-do-create-btn">Create Theme</button>
             </div>
         </div>
     `;
@@ -776,20 +776,20 @@ async function showCreateDialog(settings, saveSettingsFn, refreshModalFn) {
     
     // Wait for DOM to be ready
     try {
-        await waitForElement('.ss-create-theme-modal');
+        await waitForElement('.shardwright-create-theme-modal');
     } catch (e) {
         log.warn('Create modal element not found:', e);
         return showPromise;
     }
     
-    const createBtn = document.querySelector('.ss-do-create-btn');
+    const createBtn = document.querySelector('.shardwright-do-create-btn');
     if (createBtn) {
         createBtn.addEventListener('click', async () => {
-            const id = document.getElementById('ss-new-theme-id')?.value?.trim();
-            const name = document.getElementById('ss-new-theme-name')?.value?.trim();
-            const desc = document.getElementById('ss-new-theme-desc')?.value?.trim();
-            const emoji = document.getElementById('ss-new-theme-emoji')?.value?.trim() || '🎨';
-            const baseId = document.getElementById('ss-base-theme')?.value;
+            const id = document.getElementById('shardwright-new-theme-id')?.value?.trim();
+            const name = document.getElementById('shardwright-new-theme-name')?.value?.trim();
+            const desc = document.getElementById('shardwright-new-theme-desc')?.value?.trim();
+            const emoji = document.getElementById('shardwright-new-theme-emoji')?.value?.trim() || '🎨';
+            const baseId = document.getElementById('shardwright-base-theme')?.value;
             
             if (!id || !name) {
                 toastr.warning('Please enter a theme ID and name');
@@ -844,7 +844,7 @@ function downloadTheme(themeId, filename) {
         
         const a = document.createElement('a');
         a.href = url;
-        a.download = filename || `ss-theme-${themeId}.json`;
+        a.download = filename || `shardwright-theme-${themeId}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -871,7 +871,7 @@ function downloadAllCustomThemes() {
     
     const a = document.createElement('a');
     a.href = url;
-    a.download = `ss-custom-themes-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `shardwright-custom-themes-${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -887,26 +887,26 @@ function downloadAllCustomThemes() {
  * Update modal UI without rebuilding (fixes button listener issue)
  */
 function updateModalUI(currentThemeId) {
-    document.querySelectorAll('.ss-theme-card').forEach(card => {
+    document.querySelectorAll('.shardwright-theme-card').forEach(card => {
         const themeId = card.dataset.theme;
         const isActive = themeId === currentThemeId;
         const isBuiltin = BUILTIN_THEMES[themeId];
         
         // Update active class
-        card.classList.toggle('ss-theme-card-active', isActive);
+        card.classList.toggle('shardwright-theme-card-active', isActive);
         
         // Update actions section
-        const actionsDiv = card.querySelector('.ss-theme-actions');
+        const actionsDiv = card.querySelector('.shardwright-theme-actions');
         if (actionsDiv) {
             actionsDiv.innerHTML = `
                 ${isActive
-                    ? '<span class="ss-theme-active-badge">✓ Active</span>'
-                    : `<button class="menu_button ss-apply-theme-btn" data-theme="${escapeHtml(themeId)}">Apply</button>`
+                    ? '<span class="shardwright-theme-active-badge">✓ Active</span>'
+                    : `<button class="menu_button shardwright-apply-theme-btn" data-theme="${escapeHtml(themeId)}">Apply</button>`
                 }
-                <button class="menu_button ss-export-theme-btn" data-theme="${escapeHtml(themeId)}" title="Export">📤</button>
-                <button class="menu_button ss-duplicate-theme-btn" data-theme="${escapeHtml(themeId)}" title="Duplicate">📋</button>
-                ${!isBuiltin ? `<button class="menu_button ss-delete-theme-btn" data-theme="${escapeHtml(themeId)}" title="Delete">🗑️</button>` : ''}
-                ${!isBuiltin ? `<button class="menu_button ss-edit-theme-btn" data-theme="${escapeHtml(themeId)}" title="Edit Colors">🎨</button>` : ''}
+                <button class="menu_button shardwright-export-theme-btn" data-theme="${escapeHtml(themeId)}" title="Export">📤</button>
+                <button class="menu_button shardwright-duplicate-theme-btn" data-theme="${escapeHtml(themeId)}" title="Duplicate">📋</button>
+                ${!isBuiltin ? `<button class="menu_button shardwright-delete-theme-btn" data-theme="${escapeHtml(themeId)}" title="Delete">🗑️</button>` : ''}
+                ${!isBuiltin ? `<button class="menu_button shardwright-edit-theme-btn" data-theme="${escapeHtml(themeId)}" title="Edit Colors">🎨</button>` : ''}
             `;
         }
     });
@@ -916,7 +916,7 @@ function updateModalUI(currentThemeId) {
  * Attach event listeners using event delegation (fixes listener issue)
  */
 function attachThemeListeners(settings, saveSettingsFn, refreshModalFn) {
-    const modal = document.querySelector('.ss-themes-modal');
+    const modal = document.querySelector('.shardwright-themes-modal');
     if (!modal) return;
     
     // Use event delegation - attach to modal container, not individual buttons
@@ -927,7 +927,7 @@ function attachThemeListeners(settings, saveSettingsFn, refreshModalFn) {
         const themeId = target.dataset.theme;
         
         // Apply theme
-        if (target.classList.contains('ss-apply-theme-btn') && themeId) {
+        if (target.classList.contains('shardwright-apply-theme-btn') && themeId) {
             e.stopPropagation();
             applyTheme(themeId);
             settings.theme = themeId;
@@ -937,13 +937,13 @@ function attachThemeListeners(settings, saveSettingsFn, refreshModalFn) {
         }
         
         // Export single theme
-        if (target.classList.contains('ss-export-theme-btn') && themeId) {
+        if (target.classList.contains('shardwright-export-theme-btn') && themeId) {
             e.stopPropagation();
             downloadTheme(themeId);
         }
         
         // Duplicate theme
-        if (target.classList.contains('ss-duplicate-theme-btn') && themeId) {
+        if (target.classList.contains('shardwright-duplicate-theme-btn') && themeId) {
             e.stopPropagation();
             const themes = getThemes();
             const source = themes[themeId];
@@ -960,16 +960,16 @@ function attachThemeListeners(settings, saveSettingsFn, refreshModalFn) {
         }
         
         // Delete theme
-        if (target.classList.contains('ss-delete-theme-btn') && themeId) {
+        if (target.classList.contains('shardwright-delete-theme-btn') && themeId) {
             e.stopPropagation();
             const themes = getThemes();
             const theme = themes[themeId];
             
             const confirmPopup = new Popup(
-                `<div class="ss-confirm-delete ss-modal">
+                `<div class="shardwright-confirm-delete shardwright-modal">
                     <h3>🗑️ Delete Theme</h3>
                     <p>Are you sure you want to delete "<strong>${escapeHtml(theme.name)}</strong>"?</p>
-                    <p class="ss-warning-text">This action cannot be undone.</p>
+                    <p class="shardwright-warning-text">This action cannot be undone.</p>
                 </div>`,
                 POPUP_TYPE.CONFIRM,
                 null,
@@ -990,27 +990,27 @@ function attachThemeListeners(settings, saveSettingsFn, refreshModalFn) {
         }
         
         // Edit theme
-        if (target.classList.contains('ss-edit-theme-btn') && themeId) {
+        if (target.classList.contains('shardwright-edit-theme-btn') && themeId) {
             e.stopPropagation();
             await showColorEditorModal(themeId, settings, saveSettingsFn);
         }
         
             // Import button - AWAIT the dialog
-            if (target.classList.contains('ss-import-theme-btn')) {
+            if (target.classList.contains('shardwright-import-theme-btn')) {
                 e.stopPropagation();
                 await showImportDialog(settings, saveSettingsFn, refreshModalFn);
                 return;  // Prevent further processing
             }
                 
             // Export all button
-            if (target.classList.contains('ss-export-all-btn')) {
+            if (target.classList.contains('shardwright-export-all-btn')) {
                 e.stopPropagation();
                 downloadAllCustomThemes();
                 return;
             }
                 
             // Create new button - AWAIT the dialog
-            if (target.classList.contains('ss-create-theme-btn')) {
+            if (target.classList.contains('shardwright-create-theme-btn')) {
                 e.stopPropagation();
                 await showCreateDialog(settings, saveSettingsFn, refreshModalFn);
                 return;
@@ -1031,19 +1031,19 @@ async function showColorEditorModal(themeId, settings, saveSettingsFn) {
     
     // Group colors by category for better UX
     const colorGroups = {
-        'Primary Colors': ['--ss-primary', '--ss-primary-hover', '--ss-primary-active'],
-        'Backgrounds': ['--ss-bg-primary', '--ss-bg-secondary', '--ss-bg-tertiary', '--ss-bg-input'],
-        'Text': ['--ss-text-primary', '--ss-text-secondary', '--ss-text-muted', '--ss-text-hint'],
-        'Borders': ['--ss-border', '--ss-border-focus'],
-        'Status': ['--ss-success', '--ss-warning', '--ss-error', '--ss-info'],
-        'Accents': ['--ss-nsfw-accent', '--ss-highlight', '--ss-quote'],
-        'Buttons': ['--ss-rescue-bg', '--ss-rescue-bg-hover', '--ss-stop-hover'],
-        'Effects': ['--ss-shadow', '--ss-shadow-lg', '--ss-overlay-bg', '--ss-focus-glow', '--ss-transition'],
+        'Primary Colors': ['--shardwright-primary', '--shardwright-primary-hover', '--shardwright-primary-active'],
+        'Backgrounds': ['--shardwright-bg-primary', '--shardwright-bg-secondary', '--shardwright-bg-tertiary', '--shardwright-bg-input'],
+        'Text': ['--shardwright-text-primary', '--shardwright-text-secondary', '--shardwright-text-muted', '--shardwright-text-hint'],
+        'Borders': ['--shardwright-border', '--shardwright-border-focus'],
+        'Status': ['--shardwright-success', '--shardwright-warning', '--shardwright-error', '--shardwright-info'],
+        'Accents': ['--shardwright-nsfw-accent', '--shardwright-highlight', '--shardwright-quote'],
+        'Buttons': ['--shardwright-rescue-bg', '--shardwright-rescue-bg-hover', '--shardwright-stop-hover'],
+        'Effects': ['--shardwright-shadow', '--shardwright-shadow-lg', '--shardwright-overlay-bg', '--shardwright-focus-glow', '--shardwright-transition'],
     };
     
     // Helper to make property names readable
     const formatPropName = (prop) => {
-        return prop.replace('--ss-', '').replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        return prop.replace('--shardwright-', '').replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     };
     
     // Helper to check if value is a color (not a CSS variable or complex value)
@@ -1090,7 +1090,7 @@ async function showColorEditorModal(themeId, settings, saveSettingsFn) {
     ];
 
     const fontDatalistHtml = `
-        <datalist id="ss-font-options">
+        <datalist id="shardwright-font-options">
             ${FONT_OPTIONS.map(f => `<option value="${escapeHtml(f)}"></option>`).join('')}
         </datalist>
     `;
@@ -1099,33 +1099,33 @@ async function showColorEditorModal(themeId, settings, saveSettingsFn) {
         {
             key: 'primary',
             title: 'Primary Text',
-            colorProp: '--ss-text-primary',
-            fontProp: '--ss-font-primary',
-            sizeProp: '--ss-font-size-primary',
+            colorProp: '--shardwright-text-primary',
+            fontProp: '--shardwright-font-primary',
+            sizeProp: '--shardwright-font-size-primary',
             desc: 'Used for most text, labels, and input text.'
         },
         {
             key: 'secondary',
             title: 'Secondary Text',
-            colorProp: '--ss-text-secondary',
-            fontProp: '--ss-font-secondary',
-            sizeProp: '--ss-font-size-secondary',
+            colorProp: '--shardwright-text-secondary',
+            fontProp: '--shardwright-font-secondary',
+            sizeProp: '--shardwright-font-size-secondary',
             desc: 'Used for secondary labels and supporting UI text.'
         },
         {
             key: 'muted',
             title: 'Muted Text',
-            colorProp: '--ss-text-muted',
-            fontProp: '--ss-font-muted',
-            sizeProp: '--ss-font-size-muted',
+            colorProp: '--shardwright-text-muted',
+            fontProp: '--shardwright-font-muted',
+            sizeProp: '--shardwright-font-size-muted',
             desc: 'Used for descriptions and less prominent text.'
         },
         {
             key: 'hint',
             title: 'Hint Text',
-            colorProp: '--ss-text-hint',
-            fontProp: '--ss-font-hint',
-            sizeProp: '--ss-font-size-hint',
+            colorProp: '--shardwright-text-hint',
+            fontProp: '--shardwright-font-hint',
+            sizeProp: '--shardwright-font-size-hint',
             desc: 'Used for fine-print hints and helper notes.'
         },
     ];
@@ -1144,29 +1144,29 @@ async function showColorEditorModal(themeId, settings, saveSettingsFn) {
             const sizeVal = parsePx(theme.colors[g.sizeProp]);
 
             return `
-                <div class="ss-text-style-block" data-text-group="${g.key}">
-                    <div class="ss-text-style-header">
-                        <div class="ss-text-style-title" title="${escapeHtml(g.colorProp)}">${escapeHtml(g.title)}</div>
-                        <div class="ss-text-style-desc">${escapeHtml(g.desc)}</div>
+                <div class="shardwright-text-style-block" data-text-group="${g.key}">
+                    <div class="shardwright-text-style-header">
+                        <div class="shardwright-text-style-title" title="${escapeHtml(g.colorProp)}">${escapeHtml(g.title)}</div>
+                        <div class="shardwright-text-style-desc">${escapeHtml(g.desc)}</div>
                     </div>
 
-                    <div class="ss-text-style-controls">
-                        <div class="ss-text-style-control">
+                    <div class="shardwright-text-style-controls">
+                        <div class="shardwright-text-style-control">
                             <label title="${escapeHtml(g.colorProp)}">Color</label>
-                            <div class="ss-color-inputs">
-                                ${isColor ? `<input type="color" class="ss-color-picker" data-prop="${g.colorProp}" value="${colorVal.startsWith('#') ? colorVal : '#888888'}">` : ''}
-                                <input type="text" class="ss-color-text" data-prop="${g.colorProp}" value="${escapeHtml(colorVal)}" placeholder="${escapeHtml(g.colorProp)}">
+                            <div class="shardwright-color-inputs">
+                                ${isColor ? `<input type="color" class="shardwright-color-picker" data-prop="${g.colorProp}" value="${colorVal.startsWith('#') ? colorVal : '#888888'}">` : ''}
+                                <input type="text" class="shardwright-color-text" data-prop="${g.colorProp}" value="${escapeHtml(colorVal)}" placeholder="${escapeHtml(g.colorProp)}">
                             </div>
                         </div>
 
-                        <div class="ss-text-style-control">
+                        <div class="shardwright-text-style-control">
                             <label title="${escapeHtml(g.fontProp)}">Font</label>
-                            <input type="text" class="ss-typo-font" data-prop="${g.fontProp}" list="ss-font-options" value="${escapeHtml(fontVal)}" placeholder="inherit / custom">
+                            <input type="text" class="shardwright-typo-font" data-prop="${g.fontProp}" list="shardwright-font-options" value="${escapeHtml(fontVal)}" placeholder="inherit / custom">
                         </div>
 
-                        <div class="ss-text-style-control">
+                        <div class="shardwright-text-style-control">
                             <label title="${escapeHtml(g.sizeProp)}">Size (px)</label>
-                            <input type="number" class="ss-typo-size" data-prop="${g.sizeProp}" value="${escapeHtml(sizeVal)}" min="6" max="64" step="1" placeholder="inherit">
+                            <input type="number" class="shardwright-typo-size" data-prop="${g.sizeProp}" value="${escapeHtml(sizeVal)}" min="6" max="64" step="1" placeholder="inherit">
                         </div>
                     </div>
                 </div>
@@ -1181,8 +1181,8 @@ async function showColorEditorModal(themeId, settings, saveSettingsFn) {
 
         if (groupName === 'Text') {
             inputsHtml = `
-                <div class="ss-text-style-group">
-                    <div class="ss-text-style-note">
+                <div class="shardwright-text-style-group">
+                    <div class="shardwright-text-style-note">
                         Each text group controls both color and typography. Clear a font/size field to inherit the default.
                     </div>
                     ${buildTextGroupEditor()}
@@ -1193,31 +1193,31 @@ async function showColorEditorModal(themeId, settings, saveSettingsFn) {
                 const value = theme.colors[prop] || '';
                 const isColor = isSimpleColor(value);
 
-                // Special handling for --ss-bg-primary
-                if (prop === '--ss-bg-primary') {
+                // Special handling for --shardwright-bg-primary
+                if (prop === '--shardwright-bg-primary') {
                     const isSTDefault = isBgPrimaryST(value);
                     inputsHtml += `
-                        <div class="ss-color-row ss-bg-primary-row">
+                        <div class="shardwright-color-row shardwright-bg-primary-row">
                             <label title="${prop}">${formatPropName(prop)}</label>
-                            <div class="ss-bg-primary-controls">
-                                <select class="ss-bg-primary-select" data-prop="${prop}">
+                            <div class="shardwright-bg-primary-controls">
+                                <select class="shardwright-bg-primary-select" data-prop="${prop}">
                                     <option value="st-default" ${isSTDefault ? 'selected' : ''}>SillyTavern Default</option>
                                     <option value="custom" ${!isSTDefault ? 'selected' : ''}>Custom</option>
                                 </select>
-                                <div class="ss-bg-primary-custom" style="display: ${isSTDefault ? 'none' : 'flex'}; align-items: center; gap: 6px; margin-top: 6px;">
-                                    ${!isSTDefault && isColor ? `<input type="color" class="ss-color-picker" data-prop="${prop}" value="${value.startsWith('#') ? value : '#888888'}">` : ''}
-                                    <input type="text" class="ss-color-text" data-prop="${prop}" value="${isSTDefault ? '' : value}" placeholder="e.g. rgba(0,0,0,0.3)">
+                                <div class="shardwright-bg-primary-custom" style="display: ${isSTDefault ? 'none' : 'flex'}; align-items: center; gap: 6px; margin-top: 6px;">
+                                    ${!isSTDefault && isColor ? `<input type="color" class="shardwright-color-picker" data-prop="${prop}" value="${value.startsWith('#') ? value : '#888888'}">` : ''}
+                                    <input type="text" class="shardwright-color-text" data-prop="${prop}" value="${isSTDefault ? '' : value}" placeholder="e.g. rgba(0,0,0,0.3)">
                                 </div>
                             </div>
                         </div>
                     `;
                 } else {
                     inputsHtml += `
-                        <div class="ss-color-row">
+                        <div class="shardwright-color-row">
                             <label title="${prop}">${formatPropName(prop)}</label>
-                            <div class="ss-color-inputs">
-                                ${isColor ? `<input type="color" class="ss-color-picker" data-prop="${prop}" value="${value.startsWith('#') ? value : '#888888'}">` : ''}
-                                <input type="text" class="ss-color-text" data-prop="${prop}" value="${value}" placeholder="${prop}">
+                            <div class="shardwright-color-inputs">
+                                ${isColor ? `<input type="color" class="shardwright-color-picker" data-prop="${prop}" value="${value.startsWith('#') ? value : '#888888'}">` : ''}
+                                <input type="text" class="shardwright-color-text" data-prop="${prop}" value="${value}" placeholder="${prop}">
                             </div>
                         </div>
                     `;
@@ -1226,7 +1226,7 @@ async function showColorEditorModal(themeId, settings, saveSettingsFn) {
         }
 
         groupsHtml += `
-            <div class="ss-color-group">
+            <div class="shardwright-color-group">
                 <h4>${groupName}</h4>
                 ${inputsHtml}
             </div>
@@ -1234,41 +1234,41 @@ async function showColorEditorModal(themeId, settings, saveSettingsFn) {
     }
     
     const editorHtml = `
-        <div class="ss-color-editor-modal ss-modal">
-            <div class="ss-editor-header">
+        <div class="shardwright-color-editor-modal shardwright-modal">
+            <div class="shardwright-editor-header">
                 <h3>🎨 Edit Theme: ${escapeHtml(theme.name)}</h3>
                 <p>Modify colors below. Changes are previewed live.</p>
             </div>
 
             ${fontDatalistHtml}
 
-            <div class="ss-editor-meta">
-                <div class="ss-meta-row">
+            <div class="shardwright-editor-meta">
+                <div class="shardwright-meta-row">
                     <label>Theme Name:</label>
-                    <input type="text" id="ss-edit-theme-name" value="${escapeHtml(theme.name)}">
+                    <input type="text" id="shardwright-edit-theme-name" value="${escapeHtml(theme.name)}">
                 </div>
-                <div class="ss-meta-row">
+                <div class="shardwright-meta-row">
                     <label>Description:</label>
-                    <input type="text" id="ss-edit-theme-desc" value="${escapeHtml(theme.description || '')}">
+                    <input type="text" id="shardwright-edit-theme-desc" value="${escapeHtml(theme.description || '')}">
                 </div>
-                <div class="ss-meta-row">
+                <div class="shardwright-meta-row">
                     <label>Preview Emoji:</label>
-                    <input type="text" id="ss-edit-theme-emoji" value="${escapeHtml(theme.preview || '🎨')}" maxlength="2">
+                    <input type="text" id="shardwright-edit-theme-emoji" value="${escapeHtml(theme.preview || '🎨')}" maxlength="2">
                 </div>
             </div>
 
-            <div class="ss-color-groups">
+            <div class="shardwright-color-groups">
                 ${groupsHtml}
             </div>
 
-            <div class="ss-editor-extra">
+            <div class="shardwright-editor-extra">
                 <h4>Extra CSS (Advanced)</h4>
-                <textarea id="ss-edit-extra-css" rows="4" placeholder="/* Custom CSS rules */">${escapeHtml(theme.extraStyles || '')}</textarea>
+                <textarea id="shardwright-edit-extra-css" rows="4" placeholder="/* Custom CSS rules */">${escapeHtml(theme.extraStyles || '')}</textarea>
             </div>
 
-            <div class="ss-editor-actions">
-                <button class="menu_button ss-reset-colors-btn">Reset to Saved</button>
-                <button class="menu_button ss-save-theme-btn">💾 Save Changes</button>
+            <div class="shardwright-editor-actions">
+                <button class="menu_button shardwright-reset-colors-btn">Reset to Saved</button>
+                <button class="menu_button shardwright-save-theme-btn">💾 Save Changes</button>
             </div>
         </div>
     `;
@@ -1287,16 +1287,16 @@ async function showColorEditorModal(themeId, settings, saveSettingsFn) {
     const showPromise = popup.show();
 
     // Wait for DOM to be ready
-    await waitForElement('.ss-color-editor-modal');
+    await waitForElement('.shardwright-color-editor-modal');
     
-    const modal = document.querySelector('.ss-color-editor-modal');
+    const modal = document.querySelector('.shardwright-color-editor-modal');
     if (!modal) return;
         
         // Live preview: sync color picker with text input
-        modal.querySelectorAll('.ss-color-picker').forEach(picker => {
+        modal.querySelectorAll('.shardwright-color-picker').forEach(picker => {
             picker.addEventListener('input', (e) => {
                 const prop = e.target.dataset.prop;
-                const textInput = modal.querySelector(`.ss-color-text[data-prop="${prop}"]`);
+                const textInput = modal.querySelector(`.shardwright-color-text[data-prop="${prop}"]`);
                 if (textInput) textInput.value = e.target.value;
 
                 // Apply live to extension elements only
@@ -1305,13 +1305,13 @@ async function showColorEditorModal(themeId, settings, saveSettingsFn) {
         });
         
         // bg-primary dropdown handler
-        modal.querySelector('.ss-bg-primary-select')?.addEventListener('change', (e) => {
-            const customDiv = modal.querySelector('.ss-bg-primary-custom');
-            const textInput = modal.querySelector('.ss-color-text[data-prop="--ss-bg-primary"]');
+        modal.querySelector('.shardwright-bg-primary-select')?.addEventListener('change', (e) => {
+            const customDiv = modal.querySelector('.shardwright-bg-primary-custom');
+            const textInput = modal.querySelector('.shardwright-color-text[data-prop="--shardwright-bg-primary"]');
             if (e.target.value === 'st-default') {
                 if (customDiv) customDiv.style.display = 'none';
                 if (textInput) textInput.value = 'var(--SmartThemeBlurTintColor)';
-                applyLivePreview('--ss-bg-primary', 'var(--SmartThemeBlurTintColor)');
+                applyLivePreview('--shardwright-bg-primary', 'var(--SmartThemeBlurTintColor)');
             } else {
                 if (customDiv) customDiv.style.display = 'flex';
                 if (textInput) textInput.value = '';
@@ -1320,10 +1320,10 @@ async function showColorEditorModal(themeId, settings, saveSettingsFn) {
         });
 
         // Live preview: text input changes
-        modal.querySelectorAll('.ss-color-text').forEach(input => {
+        modal.querySelectorAll('.shardwright-color-text').forEach(input => {
             input.addEventListener('input', (e) => {
                 const prop = e.target.dataset.prop;
-                const picker = modal.querySelector(`.ss-color-picker[data-prop="${prop}"]`);
+                const picker = modal.querySelector(`.shardwright-color-picker[data-prop="${prop}"]`);
                 if (picker && /^#[0-9a-fA-F]{6}$/.test(e.target.value)) {
                     picker.value = e.target.value;
                 }
@@ -1334,7 +1334,7 @@ async function showColorEditorModal(themeId, settings, saveSettingsFn) {
         });
 
         // Live preview: typography (font family)
-        modal.querySelectorAll('.ss-typo-font').forEach(input => {
+        modal.querySelectorAll('.shardwright-typo-font').forEach(input => {
             input.addEventListener('input', (e) => {
                 const prop = e.target.dataset.prop;
                 const value = e.target.value.trim();
@@ -1343,7 +1343,7 @@ async function showColorEditorModal(themeId, settings, saveSettingsFn) {
         });
 
         // Live preview: typography (font size, px)
-        modal.querySelectorAll('.ss-typo-size').forEach(input => {
+        modal.querySelectorAll('.shardwright-typo-size').forEach(input => {
             input.addEventListener('input', (e) => {
                 const prop = e.target.dataset.prop;
                 const raw = String(e.target.value || '').trim();
@@ -1353,11 +1353,11 @@ async function showColorEditorModal(themeId, settings, saveSettingsFn) {
         });
         
         // Reset button
-        modal.querySelector('.ss-reset-colors-btn')?.addEventListener('click', () => {
+        modal.querySelector('.shardwright-reset-colors-btn')?.addEventListener('click', () => {
             // Reset form values (colors)
             for (const [prop, value] of Object.entries(originalColors)) {
-                const textInput = modal.querySelector(`.ss-color-text[data-prop="${prop}"]`);
-                const picker = modal.querySelector(`.ss-color-picker[data-prop="${prop}"]`);
+                const textInput = modal.querySelector(`.shardwright-color-text[data-prop="${prop}"]`);
+                const picker = modal.querySelector(`.shardwright-color-picker[data-prop="${prop}"]`);
                 if (textInput) textInput.value = value;
                 if (picker && /^#[0-9a-fA-F]{6}$/.test(value)) picker.value = value;
 
@@ -1367,8 +1367,8 @@ async function showColorEditorModal(themeId, settings, saveSettingsFn) {
 
             // Reset typography
             const typoProps = [
-                '--ss-font-primary', '--ss-font-secondary', '--ss-font-muted', '--ss-font-hint',
-                '--ss-font-size-primary', '--ss-font-size-secondary', '--ss-font-size-muted', '--ss-font-size-hint',
+                '--shardwright-font-primary', '--shardwright-font-secondary', '--shardwright-font-muted', '--shardwright-font-hint',
+                '--shardwright-font-size-primary', '--shardwright-font-size-secondary', '--shardwright-font-size-muted', '--shardwright-font-size-hint',
             ];
 
             // Clear all first (to ensure removed values truly revert)
@@ -1383,30 +1383,30 @@ async function showColorEditorModal(themeId, settings, saveSettingsFn) {
             });
 
             // Restore UI fields
-            modal.querySelectorAll('.ss-typo-font').forEach(input => {
+            modal.querySelectorAll('.shardwright-typo-font').forEach(input => {
                 const prop = input.dataset.prop;
                 input.value = originalColors[prop] || '';
             });
 
-            modal.querySelectorAll('.ss-typo-size').forEach(input => {
+            modal.querySelectorAll('.shardwright-typo-size').forEach(input => {
                 const prop = input.dataset.prop;
                 input.value = parsePx(originalColors[prop]);
             });
             
             // Reset meta
-            document.getElementById('ss-edit-theme-name').value = originalMeta.name;
-            document.getElementById('ss-edit-theme-desc').value = originalMeta.description || '';
-            document.getElementById('ss-edit-theme-emoji').value = originalMeta.preview || '🎨';
-            document.getElementById('ss-edit-extra-css').value = originalMeta.extraStyles || '';
+            document.getElementById('shardwright-edit-theme-name').value = originalMeta.name;
+            document.getElementById('shardwright-edit-theme-desc').value = originalMeta.description || '';
+            document.getElementById('shardwright-edit-theme-emoji').value = originalMeta.preview || '🎨';
+            document.getElementById('shardwright-edit-extra-css').value = originalMeta.extraStyles || '';
             
             toastr.info('Reset to saved values');
         });
         
         // Save button
-        modal.querySelector('.ss-save-theme-btn')?.addEventListener('click', async () => {
+        modal.querySelector('.shardwright-save-theme-btn')?.addEventListener('click', async () => {
             // Collect all color values
             const newColors = {};
-            modal.querySelectorAll('.ss-color-text').forEach(input => {
+            modal.querySelectorAll('.shardwright-color-text').forEach(input => {
                 const prop = input.dataset.prop;
                 const value = input.value.trim();
                 if (prop && value) {
@@ -1415,7 +1415,7 @@ async function showColorEditorModal(themeId, settings, saveSettingsFn) {
             });
 
             // Collect typography (font family)
-            modal.querySelectorAll('.ss-typo-font').forEach(input => {
+            modal.querySelectorAll('.shardwright-typo-font').forEach(input => {
                 const prop = input.dataset.prop;
                 const value = input.value.trim();
                 if (prop && value) {
@@ -1424,7 +1424,7 @@ async function showColorEditorModal(themeId, settings, saveSettingsFn) {
             });
 
             // Collect typography (font size)
-            modal.querySelectorAll('.ss-typo-size').forEach(input => {
+            modal.querySelectorAll('.shardwright-typo-size').forEach(input => {
                 const prop = input.dataset.prop;
                 const raw = String(input.value || '').trim();
                 if (prop && raw) {
@@ -1433,15 +1433,15 @@ async function showColorEditorModal(themeId, settings, saveSettingsFn) {
             });
 
             // Handle bg-primary dropdown
-            const bgPrimarySelect = modal.querySelector('.ss-bg-primary-select');
+            const bgPrimarySelect = modal.querySelector('.shardwright-bg-primary-select');
             if (bgPrimarySelect && bgPrimarySelect.value === 'st-default') {
-                newColors['--ss-bg-primary'] = 'var(--SmartThemeBlurTintColor)';
+                newColors['--shardwright-bg-primary'] = 'var(--SmartThemeBlurTintColor)';
             }
             
             // Keep any colors not shown in editor (but allow typography fields to be cleared)
             const typographyProps = new Set([
-                '--ss-font-primary', '--ss-font-secondary', '--ss-font-muted', '--ss-font-hint',
-                '--ss-font-size-primary', '--ss-font-size-secondary', '--ss-font-size-muted', '--ss-font-size-hint',
+                '--shardwright-font-primary', '--shardwright-font-secondary', '--shardwright-font-muted', '--shardwright-font-hint',
+                '--shardwright-font-size-primary', '--shardwright-font-size-secondary', '--shardwright-font-size-muted', '--shardwright-font-size-hint',
             ]);
 
             for (const [prop, value] of Object.entries(theme.colors)) {
@@ -1453,11 +1453,11 @@ async function showColorEditorModal(themeId, settings, saveSettingsFn) {
             // Update theme
             customThemes[themeId] = {
                 ...theme,
-                name: document.getElementById('ss-edit-theme-name')?.value?.trim() || theme.name,
-                description: document.getElementById('ss-edit-theme-desc')?.value?.trim() || '',
-                preview: document.getElementById('ss-edit-theme-emoji')?.value?.trim() || '🎨',
+                name: document.getElementById('shardwright-edit-theme-name')?.value?.trim() || theme.name,
+                description: document.getElementById('shardwright-edit-theme-desc')?.value?.trim() || '',
+                preview: document.getElementById('shardwright-edit-theme-emoji')?.value?.trim() || '🎨',
                 colors: newColors,
-                extraStyles: document.getElementById('ss-edit-extra-css')?.value || '',
+                extraStyles: document.getElementById('shardwright-edit-extra-css')?.value || '',
             };
             
             // Save to settings
@@ -1508,7 +1508,7 @@ export async function openThemesModal(settings, saveSettingsFn) {
             // Wait for old modal to be fully removed from DOM
             await new Promise(resolve => {
                 const checkRemoval = () => {
-                    if (!document.querySelector('.ss-themes-modal')) {
+                    if (!document.querySelector('.shardwright-themes-modal')) {
                         resolve();
                     } else {
                         requestAnimationFrame(checkRemoval);
@@ -1525,7 +1525,7 @@ export async function openThemesModal(settings, saveSettingsFn) {
         const showPromise = popup.show();
         
         // Wait for DOM to be ready, then attach listeners
-        await waitForElement('.ss-themes-modal');
+        await waitForElement('.shardwright-themes-modal');
         attachThemeListeners(settings, saveSettingsFn, refreshModal);
         
         return showPromise;
@@ -1573,97 +1573,97 @@ function waitForElement(selector, timeout = 2000) {
 // ===== Additional CSS for Theme Modal =====
 export const THEMES_MODAL_CSS = `
 /* Theme Modal Styles */
-.ss-themes-modal {
+.shardwright-themes-modal {
     padding: 20px;
     min-width: 600px;
     max-width: 900px;
 }
 
-.ss-themes-header {
+.shardwright-themes-header {
     text-align: center;
     margin-bottom: 20px;
 }
 
-.ss-themes-header h3 {
+.shardwright-themes-header h3 {
     margin: 0 0 8px 0;
     font-size: 1.4em;
 }
 
-.ss-themes-header p {
+.shardwright-themes-header p {
     margin: 0;
-    color: var(--ss-text-muted);
+    color: var(--shardwright-text-muted);
 }
 
 /* Controls bar */
-.ss-themes-controls {
+.shardwright-themes-controls {
     display: flex;
     gap: 10px;
     justify-content: center;
     margin-bottom: 20px;
     padding: 15px;
-    background: var(--ss-bg-secondary);
+    background: var(--shardwright-bg-secondary);
     border-radius: 8px;
     flex-wrap: wrap;
 }
 
-.ss-themes-controls .menu_button {
+.shardwright-themes-controls .menu_button {
     display: flex;
     align-items: center;
     gap: 6px;
 }
 
-.ss-themes-controls .menu_button:disabled {
+.shardwright-themes-controls .menu_button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
 
 /* Sections */
-.ss-themes-section {
+.shardwright-themes-section {
     margin-bottom: 25px;
 }
 
-.ss-themes-section h4 {
+.shardwright-themes-section h4 {
     margin: 0 0 15px 0;
     padding-bottom: 8px;
-    border-bottom: 1px solid var(--ss-border);
-    color: var(--ss-text-primary);
+    border-bottom: 1px solid var(--shardwright-border);
+    color: var(--shardwright-text-primary);
 }
 
 /* Grid */
-.ss-themes-grid {
+.shardwright-themes-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 15px;
 }
 
 /* Theme cards */
-.ss-theme-card {
-    background: var(--ss-bg-secondary);
-    border: 2px solid var(--ss-border);
+.shardwright-theme-card {
+    background: var(--shardwright-bg-secondary);
+    border: 2px solid var(--shardwright-border);
     border-radius: 10px;
     padding: 12px;
-    transition: all var(--ss-transition);
+    transition: all var(--shardwright-transition);
 }
 
-.ss-theme-card:hover {
-    border-color: var(--ss-primary);
+.shardwright-theme-card:hover {
+    border-color: var(--shardwright-primary);
     transform: translateY(-2px);
-    box-shadow: var(--ss-shadow);
+    box-shadow: var(--shardwright-shadow);
 }
 
-.ss-theme-card-active {
-    border-color: var(--ss-primary);
-    background: var(--ss-highlight);
+.shardwright-theme-card-active {
+    border-color: var(--shardwright-primary);
+    background: var(--shardwright-highlight);
 }
 
 /* Preview section */
-.ss-theme-preview {
+.shardwright-theme-preview {
     border-radius: 6px;
     overflow: hidden;
     margin-bottom: 10px;
 }
 
-.ss-theme-preview-header {
+.shardwright-theme-preview-header {
     padding: 6px 10px;
     font-size: 0.8em;
     font-weight: 600;
@@ -1672,7 +1672,7 @@ export const THEMES_MODAL_CSS = `
     gap: 6px;
 }
 
-.ss-theme-preview-body {
+.shardwright-theme-preview-body {
     padding: 12px;
     display: flex;
     flex-direction: column;
@@ -1680,7 +1680,7 @@ export const THEMES_MODAL_CSS = `
     align-items: center;
 }
 
-.ss-preview-button {
+.shardwright-preview-button {
     padding: 5px 14px;
     border-radius: 4px;
     font-size: 0.75em;
@@ -1688,57 +1688,57 @@ export const THEMES_MODAL_CSS = `
 }
 
 /* Badges */
-.ss-builtin-badge,
-.ss-custom-badge {
+.shardwright-builtin-badge,
+.shardwright-custom-badge {
     font-size: 0.7em;
     padding: 2px 6px;
     border-radius: 3px;
     margin-left: auto;
 }
 
-.ss-builtin-badge {
-    background: var(--ss-info);
+.shardwright-builtin-badge {
+    background: var(--shardwright-info);
     color: white;
 }
 
-.ss-custom-badge {
-    background: var(--ss-success);
+.shardwright-custom-badge {
+    background: var(--shardwright-success);
     color: white;
 }
 
 /* Theme info */
-.ss-theme-info {
+.shardwright-theme-info {
     margin-bottom: 10px;
 }
 
-.ss-theme-info h4 {
+.shardwright-theme-info h4 {
     margin: 0 0 4px 0;
     font-size: 1em;
     border: none;
     padding: 0;
 }
 
-.ss-theme-info p {
+.shardwright-theme-info p {
     margin: 0;
     font-size: 0.8em;
-    color: var(--ss-text-muted);
+    color: var(--shardwright-text-muted);
 }
 
 /* Actions row */
-.ss-theme-actions {
+.shardwright-theme-actions {
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
     align-items: center;
 }
 
-.ss-theme-actions .menu_button {
+.shardwright-theme-actions .menu_button {
     padding: 5px 10px;
     font-size: 0.85em;
 }
 
-.ss-theme-active-badge {
-    background: var(--ss-success);
+.shardwright-theme-active-badge {
+    background: var(--shardwright-success);
     color: white;
     padding: 5px 12px;
     border-radius: 4px;
@@ -1747,269 +1747,269 @@ export const THEMES_MODAL_CSS = `
 }
 
 /* No custom themes message */
-.ss-no-custom-themes {
+.shardwright-no-custom-themes {
     text-align: center;
     padding: 30px;
-    color: var(--ss-text-muted);
+    color: var(--shardwright-text-muted);
     font-style: italic;
     grid-column: 1 / -1;
 }
 
 /* Footer */
-.ss-themes-footer {
-    border-top: 1px solid var(--ss-border);
+.shardwright-themes-footer {
+    border-top: 1px solid var(--shardwright-border);
     padding-top: 15px;
     margin-top: 10px;
 }
 
-.ss-themes-hint {
+.shardwright-themes-hint {
     display: flex;
     align-items: center;
     gap: 8px;
     margin: 0;
     font-size: 0.85em;
-    color: var(--ss-text-muted);
+    color: var(--shardwright-text-muted);
 }
 
 /* Import Modal */
-.ss-import-modal {
+.shardwright-import-modal {
     padding: 20px;
     min-width: 500px;
 }
 
-.ss-import-modal h3 {
+.shardwright-import-modal h3 {
     margin: 0 0 10px 0;
 }
 
-.ss-import-file-section {
+.shardwright-import-file-section {
     display: flex;
     align-items: center;
     gap: 10px;
     margin-bottom: 15px;
     padding: 10px;
-    background: var(--ss-bg-secondary);
+    background: var(--shardwright-bg-secondary);
     border-radius: 6px;
 }
 
-.ss-file-name {
+.shardwright-file-name {
     font-size: 0.9em;
-    color: var(--ss-text-muted);
+    color: var(--shardwright-text-muted);
 }
 
-.ss-import-text-section {
+.shardwright-import-text-section {
     margin-bottom: 15px;
 }
 
-.ss-import-text-section label {
+.shardwright-import-text-section label {
     display: block;
     margin-bottom: 6px;
     font-weight: 500;
 }
 
-.ss-import-text-section textarea {
+.shardwright-import-text-section textarea {
     width: 100%;
     font-family: monospace;
     font-size: 12px;
-    background: var(--ss-bg-input);
-    border: 1px solid var(--ss-border);
+    background: var(--shardwright-bg-input);
+    border: 1px solid var(--shardwright-border);
     border-radius: 4px;
     padding: 10px;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
     resize: vertical;
 }
 
-.ss-import-actions {
+.shardwright-import-actions {
     display: flex;
     justify-content: flex-end;
 }
 
 /* Create Theme Modal */
-.ss-create-theme-modal {
+.shardwright-create-theme-modal {
     padding: 20px;
     min-width: 400px;
 }
 
-.ss-create-theme-modal h3 {
+.shardwright-create-theme-modal h3 {
     margin: 0 0 10px 0;
 }
 
-.ss-create-form {
+.shardwright-create-form {
     display: flex;
     flex-direction: column;
     gap: 12px;
     margin-bottom: 15px;
 }
 
-.ss-form-group {
+.shardwright-form-group {
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
 
-.ss-form-group label {
+.shardwright-form-group label {
     font-size: 0.9em;
     font-weight: 500;
 }
 
-.ss-form-group input,
-.ss-form-group select {
+.shardwright-form-group input,
+.shardwright-form-group select {
     padding: 8px 10px;
-    background: var(--ss-bg-input);
-    border: 1px solid var(--ss-border);
+    background: var(--shardwright-bg-input);
+    border: 1px solid var(--shardwright-border);
     border-radius: 4px;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
 }
 
-.ss-form-group input:focus,
-.ss-form-group select:focus {
-    border-color: var(--ss-border-focus);
+.shardwright-form-group input:focus,
+.shardwright-form-group select:focus {
+    border-color: var(--shardwright-border-focus);
     outline: none;
 }
 
-.ss-create-actions {
+.shardwright-create-actions {
     display: flex;
     justify-content: flex-end;
 }
 
 /* Confirm delete modal */
-.ss-confirm-delete {
+.shardwright-confirm-delete {
     padding: 20px;
     text-align: center;
 }
 
-.ss-confirm-delete h3 {
+.shardwright-confirm-delete h3 {
     margin: 0 0 15px 0;
 }
 
-.ss-confirm-delete .ss-warning-text {
-    color: var(--ss-error);
+.shardwright-confirm-delete .shardwright-warning-text {
+    color: var(--shardwright-error);
     font-size: 0.9em;
 }
 
 /* Mobile adjustments */
 @media (max-width: 768px) {
-    .ss-themes-modal {
+    .shardwright-themes-modal {
         min-width: auto;
         padding: 15px;
     }
     
-    .ss-themes-grid {
+    .shardwright-themes-grid {
         grid-template-columns: 1fr;
     }
     
-    .ss-themes-controls {
+    .shardwright-themes-controls {
         flex-direction: column;
     }
     
-    .ss-theme-actions {
+    .shardwright-theme-actions {
         justify-content: center;
     }
     
-    .ss-import-modal,
-    .ss-create-theme-modal {
+    .shardwright-import-modal,
+    .shardwright-create-theme-modal {
         min-width: auto;
     }
 }
 /* bg-primary dropdown controls */
-.ss-bg-primary-controls {
+.shardwright-bg-primary-controls {
     display: flex;
     flex-direction: column;
     flex: 1;
     min-width: 0;
 }
 
-.ss-bg-primary-controls select {
+.shardwright-bg-primary-controls select {
     padding: 5px 8px;
     font-size: 0.85em;
-    background: var(--ss-bg-input);
-    border: 1px solid var(--ss-border);
+    background: var(--shardwright-bg-input);
+    border: 1px solid var(--shardwright-border);
     border-radius: 4px;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
 }
 
-.ss-bg-primary-custom {
+.shardwright-bg-primary-custom {
     display: flex;
     align-items: center;
     gap: 6px;
 }
 
     /* Color Editor Modal */
-.ss-color-editor-modal {
+.shardwright-color-editor-modal {
     padding: 20px;
     min-width: 550px;
     max-height: 80vh;
     overflow-y: auto;
 }
 
-.ss-editor-header {
+.shardwright-editor-header {
     margin-bottom: 15px;
 }
 
-.ss-editor-header h3 {
+.shardwright-editor-header h3 {
     margin: 0 0 5px 0;
 }
 
-.ss-editor-header p {
+.shardwright-editor-header p {
     margin: 0;
     font-size: 0.9em;
-    color: var(--ss-text-muted);
+    color: var(--shardwright-text-muted);
 }
 
-.ss-editor-meta {
-    background: var(--ss-bg-secondary);
+.shardwright-editor-meta {
+    background: var(--shardwright-bg-secondary);
     border-radius: 6px;
     padding: 12px;
     margin-bottom: 15px;
 }
 
-.ss-meta-row {
+.shardwright-meta-row {
     display: flex;
     align-items: center;
     gap: 10px;
     margin-bottom: 8px;
 }
 
-.ss-meta-row:last-child {
+.shardwright-meta-row:last-child {
     margin-bottom: 0;
 }
 
-.ss-meta-row label {
+.shardwright-meta-row label {
     width: 120px;
     font-weight: 500;
     flex-shrink: 0;
 }
 
-.ss-meta-row input {
+.shardwright-meta-row input {
     flex: 1;
     padding: 6px 10px;
-    background: var(--ss-bg-input);
-    border: 1px solid var(--ss-border);
+    background: var(--shardwright-bg-input);
+    border: 1px solid var(--shardwright-border);
     border-radius: 4px;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
 }
 
-.ss-color-groups {
+.shardwright-color-groups {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 15px;
     margin-bottom: 15px;
 }
 
-.ss-color-group {
-    background: var(--ss-bg-secondary);
+.shardwright-color-group {
+    background: var(--shardwright-bg-secondary);
     border-radius: 6px;
     padding: 12px;
 }
 
-.ss-color-group h4 {
+.shardwright-color-group h4 {
     margin: 0 0 10px 0;
     font-size: 0.95em;
-    color: var(--ss-text-primary);
-    border-bottom: 1px solid var(--ss-border);
+    color: var(--shardwright-text-primary);
+    border-bottom: 1px solid var(--shardwright-border);
     padding-bottom: 6px;
 }
 
-.ss-color-row {
+.shardwright-color-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -2017,194 +2017,194 @@ export const THEMES_MODAL_CSS = `
     gap: 8px;
 }
 
-.ss-color-row:last-child {
+.shardwright-color-row:last-child {
     margin-bottom: 0;
 }
 
-.ss-color-row label {
+.shardwright-color-row label {
     font-size: 0.85em;
-    color: var(--ss-text-secondary);
+    color: var(--shardwright-text-secondary);
     flex: 1;
     min-width: 80px;
 }
 
-.ss-color-inputs {
+.shardwright-color-inputs {
     display: flex;
     align-items: center;
     gap: 6px;
 }
 
-.ss-text-style-note {
+.shardwright-text-style-note {
     font-size: 0.85em;
-    color: var(--ss-text-muted);
+    color: var(--shardwright-text-muted);
     margin-bottom: 10px;
 }
 
-.ss-text-style-block {
-    border: 1px solid var(--ss-border);
+.shardwright-text-style-block {
+    border: 1px solid var(--shardwright-border);
     border-radius: 6px;
     padding: 10px;
-    background: var(--ss-bg-tertiary);
+    background: var(--shardwright-bg-tertiary);
     margin-bottom: 10px;
 }
 
-.ss-text-style-block:last-child {
+.shardwright-text-style-block:last-child {
     margin-bottom: 0;
 }
 
-.ss-text-style-header {
+.shardwright-text-style-header {
     margin-bottom: 8px;
 }
 
-.ss-text-style-title {
+.shardwright-text-style-title {
     font-weight: 600;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
 }
 
-.ss-text-style-desc {
+.shardwright-text-style-desc {
     font-size: 0.85em;
-    color: var(--ss-text-muted);
+    color: var(--shardwright-text-muted);
 }
 
-.ss-text-style-controls {
+.shardwright-text-style-controls {
     display: grid;
     grid-template-columns: 1.2fr 1fr 0.6fr;
     gap: 8px;
     align-items: end;
 }
 
-.ss-text-style-control label {
+.shardwright-text-style-control label {
     display: block;
     font-size: 0.8em;
-    color: var(--ss-text-secondary);
+    color: var(--shardwright-text-secondary);
     margin-bottom: 4px;
 }
 
-.ss-typo-font,
-.ss-typo-size {
+.shardwright-typo-font,
+.shardwright-typo-size {
     width: 100%;
     padding: 5px 8px;
-    background: var(--ss-bg-input);
-    border: 1px solid var(--ss-border);
+    background: var(--shardwright-bg-input);
+    border: 1px solid var(--shardwright-border);
     border-radius: 4px;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
 }
 
-.ss-typo-font:focus,
-.ss-typo-size:focus {
-    border-color: var(--ss-border-focus);
+.shardwright-typo-font:focus,
+.shardwright-typo-size:focus {
+    border-color: var(--shardwright-border-focus);
     outline: none;
 }
 
-.ss-color-picker {
+.shardwright-color-picker {
     width: 32px;
     height: 32px;
     padding: 0;
-    border: 1px solid var(--ss-border);
+    border: 1px solid var(--shardwright-border);
     border-radius: 4px;
     cursor: pointer;
     background: transparent;
 }
 
-.ss-color-picker::-webkit-color-swatch-wrapper {
+.shardwright-color-picker::-webkit-color-swatch-wrapper {
     padding: 2px;
 }
 
-.ss-color-picker::-webkit-color-swatch {
+.shardwright-color-picker::-webkit-color-swatch {
     border-radius: 2px;
     border: none;
 }
 
-.ss-color-text {
+.shardwright-color-text {
     width: 140px;
     padding: 5px 8px;
     font-family: monospace;
     font-size: 0.85em;
-    background: var(--ss-bg-input);
-    border: 1px solid var(--ss-border);
+    background: var(--shardwright-bg-input);
+    border: 1px solid var(--shardwright-border);
     border-radius: 4px;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
 }
 
-.ss-color-text:focus {
-    border-color: var(--ss-border-focus);
+.shardwright-color-text:focus {
+    border-color: var(--shardwright-border-focus);
     outline: none;
 }
 
-.ss-editor-extra {
-    background: var(--ss-bg-secondary);
+.shardwright-editor-extra {
+    background: var(--shardwright-bg-secondary);
     border-radius: 6px;
     padding: 12px;
     margin-bottom: 15px;
 }
 
-.ss-editor-extra h4 {
+.shardwright-editor-extra h4 {
     margin: 0 0 8px 0;
     font-size: 0.95em;
 }
 
-.ss-editor-extra textarea {
+.shardwright-editor-extra textarea {
     width: 100%;
     font-family: monospace;
     font-size: 0.85em;
-    background: var(--ss-bg-input);
-    border: 1px solid var(--ss-border);
+    background: var(--shardwright-bg-input);
+    border: 1px solid var(--shardwright-border);
     border-radius: 4px;
     padding: 8px;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
     resize: vertical;
 }
 
-.ss-editor-actions {
+.shardwright-editor-actions {
     display: flex;
     justify-content: space-between;
     gap: 10px;
 }
 
-.ss-editor-actions .ss-save-theme-btn {
-    background: var(--ss-primary);
+.shardwright-editor-actions .shardwright-save-theme-btn {
+    background: var(--shardwright-primary);
     color: white;
-    border-color: var(--ss-primary);
+    border-color: var(--shardwright-primary);
 }
 
-.ss-editor-actions .ss-save-theme-btn:hover {
-    background: var(--ss-primary-hover);
+.shardwright-editor-actions .shardwright-save-theme-btn:hover {
+    background: var(--shardwright-primary-hover);
 }
 
 /* Mobile adjustments */
 @media (max-width: 768px) {
-    .ss-color-editor-modal {
+    .shardwright-color-editor-modal {
         min-width: auto;
         padding: 15px;
     }
     
-    .ss-color-groups {
+    .shardwright-color-groups {
         grid-template-columns: 1fr;
     }
     
-    .ss-color-row {
+    .shardwright-color-row {
         flex-direction: column;
         align-items: flex-start;
     }
     
-    .ss-color-inputs {
+    .shardwright-color-inputs {
         width: 100%;
     }
     
-    .ss-color-text {
+    .shardwright-color-text {
         flex: 1;
     }
     
-    .ss-meta-row {
+    .shardwright-meta-row {
         flex-direction: column;
         align-items: flex-start;
     }
     
-    .ss-meta-row label {
+    .shardwright-meta-row label {
         width: auto;
     }
     
-    .ss-meta-row input {
+    .shardwright-meta-row input {
         width: 100%;
     }
 }

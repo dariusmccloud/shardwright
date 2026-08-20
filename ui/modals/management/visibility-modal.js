@@ -1,5 +1,5 @@
 /**
- * Visibility Modal Component for Summary Sharder
+ * Visibility Modal Component for Shardwright
  */
 
 import { getChatRanges, saveChatRanges, saveSettings } from '../../../core/settings.js';
@@ -25,42 +25,42 @@ function renderRangesList(ranges, container, modalState) {
     container.innerHTML = '';
 
     if (ranges.length === 0) {
-        container.innerHTML = '<p class="ss-ranges-empty">No ranges saved yet. Click "Add Range" to create one.</p>';
+        container.innerHTML = '<p class="shardwright-ranges-empty">No ranges saved yet. Click "Add Range" to create one.</p>';
         return;
     }
 
     ranges.forEach((range, index) => {
         const rangeDiv = document.createElement('div');
-        rangeDiv.className = 'ss-range-item';
+        rangeDiv.className = 'shardwright-range-item';
 
         // Editable range inputs
         const rangeInfo = document.createElement('div');
-        rangeInfo.className = 'ss-range-info ss-range-editable';
+        rangeInfo.className = 'shardwright-range-info shardwright-range-editable';
 
         const maxIndex = (chat?.length || 1) - 1;
 
         const startLabel = document.createElement('span');
         startLabel.textContent = 'Start: ';
-        startLabel.className = 'ss-range-label';
+        startLabel.className = 'shardwright-range-label';
 
         const startInput = document.createElement('input');
         startInput.type = 'number';
-        startInput.className = 'text_pole ss-range-input';
+        startInput.className = 'text_pole shardwright-range-input';
         startInput.min = '0';
         startInput.max = String(maxIndex);
         startInput.value = range.start;
 
         const separator = document.createElement('span');
         separator.textContent = ' - ';
-        separator.className = 'ss-range-separator';
+        separator.className = 'shardwright-range-separator';
 
         const endLabel = document.createElement('span');
         endLabel.textContent = 'End: ';
-        endLabel.className = 'ss-range-label';
+        endLabel.className = 'shardwright-range-label';
 
         const endInput = document.createElement('input');
         endInput.type = 'number';
-        endInput.className = 'text_pole ss-range-input';
+        endInput.className = 'text_pole shardwright-range-input';
         endInput.min = '0';
         endInput.max = String(maxIndex);
         endInput.value = range.end;
@@ -124,14 +124,14 @@ function renderRangesList(ranges, container, modalState) {
         rangeInfo.appendChild(endInput);
 
         const controlsDiv = document.createElement('div');
-        controlsDiv.className = 'ss-range-controls';
+        controlsDiv.className = 'shardwright-range-controls';
 
         // Ignore names input - use CSS classes instead of inline styles
         const ignoreDiv = document.createElement('div');
-        ignoreDiv.className = 'ss-ignore-input-wrapper';
+        ignoreDiv.className = 'shardwright-ignore-input-wrapper';
 
         const ignoreLabel = document.createElement('label');
-        ignoreLabel.className = 'ss-ignore-label';
+        ignoreLabel.className = 'shardwright-ignore-label';
         ignoreLabel.textContent = 'Ignore messages by:';
 
         const ignoreInput = createTagInput({
@@ -141,14 +141,14 @@ function renderRangesList(ranges, container, modalState) {
                 modalState.ranges[index].ignoreNames = tagsToString(tags);
             }
         });
-        ignoreInput.classList.add('ss-ignore-input');
+        ignoreInput.classList.add('shardwright-ignore-input');
 
         ignoreDiv.appendChild(ignoreLabel);
         ignoreDiv.appendChild(ignoreInput);
 
         // Hide/Show toggle - use CSS classes instead of inline styles
         const hideLabel = document.createElement('label');
-        hideLabel.className = 'checkbox_label ss-range-checkbox-label';
+        hideLabel.className = 'checkbox_label shardwright-range-checkbox-label';
         const hideCheckbox = document.createElement('input');
         hideCheckbox.type = 'checkbox';
         hideCheckbox.checked = range.hidden || false;
@@ -162,7 +162,7 @@ function renderRangesList(ranges, container, modalState) {
 
         // Ignore Collapse toggle - use CSS classes instead of inline styles
         const ignoreCollapseLabel = document.createElement('label');
-        ignoreCollapseLabel.className = 'checkbox_label ss-range-checkbox-label';
+        ignoreCollapseLabel.className = 'checkbox_label shardwright-range-checkbox-label';
         const ignoreCollapseCheckbox = document.createElement('input');
         ignoreCollapseCheckbox.type = 'checkbox';
         ignoreCollapseCheckbox.checked = range.ignoreCollapse || false;
@@ -178,7 +178,7 @@ function renderRangesList(ranges, container, modalState) {
         const deleteBtn = document.createElement('input');
         deleteBtn.type = 'button';
         deleteBtn.value = 'Delete';
-        deleteBtn.className = 'menu_button ss-delete-btn';
+        deleteBtn.className = 'menu_button shardwright-delete-btn';
         deleteBtn.addEventListener('click', async () => {
             const confirm = await showSsConfirm('Delete Range', `Are you sure you want to delete range ${range.start}-${range.end}?`);
             if (confirm === POPUP_RESULT.AFFIRMATIVE) {
@@ -316,8 +316,8 @@ async function handleClearAllRanges(modalState, container) {
         modalState.collapseAll = false;
 
         // Update toggles in modal
-        const hideAllCheckbox = document.getElementById('ss-modal-hide-all');
-        const collapseAllCheckbox = document.getElementById('ss-modal-collapse-all');
+        const hideAllCheckbox = document.getElementById('shardwright-modal-hide-all');
+        const collapseAllCheckbox = document.getElementById('shardwright-modal-collapse-all');
         if (hideAllCheckbox) hideAllCheckbox.checked = false;
         if (collapseAllCheckbox) collapseAllCheckbox.checked = false;
 
@@ -351,59 +351,59 @@ export async function openVisibilityModal(settings) {
 
     // Build modal HTML
     const modalHtml = `
-        <div class="ss-visibility-modal">
-            <div class="ss-global-toggles">
-                <h3 class="ss-global-heading">Global Settings</h3>
-                <div class="ss-global-toggle-row">
+        <div class="shardwright-visibility-modal">
+            <div class="shardwright-global-toggles">
+                <h3 class="shardwright-global-heading">Global Settings</h3>
+                <div class="shardwright-global-toggle-row">
                     <label class="checkbox_label">
-                        <input id="ss-modal-hide-all" type="checkbox" ${modalState.hideAllSummarized ? 'checked' : ''} />
+                        <input id="shardwright-modal-hide-all" type="checkbox" ${modalState.hideAllSummarized ? 'checked' : ''} />
                         <span>Hide After Summarisation</span>
                     </label>
                 </div>
-                <div class="ss-global-toggle-row">
+                <div class="shardwright-global-toggle-row">
                     <label class="checkbox_label">
-                        <input id="ss-modal-collapse-all" type="checkbox" ${modalState.collapseAll ? 'checked' : ''} />
+                        <input id="shardwright-modal-collapse-all" type="checkbox" ${modalState.collapseAll ? 'checked' : ''} />
                         <span>Collapse hidden messages</span>
                     </label>
-                    <p class="ss-global-hint ss-global-hint-indented">
+                    <p class="shardwright-global-hint shardwright-global-hint-indented">
                         Collapses all hidden messages (header remains visible, click to expand)
                     </p>
                 </div>
-                <div class="ss-global-ignore-group">
-                    <label class="ss-global-ignore-label">
+                <div class="shardwright-global-ignore-group">
+                    <label class="shardwright-global-ignore-label">
                         Ignore messages by (applies to all ranges):
                     </label>
-                    <div id="ss-modal-global-ignore"></div>
-                    <p class="ss-global-hint">
+                    <div id="shardwright-modal-global-ignore"></div>
+                    <p class="shardwright-global-hint">
                         Messages from these senders will remain visible regardless of hide/collapse settings
                     </p>
                 </div>
-                <div class="ss-global-toggle-row">
+                <div class="shardwright-global-toggle-row">
                     <label class="checkbox_label">
-                        <input id="ss-modal-show-archived" type="checkbox" ${modalState.showArchivedMessages ? 'checked' : ''} />
+                        <input id="shardwright-modal-show-archived" type="checkbox" ${modalState.showArchivedMessages ? 'checked' : ''} />
                         <span>Show archived messages</span>
                     </label>
-                    <p class="ss-global-hint ss-global-hint-indented" id="ss-modal-archived-count">
+                    <p class="shardwright-global-hint shardwright-global-hint-indented" id="shardwright-modal-archived-count">
                         ${getArchivedMessageCount(chat)} archived message(s). Archived messages remain prompt-hidden.
                     </p>
                 </div>
-                <div class="ss-global-actions-row">
-                    <input id="ss-modal-detect-ranges" class="menu_button" type="button" value="Detect Hidden Ranges" />
-                    <input id="ss-modal-archive-ranges" class="menu_button" type="button" value="Archive Saved Ranges" />
-                    <input id="ss-modal-restore-archived" class="menu_button" type="button" value="Restore All Archived" />
-                    <input id="ss-modal-clear-all" class="menu_button" type="button" value="Clear All Ranges" />
+                <div class="shardwright-global-actions-row">
+                    <input id="shardwright-modal-detect-ranges" class="menu_button" type="button" value="Detect Hidden Ranges" />
+                    <input id="shardwright-modal-archive-ranges" class="menu_button" type="button" value="Archive Saved Ranges" />
+                    <input id="shardwright-modal-restore-archived" class="menu_button" type="button" value="Restore All Archived" />
+                    <input id="shardwright-modal-clear-all" class="menu_button" type="button" value="Clear All Ranges" />
                 </div>
             </div>
 
-            <div class="ss-ranges-section">
+            <div class="shardwright-ranges-section">
                 <h3>Saved Ranges</h3>
-                <div class="ss-range-actions-row">
-                    <input id="ss-modal-toggle-hide" class="menu_button" type="button" value="Toggle Hide All" />
-                    <input id="ss-modal-toggle-ignore-collapse" class="menu_button" type="button" value="Toggle Ignore Collapse All" />
+                <div class="shardwright-range-actions-row">
+                    <input id="shardwright-modal-toggle-hide" class="menu_button" type="button" value="Toggle Hide All" />
+                    <input id="shardwright-modal-toggle-ignore-collapse" class="menu_button" type="button" value="Toggle Ignore Collapse All" />
                 </div>
-                <div class="ss-ranges-list" id="ss-modal-ranges-list"></div>
-                <div class="ss-add-range-row">
-                    <input id="ss-modal-add-range" class="menu_button" type="button" value="Add Range" />
+                <div class="shardwright-ranges-list" id="shardwright-modal-ranges-list"></div>
+                <div class="shardwright-add-range-row">
+                    <input id="shardwright-modal-add-range" class="menu_button" type="button" value="Add Range" />
                 </div>
             </div>
         </div>
@@ -428,8 +428,8 @@ export async function openVisibilityModal(settings) {
     // Set up event listeners after popup is shown
     // Use requestAnimationFrame instead of setTimeout to avoid blocking main thread
     requestAnimationFrame(() => {
-        const rangesListContainer = document.getElementById('ss-modal-ranges-list');
-        const archivedCountEl = document.getElementById('ss-modal-archived-count');
+        const rangesListContainer = document.getElementById('shardwright-modal-ranges-list');
+        const archivedCountEl = document.getElementById('shardwright-modal-archived-count');
         const updateArchivedCount = () => {
             if (archivedCountEl) {
                 archivedCountEl.textContent = `${getArchivedMessageCount(chat)} archived message(s). Archived messages remain prompt-hidden.`;
@@ -440,21 +440,21 @@ export async function openVisibilityModal(settings) {
         }
 
         // Global toggle listeners
-        const hideAllCheckbox = document.getElementById('ss-modal-hide-all');
+        const hideAllCheckbox = document.getElementById('shardwright-modal-hide-all');
         if (hideAllCheckbox) {
             hideAllCheckbox.addEventListener('change', (e) => {
                 modalState.hideAllSummarized = e.target.checked;
             });
         }
 
-        const collapseAllCheckbox = document.getElementById('ss-modal-collapse-all');
+        const collapseAllCheckbox = document.getElementById('shardwright-modal-collapse-all');
         if (collapseAllCheckbox) {
             collapseAllCheckbox.addEventListener('change', (e) => {
                 modalState.collapseAll = e.target.checked;
             });
         }
 
-        const showArchivedCheckbox = document.getElementById('ss-modal-show-archived');
+        const showArchivedCheckbox = document.getElementById('shardwright-modal-show-archived');
         if (showArchivedCheckbox) {
             showArchivedCheckbox.addEventListener('change', (e) => {
                 modalState.showArchivedMessages = e.target.checked;
@@ -462,7 +462,7 @@ export async function openVisibilityModal(settings) {
             });
         }
 
-        const globalIgnoreHost = document.getElementById('ss-modal-global-ignore');
+        const globalIgnoreHost = document.getElementById('shardwright-modal-global-ignore');
         if (globalIgnoreHost) {
             const globalIgnoreInput = createTagInput({
                 tags: parseCommaTags(modalState.globalIgnoreNames || ''),
@@ -475,7 +475,7 @@ export async function openVisibilityModal(settings) {
         }
 
         // Toggle hide all ranges button
-        const toggleHideBtn = document.getElementById('ss-modal-toggle-hide');
+        const toggleHideBtn = document.getElementById('shardwright-modal-toggle-hide');
         if (toggleHideBtn) {
             toggleHideBtn.addEventListener('click', () => {
                 if (modalState.ranges.length === 0) {
@@ -497,7 +497,7 @@ export async function openVisibilityModal(settings) {
         }
 
         // Toggle ignore collapse all ranges button
-        const toggleIgnoreCollapseBtn = document.getElementById('ss-modal-toggle-ignore-collapse');
+        const toggleIgnoreCollapseBtn = document.getElementById('shardwright-modal-toggle-ignore-collapse');
         if (toggleIgnoreCollapseBtn) {
             toggleIgnoreCollapseBtn.addEventListener('click', () => {
                 if (modalState.ranges.length === 0) {
@@ -519,14 +519,14 @@ export async function openVisibilityModal(settings) {
         }
 
         // Detect hidden ranges button
-        const detectRangesBtn = document.getElementById('ss-modal-detect-ranges');
+        const detectRangesBtn = document.getElementById('shardwright-modal-detect-ranges');
         if (detectRangesBtn) {
             detectRangesBtn.addEventListener('click', () => {
                 handleDetectHiddenRanges(modalState, rangesListContainer);
             });
         }
 
-        const archiveRangesBtn = document.getElementById('ss-modal-archive-ranges');
+        const archiveRangesBtn = document.getElementById('shardwright-modal-archive-ranges');
         if (archiveRangesBtn) {
             archiveRangesBtn.addEventListener('click', async () => {
                 const archiveableRanges = modalState.ranges.filter(range => range.hidden !== false);
@@ -548,7 +548,7 @@ export async function openVisibilityModal(settings) {
             });
         }
 
-        const restoreArchivedBtn = document.getElementById('ss-modal-restore-archived');
+        const restoreArchivedBtn = document.getElementById('shardwright-modal-restore-archived');
         if (restoreArchivedBtn) {
             restoreArchivedBtn.addEventListener('click', async () => {
                 const result = await restoreAllArchivedMessages({
@@ -565,7 +565,7 @@ export async function openVisibilityModal(settings) {
         }
 
         // Clear all button
-        const clearAllBtn = document.getElementById('ss-modal-clear-all');
+        const clearAllBtn = document.getElementById('shardwright-modal-clear-all');
         if (clearAllBtn) {
             clearAllBtn.addEventListener('click', () => {
                 handleClearAllRanges(modalState, rangesListContainer);
@@ -573,7 +573,7 @@ export async function openVisibilityModal(settings) {
         }
 
         // Add range button
-        const addRangeBtn = document.getElementById('ss-modal-add-range');
+        const addRangeBtn = document.getElementById('shardwright-modal-add-range');
         if (addRangeBtn) {
             addRangeBtn.addEventListener('click', () => {
                 handleAddRange(modalState, rangesListContainer);

@@ -1,38 +1,38 @@
 const SHARD_CONFIG = [
     {
         id: '1',
-        selector: '.ss-crystal-shard--1',
-        orbitClass: 'ss-shard-orbit-1',
+        selector: '.shardwright-crystal-shard--1',
+        orbitClass: 'shardwright-shard-orbit-1',
         orbitStartTransform: 'translate(-8px, -3px) rotate(0deg) scale(1)',
     },
     {
         id: '2',
-        selector: '.ss-crystal-shard--2',
-        orbitClass: 'ss-shard-orbit-2',
+        selector: '.shardwright-crystal-shard--2',
+        orbitClass: 'shardwright-shard-orbit-2',
         orbitStartTransform: 'translate(11px, -1px) rotate(0deg) scale(1)',
     },
     {
         id: '3',
-        selector: '.ss-crystal-shard--3',
-        orbitClass: 'ss-shard-orbit-3',
+        selector: '.shardwright-crystal-shard--3',
+        orbitClass: 'shardwright-shard-orbit-3',
         orbitStartTransform: 'translate(-10px, 6px) rotate(0deg) scale(1)',
     },
     {
         id: '4',
-        selector: '.ss-crystal-shard--4',
-        orbitClass: 'ss-shard-orbit-4',
+        selector: '.shardwright-crystal-shard--4',
+        orbitClass: 'shardwright-shard-orbit-4',
         orbitStartTransform: 'translate(9px, 7px) rotate(0deg) scale(1)',
     },
     {
         id: '5a',
-        selector: '.ss-crystal-shard--5a',
-        orbitClass: 'ss-shard-orbit-5a',
+        selector: '.shardwright-crystal-shard--5a',
+        orbitClass: 'shardwright-shard-orbit-5a',
         orbitStartTransform: 'translate(-3px, 12px) rotate(0deg) scale(1)',
     },
     {
         id: '5b',
-        selector: '.ss-crystal-shard--5b',
-        orbitClass: 'ss-shard-orbit-5b',
+        selector: '.shardwright-crystal-shard--5b',
+        orbitClass: 'shardwright-shard-orbit-5b',
         orbitStartTransform: 'translate(4px, 13px) rotate(0deg) scale(1)',
     },
 ];
@@ -63,7 +63,7 @@ export function createFabAnimator(fabElement) {
     }
 
     function getTriggerCenterRect() {
-        const trigger = fabElement.querySelector('.ss-fab-trigger');
+        const trigger = fabElement.querySelector('.shardwright-fab-trigger');
         const triggerRect = trigger?.getBoundingClientRect?.();
         if (!triggerRect) {
             return new DOMRect(0, 0, 12, 12);

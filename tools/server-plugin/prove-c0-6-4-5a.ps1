@@ -115,7 +115,7 @@ function Get-ReviewerActorId([string]$ReviewerRole, [string]$ReviewerEntityId) {
 }
 
 if ($InstallPayload) {
-    & powershell -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'install-summary-sharder-memory.ps1') | Out-Null
+    & powershell -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'install-shardwright-memory.ps1') | Out-Null
 }
 
 $seedScript = Join-Path $PSScriptRoot 'seed-interpretive-candidate.ps1'

@@ -1,6 +1,7 @@
-const TRACE_STORAGE_KEY = 'summary_sharder:architectural_integration_trace';
-const FAIL_STORAGE_KEY = 'summary_sharder:debug_fail_next_host_save';
-const TRACE_GLOBAL_KEY = '__summarySharderArchitecturalIntegrationTrace';
+import { ensureShardwrightNamespace } from '../shardwright-runtime-identity.js';
+
+const TRACE_STORAGE_KEY = 'shardwright:architectural-integration-trace';
+const FAIL_STORAGE_KEY = 'shardwright:debug-fail-next-host-save';
 
 function cloneJson(value) {
     return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
@@ -47,12 +48,10 @@ function writeStoredTrace(trace) {
 }
 
 function setGlobalTrace(trace) {
-    globalThis[TRACE_GLOBAL_KEY] = trace;
-    if (!globalThis.summarySharderDebug || typeof globalThis.summarySharderDebug !== 'object') {
-        globalThis.summarySharderDebug = {};
-    }
-    globalThis.summarySharderDebug.getArchitecturalIntegrationTrace = getArchitecturalIntegrationTrace;
-    globalThis.summarySharderDebug.clearArchitecturalIntegrationTrace = clearArchitecturalIntegrationTrace;
+    const diagnostics = ensureShardwrightNamespace('diagnostics', globalThis);
+    diagnostics.architecturalIntegrationTrace = trace;
+    diagnostics.getArchitecturalIntegrationTrace = getArchitecturalIntegrationTrace;
+    diagnostics.clearArchitecturalIntegrationTrace = clearArchitecturalIntegrationTrace;
 }
 
 function nextSequence(trace) {
@@ -61,8 +60,8 @@ function nextSequence(trace) {
 }
 
 export function getArchitecturalIntegrationTrace() {
-    const trace = Array.isArray(globalThis[TRACE_GLOBAL_KEY])
-        ? globalThis[TRACE_GLOBAL_KEY]
+    const trace = Array.isArray(globalThis.Shardwright?.diagnostics?.architecturalIntegrationTrace)
+        ? globalThis.Shardwright.diagnostics.architecturalIntegrationTrace
         : readStoredTrace();
     return cloneJson(trace);
 }
@@ -78,8 +77,8 @@ export function beginArchitecturalIntegrationTrace(metadata = {}) {
 }
 
 export function recordArchitecturalIntegrationEvent(type, metadata = {}) {
-    const trace = Array.isArray(globalThis[TRACE_GLOBAL_KEY])
-        ? [...globalThis[TRACE_GLOBAL_KEY]]
+    const trace = Array.isArray(globalThis.Shardwright?.diagnostics?.architecturalIntegrationTrace)
+        ? [...globalThis.Shardwright.diagnostics.architecturalIntegrationTrace]
         : readStoredTrace();
     const entry = {
         ...cloneJson(metadata || {}),

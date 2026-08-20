@@ -1,5 +1,5 @@
 /**
- * Prompts Modal Component for Summary Sharder
+ * Prompts Modal Component for Shardwright
  * Tabbed modal for managing Summary Prompts, Sharder Prompts, and Drafting Prompt
  */
 
@@ -34,17 +34,17 @@ import {
  */
 function createTextareaActions(textarea, onReset) {
     const wrapper = document.createElement('div');
-    wrapper.className = 'ss-textarea-wrapper';
+    wrapper.className = 'shardwright-textarea-wrapper';
     textarea.parentNode.insertBefore(wrapper, textarea);
     wrapper.appendChild(textarea);
 
     const actions = document.createElement('div');
-    actions.className = 'ss-textarea-actions';
+    actions.className = 'shardwright-textarea-actions';
     actions.innerHTML = `
-        <button class="ss-textarea-action-btn" data-action="copy" title="Copy to clipboard"><i class="fa-solid fa-copy"></i></button>
-        <button class="ss-textarea-action-btn" data-action="paste" title="Paste from clipboard"><i class="fa-solid fa-paste"></i></button>
-        <button class="ss-textarea-action-btn" data-action="clear" title="Clear content"><i class="fa-solid fa-xmark"></i></button>
-        <button class="ss-textarea-action-btn" data-action="reset" title="Reset to default"><i class="fa-solid fa-rotate-left"></i></button>
+        <button class="shardwright-textarea-action-btn" data-action="copy" title="Copy to clipboard"><i class="fa-solid fa-copy"></i></button>
+        <button class="shardwright-textarea-action-btn" data-action="paste" title="Paste from clipboard"><i class="fa-solid fa-paste"></i></button>
+        <button class="shardwright-textarea-action-btn" data-action="clear" title="Clear content"><i class="fa-solid fa-xmark"></i></button>
+        <button class="shardwright-textarea-action-btn" data-action="reset" title="Reset to default"><i class="fa-solid fa-rotate-left"></i></button>
     `;
     wrapper.appendChild(actions);
 
@@ -80,30 +80,30 @@ function createTextareaActions(textarea, onReset) {
  */
 function renderSummaryPromptsTab(settings, container) {
     container.innerHTML = `
-        <div class="ss-prompts-tab-content">
-            <div class="ss-block ss-prompts-block">
+        <div class="shardwright-prompts-tab-content">
+            <div class="shardwright-block shardwright-prompts-block">
                 <label>Select Prompt:</label>
-                <div class="ss-prompts-inline-row">
-                    <select id="ss-modal-prompt-select" class="text_pole ss-prompts-select"></select>
+                <div class="shardwright-prompts-inline-row">
+                    <select id="shardwright-modal-prompt-select" class="text_pole shardwright-prompts-select"></select>
                 </div>
             </div>
 
-            <div class="ss-block ss-prompts-block">
+            <div class="shardwright-block shardwright-prompts-block">
                 <label>Prompt Content:</label>
-                <textarea id="ss-modal-prompt-textarea" class="text_pole ss-prompts-editor"></textarea>
+                <textarea id="shardwright-modal-prompt-textarea" class="text_pole shardwright-prompts-editor"></textarea>
             </div>
 
-            <div class="ss-buttons ss-prompts-buttons-row">
-                <input id="ss-modal-add-prompt" class="menu_button" type="button" value="Add New" />
-                <input id="ss-modal-rename-prompt" class="menu_button" type="button" value="Rename" />
-                <input id="ss-modal-delete-prompt" class="menu_button" type="button" value="Delete" />
-                <input id="ss-modal-reset-prompt" class="menu_button" type="button" value="Reset to Default" />
+            <div class="shardwright-buttons shardwright-prompts-buttons-row">
+                <input id="shardwright-modal-add-prompt" class="menu_button" type="button" value="Add New" />
+                <input id="shardwright-modal-rename-prompt" class="menu_button" type="button" value="Rename" />
+                <input id="shardwright-modal-delete-prompt" class="menu_button" type="button" value="Delete" />
+                <input id="shardwright-modal-reset-prompt" class="menu_button" type="button" value="Reset to Default" />
             </div>
         </div>
     `;
 
-    const select = container.querySelector('#ss-modal-prompt-select');
-    const textarea = container.querySelector('#ss-modal-prompt-textarea');
+    const select = container.querySelector('#shardwright-modal-prompt-select');
+    const textarea = container.querySelector('#shardwright-modal-prompt-textarea');
 
     // Populate dropdown
     function populateDropdown() {
@@ -159,7 +159,7 @@ function renderSummaryPromptsTab(settings, container) {
     });
 
     // Event: Add New
-    container.querySelector('#ss-modal-add-prompt').addEventListener('click', async () => {
+    container.querySelector('#shardwright-modal-add-prompt').addEventListener('click', async () => {
         const name = await showSsInput('Add Prompt', 'Enter name for new prompt:');
         if (name && name.trim()) {
             // Check for duplicate names
@@ -174,7 +174,7 @@ function renderSummaryPromptsTab(settings, container) {
     });
 
     // Event: Rename
-    container.querySelector('#ss-modal-rename-prompt').addEventListener('click', async () => {
+    container.querySelector('#shardwright-modal-rename-prompt').addEventListener('click', async () => {
         if (!settings.activePromptName) {
             toastr.warning('No prompt selected');
             return;
@@ -199,7 +199,7 @@ function renderSummaryPromptsTab(settings, container) {
     });
 
     // Event: Delete
-    container.querySelector('#ss-modal-delete-prompt').addEventListener('click', async () => {
+    container.querySelector('#shardwright-modal-delete-prompt').addEventListener('click', async () => {
         if (!settings.activePromptName) {
             toastr.warning('No prompt selected');
             return;
@@ -223,7 +223,7 @@ function renderSummaryPromptsTab(settings, container) {
     });
 
     // Event: Reset to Default
-    container.querySelector('#ss-modal-reset-prompt').addEventListener('click', async () => {
+    container.querySelector('#shardwright-modal-reset-prompt').addEventListener('click', async () => {
         const confirm = await showSsConfirm('Reset Prompt', 'Reset this prompt to the default Memory Sharding template?');
         if (confirm === POPUP_RESULT.AFFIRMATIVE) {
             const idx = settings.prompts.findIndex(p => p.name === settings.activePromptName);
@@ -257,19 +257,19 @@ function renderSharderPromptsTab(settings, container) {
     };
 
     container.innerHTML = `
-        <div class="ss-sharder-prompts-tab">
-            <div class="ss-block ss-prompts-block">
+        <div class="shardwright-sharder-prompts-tab">
+            <div class="shardwright-block shardwright-prompts-block">
                 <label>Sharder Prompt: ${activeDisplayName}</label>
-                <textarea id="ss-modal-single-pass-prompt" class="text_pole ss-prompts-editor"></textarea>
+                <textarea id="shardwright-modal-single-pass-prompt" class="text_pole shardwright-prompts-editor"></textarea>
             </div>
 
-            <div class="ss-buttons">
-                <input id="ss-modal-reset-sharder" class="menu_button" type="button" value="Reset to Defaults" />
+            <div class="shardwright-buttons">
+                <input id="shardwright-modal-reset-sharder" class="menu_button" type="button" value="Reset to Defaults" />
             </div>
         </div>
     `;
 
-    const singlePassTextarea = container.querySelector('#ss-modal-single-pass-prompt');
+    const singlePassTextarea = container.querySelector('#shardwright-modal-single-pass-prompt');
     singlePassTextarea.value = sharderPrompts.prompt;
 
     // Capture initial state for reset
@@ -293,7 +293,7 @@ function renderSharderPromptsTab(settings, container) {
     });
 
     // Event: Reset
-    container.querySelector('#ss-modal-reset-sharder').addEventListener('click', async () => {
+    container.querySelector('#shardwright-modal-reset-sharder').addEventListener('click', async () => {
         const confirm = await showSsConfirm('Reset Sharder Prompt', 'Reset the sharder prompt to its default?');
         if (confirm === POPUP_RESULT.AFFIRMATIVE) {
             getPromptStore().prompt = defaultPrompt;
@@ -311,23 +311,23 @@ function renderEventsPromptTab(settings, container) {
     const eventsPrompt = getCasingPrompt(settings);
 
     container.innerHTML = `
-        <div class="ss-events-prompt-tab">
-            <div class="ss-block ss-prompts-block">
+        <div class="shardwright-events-prompt-tab">
+            <div class="shardwright-block shardwright-prompts-block">
                 <label>Drafting Extraction Prompt:</label>
-                <textarea id="ss-modal-events-prompt" class="text_pole ss-prompts-editor"></textarea>
-                <p class="ss-prompts-hint">
+                <textarea id="shardwright-modal-events-prompt" class="text_pole shardwright-prompts-editor"></textarea>
+                <p class="shardwright-prompts-hint">
                     Used by Drafting Mode to extract discrete events from chat messages.
                     Leave empty to use the default prompt.
                 </p>
             </div>
 
-            <div class="ss-buttons">
-                <input id="ss-modal-reset-events" class="menu_button" type="button" value="Reset to Default" />
+            <div class="shardwright-buttons">
+                <input id="shardwright-modal-reset-events" class="menu_button" type="button" value="Reset to Default" />
             </div>
         </div>
     `;
 
-    const textarea = container.querySelector('#ss-modal-events-prompt');
+    const textarea = container.querySelector('#shardwright-modal-events-prompt');
     textarea.value = eventsPrompt;
 
     // Capture initial state for reset
@@ -351,7 +351,7 @@ function renderEventsPromptTab(settings, container) {
     });
 
     // Event: Reset
-    container.querySelector('#ss-modal-reset-events').addEventListener('click', async () => {
+    container.querySelector('#shardwright-modal-reset-events').addEventListener('click', async () => {
         const confirm = await showSsConfirm('Reset Drafting Prompt', 'Reset the drafting extraction prompt to the default?');
         if (confirm === POPUP_RESULT.AFFIRMATIVE) {
             resetCasingPrompt(settings);
@@ -366,13 +366,13 @@ function renderEventsPromptTab(settings, container) {
  */
 function switchTab(tabId, container) {
     // Update tab buttons
-    container.querySelectorAll('.ss-tab-button').forEach(btn => {
+    container.querySelectorAll('.shardwright-tab-button').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.tab === tabId);
     });
 
     // Update tab panels
-    container.querySelectorAll('.ss-tab-panel').forEach(panel => {
-        panel.classList.toggle('active', panel.id === `ss-tab-${tabId}`);
+    container.querySelectorAll('.shardwright-tab-panel').forEach(panel => {
+        panel.classList.toggle('active', panel.id === `shardwright-tab-${tabId}`);
     });
 }
 
@@ -381,21 +381,21 @@ function switchTab(tabId, container) {
  */
 export async function openPromptsModal(settings) {
     const modalHtml = `
-        <div class="ss-prompts-modal">
-            <div class="ss-tab-header">
-                <button class="ss-tab-button active" data-tab="summary">Summary Prompts</button>
-                <button class="ss-tab-button" data-tab="sharder">Sharder Prompts</button>
-                <button class="ss-tab-button" data-tab="events">Drafting Prompt</button>
+        <div class="shardwright-prompts-modal">
+            <div class="shardwright-tab-header">
+                <button class="shardwright-tab-button active" data-tab="summary">Summary Prompts</button>
+                <button class="shardwright-tab-button" data-tab="sharder">Sharder Prompts</button>
+                <button class="shardwright-tab-button" data-tab="events">Drafting Prompt</button>
             </div>
 
-            <div class="ss-tab-content">
-                <div id="ss-tab-summary" class="ss-tab-panel active"></div>
-                <div id="ss-tab-sharder" class="ss-tab-panel"></div>
-                <div id="ss-tab-events" class="ss-tab-panel"></div>
+            <div class="shardwright-tab-content">
+                <div id="shardwright-tab-summary" class="shardwright-tab-panel active"></div>
+                <div id="shardwright-tab-sharder" class="shardwright-tab-panel"></div>
+                <div id="shardwright-tab-events" class="shardwright-tab-panel"></div>
             </div>
 
             <!-- Hidden file input (stays in modal) -->
-            <input type="file" id="ss-modal-import-file" accept=".json" class="ss-hidden" />
+            <input type="file" id="shardwright-modal-import-file" accept=".json" class="shardwright-hidden" />
         </div>
     `;
 
@@ -415,7 +415,7 @@ export async function openPromptsModal(settings) {
 
         // Set up content after popup shows
         requestAnimationFrame(() => {
-            const modalContainer = document.querySelector('.ss-prompts-modal');
+            const modalContainer = document.querySelector('.shardwright-prompts-modal');
             if (!modalContainer) return;
     
             // Find the popup controls and inject our buttons on the left
@@ -423,22 +423,22 @@ export async function openPromptsModal(settings) {
             if (popupControls) {
                 // Create left-side button group
                 const leftButtons = document.createElement('div');
-                leftButtons.className = 'ss-popup-left-buttons';
+                leftButtons.className = 'shardwright-popup-left-buttons';
                 leftButtons.innerHTML = `
-                    <input id="ss-modal-import" class="menu_button" type="button" value="Import" />
-                    <input id="ss-modal-export" class="menu_button" type="button" value="Export" />
+                    <input id="shardwright-modal-import" class="menu_button" type="button" value="Import" />
+                    <input id="shardwright-modal-export" class="menu_button" type="button" value="Export" />
                 `;
                 
                 // Insert at the beginning of popup controls
                 popupControls.insertBefore(leftButtons, popupControls.firstChild);
 
                 // Ensure controls row lays out with left utility group and right close button.
-                popupControls.classList.add('ss-popup-controls');
+                popupControls.classList.add('shardwright-popup-controls');
             }
     
-            const summaryPanel = modalContainer.querySelector('#ss-tab-summary');
-            const sharderPanel = modalContainer.querySelector('#ss-tab-sharder');
-            const eventsPanel = modalContainer.querySelector('#ss-tab-events');
+            const summaryPanel = modalContainer.querySelector('#shardwright-tab-summary');
+            const sharderPanel = modalContainer.querySelector('#shardwright-tab-sharder');
+            const eventsPanel = modalContainer.querySelector('#shardwright-tab-events');
     
             // Render initial tab content
             renderSummaryPromptsTab(settings, summaryPanel);
@@ -446,19 +446,19 @@ export async function openPromptsModal(settings) {
             renderEventsPromptTab(settings, eventsPanel);
     
             // Tab switching
-            modalContainer.querySelectorAll('.ss-tab-button').forEach(btn => {
+            modalContainer.querySelectorAll('.shardwright-tab-button').forEach(btn => {
                 btn.addEventListener('click', () => {
                     switchTab(btn.dataset.tab, modalContainer);
                 });
             });
     
             // Import button - now query from popup controls
-            document.getElementById('ss-modal-import')?.addEventListener('click', () => {
-                modalContainer.querySelector('#ss-modal-import-file').click();
+            document.getElementById('shardwright-modal-import')?.addEventListener('click', () => {
+                modalContainer.querySelector('#shardwright-modal-import-file').click();
             });
     
             // Import file handler
-            modalContainer.querySelector('#ss-modal-import-file').addEventListener('change', (e) => {
+            modalContainer.querySelector('#shardwright-modal-import-file').addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 if (file) {
                     importPrompts(settings, file, (success) => {
@@ -471,7 +471,7 @@ export async function openPromptsModal(settings) {
             });
     
             // Export button - now query from popup controls
-            document.getElementById('ss-modal-export')?.addEventListener('click', () => {
+            document.getElementById('shardwright-modal-export')?.addEventListener('click', () => {
                 exportPrompts(settings);
             });
         });
@@ -483,7 +483,7 @@ export async function openPromptsModal(settings) {
  * Update the active prompt display in the main UI
  */
 export function updateActivePromptDisplay(settings) {
-    const display = document.getElementById('ss-active-prompt-display');
+    const display = document.getElementById('shardwright-active-prompt-display');
     if (!display) return;
 
     const labels = [];

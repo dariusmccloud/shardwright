@@ -290,9 +290,9 @@ function buildBlockingNoteHtml(state) {
         return '';
     }
     return `
-        <div class="ss-sp-blocking-title">${escapeHtml(projection.title)}</div>
-        <div class="ss-sp-blocking-reason"><strong>Reason:</strong> ${escapeHtml(projection.reason)}</div>
-        <div class="ss-sp-blocking-next"><strong>Next step:</strong> ${escapeHtml(projection.nextStep)}</div>
+        <div class="shardwright-sp-blocking-title">${escapeHtml(projection.title)}</div>
+        <div class="shardwright-sp-blocking-reason"><strong>Reason:</strong> ${escapeHtml(projection.reason)}</div>
+        <div class="shardwright-sp-blocking-next"><strong>Next step:</strong> ${escapeHtml(projection.nextStep)}</div>
     `;
 }
 
@@ -372,7 +372,7 @@ function buildSectionHeaderStatus(summary) {
             : `${summary.counts.info} info`;
 
     return `
-        <span class="ss-accordion-status ss-level-${escapeHtml(summary.level)}" title="${escapeHtml(label)}">
+        <span class="shardwright-accordion-status shardwright-level-${escapeHtml(summary.level)}" title="${escapeHtml(label)}">
             <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
         </span>
     `;
@@ -516,35 +516,35 @@ function buildAdvisorItemLabel(entry) {
 function buildAdvisorGroup(title, entries, cssClass) {
     if (!entries.length) {
         return `
-            <div class="ss-pruning-advisor-group ${cssClass}">
-                <div class="ss-pruning-advisor-group-title">${escapeHtml(title)}</div>
-                <p class="ss-empty">No items in this group.</p>
+            <div class="shardwright-pruning-advisor-group ${cssClass}">
+                <div class="shardwright-pruning-advisor-group-title">${escapeHtml(title)}</div>
+                <p class="shardwright-empty">No items in this group.</p>
             </div>
         `;
     }
 
     return `
-        <div class="ss-pruning-advisor-group ${cssClass}">
-            <div class="ss-pruning-advisor-group-title">${escapeHtml(title)}</div>
-            <div class="ss-pruning-advisor-items">
+        <div class="shardwright-pruning-advisor-group ${cssClass}">
+            <div class="shardwright-pruning-advisor-group-title">${escapeHtml(title)}</div>
+            <div class="shardwright-pruning-advisor-items">
                 ${entries.map((entry) => `
-                    <div class="ss-pruning-advisor-item">
-                        <div class="ss-pruning-advisor-item-header">
-                            <span class="ss-pruning-advisor-item-title">${escapeHtml(String(entry.sectionKey || '').toUpperCase())} item ${entry.itemIndex + 1}</span>
-                            <span class="ss-pruning-advisor-item-meta">${escapeHtml(buildAdvisorItemLabel(entry))}</span>
-                            <span class="ss-pruning-advisor-badge ss-pruning-advisor-badge-${escapeHtml(entry.classification)}">${escapeHtml(formatAdvisorLabel(entry.classification))}</span>
+                    <div class="shardwright-pruning-advisor-item">
+                        <div class="shardwright-pruning-advisor-item-header">
+                            <span class="shardwright-pruning-advisor-item-title">${escapeHtml(String(entry.sectionKey || '').toUpperCase())} item ${entry.itemIndex + 1}</span>
+                            <span class="shardwright-pruning-advisor-item-meta">${escapeHtml(buildAdvisorItemLabel(entry))}</span>
+                            <span class="shardwright-pruning-advisor-badge shardwright-pruning-advisor-badge-${escapeHtml(entry.classification)}">${escapeHtml(formatAdvisorLabel(entry.classification))}</span>
                         </div>
-                        <div class="ss-pruning-advisor-reasons">
-                            ${entry.reasonCodes.map((code) => `<span class="ss-pruning-advisor-reason-code">${escapeHtml(code)}</span>`).join('')}
+                        <div class="shardwright-pruning-advisor-reasons">
+                            ${entry.reasonCodes.map((code) => `<span class="shardwright-pruning-advisor-reason-code">${escapeHtml(code)}</span>`).join('')}
                         </div>
-                        <div class="ss-pruning-advisor-basis">
-                            <div class="ss-pruning-advisor-basis-title">Based on what</div>
+                        <div class="shardwright-pruning-advisor-basis">
+                            <div class="shardwright-pruning-advisor-basis-title">Based on what</div>
                             <ul>
                                 ${entry.basis.map((basis) => `<li>${escapeHtml(basis)}</li>`).join('')}
                             </ul>
                         </div>
-                        <div class="ss-pruning-advisor-actions">
-                            <button class="menu_button ss-pruning-advisor-go" data-section-key="${escapeHtml(entry.sectionKey)}" data-item-id="${escapeHtml(entry.itemId)}">Go to item</button>
+                        <div class="shardwright-pruning-advisor-actions">
+                            <button class="menu_button shardwright-pruning-advisor-go" data-section-key="${escapeHtml(entry.sectionKey)}" data-item-id="${escapeHtml(entry.itemId)}">Go to item</button>
                         </div>
                     </div>
                 `).join('')}
@@ -562,33 +562,33 @@ function buildPruningAdvisorSection(state) {
     const overCap = uiModel.overCapSections.filter((entry) => entry.excess > 0);
     const overCapSummary = overCap.length > 0
         ? `
-            <div class="ss-pruning-advisor-summary">
+            <div class="shardwright-pruning-advisor-summary">
                 ${overCap.map((entry) => `
-                    <div class="ss-pruning-advisor-summary-row">
+                    <div class="shardwright-pruning-advisor-summary-row">
                         <div>
                             <strong>${escapeHtml(String(entry.sectionKey || '').toUpperCase())}</strong>
                             needs ${entry.excess} removal${entry.excess === 1 ? '' : 's'} (${entry.selectedCount}/${entry.cap})
                         </div>
-                        ${entry.message ? `<div class="ss-pruning-advisor-summary-note">${escapeHtml(entry.message)}</div>` : ''}
+                        ${entry.message ? `<div class="shardwright-pruning-advisor-summary-note">${escapeHtml(entry.message)}</div>` : ''}
                     </div>
                 `).join('')}
             </div>
         `
-        : '<p class="ss-hint">No sections are currently over cap. Advisor remains available for inspection.</p>';
+        : '<p class="shardwright-hint">No sections are currently over cap. Advisor remains available for inspection.</p>';
 
     return `
-        <div class="ss-review-accordion ${overCap.length > 0 ? 'ss-section-warning expanded' : ''}" data-section="sp-pruning-advisor">
-            <div class="ss-accordion-header">
-                <span class="ss-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
-                <span class="ss-accordion-emoji">🧭</span>
-                <span class="ss-accordion-title">Pruning Advisor</span>
-                <span class="ss-accordion-count">(${(state.pruningAdvisor?.recommendations || []).length})</span>
+        <div class="shardwright-review-accordion ${overCap.length > 0 ? 'shardwright-section-warning expanded' : ''}" data-section="sp-pruning-advisor">
+            <div class="shardwright-accordion-header">
+                <span class="shardwright-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
+                <span class="shardwright-accordion-emoji">🧭</span>
+                <span class="shardwright-accordion-title">Pruning Advisor</span>
+                <span class="shardwright-accordion-count">(${(state.pruningAdvisor?.recommendations || []).length})</span>
             </div>
-            <div class="ss-accordion-content" style="display:${overCap.length > 0 ? 'block' : 'none'};">
+            <div class="shardwright-accordion-content" style="display:${overCap.length > 0 ? 'block' : 'none'};">
                 ${overCapSummary}
-                ${buildAdvisorGroup('Low-risk candidates', uiModel.lowRisk, 'ss-pruning-advisor-low-risk')}
-                ${buildAdvisorGroup('Review carefully', uiModel.review, 'ss-pruning-advisor-review')}
-                ${buildAdvisorGroup('Protected', uiModel.protected, 'ss-pruning-advisor-protected')}
+                ${buildAdvisorGroup('Low-risk candidates', uiModel.lowRisk, 'shardwright-pruning-advisor-low-risk')}
+                ${buildAdvisorGroup('Review carefully', uiModel.review, 'shardwright-pruning-advisor-review')}
+                ${buildAdvisorGroup('Protected', uiModel.protected, 'shardwright-pruning-advisor-protected')}
             </div>
         </div>
     `;
@@ -609,24 +609,24 @@ function architecturalKeyBlockHtml(state) {
     `).join('');
 
     return `
-        <div class="ss-review-accordion" data-section="sp-key">
-            <div class="ss-accordion-header">
-                <span class="ss-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
-                <span class="ss-accordion-emoji">🗝️</span>
-                <span class="ss-accordion-title">KEY Metadata</span>
+        <div class="shardwright-review-accordion" data-section="sp-key">
+            <div class="shardwright-accordion-header">
+                <span class="shardwright-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
+                <span class="shardwright-accordion-emoji">🗝️</span>
+                <span class="shardwright-accordion-title">KEY Metadata</span>
             </div>
-            <div class="ss-accordion-content" style="display:none;">
-                <div class="ss-sp-panel" style="margin-bottom: 12px;">
-                    <div class="ss-sp-key-metadata">${body}</div>
-                    <details class="ss-sp-architectural-legend" style="margin-top: 10px;">
+            <div class="shardwright-accordion-content" style="display:none;">
+                <div class="shardwright-sp-panel" style="margin-bottom: 12px;">
+                    <div class="shardwright-sp-key-metadata">${body}</div>
+                    <details class="shardwright-sp-architectural-legend" style="margin-top: 10px;">
                         <summary>Architectural Fidelity Legend</summary>
-                        <div class="ss-sp-architectural-legend-body" style="margin-top: 8px;">
+                        <div class="shardwright-sp-architectural-legend-body" style="margin-top: 8px;">
                             <p>Weights measure future continuity importance, not sentiment, quality, urgency, or emotional intensity.</p>
                             <ul style="margin: 8px 0 8px 18px; padding: 0;">
                                 ${expandedLegendRows}
                             </ul>
                             <p>Omit chatter, praise, repetition, filler, redundant summaries, and wording changes that do not alter scope, authority, classification, behavior, or future continuity.</p>
-                            <p class="ss-hint" style="margin-bottom: 0;">Internal numeric weights remain unchanged. Saved shards show the compact legend only: ${escapeHtml(ARCHITECTURAL_KEY_LEGEND_LINES[2])}</p>
+                            <p class="shardwright-hint" style="margin-bottom: 0;">Internal numeric weights remain unchanged. Saved shards show the compact legend only: ${escapeHtml(ARCHITECTURAL_KEY_LEGEND_LINES[2])}</p>
                         </div>
                     </details>
                 </div>
@@ -652,12 +652,12 @@ function architecturalDecisionCapacityHtml(state) {
                 : `Within normal band (${metrics.newCount} new IDs)`;
 
     return `
-        <div class="ss-sp-panel ss-architectural-capacity" style="margin-top: 12px;">
-            <div class="ss-output-header">
+        <div class="shardwright-sp-panel shardwright-architectural-capacity" style="margin-top: 12px;">
+            <div class="shardwright-output-header">
                 <span>Decision Ledger</span>
-                <span class="ss-hint">${escapeHtml(statusLabel)}</span>
+                <span class="shardwright-hint">${escapeHtml(statusLabel)}</span>
             </div>
-            <div class="ss-architectural-capacity-grid">
+            <div class="shardwright-architectural-capacity-grid">
                 <div><strong>Inherited:</strong> ${metrics.inheritedCount}</div>
                 <div><strong>Updated:</strong> ${metrics.updatedCount}</div>
                 <div><strong>New this run:</strong> ${metrics.newCount}</div>
@@ -666,11 +666,11 @@ function architecturalDecisionCapacityHtml(state) {
                 <div><strong>Override:</strong> ${overrideEnabled ? 'Active' : (overrideEligible ? 'Available' : 'Unavailable')}</div>
             </div>
             ${overrideEligible ? `
-                <label class="ss-override-toggle" style="margin-top: 10px;">
-                    <input type="checkbox" id="ss-sp-decision-override" ${overrideEnabled ? 'checked' : ''} />
+                <label class="shardwright-override-toggle" style="margin-top: 10px;">
+                    <input type="checkbox" id="shardwright-sp-decision-override" ${overrideEnabled ? 'checked' : ''} />
                     <span>Allow PROPOSED-only overflow beyond the hard new-ID limit</span>
                 </label>
-                <textarea id="ss-sp-decision-override-justification"
+                <textarea id="shardwright-sp-decision-override-justification"
                           class="text_pole"
                           rows="3"
                           placeholder="Required justification for decision-capacity override"
@@ -683,28 +683,28 @@ function architecturalDecisionCapacityHtml(state) {
 
 function diagnosticsHtml(diagnostics) {
     if (!diagnostics?.length) {
-        return '<div class="ss-sp-diag-empty">No diagnostics. Output looks structurally clean.</div>';
+        return '<div class="shardwright-sp-diag-empty">No diagnostics. Output looks structurally clean.</div>';
     }
 
     return diagnostics.map((d) => `
-        <div class="ss-sp-diag ss-level-${escapeHtml(d.level)}" data-diag-level="${escapeHtml(d.level || 'info')}" data-diag-code="${escapeHtml(d.code || 'UNSPECIFIED')}">
-            <div class="ss-sp-diag-head">
-                <span class="ss-sp-diag-level">${escapeHtml((d.level || 'info').toUpperCase())}</span>
-                <span class="ss-sp-diag-code">${escapeHtml(d.code || 'UNSPECIFIED')}</span>
+        <div class="shardwright-sp-diag shardwright-level-${escapeHtml(d.level)}" data-diag-level="${escapeHtml(d.level || 'info')}" data-diag-code="${escapeHtml(d.code || 'UNSPECIFIED')}">
+            <div class="shardwright-sp-diag-head">
+                <span class="shardwright-sp-diag-level">${escapeHtml((d.level || 'info').toUpperCase())}</span>
+                <span class="shardwright-sp-diag-code">${escapeHtml(d.code || 'UNSPECIFIED')}</span>
             </div>
-            ${buildLocationLabel(d) ? `<div class="ss-sp-diag-loc">${escapeHtml(buildLocationLabel(d))}</div>` : ''}
-            <div class="ss-sp-diag-msg">${escapeHtml(d.message || '')}</div>
+            ${buildLocationLabel(d) ? `<div class="shardwright-sp-diag-loc">${escapeHtml(buildLocationLabel(d))}</div>` : ''}
+            <div class="shardwright-sp-diag-msg">${escapeHtml(d.message || '')}</div>
         </div>
     `).join('');
 }
 
 function weightSelectorHtml(item) {
     const buttons = EVENT_WEIGHTS.map(w => `
-        <span class="ss-weight-btn ${item.weight === w.value ? 'selected' : ''}"
+        <span class="shardwright-weight-btn ${item.weight === w.value ? 'selected' : ''}"
               data-weight="${w.value}"
               title="${escapeHtml(w.name)}">${w.emoji}</span>
     `).join('');
-    return `<div class="ss-sharder-weight-selector" data-item-id="${escapeHtml(item.id)}">${buttons}</div>`;
+    return `<div class="shardwright-sharder-weight-selector" data-item-id="${escapeHtml(item.id)}">${buttons}</div>`;
 }
 
 function autoResizeTextarea(textarea) {
@@ -732,11 +732,11 @@ function rowDiagnosticsHtml(state, sectionKey, itemIndex) {
     if (!diagnostics.length) return '';
 
     return `
-        <div class="ss-sp-inline-diagnostics">
+        <div class="shardwright-sp-inline-diagnostics">
             ${diagnostics.map((diagnostic) => `
-                <div class="ss-sp-inline-diag ss-level-${escapeHtml(diagnostic.level)}">
-                    <span class="ss-sp-inline-code">${escapeHtml(diagnostic.code || 'UNSPECIFIED')}</span>
-                    <span class="ss-sp-inline-msg">${escapeHtml(getInlineDiagnosticText(state, diagnostic))}</span>
+                <div class="shardwright-sp-inline-diag shardwright-level-${escapeHtml(diagnostic.level)}">
+                    <span class="shardwright-sp-inline-code">${escapeHtml(diagnostic.code || 'UNSPECIFIED')}</span>
+                    <span class="shardwright-sp-inline-msg">${escapeHtml(getInlineDiagnosticText(state, diagnostic))}</span>
                 </div>
             `).join('')}
         </div>
@@ -749,10 +749,10 @@ function updateInlineDiagnostics(state) {
     reviewSections(state).forEach((section) => {
         const items = state.editableSections?.[section.key] || [];
         items.forEach((item, itemIndex) => {
-            const row = document.querySelector(`.ss-cr-item-row[data-section-key="${CSS.escape(section.key)}"][data-item-id="${CSS.escape(item.id)}"]`);
+            const row = document.querySelector(`.shardwright-cr-item-row[data-section-key="${CSS.escape(section.key)}"][data-item-id="${CSS.escape(item.id)}"]`);
             if (!row) return;
 
-            const existing = row.querySelector('.ss-sp-inline-diagnostics');
+            const existing = row.querySelector('.shardwright-sp-inline-diagnostics');
             const html = rowDiagnosticsHtml(state, section.key, itemIndex);
             if (html) {
                 if (existing) {
@@ -769,7 +769,7 @@ function updateInlineDiagnostics(state) {
 
 function sectionRows(state, sectionKey, items) {
     if (!items.length) {
-        return '<p class="ss-empty">No items in this section.</p>';
+        return '<p class="shardwright-empty">No items in this section.</p>';
     }
 
     const warmArchiveUnavailableMessage = getWarmArchiveUnavailableMessage(state);
@@ -784,26 +784,26 @@ function sectionRows(state, sectionKey, items) {
                 return '';
             })
             .filter(Boolean)
-            .map((code) => `<span class="ss-scene-badge">${escapeHtml(code)}</span>`)
+            .map((code) => `<span class="shardwright-scene-badge">${escapeHtml(code)}</span>`)
             .join(' ');
 
         const weightHtml = sectionKey === 'events' && !isArchitecturalState(state)
-            ? `<div class="ss-sp-weight-row">${weightSelectorHtml(item)}</div>`
+            ? `<div class="shardwright-sp-weight-row">${weightSelectorHtml(item)}</div>`
             : '';
 
         return `
-            <div class="ss-cr-item-row ${isSelected ? 'is-selected' : 'is-unselected'}" data-section-key="${escapeHtml(sectionKey)}" data-item-id="${escapeHtml(item.id)}">
-                <div class="ss-cr-item-top">
-                    <div class="ss-cr-item-select">
-                        <input type="checkbox" class="ss-sp-item-checkbox"
+            <div class="shardwright-cr-item-row ${isSelected ? 'is-selected' : 'is-unselected'}" data-section-key="${escapeHtml(sectionKey)}" data-item-id="${escapeHtml(item.id)}">
+                <div class="shardwright-cr-item-top">
+                    <div class="shardwright-cr-item-select">
+                        <input type="checkbox" class="shardwright-sp-item-checkbox"
                                data-section-key="${escapeHtml(sectionKey)}"
                                data-item-id="${escapeHtml(item.id)}"
                                ${isSelected ? 'checked' : ''} />
                     </div>
-                    <div class="ss-cr-item-meta">
-                        <div class="ss-cr-scene-codes">${codes || '<span class="ss-hint">No scene tags</span>'}</div>
-                        <button class="ss-cr-item-prune menu_button" data-section-key="${escapeHtml(sectionKey)}" data-item-id="${escapeHtml(item.id)}" ${isProtectedCurrent ? 'disabled title="Architectural CURRENT must keep one row"' : ''}>Prune</button>
-                        <button class="ss-cr-item-archive menu_button ${item.archived ? 'ss-cr-item-archived' : ''}"
+                    <div class="shardwright-cr-item-meta">
+                        <div class="shardwright-cr-scene-codes">${codes || '<span class="shardwright-hint">No scene tags</span>'}</div>
+                        <button class="shardwright-cr-item-prune menu_button" data-section-key="${escapeHtml(sectionKey)}" data-item-id="${escapeHtml(item.id)}" ${isProtectedCurrent ? 'disabled title="Architectural CURRENT must keep one row"' : ''}>Prune</button>
+                        <button class="shardwright-cr-item-archive menu_button ${item.archived ? 'shardwright-cr-item-archived' : ''}"
                                 data-section-key="${escapeHtml(sectionKey)}"
                                 data-item-id="${escapeHtml(item.id)}"
                                 ${(!state.warmArchiveAvailable || item.archived) ? 'disabled' : ''}
@@ -812,7 +812,7 @@ function sectionRows(state, sectionKey, items) {
                         </button>
                     </div>
                 </div>
-                <textarea class="ss-cr-item-editor text_pole" rows="2" data-section-key="${escapeHtml(sectionKey)}" data-item-id="${escapeHtml(item.id)}">${escapeHtml(item.content || '')}</textarea>
+                <textarea class="shardwright-cr-item-editor text_pole" rows="2" data-section-key="${escapeHtml(sectionKey)}" data-item-id="${escapeHtml(item.id)}">${escapeHtml(item.content || '')}</textarea>
                 ${weightHtml}
                 ${rowDiagnosticsHtml(state, sectionKey, itemIndex)}
             </div>
@@ -837,26 +837,26 @@ function sectionsHtml(state) {
             ? (decisionMetrics?.newCount || 0) > (decisionMetrics?.hardMax || 0)
             : isArchitecturalState(state) && Number.isInteger(cap) && selected > cap;
         const sectionDiagnosticSummary = getSectionDiagnosticSummary(state, section.key);
-        const severityClass = sectionDiagnosticSummary.level ? `ss-section-${sectionDiagnosticSummary.level}` : '';
+        const severityClass = sectionDiagnosticSummary.level ? `shardwright-section-${sectionDiagnosticSummary.level}` : '';
         return `
-            <div class="ss-review-accordion ${overCap ? 'ss-over-cap' : ''} ${severityClass}" data-section="sp-${escapeHtml(section.key)}">
-                <div class="ss-accordion-header">
-                    <span class="ss-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
-                    <span class="ss-accordion-emoji">${section.emoji}</span>
-                    <span class="ss-accordion-title">${escapeHtml(sectionTitle(section))}</span>
+            <div class="shardwright-review-accordion ${overCap ? 'shardwright-over-cap' : ''} ${severityClass}" data-section="sp-${escapeHtml(section.key)}">
+                <div class="shardwright-accordion-header">
+                    <span class="shardwright-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
+                    <span class="shardwright-accordion-emoji">${section.emoji}</span>
+                    <span class="shardwright-accordion-title">${escapeHtml(sectionTitle(section))}</span>
                     ${buildSectionHeaderStatus(sectionDiagnosticSummary)}
-                    <span class="ss-accordion-count" data-ss-count-key="${escapeHtml(section.key)}">${escapeHtml(countText)}</span>
+                    <span class="shardwright-accordion-count" data-shardwright-count-key="${escapeHtml(section.key)}">${escapeHtml(countText)}</span>
                 </div>
-                <div class="ss-accordion-content" style="display:none;">
-                    <div class="ss-sp-section-actions" style="margin-bottom:8px;">
-                        <button class="menu_button ss-sp-exclude-all" data-section-key="${escapeHtml(section.key)}" ${isProtectedCurrent ? 'disabled title="Architectural CURRENT must keep one row"' : ''}>Prune All</button>
-                        <button class="menu_button ss-sp-select-all" data-section-key="${escapeHtml(section.key)}">Select All</button>
-                        <button class="menu_button ss-sp-deselect-all" data-section-key="${escapeHtml(section.key)}" ${isProtectedCurrent ? 'disabled title="Architectural CURRENT must keep one row"' : ''}>Deselect All</button>
+                <div class="shardwright-accordion-content" style="display:none;">
+                    <div class="shardwright-sp-section-actions" style="margin-bottom:8px;">
+                        <button class="menu_button shardwright-sp-exclude-all" data-section-key="${escapeHtml(section.key)}" ${isProtectedCurrent ? 'disabled title="Architectural CURRENT must keep one row"' : ''}>Prune All</button>
+                        <button class="menu_button shardwright-sp-select-all" data-section-key="${escapeHtml(section.key)}">Select All</button>
+                        <button class="menu_button shardwright-sp-deselect-all" data-section-key="${escapeHtml(section.key)}" ${isProtectedCurrent ? 'disabled title="Architectural CURRENT must keep one row"' : ''}>Deselect All</button>
                     </div>
-                    <div class="ss-cr-items" data-section-key="${escapeHtml(section.key)}">
+                    <div class="shardwright-cr-items" data-section-key="${escapeHtml(section.key)}">
                         ${sectionRows(state, section.key, items)}
                     </div>
-                    <button class="menu_button ss-sp-add-item" data-section-key="${escapeHtml(section.key)}" style="margin-top:6px;" ${addItemDisabled ? 'disabled title="Architectural CURRENT must remain singular"' : ''}>+ Add Item</button>
+                    <button class="menu_button shardwright-sp-add-item" data-section-key="${escapeHtml(section.key)}" style="margin-top:6px;" ${addItemDisabled ? 'disabled title="Architectural CURRENT must remain singular"' : ''}>+ Add Item</button>
                 </div>
             </div>
         `;
@@ -897,21 +897,21 @@ function buildPruningSection(state) {
             const groupName = String(s?.name ?? 'UNKNOWN').trim() || 'UNKNOWN';
             const groupEmoji = String(s?.emoji ?? '\u{1F4CB}').trim() || '📋';
             const items = (s.prunedItems || []).map((item, i) => `
-                <div class="ss-pruning-item" data-section="${escapeHtml(groupName)}" data-index="${i}">
-                    <div class="ss-pruning-content">${escapeHtml((item.content || '').substring(0, 120))}${(item.content || '').length > 120 ? '...' : ''}</div>
-                    <div class="ss-pruning-source">From: ${escapeHtml(String(item?.source ?? '').trim())}</div>
-                    <div class="ss-pruning-actions">
+                <div class="shardwright-pruning-item" data-section="${escapeHtml(groupName)}" data-index="${i}">
+                    <div class="shardwright-pruning-content">${escapeHtml((item.content || '').substring(0, 120))}${(item.content || '').length > 120 ? '...' : ''}</div>
+                    <div class="shardwright-pruning-source">From: ${escapeHtml(String(item?.source ?? '').trim())}</div>
+                    <div class="shardwright-pruning-actions">
                         ${allowWarmArchive ? `
-                        <label class="ss-approve-toggle">
-                            <input type="checkbox" class="ss-approve-checkbox"
+                        <label class="shardwright-approve-toggle">
+                            <input type="checkbox" class="shardwright-approve-checkbox"
                                    data-type="pruning"
                                    data-section="${escapeHtml(groupName)}"
                                    data-index="${i}" />
                             <span>Archive</span>
                         </label>
-                        ` : `<span class="ss-hint" title="${escapeHtml(warmArchiveUnavailableMessage)}">Warm archive unavailable</span>`}
+                        ` : `<span class="shardwright-hint" title="${escapeHtml(warmArchiveUnavailableMessage)}">Warm archive unavailable</span>`}
                         ${allowRescue ? `
-                        <button class="ss-rescue-btn menu_button"
+                        <button class="shardwright-rescue-btn menu_button"
                                 data-type="pruning"
                                 data-section="${escapeHtml(groupName)}"
                                 data-index="${i}"
@@ -924,14 +924,14 @@ function buildPruningSection(state) {
             `).join('');
 
             return `
-                <div class="ss-pruning-group ss-sub-accordion" data-pruning-group="${escapeHtml(groupName)}">
-                    <div class="ss-pruning-group-header">
-                        <span class="ss-sub-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
-                        <span class="ss-pruning-group-title">${escapeHtml(groupEmoji)} ${escapeHtml(groupName)}</span>
-                        <span class="ss-pruning-group-count">(${s.prunedCount || 0}/${s.inputCount || 0} pruned)</span>
+                <div class="shardwright-pruning-group shardwright-sub-accordion" data-pruning-group="${escapeHtml(groupName)}">
+                    <div class="shardwright-pruning-group-header">
+                        <span class="shardwright-sub-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
+                        <span class="shardwright-pruning-group-title">${escapeHtml(groupEmoji)} ${escapeHtml(groupName)}</span>
+                        <span class="shardwright-pruning-group-count">(${s.prunedCount || 0}/${s.inputCount || 0} pruned)</span>
                     </div>
-                    <div class="ss-sub-accordion-content" style="display:none;">
-                        <div class="ss-pruning-items">${items}</div>
+                    <div class="shardwright-sub-accordion-content" style="display:none;">
+                        <div class="shardwright-pruning-items">${items}</div>
                     </div>
                 </div>
             `;
@@ -940,19 +940,19 @@ function buildPruningSection(state) {
     const uncoveredGroup = !hasUncovered
         ? ''
         : `
-            <div class="ss-pruning-group ss-sub-accordion" data-pruning-group="Low-Coverage Source Messages">
-                <div class="ss-pruning-group-header">
-                    <span class="ss-sub-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
-                    <span class="ss-pruning-group-title" title="Source messages from the selected chat range that had weak representation in the generated shard. Review them to decide whether important continuity was missed.">📭 Low-Coverage Source Messages</span>
-                    <span class="ss-pruning-group-count">(${uncoveredMessages.length} messages)</span>
+            <div class="shardwright-pruning-group shardwright-sub-accordion" data-pruning-group="Low-Coverage Source Messages">
+                <div class="shardwright-pruning-group-header">
+                    <span class="shardwright-sub-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
+                    <span class="shardwright-pruning-group-title" title="Source messages from the selected chat range that had weak representation in the generated shard. Review them to decide whether important continuity was missed.">📭 Low-Coverage Source Messages</span>
+                    <span class="shardwright-pruning-group-count">(${uncoveredMessages.length} messages)</span>
                 </div>
-                <div class="ss-sub-accordion-content" style="display:none;">
-                    <div class="ss-pruning-items">
-                        <div class="ss-hint" style="margin-bottom:8px;">These source messages had weak representation in the generated shard. Review them only if you need to check whether continuity-relevant material was skipped or compressed too hard.</div>
+                <div class="shardwright-sub-accordion-content" style="display:none;">
+                    <div class="shardwright-pruning-items">
+                        <div class="shardwright-hint" style="margin-bottom:8px;">These source messages had weak representation in the generated shard. Review them only if you need to check whether continuity-relevant material was skipped or compressed too hard.</div>
                         ${uncoveredMessages.map((msg, i) => `
-                            <div class="ss-pruning-item ss-uncovered-message" data-section="uncovered" data-index="${i}">
-                                <div class="ss-pruning-content"><strong>[Msg ${msg.msgIndex}] ${escapeHtml(msg.name)}:</strong> ${escapeHtml(msg.preview || '')}${(msg.preview || '').length >= 150 ? '...' : ''}</div>
-                                <div class="ss-pruning-source">Shard coverage estimate: ${Math.round((msg.coverageRatio || 0) * 100)}%</div>
+                            <div class="shardwright-pruning-item shardwright-uncovered-message" data-section="uncovered" data-index="${i}">
+                                <div class="shardwright-pruning-content"><strong>[Msg ${msg.msgIndex}] ${escapeHtml(msg.name)}:</strong> ${escapeHtml(msg.preview || '')}${(msg.preview || '').length >= 150 ? '...' : ''}</div>
+                                <div class="shardwright-pruning-source">Shard coverage estimate: ${Math.round((msg.coverageRatio || 0) * 100)}%</div>
                             </div>
                         `).join('')}
                     </div>
@@ -961,15 +961,15 @@ function buildPruningSection(state) {
         `;
 
     return `
-        <div class="ss-review-accordion" data-section="sp-pruning">
-            <div class="ss-accordion-header">
-                <span class="ss-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
-                <span class="ss-accordion-emoji">✂️</span>
-                <span class="ss-accordion-title">Pruning Report</span>
-                <span class="ss-accordion-count" id="ss-sp-pruning-count">(${report?.totalPruned || 0} items)</span>
+        <div class="shardwright-review-accordion" data-section="sp-pruning">
+            <div class="shardwright-accordion-header">
+                <span class="shardwright-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
+                <span class="shardwright-accordion-emoji">✂️</span>
+                <span class="shardwright-accordion-title">Pruning Report</span>
+                <span class="shardwright-accordion-count" id="shardwright-sp-pruning-count">(${report?.totalPruned || 0} items)</span>
             </div>
-            <div class="ss-accordion-content" style="display:none;">
-                ${hasContent ? shardGroups + uncoveredGroup : '<p class="ss-empty">No content was pruned</p>'}
+            <div class="shardwright-accordion-content" style="display:none;">
+                ${hasContent ? shardGroups + uncoveredGroup : '<p class="shardwright-empty">No content was pruned</p>'}
             </div>
         </div>
     `;
@@ -983,36 +983,36 @@ function buildModalHtml(state) {
     const modalDescription = getReviewModalDescription(state);
 
     return `
-        <div class="ss-single-pass-review-modal" tabindex="0" aria-label="${escapeHtml(modalTitle)}">
-            <div class="ss-sp-header">
+        <div class="shardwright-single-pass-review-modal" tabindex="0" aria-label="${escapeHtml(modalTitle)}">
+            <div class="shardwright-sp-header">
                 <h3>${escapeHtml(modalTitle)}</h3>
                 <p>${escapeHtml(modalDescription)}</p>
-                <div class="ss-sp-global-controls">
-                    <button id="ss-sp-select-all-global" class="menu_button">Select All</button>
-                    <button id="ss-sp-deselect-all-global" class="menu_button">Deselect All</button>
-                    <button id="ss-sp-regenerate" class="menu_button">Regenerate</button>
+                <div class="shardwright-sp-global-controls">
+                    <button id="shardwright-sp-select-all-global" class="menu_button">Select All</button>
+                    <button id="shardwright-sp-deselect-all-global" class="menu_button">Deselect All</button>
+                    <button id="shardwright-sp-regenerate" class="menu_button">Regenerate</button>
                 </div>
             </div>
 
-            <div class="ss-sp-summary">
-                <span class="ss-sp-pill ss-level-error">Errors: ${errors}</span>
-                <span class="ss-sp-pill ss-level-warning">Warnings: ${warnings}</span>
-                <span class="ss-sp-pill ss-level-info">Info: ${infos}</span>
+            <div class="shardwright-sp-summary">
+                <span class="shardwright-sp-pill shardwright-level-error">Errors: ${errors}</span>
+                <span class="shardwright-sp-pill shardwright-level-warning">Warnings: ${warnings}</span>
+                <span class="shardwright-sp-pill shardwright-level-info">Info: ${infos}</span>
             </div>
 
-            <div class="ss-review-accordion" data-section="sp-diagnostics">
-                <div class="ss-accordion-header">
-                    <span class="ss-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
-                    <span class="ss-accordion-emoji">🩺</span>
-                    <span class="ss-accordion-title">Diagnostics</span>
-                    <span class="ss-accordion-count">(${state.diagnostics.length})</span>
+            <div class="shardwright-review-accordion" data-section="sp-diagnostics">
+                <div class="shardwright-accordion-header">
+                    <span class="shardwright-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
+                    <span class="shardwright-accordion-emoji">🩺</span>
+                    <span class="shardwright-accordion-title">Diagnostics</span>
+                    <span class="shardwright-accordion-count">(${state.diagnostics.length})</span>
                 </div>
-                <div class="ss-accordion-content" style="display:none;">
-                    <div class="ss-sp-diagnostics">${diagnosticsHtml(state.diagnostics)}</div>
+                <div class="shardwright-accordion-content" style="display:none;">
+                    <div class="shardwright-sp-diagnostics">${diagnosticsHtml(state.diagnostics)}</div>
                 </div>
             </div>
 
-            <div class="ss-sp-sections-area">
+            <div class="shardwright-sp-sections-area">
                 ${architecturalKeyBlockHtml(state)}
                 ${sectionsHtml(state)}
             </div>
@@ -1020,46 +1020,46 @@ function buildModalHtml(state) {
             ${buildPruningAdvisorSection(state)}
             ${buildPruningSection(state)}
 
-            <div class="ss-sp-panel" style="margin-top: 12px;">
-                <div class="ss-output-header">
+            <div class="shardwright-sp-panel" style="margin-top: 12px;">
+                <div class="shardwright-output-header">
                     <span>Final Output Review</span>
-                    <div class="ss-output-actions">
-                        <button id="ss-sp-copy-output" class="menu_button">Copy</button>
-                        ${isArchitecturalState(state) ? '' : '<button id="ss-sp-edit-output" class="menu_button">Edit</button>'}
+                    <div class="shardwright-output-actions">
+                        <button id="shardwright-sp-copy-output" class="menu_button">Copy</button>
+                        ${isArchitecturalState(state) ? '' : '<button id="shardwright-sp-edit-output" class="menu_button">Edit</button>'}
                     </div>
                 </div>
-                <textarea id="ss-sp-output-editor" class="text_pole ss-sp-output-editor" readonly>${escapeHtml(state.finalOutput || '')}</textarea>
+                <textarea id="shardwright-sp-output-editor" class="text_pole shardwright-sp-output-editor" readonly>${escapeHtml(state.finalOutput || '')}</textarea>
             </div>
 
             ${isArchitecturalState(state) ? `
-            <div class="ss-sp-panel" style="margin-top: 12px;">
-                <div class="ss-sp-diag ss-level-info">
-                    <div class="ss-sp-diag-head">
-                        <span class="ss-sp-diag-level">INFO</span>
-                        <span class="ss-sp-diag-code">ARCH_RAG_DEFERRED</span>
+            <div class="shardwright-sp-panel" style="margin-top: 12px;">
+                <div class="shardwright-sp-diag shardwright-level-info">
+                    <div class="shardwright-sp-diag-head">
+                        <span class="shardwright-sp-diag-level">INFO</span>
+                        <span class="shardwright-sp-diag-code">ARCH_RAG_DEFERRED</span>
                     </div>
-                    <div class="ss-sp-diag-msg">Architectural RAG support is deferred. Warm archive and retrieval are unavailable for this profile.</div>
+                    <div class="shardwright-sp-diag-msg">Architectural RAG support is deferred. Warm archive and retrieval are unavailable for this profile.</div>
                 </div>
             </div>
             ` : ''}
 
             ${state.pruningReport?.totalPruned > 0 ? `
-            <div class="ss-archive-section">
+            <div class="shardwright-archive-section">
                 <h4>Archive Output</h4>
-                <div class="ss-archive-options">
-                    <label class="ss-archive-option ${state.warmArchiveAvailable ? '' : 'ss-disabled'}" ${state.warmArchiveAvailable ? '' : `title="${escapeHtml(getWarmArchiveUnavailableMessage(state))}"`}>
-                        <input type="checkbox" id="ss-sp-archive-warm" ${state.warmArchiveAvailable ? '' : 'disabled'} />
+                <div class="shardwright-archive-options">
+                    <label class="shardwright-archive-option ${state.warmArchiveAvailable ? '' : 'shardwright-disabled'}" ${state.warmArchiveAvailable ? '' : `title="${escapeHtml(getWarmArchiveUnavailableMessage(state))}"`}>
+                        <input type="checkbox" id="shardwright-sp-archive-warm" ${state.warmArchiveAvailable ? '' : 'disabled'} />
                         <span>Archive output to warm storage (RAG-retrievable)</span>
                     </label>
-                    <label class="ss-archive-option">
-                        <input type="checkbox" id="ss-sp-archive-cold" />
+                    <label class="shardwright-archive-option">
+                        <input type="checkbox" id="shardwright-sp-archive-cold" />
                         <span>Save output to local cold archive (history only, not RAG-retrievable)</span>
                     </label>
                 </div>
             </div>
             ` : ''}
 
-            <div class="ss-sp-blocking-note" id="ss-sp-blocking-note" style="display:${errors > 0 ? 'block' : 'none'};">
+            <div class="shardwright-sp-blocking-note" id="shardwright-sp-blocking-note" style="display:${errors > 0 ? 'block' : 'none'};">
                 ${buildBlockingNoteHtml(state)}
             </div>
         </div>
@@ -1070,7 +1070,7 @@ function updateSectionCount(state, sectionKey) {
     const items = state.editableSections[sectionKey] || [];
     const { selected, total } = sectionCount(items);
     const cap = isArchitecturalState(state) ? ARCHITECTURAL_SECTION_CAPS[sectionKey] : null;
-    const el = document.querySelector(`[data-ss-count-key="${CSS.escape(sectionKey)}"]`);
+    const el = document.querySelector(`[data-shardwright-count-key="${CSS.escape(sectionKey)}"]`);
     if (el) {
         el.textContent = isArchitecturalState(state) && sectionKey === 'decisions'
             ? getArchitecturalDecisionCountText(state, selected, total)
@@ -1079,28 +1079,28 @@ function updateSectionCount(state, sectionKey) {
             : `(${selected}/${total})`;
     }
 
-    const accordion = document.querySelector(`.ss-review-accordion[data-section="sp-${CSS.escape(sectionKey)}"]`);
+    const accordion = document.querySelector(`.shardwright-review-accordion[data-section="sp-${CSS.escape(sectionKey)}"]`);
     if (accordion && isArchitecturalState(state) && (Number.isInteger(cap) || sectionKey === 'decisions')) {
         const decisionMetrics = state.decisionLedgerMetrics || computeDecisionLedgerMetrics(state);
         const overCap = sectionKey === 'decisions'
             ? (decisionMetrics?.newCount || 0) > (decisionMetrics?.hardMax || 0)
             : selected > cap;
-        accordion.classList.toggle('ss-over-cap', overCap);
+        accordion.classList.toggle('shardwright-over-cap', overCap);
     }
 
     if (accordion) {
         const summary = getSectionDiagnosticSummary(state, sectionKey);
-        accordion.classList.toggle('ss-section-error', summary.level === 'error');
-        accordion.classList.toggle('ss-section-warning', summary.level === 'warning');
-        accordion.classList.toggle('ss-section-info', summary.level === 'info');
+        accordion.classList.toggle('shardwright-section-error', summary.level === 'error');
+        accordion.classList.toggle('shardwright-section-warning', summary.level === 'warning');
+        accordion.classList.toggle('shardwright-section-info', summary.level === 'info');
 
-        const statusContainer = accordion.querySelector('.ss-accordion-status');
+        const statusContainer = accordion.querySelector('.shardwright-accordion-status');
         const statusMarkup = buildSectionHeaderStatus(summary).trim();
         if (statusMarkup) {
             if (statusContainer) {
                 statusContainer.outerHTML = statusMarkup;
             } else {
-                const title = accordion.querySelector('.ss-accordion-title');
+                const title = accordion.querySelector('.shardwright-accordion-title');
                 title?.insertAdjacentHTML('afterend', statusMarkup);
             }
         } else if (statusContainer) {
@@ -1116,7 +1116,7 @@ function updateOutputEditor(state) {
     }
 
     state.reconstructedOutput = rebuildOutput(state);
-    const editor = document.getElementById('ss-sp-output-editor');
+    const editor = document.getElementById('shardwright-sp-output-editor');
     if (editor) {
         editor.value = !isArchitecturalState(state) && typeof state.outputOverride === 'string'
             ? state.outputOverride
@@ -1128,38 +1128,38 @@ function updateOutputEditor(state) {
     const errors = state.diagnostics.filter((d) => d.level === 'error').length;
     const warnings = state.diagnostics.filter((d) => d.level === 'warning').length;
     const infos = state.diagnostics.filter((d) => d.level === 'info').length;
-    const summary = document.querySelector('.ss-sp-summary');
+    const summary = document.querySelector('.shardwright-sp-summary');
     if (summary) {
         summary.innerHTML = `
-            <span class="ss-sp-pill ss-level-error">Errors: ${errors}</span>
-            <span class="ss-sp-pill ss-level-warning">Warnings: ${warnings}</span>
-            <span class="ss-sp-pill ss-level-info">Info: ${infos}</span>
+            <span class="shardwright-sp-pill shardwright-level-error">Errors: ${errors}</span>
+            <span class="shardwright-sp-pill shardwright-level-warning">Warnings: ${warnings}</span>
+            <span class="shardwright-sp-pill shardwright-level-info">Info: ${infos}</span>
         `;
     }
 
-    const blockingNote = document.getElementById('ss-sp-blocking-note');
+    const blockingNote = document.getElementById('shardwright-sp-blocking-note');
     if (blockingNote) {
         blockingNote.style.display = errors > 0 ? 'block' : 'none';
         blockingNote.innerHTML = errors > 0 ? buildBlockingNoteHtml(state) : '';
     }
 
-    const diagArea = document.querySelector('.ss-sp-diagnostics');
+    const diagArea = document.querySelector('.shardwright-sp-diagnostics');
     if (diagArea) {
         diagArea.innerHTML = diagnosticsHtml(state.diagnostics);
     }
 
-    const diagCount = document.querySelector('.ss-review-accordion[data-section="sp-diagnostics"] .ss-accordion-count');
+    const diagCount = document.querySelector('.shardwright-review-accordion[data-section="sp-diagnostics"] .shardwright-accordion-count');
     if (diagCount) {
         diagCount.textContent = `(${state.diagnostics.length})`;
     }
 
     if (isArchitecturalState(state)) {
-        const capacityPanel = document.querySelector('.ss-architectural-capacity');
+        const capacityPanel = document.querySelector('.shardwright-architectural-capacity');
         if (capacityPanel) {
             capacityPanel.outerHTML = architecturalDecisionCapacityHtml(state);
             setupDecisionCapacityOverrideHandlers(state);
         }
-        const advisorAccordion = document.querySelector('.ss-review-accordion[data-section="sp-pruning-advisor"]');
+        const advisorAccordion = document.querySelector('.shardwright-review-accordion[data-section="sp-pruning-advisor"]');
         if (advisorAccordion) {
             advisorAccordion.outerHTML = buildPruningAdvisorSection(state);
             setupAccordionHandlers();
@@ -1175,8 +1175,8 @@ function updateOutputEditor(state) {
 }
 
 function setupDecisionCapacityOverrideHandlers(state) {
-    const checkbox = document.getElementById('ss-sp-decision-override');
-    const justification = document.getElementById('ss-sp-decision-override-justification');
+    const checkbox = document.getElementById('shardwright-sp-decision-override');
+    const justification = document.getElementById('shardwright-sp-decision-override-justification');
 
     if (checkbox && checkbox.dataset.ssBound !== 'true') {
         checkbox.dataset.ssBound = 'true';
@@ -1195,7 +1195,7 @@ function setupDecisionCapacityOverrideHandlers(state) {
 }
 
 function updatePruningHeaderCount(state) {
-    const el = document.getElementById('ss-sp-pruning-count');
+    const el = document.getElementById('shardwright-sp-pruning-count');
     if (el) {
         el.textContent = `(${state.pruningReport?.totalPruned || 0} items)`;
     }
@@ -1207,9 +1207,9 @@ function attachPruningGroupHeaderHandler(header) {
     header.dataset.ssPruningAccordionBound = 'true';
     header.addEventListener('click', (e) => {
         if (e.target?.closest?.('button,input,label')) return;
-        const group = header.closest('.ss-pruning-group');
-        const content = group?.querySelector('.ss-sub-accordion-content');
-        const icon = header.querySelector('.ss-sub-accordion-toggle i');
+        const group = header.closest('.shardwright-pruning-group');
+        const content = group?.querySelector('.shardwright-sub-accordion-content');
+        const icon = header.querySelector('.shardwright-sub-accordion-toggle i');
         if (!group || !content || !icon) return;
 
         const expanded = group.classList.toggle('expanded');
@@ -1273,44 +1273,44 @@ function addPrunedItemToReportAndUI(state, sectionKey, itemContent, sceneCodes =
         rescued: false,
     });
 
-    const pruningContent = document.querySelector('.ss-review-accordion[data-section="sp-pruning"] .ss-accordion-content');
+    const pruningContent = document.querySelector('.shardwright-review-accordion[data-section="sp-pruning"] .shardwright-accordion-content');
     if (!pruningContent) {
         updatePruningHeaderCount(state);
         return;
     }
 
-    const empty = pruningContent.querySelector('.ss-empty');
+    const empty = pruningContent.querySelector('.shardwright-empty');
     if (empty) {
         empty.remove();
     }
 
-    let group = pruningContent.querySelector(`.ss-pruning-group[data-pruning-group="${CSS.escape(metaName)}"]`);
+    let group = pruningContent.querySelector(`.shardwright-pruning-group[data-pruning-group="${CSS.escape(metaName)}"]`);
 
     if (!group) {
         const groupHtml = `
-            <div class="ss-pruning-group ss-sub-accordion" data-pruning-group="${escapeHtml(metaName)}">
-                <div class="ss-pruning-group-header">
-                    <span class="ss-sub-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
-                    <span class="ss-pruning-group-title">${escapeHtml(metaEmoji)} ${escapeHtml(metaName)}</span>
-                    <span class="ss-pruning-group-count">(${section.prunedCount}/${section.inputCount} pruned)</span>
+            <div class="shardwright-pruning-group shardwright-sub-accordion" data-pruning-group="${escapeHtml(metaName)}">
+                <div class="shardwright-pruning-group-header">
+                    <span class="shardwright-sub-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
+                    <span class="shardwright-pruning-group-title">${escapeHtml(metaEmoji)} ${escapeHtml(metaName)}</span>
+                    <span class="shardwright-pruning-group-count">(${section.prunedCount}/${section.inputCount} pruned)</span>
                 </div>
-                <div class="ss-sub-accordion-content" style="display:none;">
-                    <div class="ss-pruning-items"></div>
+                <div class="shardwright-sub-accordion-content" style="display:none;">
+                    <div class="shardwright-pruning-items"></div>
                 </div>
             </div>
         `;
 
         pruningContent.insertAdjacentHTML('beforeend', groupHtml);
-        group = pruningContent.querySelector(`.ss-pruning-group[data-pruning-group="${CSS.escape(metaName)}"]`);
-        attachPruningGroupHeaderHandler(group?.querySelector('.ss-pruning-group-header'));
+        group = pruningContent.querySelector(`.shardwright-pruning-group[data-pruning-group="${CSS.escape(metaName)}"]`);
+        attachPruningGroupHeaderHandler(group?.querySelector('.shardwright-pruning-group-header'));
     }
 
-    const countEl = group?.querySelector('.ss-pruning-group-count');
+    const countEl = group?.querySelector('.shardwright-pruning-group-count');
     if (countEl) {
         countEl.textContent = `(${section.prunedCount}/${section.inputCount} pruned)`;
     }
 
-    const itemsEl = group?.querySelector('.ss-pruning-items');
+    const itemsEl = group?.querySelector('.shardwright-pruning-items');
     if (!itemsEl) {
         updatePruningHeaderCount(state);
         return;
@@ -1320,18 +1320,18 @@ function addPrunedItemToReportAndUI(state, sectionKey, itemContent, sceneCodes =
     const preview = (itemContent || '').substring(0, 120);
 
     const itemHtml = `
-        <div class="ss-pruning-item" data-section="${escapeHtml(metaName)}" data-index="${idx}">
-            <div class="ss-pruning-content">${escapeHtml(preview)}${(itemContent || '').length > 120 ? '...' : ''}</div>
-            <div class="ss-pruning-source">From: ${escapeHtml(sourceLabel)}</div>
-            <div class="ss-pruning-actions">
-                ${state.warmArchiveAvailable ? `<label class="ss-approve-toggle">
-                    <input type="checkbox" class="ss-approve-checkbox"
+        <div class="shardwright-pruning-item" data-section="${escapeHtml(metaName)}" data-index="${idx}">
+            <div class="shardwright-pruning-content">${escapeHtml(preview)}${(itemContent || '').length > 120 ? '...' : ''}</div>
+            <div class="shardwright-pruning-source">From: ${escapeHtml(sourceLabel)}</div>
+            <div class="shardwright-pruning-actions">
+                ${state.warmArchiveAvailable ? `<label class="shardwright-approve-toggle">
+                    <input type="checkbox" class="shardwright-approve-checkbox"
                            data-type="pruning"
                            data-section="${escapeHtml(metaName)}"
                            data-index="${idx}" />
                     <span>Archive</span>
-                </label>` : `<span class="ss-hint" title="${escapeHtml(getWarmArchiveUnavailableMessage(state))}">Warm archive unavailable</span>`}
-                ${isArchitecturalState(state) ? '' : `<button class="ss-rescue-btn menu_button"
+                </label>` : `<span class="shardwright-hint" title="${escapeHtml(getWarmArchiveUnavailableMessage(state))}">Warm archive unavailable</span>`}
+                ${isArchitecturalState(state) ? '' : `<button class="shardwright-rescue-btn menu_button"
                         data-type="pruning"
                         data-section="${escapeHtml(metaName)}"
                         data-index="${idx}"
@@ -1343,21 +1343,21 @@ function addPrunedItemToReportAndUI(state, sectionKey, itemContent, sceneCodes =
     `;
 
     itemsEl.insertAdjacentHTML('beforeend', itemHtml);
-    const newBtn = itemsEl.querySelector(`.ss-pruning-item[data-index="${CSS.escape(String(idx))}"] .ss-rescue-btn`);
+    const newBtn = itemsEl.querySelector(`.shardwright-pruning-item[data-index="${CSS.escape(String(idx))}"] .shardwright-rescue-btn`);
     wireRescueButton(state, newBtn);
 
     updatePruningHeaderCount(state);
 }
 
 function setupAccordionHandlers() {
-    document.querySelectorAll('.ss-accordion-header').forEach((header) => {
+    document.querySelectorAll('.shardwright-accordion-header').forEach((header) => {
         if (header.dataset.ssAccordionBound === 'true') return;
         header.dataset.ssAccordionBound = 'true';
         header.addEventListener('click', (e) => {
             if (e.target.closest('button,input,textarea,label')) return;
-            const accordion = header.closest('.ss-review-accordion');
-            const content = accordion?.querySelector('.ss-accordion-content');
-            const icon = header.querySelector('.ss-accordion-toggle i');
+            const accordion = header.closest('.shardwright-review-accordion');
+            const content = accordion?.querySelector('.shardwright-accordion-content');
+            const icon = header.querySelector('.shardwright-accordion-toggle i');
             if (!accordion || !content || !icon) return;
 
             const expanded = accordion.classList.toggle('expanded');
@@ -1370,15 +1370,15 @@ function setupAccordionHandlers() {
         });
     });
 
-    document.querySelectorAll('.ss-pruning-group-header').forEach((header) => {
+    document.querySelectorAll('.shardwright-pruning-group-header').forEach((header) => {
         attachPruningGroupHeaderHandler(header);
     });
 }
 
 function expandAccordion(sectionName) {
-    const accordion = document.querySelector(`.ss-review-accordion[data-section="${CSS.escape(sectionName)}"]`);
-    const content = accordion?.querySelector('.ss-accordion-content');
-    const icon = accordion?.querySelector('.ss-accordion-toggle i');
+    const accordion = document.querySelector(`.shardwright-review-accordion[data-section="${CSS.escape(sectionName)}"]`);
+    const content = accordion?.querySelector('.shardwright-accordion-content');
+    const icon = accordion?.querySelector('.shardwright-accordion-toggle i');
     if (!accordion || !content || !icon) return null;
 
     accordion.classList.add('expanded');
@@ -1391,7 +1391,7 @@ function expandAccordion(sectionName) {
 
 function revealFirstBlockingDiagnostic() {
     const accordion = expandAccordion('sp-diagnostics');
-    const firstError = accordion?.querySelector('.ss-sp-diag[data-diag-level="error"]');
+    const firstError = accordion?.querySelector('.shardwright-sp-diag[data-diag-level="error"]');
     if (!firstError) return;
 
     firstError.scrollIntoView({
@@ -1422,7 +1422,7 @@ function focusBlockingDiagnostic(state, diagnostic) {
     const sectionItems = Array.isArray(state?.editableSections?.[sectionKey]) ? state.editableSections[sectionKey] : [];
     const targetedItem = Number.isInteger(diagnostic?.itemIndex) ? sectionItems[diagnostic.itemIndex] : null;
     const targetedRow = targetedItem
-        ? document.querySelector(`.ss-cr-item-row[data-section-key="${CSS.escape(sectionKey)}"][data-item-id="${CSS.escape(targetedItem.id)}"]`)
+        ? document.querySelector(`.shardwright-cr-item-row[data-section-key="${CSS.escape(sectionKey)}"][data-item-id="${CSS.escape(targetedItem.id)}"]`)
         : null;
 
     if (targetedRow) {
@@ -1432,7 +1432,7 @@ function focusBlockingDiagnostic(state, diagnostic) {
         return;
     }
 
-    const sectionError = accordion?.querySelector('.ss-sp-diag[data-diag-level="error"]');
+    const sectionError = accordion?.querySelector('.shardwright-sp-diag[data-diag-level="error"]');
     if (sectionError) {
         scrollReviewElementIntoView(sectionError);
         sectionError.setAttribute('tabindex', '-1');
@@ -1452,7 +1452,7 @@ function focusBlockingDiagnostic(state, diagnostic) {
 
 function navigateToReviewItem(sectionKey, itemId) {
     const accordion = expandAccordion(`sp-${sectionKey}`);
-    const row = document.querySelector(`.ss-cr-item-row[data-section-key="${CSS.escape(sectionKey)}"][data-item-id="${CSS.escape(itemId)}"]`);
+    const row = document.querySelector(`.shardwright-cr-item-row[data-section-key="${CSS.escape(sectionKey)}"][data-item-id="${CSS.escape(itemId)}"]`);
     if (accordion) {
         scrollReviewElementIntoView(accordion);
     }
@@ -1462,7 +1462,7 @@ function navigateToReviewItem(sectionKey, itemId) {
 }
 
 function setupPruningAdvisorHandlers() {
-    document.querySelectorAll('.ss-pruning-advisor-go').forEach((button) => {
+    document.querySelectorAll('.shardwright-pruning-advisor-go').forEach((button) => {
         if (button.dataset.ssAdvisorBound === 'true') return;
         button.dataset.ssAdvisorBound = 'true';
         button.addEventListener('click', (event) => {
@@ -1489,8 +1489,8 @@ function handleBlockedSave(state, diagnostics = null, message = 'Save blocked du
 }
 
 function setupOutputOverrideHandlers(state) {
-    const btn = document.getElementById('ss-sp-edit-output');
-    const textarea = document.getElementById('ss-sp-output-editor');
+    const btn = document.getElementById('shardwright-sp-edit-output');
+    const textarea = document.getElementById('shardwright-sp-output-editor');
     if (!textarea) return;
     bindAutoResizeTextarea(textarea);
     if (isArchitecturalState(state)) {
@@ -1525,8 +1525,8 @@ function setupOutputOverrideHandlers(state) {
 }
 
 function setupCopyOutputHandler() {
-    const btn = document.getElementById('ss-sp-copy-output');
-    const textarea = document.getElementById('ss-sp-output-editor');
+    const btn = document.getElementById('shardwright-sp-copy-output');
+    const textarea = document.getElementById('shardwright-sp-output-editor');
     if (!btn || !textarea) return;
 
     btn.addEventListener('click', async () => {
@@ -1564,7 +1564,7 @@ function createNewItem(sectionKey) {
 }
 
 function setupSectionHandlers(state, regenFn) {
-    document.querySelectorAll('.ss-cr-item-editor').forEach((editor) => {
+    document.querySelectorAll('.shardwright-cr-item-editor').forEach((editor) => {
         bindAutoResizeTextarea(editor);
         editor.addEventListener('input', (e) => {
             const sectionKey = e.target.dataset.sectionKey;
@@ -1577,7 +1577,7 @@ function setupSectionHandlers(state, regenFn) {
         });
     });
 
-    document.querySelectorAll('.ss-sp-item-checkbox').forEach((checkbox) => {
+    document.querySelectorAll('.shardwright-sp-item-checkbox').forEach((checkbox) => {
         checkbox.addEventListener('change', (e) => {
             const sectionKey = e.target.dataset.sectionKey;
             const itemId = e.target.dataset.itemId;
@@ -1597,7 +1597,7 @@ function setupSectionHandlers(state, regenFn) {
             }
 
             item.selected = e.target.checked;
-            const row = document.querySelector(`.ss-cr-item-row[data-section-key="${CSS.escape(sectionKey)}"][data-item-id="${CSS.escape(itemId)}"]`);
+            const row = document.querySelector(`.shardwright-cr-item-row[data-section-key="${CSS.escape(sectionKey)}"][data-item-id="${CSS.escape(itemId)}"]`);
             if (row) {
                 row.classList.toggle('is-selected', item.selected);
                 row.classList.toggle('is-unselected', !item.selected);
@@ -1608,15 +1608,15 @@ function setupSectionHandlers(state, regenFn) {
         });
     });
 
-    document.querySelectorAll('.ss-weight-btn').forEach((btn) => {
+    document.querySelectorAll('.shardwright-weight-btn').forEach((btn) => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
             const weightVal = parseInt(e.currentTarget.dataset.weight, 10);
-            const selector = e.currentTarget.closest('.ss-sharder-weight-selector');
+            const selector = e.currentTarget.closest('.shardwright-sharder-weight-selector');
             if (!selector) return;
 
             const itemId = selector.dataset.itemId;
-            const row = selector.closest('.ss-cr-item-row');
+            const row = selector.closest('.shardwright-cr-item-row');
             const sectionKey = row?.dataset.sectionKey;
             if (!sectionKey || !itemId) return;
 
@@ -1624,22 +1624,22 @@ function setupSectionHandlers(state, regenFn) {
             if (!item) return;
 
             item.weight = weightVal;
-            selector.querySelectorAll('.ss-weight-btn').forEach(b => b.classList.remove('selected'));
+            selector.querySelectorAll('.shardwright-weight-btn').forEach(b => b.classList.remove('selected'));
             e.currentTarget.classList.add('selected');
             updateOutputEditor(state);
         });
     });
 
-    document.querySelectorAll('.ss-sp-select-all').forEach((btn) => {
+    document.querySelectorAll('.shardwright-sp-select-all').forEach((btn) => {
         btn.addEventListener('click', (e) => {
             const sectionKey = e.currentTarget.dataset.sectionKey;
             const items = state.editableSections[sectionKey] || [];
             items.forEach(item => { item.selected = true; });
 
-            document.querySelectorAll(`.ss-cr-item-row[data-section-key="${CSS.escape(sectionKey)}"]`).forEach((row) => {
+            document.querySelectorAll(`.shardwright-cr-item-row[data-section-key="${CSS.escape(sectionKey)}"]`).forEach((row) => {
                 row.classList.add('is-selected');
                 row.classList.remove('is-unselected');
-                const cb = row.querySelector('.ss-sp-item-checkbox');
+                const cb = row.querySelector('.shardwright-sp-item-checkbox');
                 if (cb) cb.checked = true;
             });
 
@@ -1648,7 +1648,7 @@ function setupSectionHandlers(state, regenFn) {
         });
     });
 
-    document.querySelectorAll('.ss-sp-deselect-all').forEach((btn) => {
+    document.querySelectorAll('.shardwright-sp-deselect-all').forEach((btn) => {
         btn.addEventListener('click', (e) => {
             const sectionKey = e.currentTarget.dataset.sectionKey;
             if (isArchitecturalCurrentSection(state, sectionKey)) {
@@ -1660,10 +1660,10 @@ function setupSectionHandlers(state, regenFn) {
             const items = state.editableSections[sectionKey] || [];
             items.forEach(item => { item.selected = false; });
 
-            document.querySelectorAll(`.ss-cr-item-row[data-section-key="${CSS.escape(sectionKey)}"]`).forEach((row) => {
+            document.querySelectorAll(`.shardwright-cr-item-row[data-section-key="${CSS.escape(sectionKey)}"]`).forEach((row) => {
                 row.classList.remove('is-selected');
                 row.classList.add('is-unselected');
-                const cb = row.querySelector('.ss-sp-item-checkbox');
+                const cb = row.querySelector('.shardwright-sp-item-checkbox');
                 if (cb) cb.checked = false;
             });
 
@@ -1672,7 +1672,7 @@ function setupSectionHandlers(state, regenFn) {
         });
     });
 
-    document.querySelectorAll('.ss-sp-add-item').forEach((btn) => {
+    document.querySelectorAll('.shardwright-sp-add-item').forEach((btn) => {
         btn.addEventListener('click', (e) => {
             const sectionKey = e.currentTarget.dataset.sectionKey;
             if (isArchitecturalCurrentSection(state, sectionKey)) {
@@ -1687,29 +1687,29 @@ function setupSectionHandlers(state, regenFn) {
             const newItem = createNewItem(sectionKey);
             items.push(newItem);
 
-            const container = document.querySelector(`.ss-cr-items[data-section-key="${CSS.escape(sectionKey)}"]`);
+            const container = document.querySelector(`.shardwright-cr-items[data-section-key="${CSS.escape(sectionKey)}"]`);
             if (!container) return;
 
-            const empty = container.querySelector('.ss-empty');
+            const empty = container.querySelector('.shardwright-empty');
             if (empty) empty.remove();
 
             const weightHtml = sectionKey === 'events' && !isArchitecturalState(state)
-                ? `<div class="ss-sp-weight-row">${weightSelectorHtml(newItem)}</div>`
+                ? `<div class="shardwright-sp-weight-row">${weightSelectorHtml(newItem)}</div>`
                 : '';
 
             const rowHtml = `
-                <div class="ss-cr-item-row is-selected" data-section-key="${escapeHtml(sectionKey)}" data-item-id="${escapeHtml(newItem.id)}">
-                    <div class="ss-cr-item-top">
-                        <div class="ss-cr-item-select">
-                            <input type="checkbox" class="ss-sp-item-checkbox"
+                <div class="shardwright-cr-item-row is-selected" data-section-key="${escapeHtml(sectionKey)}" data-item-id="${escapeHtml(newItem.id)}">
+                    <div class="shardwright-cr-item-top">
+                        <div class="shardwright-cr-item-select">
+                            <input type="checkbox" class="shardwright-sp-item-checkbox"
                                    data-section-key="${escapeHtml(sectionKey)}"
                                    data-item-id="${escapeHtml(newItem.id)}"
                                    checked />
                         </div>
-                        <div class="ss-cr-item-meta">
-                            <div class="ss-cr-scene-codes"><span class="ss-hint">No scene tags</span></div>
-                            <button class="ss-cr-item-prune menu_button" data-section-key="${escapeHtml(sectionKey)}" data-item-id="${escapeHtml(newItem.id)}">Prune</button>
-                            <button class="ss-cr-item-archive menu_button"
+                        <div class="shardwright-cr-item-meta">
+                            <div class="shardwright-cr-scene-codes"><span class="shardwright-hint">No scene tags</span></div>
+                            <button class="shardwright-cr-item-prune menu_button" data-section-key="${escapeHtml(sectionKey)}" data-item-id="${escapeHtml(newItem.id)}">Prune</button>
+                            <button class="shardwright-cr-item-archive menu_button"
                                     data-section-key="${escapeHtml(sectionKey)}"
                                     data-item-id="${escapeHtml(newItem.id)}"
                                     ${!state.warmArchiveAvailable ? `disabled title="${escapeHtml(getWarmArchiveUnavailableMessage(state))}"` : ''}>
@@ -1717,7 +1717,7 @@ function setupSectionHandlers(state, regenFn) {
                             </button>
                         </div>
                     </div>
-                    <textarea class="ss-cr-item-editor text_pole" rows="2" data-section-key="${escapeHtml(sectionKey)}" data-item-id="${escapeHtml(newItem.id)}"></textarea>
+                    <textarea class="shardwright-cr-item-editor text_pole" rows="2" data-section-key="${escapeHtml(sectionKey)}" data-item-id="${escapeHtml(newItem.id)}"></textarea>
                     ${weightHtml}
                 </div>
             `;
@@ -1725,9 +1725,9 @@ function setupSectionHandlers(state, regenFn) {
             container.insertAdjacentHTML('beforeend', rowHtml);
 
             // Wire handlers for the new row
-            const newRow = container.querySelector(`.ss-cr-item-row[data-item-id="${CSS.escape(newItem.id)}"]`);
+            const newRow = container.querySelector(`.shardwright-cr-item-row[data-item-id="${CSS.escape(newItem.id)}"]`);
             if (newRow) {
-                const editor = newRow.querySelector('.ss-cr-item-editor');
+                const editor = newRow.querySelector('.shardwright-cr-item-editor');
                 if (editor) {
                     bindAutoResizeTextarea(editor);
                     editor.addEventListener('input', (ev) => {
@@ -1738,7 +1738,7 @@ function setupSectionHandlers(state, regenFn) {
                     editor.focus();
                 }
 
-                const cb = newRow.querySelector('.ss-sp-item-checkbox');
+                const cb = newRow.querySelector('.shardwright-sp-item-checkbox');
                 if (cb) {
                     cb.addEventListener('change', (ev) => {
                         if (!ev.target.checked && isArchitecturalCurrentSection(state, sectionKey)) {
@@ -1760,7 +1760,7 @@ function setupSectionHandlers(state, regenFn) {
                     });
                 }
 
-                const pruneBtn = newRow.querySelector('.ss-cr-item-prune');
+                const pruneBtn = newRow.querySelector('.shardwright-cr-item-prune');
                 if (pruneBtn) {
                     pruneBtn.addEventListener('click', () => {
                         if (isArchitecturalCurrentSection(state, sectionKey) && items.length <= 1) {
@@ -1775,7 +1775,7 @@ function setupSectionHandlers(state, regenFn) {
                             items.splice(idx, 1);
                             newRow.remove();
                             if (items.length === 0) {
-                                container.insertAdjacentHTML('beforeend', '<p class="ss-empty">No items in this section.</p>');
+                                container.insertAdjacentHTML('beforeend', '<p class="shardwright-empty">No items in this section.</p>');
                             }
                             updateSectionCount(state, sectionKey);
                             updateOutputEditor(state);
@@ -1783,7 +1783,7 @@ function setupSectionHandlers(state, regenFn) {
                     });
                 }
 
-                const archiveBtn = newRow.querySelector('.ss-cr-item-archive');
+                const archiveBtn = newRow.querySelector('.shardwright-cr-item-archive');
                 if (archiveBtn && state.warmArchiveAvailable) {
                     archiveBtn.addEventListener('click', async () => {
                         if (newItem.archived) return;
@@ -1802,19 +1802,19 @@ function setupSectionHandlers(state, regenFn) {
                         }
                         newItem.archived = true;
                         state.archivedItems.push({ itemId: newItem.id, sectionKey, source: 'single-pass-item', timestamp: Date.now() });
-                        archiveBtn.classList.add('ss-cr-item-archived');
+                        archiveBtn.classList.add('shardwright-cr-item-archived');
                         archiveBtn.textContent = 'Archived ✓';
                         if (typeof toastr !== 'undefined') toastr.success('Item archived to warm storage');
                     });
                 }
 
                 if (sectionKey === 'events' && !isArchitecturalState(state)) {
-                    newRow.querySelectorAll('.ss-weight-btn').forEach((wb) => {
+                    newRow.querySelectorAll('.shardwright-weight-btn').forEach((wb) => {
                         wb.addEventListener('click', (ev) => {
                             ev.stopPropagation();
                             const weightVal = parseInt(ev.currentTarget.dataset.weight, 10);
                             newItem.weight = weightVal;
-                            newRow.querySelectorAll('.ss-weight-btn').forEach(b => b.classList.remove('selected'));
+                            newRow.querySelectorAll('.shardwright-weight-btn').forEach(b => b.classList.remove('selected'));
                             ev.currentTarget.classList.add('selected');
                             updateOutputEditor(state);
                         });
@@ -1827,7 +1827,7 @@ function setupSectionHandlers(state, regenFn) {
         });
     });
 
-    document.querySelectorAll('.ss-sp-exclude-all').forEach((btn) => {
+    document.querySelectorAll('.shardwright-sp-exclude-all').forEach((btn) => {
         btn.addEventListener('click', async (e) => {
             const sectionKey = e.currentTarget.dataset.sectionKey;
             if (isArchitecturalCurrentSection(state, sectionKey)) {
@@ -1845,10 +1845,10 @@ function setupSectionHandlers(state, regenFn) {
 
             // Show confirmation dialog
             const confirmPopup = new Popup(
-                `<div class="ss-confirm-prune ss-modal">
+                `<div class="shardwright-confirm-prune shardwright-modal">
                     <h3>✂️ Prune All Items</h3>
                     <p>Are you sure you want to prune all <strong>${items.length}</strong> item(s) from "<strong>${escapeHtml(sectionName)}</strong>"?</p>
-                    <p class="ss-warning-text">Items will be moved to the Pruning Report.</p>
+                    <p class="shardwright-warning-text">Items will be moved to the Pruning Report.</p>
                 </div>`,
                 POPUP_TYPE.CONFIRM,
                 null,
@@ -1865,12 +1865,12 @@ function setupSectionHandlers(state, regenFn) {
             state.editableSections[sectionKey] = [];
 
             // Remove all DOM rows for this section
-            document.querySelectorAll(`.ss-cr-item-row[data-section-key="${CSS.escape(sectionKey)}"]`).forEach((row) => row.remove());
+            document.querySelectorAll(`.shardwright-cr-item-row[data-section-key="${CSS.escape(sectionKey)}"]`).forEach((row) => row.remove());
 
             // Add empty message
-            const container = document.querySelector(`.ss-cr-items[data-section-key="${CSS.escape(sectionKey)}"]`);
-            if (container && !container.querySelector('.ss-empty')) {
-                container.insertAdjacentHTML('beforeend', '<p class="ss-empty">No items in this section.</p>');
+            const container = document.querySelector(`.shardwright-cr-items[data-section-key="${CSS.escape(sectionKey)}"]`);
+            if (container && !container.querySelector('.shardwright-empty')) {
+                container.insertAdjacentHTML('beforeend', '<p class="shardwright-empty">No items in this section.</p>');
             }
 
             updateSectionCount(state, sectionKey);
@@ -1882,7 +1882,7 @@ function setupSectionHandlers(state, regenFn) {
         });
     });
 
-    document.querySelectorAll('.ss-cr-item-prune').forEach((btn) => {
+    document.querySelectorAll('.shardwright-cr-item-prune').forEach((btn) => {
         btn.addEventListener('click', (e) => {
             const sectionKey = e.currentTarget.dataset.sectionKey;
             const itemId = e.currentTarget.dataset.itemId;
@@ -1901,14 +1901,14 @@ function setupSectionHandlers(state, regenFn) {
             addPrunedItemToReportAndUI(state, sectionKey, item?.content || '', item?.sceneCodes || []);
             items.splice(index, 1);
 
-            const row = document.querySelector(`.ss-cr-item-row[data-section-key="${CSS.escape(sectionKey)}"][data-item-id="${CSS.escape(itemId)}"]`);
+            const row = document.querySelector(`.shardwright-cr-item-row[data-section-key="${CSS.escape(sectionKey)}"][data-item-id="${CSS.escape(itemId)}"]`);
             if (row) row.remove();
 
             // Show empty message if section is now empty
             if (items.length === 0) {
-                const container = document.querySelector(`.ss-cr-items[data-section-key="${CSS.escape(sectionKey)}"]`);
-                if (container && !container.querySelector('.ss-empty')) {
-                    container.insertAdjacentHTML('beforeend', '<p class="ss-empty">No items in this section.</p>');
+                const container = document.querySelector(`.shardwright-cr-items[data-section-key="${CSS.escape(sectionKey)}"]`);
+                if (container && !container.querySelector('.shardwright-empty')) {
+                    container.insertAdjacentHTML('beforeend', '<p class="shardwright-empty">No items in this section.</p>');
                 }
             }
 
@@ -1921,7 +1921,7 @@ function setupSectionHandlers(state, regenFn) {
         });
     });
 
-    document.querySelectorAll('.ss-cr-item-archive').forEach((btn) => {
+    document.querySelectorAll('.shardwright-cr-item-archive').forEach((btn) => {
         btn.addEventListener('click', async (e) => {
             if (!state.warmArchiveAvailable) {
                 if (typeof toastr !== 'undefined') {
@@ -1978,7 +1978,7 @@ function setupSectionHandlers(state, regenFn) {
                 timestamp: Date.now()
             });
 
-            e.currentTarget.classList.add('ss-cr-item-archived');
+            e.currentTarget.classList.add('shardwright-cr-item-archived');
             e.currentTarget.textContent = 'Archived ✓';
             if (typeof toastr !== 'undefined') {
                 toastr.success('Item archived to warm storage');
@@ -1986,7 +1986,7 @@ function setupSectionHandlers(state, regenFn) {
         });
     });
 
-    document.querySelectorAll('.ss-approve-checkbox').forEach((checkbox) => {
+    document.querySelectorAll('.shardwright-approve-checkbox').forEach((checkbox) => {
         checkbox.addEventListener('change', async (e) => {
             if (!e.target.checked) return;
 
@@ -2056,23 +2056,23 @@ function setupSectionHandlers(state, regenFn) {
         });
     });
 
-    document.querySelectorAll('.ss-rescue-btn').forEach((btn) => {
+    document.querySelectorAll('.shardwright-rescue-btn').forEach((btn) => {
         wireRescueButton(state, btn);
     });
 }
 
 function setupGlobalSelectionHandlers(state) {
-    const selectAllBtn = document.getElementById('ss-sp-select-all-global');
+    const selectAllBtn = document.getElementById('shardwright-sp-select-all-global');
     if (selectAllBtn) {
         selectAllBtn.addEventListener('click', () => {
             reviewSections(state).forEach((section) => {
                 const items = state.editableSections[section.key] || [];
                 items.forEach(item => { item.selected = true; });
 
-                document.querySelectorAll(`.ss-cr-item-row[data-section-key="${CSS.escape(section.key)}"]`).forEach((row) => {
+                document.querySelectorAll(`.shardwright-cr-item-row[data-section-key="${CSS.escape(section.key)}"]`).forEach((row) => {
                     row.classList.add('is-selected');
                     row.classList.remove('is-unselected');
-                    const cb = row.querySelector('.ss-sp-item-checkbox');
+                    const cb = row.querySelector('.shardwright-sp-item-checkbox');
                     if (cb) cb.checked = true;
                 });
 
@@ -2082,7 +2082,7 @@ function setupGlobalSelectionHandlers(state) {
         });
     }
 
-    const deselectAllBtn = document.getElementById('ss-sp-deselect-all-global');
+    const deselectAllBtn = document.getElementById('shardwright-sp-deselect-all-global');
     if (deselectAllBtn) {
         deselectAllBtn.addEventListener('click', () => {
             reviewSections(state).forEach((section) => {
@@ -2092,10 +2092,10 @@ function setupGlobalSelectionHandlers(state) {
                 const items = state.editableSections[section.key] || [];
                 items.forEach(item => { item.selected = false; });
 
-                document.querySelectorAll(`.ss-cr-item-row[data-section-key="${CSS.escape(section.key)}"]`).forEach((row) => {
+                document.querySelectorAll(`.shardwright-cr-item-row[data-section-key="${CSS.escape(section.key)}"]`).forEach((row) => {
                     row.classList.remove('is-selected');
                     row.classList.add('is-unselected');
-                    const cb = row.querySelector('.ss-sp-item-checkbox');
+                    const cb = row.querySelector('.shardwright-sp-item-checkbox');
                     if (cb) cb.checked = false;
                 });
 
@@ -2107,7 +2107,7 @@ function setupGlobalSelectionHandlers(state) {
 }
 
 async function setupRegenerateHandler(state, regenFn) {
-    const btn = document.getElementById('ss-sp-regenerate');
+    const btn = document.getElementById('shardwright-sp-regenerate');
     if (!btn || !regenFn) {
         if (btn) btn.style.display = 'none';
         return;
@@ -2135,20 +2135,20 @@ async function setupRegenerateHandler(state, regenFn) {
             state.rescuedItems = [];
 
             // Re-render sections area
-            const sectionsArea = document.querySelector('.ss-sp-sections-area');
+            const sectionsArea = document.querySelector('.shardwright-sp-sections-area');
             if (sectionsArea) sectionsArea.innerHTML = architecturalKeyBlockHtml(state) + sectionsHtml(state);
             state.pruningAdvisor = analyzeArchitecturalPruningAdvisor(state.editableSections, {
                 profile: ARCHITECTURAL_PROFILE,
             });
 
             // Re-render pruning section
-            const advisorAccordion = document.querySelector('.ss-review-accordion[data-section="sp-pruning-advisor"]');
+            const advisorAccordion = document.querySelector('.shardwright-review-accordion[data-section="sp-pruning-advisor"]');
             if (advisorAccordion) advisorAccordion.outerHTML = buildPruningAdvisorSection(state);
-            const pruningAccordion = document.querySelector('.ss-review-accordion[data-section="sp-pruning"]');
+            const pruningAccordion = document.querySelector('.shardwright-review-accordion[data-section="sp-pruning"]');
             if (pruningAccordion) pruningAccordion.outerHTML = buildPruningSection(state);
 
             // Re-render diagnostics content
-            const diagArea = document.querySelector('.ss-sp-diagnostics');
+            const diagArea = document.querySelector('.shardwright-sp-diagnostics');
             if (diagArea) diagArea.innerHTML = diagnosticsHtml(state.diagnostics);
 
             // Re-wire all handlers
@@ -2173,14 +2173,14 @@ async function setupRegenerateHandler(state, regenFn) {
 }
 
 function setupArchiveOptionHandlers(state) {
-    const warm = document.getElementById('ss-sp-archive-warm');
+    const warm = document.getElementById('shardwright-sp-archive-warm');
     if (warm) {
         warm.addEventListener('change', (e) => {
             state.archiveOptions.archiveWarm = e.target.checked;
         });
     }
 
-    const cold = document.getElementById('ss-sp-archive-cold');
+    const cold = document.getElementById('shardwright-sp-archive-cold');
     if (cold) {
         cold.addEventListener('change', (e) => {
             state.archiveOptions.archiveCold = e.target.checked;

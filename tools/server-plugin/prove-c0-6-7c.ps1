@@ -103,12 +103,12 @@ try {
     $upgradeReplay = Invoke-NodeTestProof `
         -Name 'upgrade-replay-hardening' `
         -Pattern 'upgrade replay route restores governed published state from ledgers without a live projection|upgrade replay route preserves published truth from carried pre-v1 host data|upgrade replay route preserves corrected-child published truth from carried pre-v1 host data|upgrade replay route fails closed when the interpretive ledger contains malformed JSON|upgrade replay route fails closed when the publication ledger contains malformed JSON|upgrade replay route fails closed when publication ledger is restored without the governance ledger|upgrade replay route refuses backup-required hosts before mutating governed state|upgrade replay route refuses unsupported-schema hosts before mutating governed state|upgrade replay route refuses missing live-authority references before mutating governed state' `
-        -TestFile 'tools/server-plugin/summary-sharder-memory/upgrade.test.mjs'
+        -TestFile 'tools/server-plugin/shardwright-memory/upgrade.test.mjs'
 
     $packagedParity = Invoke-NodeTestProof `
         -Name 'packaged-publication-parity' `
         -Pattern 'packaged interpretive publication flow succeeds under Node from staged payload only|packaged interpretive publication flow succeeds under Bun from staged payload only' `
-        -TestFile 'tools/server-plugin/summary-sharder-memory/package.test.mjs'
+        -TestFile 'tools/server-plugin/shardwright-memory/package.test.mjs'
 
     $result = [ordered]@{
         ok = $true

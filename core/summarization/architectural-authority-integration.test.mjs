@@ -40,6 +40,9 @@ test('integration trace resets and records ordered events', () => {
 
         const trace = getArchitecturalIntegrationTrace();
         assert.equal(trace.length, 3);
+        assert.equal(globalThis.Shardwright.diagnostics.architecturalIntegrationTrace.length, 3);
+        assert.equal(globalThis.summarySharderDebug, undefined);
+        assert.equal(globalThis.__summarySharderArchitecturalIntegrationTrace, undefined);
         assert.deepEqual(
             trace.map((entry) => entry.type),
             ['TRACE_STARTED', 'SHARD_SAVE_REQUESTED', 'HOST_SAVE_CONFIRMED']
@@ -48,7 +51,7 @@ test('integration trace resets and records ordered events', () => {
             trace.map((entry) => entry.sequence),
             [1, 2, 3]
         );
-        assert.equal(JSON.parse(storage.getItem('summary_sharder:architectural_integration_trace')).length, 3);
+        assert.equal(JSON.parse(storage.getItem('shardwright:architectural-integration-trace')).length, 3);
     } finally {
         globalThis.sessionStorage = originalSessionStorage;
     }
@@ -83,7 +86,7 @@ test('debug host save failure is consumed once and mode filtered', () => {
     globalThis.sessionStorage = storage;
 
     try {
-        storage.setItem('summary_sharder:debug_fail_next_host_save', JSON.stringify({
+        storage.setItem('shardwright:debug-fail-next-host-save', JSON.stringify({
             modes: ['system'],
             reason: 'test',
         }));

@@ -1,5 +1,5 @@
 /**
- * Vectorization orchestration for Summary Sharder RAG.
+ * Vectorization orchestration for Shardwright RAG.
  * Handles shard indexing, chat synchronization, and stale vector cleanup.
  */
 
@@ -39,6 +39,9 @@ import {
     isSavedShardCompatibleWithProfile,
 } from '../summarization/saved-shard-identity.js';
 import { annotateShardIdentityMetadata } from './vectorize-identity.js';
+import { getArchitecturalRagAdmissionRefusal } from './architectural-rag-boundary.js';
+import { prepareArchitecturalRagProjection } from './architectural-rag-admission.js';
+import { getCurrentChatShardManifests } from '../summarization/shard-integrity-runtime.js';
 
 const STOP_WORDS = new Set([
     'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
@@ -51,6 +54,39 @@ const STOP_WORDS = new Set([
 
 function normalizeChatId(chatId) {
     return String(chatId || '').trim().replace(/\.jsonl$/i, '').replace(/\.json$/i, '').trim();
+}
+
+function getSourceMessageIds(chat, startIndex, endIndex) {
+    if (!Array.isArray(chat) || startIndex < 0 || endIndex < startIndex) return [];
+    const slice = chat.slice(startIndex, endIndex + 1);
+    if (slice.length !== endIndex - startIndex + 1) return [];
+    return slice.map((message) => String(message?.extra?.shardwright?.messageIdentity?.messageId || '').trim()).filter(Boolean);
+}
+
+export function buildArchitecturalPersistedSourceEnvelope(options = {}) {
+    const context = globalThis.SillyTavern?.getContext?.() || null;
+    const chat = Array.isArray(context?.chat) ? context.chat : [];
+    const startIndex = Number.parseInt(options.startIndex, 10);
+    const endIndex = Number.parseInt(options.endIndex, 10);
+    const sourceUid = String(options.sourceUid || '').trim();
+    const suppliedManifest = String(options.manifest?.outputUID || '').trim() === sourceUid
+        ? options.manifest
+        : null;
+    const manifest = suppliedManifest || getCurrentChatShardManifests()
+        .find((item) => String(item?.outputUID || '').trim() === sourceUid);
+    if (!manifest || String(manifest?.outputUID || '').trim() !== sourceUid) return null;
+    const sourceMessageIds = getSourceMessageIds(chat, startIndex, endIndex);
+    return {
+        persisted: true,
+        sourceType: options.sourceType,
+        chatId: normalizeChatId(context?.chatId || ''),
+        sourceUid,
+        startIndex,
+        endIndex,
+        sourceMessageIds,
+        sourceIdentityHash: manifest.sourceIdentityHash,
+        sourceRevisionHash: manifest.sourceRevisionHash,
+    };
 }
 
 function getCurrentVectorWriteContext(settings) {
@@ -231,7 +267,8 @@ async function collectExistingShards(settings) {
     const activeProfile = normalizeSharderProfile(settings?.sharderProfile || NARRATIVE_PROFILE);
 
     // System-message shards from current chat.
-    const chat = SillyTavern.getContext()?.chat || [];
+    const context = SillyTavern.getContext();
+    const chat = context?.chat || [];
     for (const msg of chat) {
         const shardInfo = classifySavedShardText(msg?.mes);
         if (shardInfo.wrapperType !== 'memory-shard') continue;
@@ -244,6 +281,12 @@ async function collectExistingShards(settings) {
             keywords: extractKeywordsTfIdf(shardInfo.body),
             profile: shardInfo.profile,
             schemaVersion: shardInfo.schemaVersion,
+            sourceEnvelope: buildArchitecturalPersistedSourceEnvelope({
+                sourceType: 'system-message',
+                sourceUid: msg?.send_date,
+                startIndex: shardInfo.startIndex,
+                endIndex: shardInfo.endIndex,
+            }),
         });
     }
 
@@ -272,6 +315,12 @@ async function collectExistingShards(settings) {
                             : extractKeywordsTfIdf(candidate.text),
                         profile: candidate.profile,
                         schemaVersion: candidate.schemaVersion,
+                        sourceEnvelope: buildArchitecturalPersistedSourceEnvelope({
+                            sourceType: 'lorebook-entry',
+                            sourceUid: entry?.uid || entry?.id,
+                            startIndex: candidate.startIndex,
+                            endIndex: candidate.endIndex,
+                        }),
                     });
                 }
             }
@@ -345,7 +394,7 @@ export async function synchronizeChatVectors(settings) {
  * @param {string[]} keywords
  * @returns {Promise<{inserted: number, hash: string|null}>}
  */
-export async function vectorizeShard(shardText, startIdx, endIdx, settings, keywords = []) {
+export async function vectorizeShard(shardText, startIdx, endIdx, settings, keywords = [], sourceEnvelope = null) {
     throwIfAborted('rag vectorization');
     const ragSettings = settings?.rag;
     if (!ragSettings?.enabled) {
@@ -357,6 +406,28 @@ export async function vectorizeShard(shardText, startIdx, endIdx, settings, keyw
         : extractKeywordsTfIdf(shardText);
 
     const origin = getCurrentVectorWriteContext(settings);
+    const activeProfile = normalizeSharderProfile(settings?.sharderProfile);
+    if (activeProfile === ARCHITECTURAL_PROFILE) {
+        const projection = prepareArchitecturalRagProjection(shardText, sourceEnvelope);
+        if (!projection.eligible) {
+            ragLog.warn(projection.message, projection);
+            return { inserted: 0, hash: null, reason: projection.reason, code: projection.code };
+        }
+        annotateSummaryChunks(projection.chunks, origin);
+        projection.chunks.forEach((chunk) => { chunk.metadata.keywords = effectiveKeywords; });
+        maybeShowVectorizeToast(projection.chunks.length, origin);
+        throwIfAborted('rag vectorization');
+        const result = await insertChunks(origin.collectionId, projection.chunks, ragSettings);
+        return {
+            inserted: result.inserted || projection.chunks.length,
+            hash: projection.chunks.length === 1 ? String(projection.chunks[0].hash) : null,
+        };
+    }
+    const refusal = getArchitecturalRagAdmissionRefusal({ settings, text: shardText });
+    if (refusal) {
+        ragLog.warn(refusal.message, refusal);
+        return { inserted: 0, hash: null, reason: refusal.reason, code: refusal.code };
+    }
     const chunk = chunkShard(shardText, startIdx, endIdx, effectiveKeywords);
     annotateSummaryChunks([chunk], origin);
     annotateShardIdentityMetadata([chunk], settings, shardText);
@@ -378,8 +449,37 @@ export async function vectorizeShard(shardText, startIdx, endIdx, settings, keyw
  * @param {string[]} keywords
  * @returns {Promise<{inserted: number, deleted: number, supersedingReplaced: number, cumulativeAdded: number, rollingUpdated: number, rollingPurged: number, sectionFallbackToStandard: number}>}
  */
-export async function vectorizeShardSectionAware(shardText, startIdx, endIdx, settings, keywords = []) {
+export async function vectorizeShardSectionAware(shardText, startIdx, endIdx, settings, keywords = [], sourceEnvelope = null) {
     throwIfAborted('rag vectorization');
+    if (normalizeSharderProfile(settings?.sharderProfile) === ARCHITECTURAL_PROFILE) {
+        const result = await vectorizeShard(shardText, startIdx, endIdx, settings, keywords, sourceEnvelope);
+        return {
+            inserted: Number(result?.inserted || 0),
+            deleted: 0,
+            supersedingReplaced: 0,
+            cumulativeAdded: 0,
+            rollingUpdated: 0,
+            rollingPurged: 0,
+            sectionFallbackToStandard: 0,
+            reason: result?.reason,
+            code: result?.code,
+        };
+    }
+    const refusal = getArchitecturalRagAdmissionRefusal({ settings, text: shardText });
+    if (refusal) {
+        ragLog.warn(refusal.message, refusal);
+        return {
+            inserted: 0,
+            deleted: 0,
+            supersedingReplaced: 0,
+            cumulativeAdded: 0,
+            rollingUpdated: 0,
+            rollingPurged: 0,
+            sectionFallbackToStandard: 0,
+            reason: refusal.reason,
+            code: refusal.code,
+        };
+    }
     const ragSettings = settings?.rag;
     if (!ragSettings?.enabled) {
         return {
@@ -549,10 +649,20 @@ async function vectorizeAllShardsStandard(settings) {
         return { inserted: 0, total: 0 };
     }
 
-    const chunks = shardItems.map((item) => {
+    const isArchitectural = normalizeSharderProfile(settings?.sharderProfile) === ARCHITECTURAL_PROFILE;
+    const chunks = shardItems.flatMap((item) => {
+        if (isArchitectural) {
+            const projection = prepareArchitecturalRagProjection(item.text, item.sourceEnvelope);
+            if (!projection.eligible) {
+                ragLog.warn(projection.message, projection);
+                return [];
+            }
+            projection.chunks.forEach((chunk) => { chunk.metadata.keywords = item.keywords; });
+            return projection.chunks;
+        }
         const chunk = chunkShard(item.text, item.startIndex, item.endIndex, item.keywords);
         annotateShardIdentityMetadata([chunk], settings, item.text);
-        return chunk;
+        return [chunk];
     });
     annotateSummaryChunks(chunks, origin);
     const existing = await listAllChunksForOrigin(collectionId, ragSettings, origin);
@@ -674,7 +784,7 @@ export function extractKeywordsTfIdf(text, maxKeywords = 8) {
     const result = scored.slice(0, Math.max(1, maxKeywords)).map(item => item.token);
 
     const bannedSet = parseBannedKeywords(
-        extension_settings?.summary_sharder?.lorebookEntryOptions?.bannedKeywords
+        extension_settings?.shardwright?.lorebookEntryOptions?.bannedKeywords
     );
     return filterBannedKeywords(result, bannedSet);
 }
@@ -740,6 +850,7 @@ async function vectorizeAllShardsSectionAwareInternal(settings) {
             item.endIndex,
             settings,
             item.keywords,
+            item.sourceEnvelope,
         );
         inserted += Number(result?.inserted || 0);
         deleted += Number(result?.deleted || 0);
@@ -769,10 +880,7 @@ async function vectorizeAllShardsSectionAwareInternal(settings) {
  * @returns {Promise<{mode: string, inserted: number, deleted: number, total: number, supersedingReplaced?: number, cumulativeAdded?: number, rollingUpdated?: number, rollingPurged?: number, sectionFallbackToStandard?: number}>}
  */
 export async function vectorizeAllShardsByMode(settings, mode = null) {
-    const activeProfile = normalizeSharderProfile(settings?.sharderProfile || NARRATIVE_PROFILE);
-    const resolvedMode = activeProfile === ARCHITECTURAL_PROFILE
-        ? 'standard'
-        : (mode || resolveShardChunkingMode(settings?.rag));
+    const resolvedMode = mode || resolveShardChunkingMode(settings?.rag);
 
     if (resolvedMode === 'section') {
         const result = await vectorizeAllShardsSectionAwareInternal(settings);
@@ -906,6 +1014,11 @@ async function collectStandardShards(settings) {
  */
 export async function vectorizeStandardSummary(text, startIdx, endIdx, settings, keywords = []) {
     throwIfAborted('rag vectorization');
+    const refusal = getArchitecturalRagAdmissionRefusal({ settings, text });
+    if (refusal) {
+        ragLog.warn(refusal.message, refusal);
+        return { inserted: 0, hash: null, reason: refusal.reason, code: refusal.code };
+    }
     const ragStd = settings?.ragStandard;
     if (!ragStd?.enabled) {
         return { inserted: 0, hash: null };

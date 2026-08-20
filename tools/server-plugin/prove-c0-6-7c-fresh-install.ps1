@@ -64,7 +64,7 @@ function Wait-ForHealth([int]$TargetPort, [int]$Attempts = 60) {
     for ($i = 0; $i -lt $Attempts; $i++) {
         Start-Sleep -Seconds 1
         try {
-            Invoke-WebRequest -Uri "http://127.0.0.1:$TargetPort/api/plugins/summary-sharder-memory/health" -UseBasicParsing -TimeoutSec 2 | Out-Null
+            Invoke-WebRequest -Uri "http://127.0.0.1:$TargetPort/api/plugins/shardwright-memory/health" -UseBasicParsing -TimeoutSec 2 | Out-Null
             return
         } catch {}
     }
@@ -278,7 +278,7 @@ if ($InstallPayload) {
     Invoke-CommandChecked -FilePath 'powershell' -ArgumentList @(
         '-NoProfile',
         '-ExecutionPolicy', 'Bypass',
-        '-File', (Join-Path $PSScriptRoot 'install-summary-sharder-memory.ps1')
+        '-File', (Join-Path $PSScriptRoot 'install-shardwright-memory.ps1')
     ) -FailureMessage 'Payload install failed before fresh-install proof.'
 }
 
@@ -306,7 +306,7 @@ Assert-Equal @($unexpectedStateProperties).Count 0 'Fresh-install proof state pa
 
 Wait-ForHealth -TargetPort $Port
 $csrfBeforePublish = Get-CsrfSession -TargetPort $Port
-$baseUri = "http://127.0.0.1:$Port/api/plugins/summary-sharder-memory"
+$baseUri = "http://127.0.0.1:$Port/api/plugins/shardwright-memory"
 $healthAfterReset = Invoke-JsonRequest -Method 'GET' -Uri "$baseUri/health" -Session $csrfBeforePublish.Session -TimeoutSec 15
 Assert-True ([bool]$healthAfterReset.ok) 'Fresh-install proof health check failed after reset/restart.'
 

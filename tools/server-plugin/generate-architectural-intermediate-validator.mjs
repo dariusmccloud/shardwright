@@ -2,13 +2,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import Ajv2020 from './summary-sharder-memory/node_modules/ajv/dist/2020.js';
-import standaloneCode from './summary-sharder-memory/node_modules/ajv/dist/standalone/index.js';
+import Ajv2020 from './shardwright-memory/node_modules/ajv/dist/2020.js';
+import standaloneCode from './shardwright-memory/node_modules/ajv/dist/standalone/index.js';
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(currentDir, '..', '..');
 const schemaPath = path.join(repoRoot, 'core', 'summarization', 'architectural-intermediate-schema-v1.json');
-const serverOutputPath = path.join(currentDir, 'summary-sharder-memory', 'architectural-intermediate-validator.generated.cjs');
+const serverOutputPath = path.join(currentDir, 'shardwright-memory', 'architectural-intermediate-validator.generated.cjs');
 const browserOutputPath = path.join(repoRoot, 'core', 'summarization', 'architectural-intermediate-validator.generated.js');
 
 const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8'));

@@ -1,5 +1,5 @@
 /**
- * UI management for Summary Sharder
+ * UI management for Shardwright
  */
 
 import { saveSettings } from '../core/settings.js';
@@ -63,8 +63,8 @@ function applyUiOperationState(event) {
     // Stop-button-only updates (for legacy stop visibility toggles).
     if (!primaryButton) {
         if (typeof showStop === 'boolean') {
-            const stopBtn = document.getElementById('ss-stop-summarize');
-            stopBtn?.classList.toggle('ss-hidden', !showStop);
+            const stopBtn = document.getElementById('shardwright-stop-summarize');
+            stopBtn?.classList.toggle('shardwright-hidden', !showStop);
         }
         return;
     }
@@ -102,14 +102,14 @@ function applyUiOperationState(event) {
     }
 
     if (typeof showStop === 'boolean') {
-        const stopBtn = document.getElementById('ss-stop-summarize');
-        stopBtn?.classList.toggle('ss-hidden', !showStop);
+        const stopBtn = document.getElementById('shardwright-stop-summarize');
+        stopBtn?.classList.toggle('shardwright-hidden', !showStop);
     }
 }
 
 function ensureUiOperationListener() {
     if (uiOpListenerAttached) return;
-    window.addEventListener('ss-ui-operation-state', applyUiOperationState);
+    window.addEventListener('shardwright-ui-operation-state', applyUiOperationState);
     uiOpListenerAttached = true;
 }
 
@@ -119,96 +119,96 @@ function ensureUiOperationListener() {
 function toggleSharderControls(settings) {
     const sharderMode = settings.sharderMode || false;
 
-    const sharderControls = document.getElementById('ss-sharder-controls');
-    const summarizeBtn = document.getElementById('ss-run-summarize');
-    const runSharderBtn = document.getElementById('ss-run-single-pass');
-    const batchSharderBtn = document.getElementById('ss-run-single-pass-batch');
+    const sharderControls = document.getElementById('shardwright-sharder-controls');
+    const summarizeBtn = document.getElementById('shardwright-run-summarize');
+    const runSharderBtn = document.getElementById('shardwright-run-single-pass');
+    const batchSharderBtn = document.getElementById('shardwright-run-single-pass-batch');
 
-    sharderControls?.classList.toggle('ss-hidden', !sharderMode);
-    summarizeBtn?.classList.toggle('ss-hidden', sharderMode);
-    runSharderBtn?.classList.toggle('ss-hidden', !sharderMode);
-    batchSharderBtn?.classList.toggle('ss-hidden', !sharderMode);
+    sharderControls?.classList.toggle('shardwright-hidden', !sharderMode);
+    summarizeBtn?.classList.toggle('shardwright-hidden', sharderMode);
+    runSharderBtn?.classList.toggle('shardwright-hidden', !sharderMode);
+    batchSharderBtn?.classList.toggle('shardwright-hidden', !sharderMode);
 
-    const summaryApiStatus = document.getElementById('ss-summary-api-status');
-    summaryApiStatus?.classList.toggle('ss-hidden', sharderMode);
+    const summaryApiStatus = document.getElementById('shardwright-summary-api-status');
+    summaryApiStatus?.classList.toggle('shardwright-hidden', sharderMode);
 
-    const advancedBlock = document.getElementById('ss-advanced-control-block');
-    const summaryReviewBlock = document.getElementById('ss-summary-review-block');
-    const summaryReviewOptions = document.getElementById('ss-summary-review-options');
-    const lengthBlock = document.getElementById('ss-length-control-block');
-    const lengthSliderSection = document.getElementById('ss-length-slider-section');
+    const advancedBlock = document.getElementById('shardwright-advanced-control-block');
+    const summaryReviewBlock = document.getElementById('shardwright-summary-review-block');
+    const summaryReviewOptions = document.getElementById('shardwright-summary-review-options');
+    const lengthBlock = document.getElementById('shardwright-length-control-block');
+    const lengthSliderSection = document.getElementById('shardwright-length-slider-section');
 
-    const reviewToggleEnabled = !!document.getElementById('ss-summary-review-toggle')?.checked;
-    const lengthControlEnabled = !!document.getElementById('ss-length-control')?.checked;
+    const reviewToggleEnabled = !!document.getElementById('shardwright-summary-review-toggle')?.checked;
+    const lengthControlEnabled = !!document.getElementById('shardwright-length-control')?.checked;
 
-    advancedBlock?.classList.toggle('ss-hidden', sharderMode);
-    summaryReviewBlock?.classList.toggle('ss-hidden', sharderMode);
-    summaryReviewOptions?.classList.toggle('ss-hidden', sharderMode || !reviewToggleEnabled);
-    lengthBlock?.classList.toggle('ss-hidden', sharderMode);
-    lengthSliderSection?.classList.toggle('ss-hidden', sharderMode || !lengthControlEnabled);
+    advancedBlock?.classList.toggle('shardwright-hidden', sharderMode);
+    summaryReviewBlock?.classList.toggle('shardwright-hidden', sharderMode);
+    summaryReviewOptions?.classList.toggle('shardwright-hidden', sharderMode || !reviewToggleEnabled);
+    lengthBlock?.classList.toggle('shardwright-hidden', sharderMode);
+    lengthSliderSection?.classList.toggle('shardwright-hidden', sharderMode || !lengthControlEnabled);
 }
 
 /**
  * Toggle visibility of Summary Length slider based on summaryLengthControl setting.
  */
 function toggleLengthSlider(enabled) {
-    const section = document.getElementById('ss-length-slider-section');
-    const sharderMode = !!document.getElementById('ss-sharder-mode')?.checked;
-    section?.classList.toggle('ss-hidden', !enabled || sharderMode);
+    const section = document.getElementById('shardwright-length-slider-section');
+    const sharderMode = !!document.getElementById('shardwright-sharder-mode')?.checked;
+    section?.classList.toggle('shardwright-hidden', !enabled || sharderMode);
 }
 
 /**
  * Toggle visibility of Summary Review options based on toggle state.
  */
 function toggleSummaryReviewOptions(enabled) {
-    const section = document.getElementById('ss-summary-review-options');
-    const sharderMode = !!document.getElementById('ss-sharder-mode')?.checked;
-    section?.classList.toggle('ss-hidden', !enabled || sharderMode);
+    const section = document.getElementById('shardwright-summary-review-options');
+    const sharderMode = !!document.getElementById('shardwright-sharder-mode')?.checked;
+    section?.classList.toggle('shardwright-hidden', !enabled || sharderMode);
 }
 
 /**
  * Toggle visibility of lorebook selection section based on output mode.
  */
 function toggleLorebookSection(outputMode) {
-    const lorebookSection = document.getElementById('ss-lorebook-section');
-    lorebookSection?.classList.toggle('ss-hidden', outputMode !== 'lorebook');
+    const lorebookSection = document.getElementById('shardwright-lorebook-section');
+    lorebookSection?.classList.toggle('shardwright-hidden', outputMode !== 'lorebook');
 }
 
 /**
  * Toggle visibility of Auto Interval setting based on mode.
  */
 function toggleAutoInterval(mode) {
-    const autoIntervalRow = document.getElementById('ss-auto-interval-row');
-    autoIntervalRow?.classList.toggle('ss-hidden', mode !== 'auto');
+    const autoIntervalRow = document.getElementById('shardwright-auto-interval-row');
+    autoIntervalRow?.classList.toggle('shardwright-hidden', mode !== 'auto');
 }
 
 /**
  * Toggle visibility of custom books dropdown.
  */
 function toggleCustomBooksDropdown(show) {
-    const container = document.getElementById('ss-custom-books-container');
-    container?.classList.toggle('ss-hidden', !show);
+    const container = document.getElementById('shardwright-custom-books-container');
+    container?.classList.toggle('shardwright-hidden', !show);
 }
 
 function setupSettingsAccordionHandlers() {
-    const settingsRoot = document.getElementById('summary-sharder-settings');
+    const settingsRoot = document.getElementById('shardwright-settings');
     if (!settingsRoot) return;
 
-    const accordions = Array.from(settingsRoot.querySelectorAll('.ss-settings-accordion'));
+    const accordions = Array.from(settingsRoot.querySelectorAll('.shardwright-settings-accordion'));
     if (accordions.length === 0) return;
 
     const setExpanded = (accordion, expanded) => {
-        const content = accordion.querySelector('.ss-accordion-content');
-        const header = accordion.querySelector('.ss-accordion-header');
+        const content = accordion.querySelector('.shardwright-accordion-content');
+        const header = accordion.querySelector('.shardwright-accordion-header');
         if (!content || !header) return;
 
         accordion.classList.toggle('expanded', expanded);
-        content.classList.toggle('ss-hidden', !expanded);
+        content.classList.toggle('shardwright-hidden', !expanded);
         header.setAttribute('aria-expanded', expanded ? 'true' : 'false');
     };
 
     const toggleAccordion = (header) => {
-        const accordion = header.closest('.ss-settings-accordion');
+        const accordion = header.closest('.shardwright-settings-accordion');
         if (!accordion) return;
 
         const shouldExpand = !accordion.classList.contains('expanded');
@@ -223,7 +223,7 @@ function setupSettingsAccordionHandlers() {
     };
 
     for (const accordion of accordions) {
-        const header = accordion.querySelector('.ss-accordion-header');
+        const header = accordion.querySelector('.shardwright-accordion-header');
         if (!header) continue;
 
         if (!header.hasAttribute('role')) {
@@ -290,245 +290,245 @@ export function renderSettingsUI(settings, callbacks) {
     ensureUiOperationListener();
 
     const settingsHtml = `
-    <div id="summary-sharder-settings">
+    <div id="shardwright-settings">
         <div class="inline-drawer">
             <div class="inline-drawer-toggle inline-drawer-header">
-                <b>Summary Sharder</b>
+                <b>Shardwright</b>
                 <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
             </div>
             <div class="inline-drawer-content" style="display: none;">
-                <div class="ss-settings-scroll">
-                    <div class="ss-bg">
-                    <div class="ss-review-accordion ss-settings-accordion expanded" data-settings-section="mode-output">
-                        <div class="ss-accordion-header" role="button" tabindex="0" aria-expanded="true">
-                            <span class="ss-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
-                            <span class="ss-accordion-title">Mode & Output</span>
+                <div class="shardwright-settings-scroll">
+                    <div class="shardwright-bg">
+                    <div class="shardwright-review-accordion shardwright-settings-accordion expanded" data-settings-section="mode-output">
+                        <div class="shardwright-accordion-header" role="button" tabindex="0" aria-expanded="true">
+                            <span class="shardwright-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
+                            <span class="shardwright-accordion-title">Mode & Output</span>
                         </div>
-                        <div class="ss-accordion-content">
-                            <div class="ss-block">
-                                <div class="ss-api-status-group">
-                                    <div class="ss-api-feature-status" id="ss-summary-api-status">
+                        <div class="shardwright-accordion-content">
+                            <div class="shardwright-block">
+                                <div class="shardwright-api-status-group">
+                                    <div class="shardwright-api-feature-status" id="shardwright-summary-api-status">
                                         <strong>Summary API:</strong>
-                                        <span id="ss-summary-api-display" style="margin-left: 10px;">SillyTavern Current</span>
+                                        <span id="shardwright-summary-api-display" style="margin-left: 10px;">SillyTavern Current</span>
                                     </div>
-                                    <div class="ss-api-feature-status ss-hidden" id="ss-single-pass-api-status">
+                                    <div class="shardwright-api-feature-status shardwright-hidden" id="shardwright-single-pass-api-status">
                                         <strong>Sharder API:</strong>
-                                        <span id="ss-single-pass-api-display" style="margin-left: 10px;"></span>
+                                        <span id="shardwright-single-pass-api-display" style="margin-left: 10px;"></span>
                                     </div>
-                                    <div class="ss-api-feature-status ss-hidden" id="ss-events-api-status">
+                                    <div class="shardwright-api-feature-status shardwright-hidden" id="shardwright-events-api-status">
                                         <strong>Casing API:</strong>
-                                        <span id="ss-events-api-display" style="margin-left: 10px;"></span>
+                                        <span id="shardwright-events-api-display" style="margin-left: 10px;"></span>
                                     </div>
                                 </div>
-                                <input id="ss-open-api-config-modal" class="menu_button" type="button" value="Configure APIs..." />
+                                <input id="shardwright-open-api-config-modal" class="menu_button" type="button" value="Configure APIs..." />
                             </div>
 
-                            <div class="ss-block">
+                            <div class="shardwright-block">
                                 <label class="checkbox_label">
-                                    <input id="ss-sharder-mode" type="checkbox" />
-                                    <span>Sharder Mode ${infoHintHtml('ss-sharder-mode-hint', 'Uses the structured 16-section Memory Shard workflow instead of basic summaries.')}</span>
+                                    <input id="shardwright-sharder-mode" type="checkbox" />
+                                    <span>Sharder Mode ${infoHintHtml('shardwright-sharder-mode-hint', 'Uses the structured 16-section Memory Shard workflow instead of basic summaries.')}</span>
                                 </label>
                             </div>
 
-                            <div class="ss-control-group">
-                                <div class="ss-inline-row">
-                                    <label for="ss-mode">Mode:</label>
-                                    <div id="ss-mode-mount"></div>
+                            <div class="shardwright-control-group">
+                                <div class="shardwright-inline-row">
+                                    <label for="shardwright-mode">Mode:</label>
+                                    <div id="shardwright-mode-mount"></div>
                                 </div>
 
-                                <div id="ss-auto-interval-row" class="ss-inline-row ss-hidden">
-                                    <label for="ss-auto-interval">Automatic:</label>
-                                    <div class="ss-inline-with-unit">
+                                <div id="shardwright-auto-interval-row" class="shardwright-inline-row shardwright-hidden">
+                                    <label for="shardwright-auto-interval">Automatic:</label>
+                                    <div class="shardwright-inline-with-unit">
                                         <span>every</span>
-                                        <input id="ss-auto-interval" type="number" class="text_pole" min="1" />
+                                        <input id="shardwright-auto-interval" type="number" class="text_pole" min="1" />
                                         <span>messages</span>
                                     </div>
                                 </div>
 
-                                <div class="ss-inline-row">
-                                    <label for="ss-output-mode">Output:</label>
-                                    <div id="ss-output-mode-mount"></div>
+                                <div class="shardwright-inline-row">
+                                    <label for="shardwright-output-mode">Output:</label>
+                                    <div id="shardwright-output-mode-mount"></div>
                                 </div>
 
-                                <div id="ss-lorebook-section" class="ss-lorebook-section ss-hidden">
-                                    <span class="ss-lorebook-section-label">Target Lorebooks:</span>
+                                <div id="shardwright-lorebook-section" class="shardwright-lorebook-section shardwright-hidden">
+                                    <span class="shardwright-lorebook-section-label">Target Lorebooks:</span>
 
-                                    <div class="ss-lorebook-toggles">
-                                        <label class="checkbox_label ss-lorebook-toggle-item">
-                                            <input id="ss-use-char-book" type="checkbox" />
+                                    <div class="shardwright-lorebook-toggles">
+                                        <label class="checkbox_label shardwright-lorebook-toggle-item">
+                                            <input id="shardwright-use-char-book" type="checkbox" />
                                             <span>Use Character World Info</span>
                                         </label>
-                                        <label class="checkbox_label ss-lorebook-toggle-item">
-                                            <input id="ss-use-chat-book" type="checkbox" />
+                                        <label class="checkbox_label shardwright-lorebook-toggle-item">
+                                            <input id="shardwright-use-chat-book" type="checkbox" />
                                             <span>Use Chat History Book</span>
                                         </label>
-                                        <label class="checkbox_label ss-lorebook-toggle-item">
-                                            <input id="ss-use-custom-books" type="checkbox" />
+                                        <label class="checkbox_label shardwright-lorebook-toggle-item">
+                                            <input id="shardwright-use-custom-books" type="checkbox" />
                                             <span>Custom Select</span>
                                         </label>
                                     </div>
 
-                                    <div id="ss-custom-books-container" class="ss-hidden">
-                                        <div id="ss-lorebook-dropdown"></div>
+                                    <div id="shardwright-custom-books-container" class="shardwright-hidden">
+                                        <div id="shardwright-lorebook-dropdown"></div>
                                     </div>
 
-                                    <div class="ss-lorebook-options-btn">
-                                        <input id="ss-lorebook-options-btn" class="menu_button" type="button" value="Lorebook Entry Options..." />
+                                    <div class="shardwright-lorebook-options-btn">
+                                        <input id="shardwright-lorebook-options-btn" class="menu_button" type="button" value="Lorebook Entry Options..." />
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="ss-review-accordion ss-settings-accordion" data-settings-section="summarization">
-                        <div class="ss-accordion-header" role="button" tabindex="0" aria-expanded="false">
-                            <span class="ss-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
-                            <span class="ss-accordion-title">Summarization</span>
+                    <div class="shardwright-review-accordion shardwright-settings-accordion" data-settings-section="summarization">
+                        <div class="shardwright-accordion-header" role="button" tabindex="0" aria-expanded="false">
+                            <span class="shardwright-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
+                            <span class="shardwright-accordion-title">Summarization</span>
                         </div>
-                        <div class="ss-accordion-content ss-hidden">
-                            <div class="ss-control-group">
-                                <div id="ss-sharder-controls" class="ss-block ss-sharder-controls ss-hidden">                                                                      
-                                    <div class="ss-inline-row">
-                                        <label for="ss-sharder-profile">Sharder Profile:</label>
-                                        <div id="ss-sharder-profile-mount"></div>
+                        <div class="shardwright-accordion-content shardwright-hidden">
+                            <div class="shardwright-control-group">
+                                <div id="shardwright-sharder-controls" class="shardwright-block shardwright-sharder-controls shardwright-hidden">
+                                    <div class="shardwright-inline-row">
+                                        <label for="shardwright-sharder-profile">Sharder Profile:</label>
+                                        <div id="shardwright-sharder-profile-mount"></div>
                                     </div>
                                     <label class="checkbox_label">
-                                        <input id="ss-single-pass-auto-include-shards" type="checkbox" />
-                                        <span>Auto-include all existing shards ${infoHintHtml('ss-auto-include-shards-hint', 'Skips the shard selection modal and includes all shard sections by default.')}</span>
+                                        <input id="shardwright-single-pass-auto-include-shards" type="checkbox" />
+                                        <span>Auto-include all existing shards ${infoHintHtml('shardwright-auto-include-shards-hint', 'Skips the shard selection modal and includes all shard sections by default.')}</span>
                                     </label>
-                                    <p class="ss-hint">Skips selection modal</p>
+                                    <p class="shardwright-hint">Skips selection modal</p>
                                 </div>
 
-                                <div id="ss-advanced-control-block" class="ss-block">
+                                <div id="shardwright-advanced-control-block" class="shardwright-block">
                                     <label class="checkbox_label">
-                                        <input id="ss-advanced-control" type="checkbox" />
-                                        <span>Drafting Mode ${infoHintHtml('ss-pre-edit-events-hint', 'Extracts key events first so you can edit them before the summary is generated.')}</span>
+                                        <input id="shardwright-advanced-control" type="checkbox" />
+                                        <span>Drafting Mode ${infoHintHtml('shardwright-pre-edit-events-hint', 'Extracts key events first so you can edit them before the summary is generated.')}</span>
                                     </label>
-                                    <p class="ss-hint">Extract and review events before generating summary</p>
+                                    <p class="shardwright-hint">Extract and review events before generating summary</p>
                                 </div>
 
-                                <div id="ss-summary-review-block" class="ss-block">
+                                <div id="shardwright-summary-review-block" class="shardwright-block">
                                     <label class="checkbox_label">
-                                        <input id="ss-summary-review-toggle" type="checkbox" />
-                                        <span>Summary Review ${infoHintHtml('ss-summary-review-hint', 'Shows a review modal so you can edit the summary before it is saved or injected.')}</span>
+                                        <input id="shardwright-summary-review-toggle" type="checkbox" />
+                                        <span>Summary Review ${infoHintHtml('shardwright-summary-review-hint', 'Shows a review modal so you can edit the summary before it is saved or injected.')}</span>
                                     </label>
-                                    <p class="ss-hint">Review generated summaries before injecting</p>
+                                    <p class="shardwright-hint">Review generated summaries before injecting</p>
                                 </div>
 
-                                <div id="ss-summary-review-options" class="ss-block ss-hidden">
-                                    <div class="ss-inline-row">
-                                        <label for="ss-summary-review-mode">Review Mode:</label>
-                                        <div id="ss-summary-review-mode-mount"></div>
+                                <div id="shardwright-summary-review-options" class="shardwright-block shardwright-hidden">
+                                    <div class="shardwright-inline-row">
+                                        <label for="shardwright-summary-review-mode">Review Mode:</label>
+                                        <div id="shardwright-summary-review-mode-mount"></div>
                                     </div>
-                                    <p class="ss-hint">When to show the summary review modal</p>
+                                    <p class="shardwright-hint">When to show the summary review modal</p>
                                 </div>
 
-                                <div id="ss-length-control-block" class="ss-block">
+                                <div id="shardwright-length-control-block" class="shardwright-block">
                                     <label class="checkbox_label">
-                                        <input id="ss-length-control" type="checkbox" />
+                                        <input id="shardwright-length-control" type="checkbox" />
                                         <span>Summary Length Control</span>
                                     </label>
-                                    <p class="ss-hint">Limit summary length as a percentage of input</p>
+                                    <p class="shardwright-hint">Limit summary length as a percentage of input</p>
 
-                                    <div id="ss-length-slider-section" class="ss-hidden">
-                                        <label for="ss-length-percent">Target Length:</label>
-                                        <div id="ss-length-percent-host"></div>
-                                        <p class="ss-hint">Summary will be approximately this percentage of input length (in words)</p>
+                                    <div id="shardwright-length-slider-section" class="shardwright-hidden">
+                                        <label for="shardwright-length-percent">Target Length:</label>
+                                        <div id="shardwright-length-percent-host"></div>
+                                        <p class="shardwright-hint">Summary will be approximately this percentage of input length (in words)</p>
                                     </div>
                                 </div>
 
-                                <div class="ss-block">
+                                <div class="shardwright-block">
                                     <label class="checkbox_label">
-                                        <input id="ss-context-cleanup" type="checkbox" />
+                                        <input id="shardwright-context-cleanup" type="checkbox" />
                                         <span>Clean Context Before Summarization</span>
                                     </label>
                                     <div>
-                                        <input id="ss-open-cleanup-btn" class="menu_button" type="button" value="Options..." />
+                                        <input id="shardwright-open-cleanup-btn" class="menu_button" type="button" value="Options..." />
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="ss-review-accordion ss-settings-accordion" data-settings-section="filtering">
-                        <div class="ss-accordion-header" role="button" tabindex="0" aria-expanded="false">
-                            <span class="ss-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
-                            <span class="ss-accordion-title">Filtering</span>
+                    <div class="shardwright-review-accordion shardwright-settings-accordion" data-settings-section="filtering">
+                        <div class="shardwright-accordion-header" role="button" tabindex="0" aria-expanded="false">
+                            <span class="shardwright-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
+                            <span class="shardwright-accordion-title">Filtering</span>
                         </div>
-                        <div class="ss-accordion-content ss-hidden">
-                            <div class="ss-block">
-                                <label for="ss-banned-keywords">Banned Keywords:</label>
-                                <div id="ss-banned-keywords-host"></div>
-                                <p class="ss-hint">Comma-separated words excluded from generated keywords (lorebook + RAG)</p>
+                        <div class="shardwright-accordion-content shardwright-hidden">
+                            <div class="shardwright-block">
+                                <label for="shardwright-banned-keywords">Banned Keywords:</label>
+                                <div id="shardwright-banned-keywords-host"></div>
+                                <p class="shardwright-hint">Comma-separated words excluded from generated keywords (lorebook + RAG)</p>
                             </div>
                         </div>
                     </div>
 
-                    <div class="ss-review-accordion ss-settings-accordion" data-settings-section="configuration">
-                        <div class="ss-accordion-header" role="button" tabindex="0" aria-expanded="false">
-                            <span class="ss-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
-                            <span class="ss-accordion-title">Configuration</span>
+                    <div class="shardwright-review-accordion shardwright-settings-accordion" data-settings-section="configuration">
+                        <div class="shardwright-accordion-header" role="button" tabindex="0" aria-expanded="false">
+                            <span class="shardwright-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
+                            <span class="shardwright-accordion-title">Configuration</span>
                         </div>
-                        <div class="ss-accordion-content ss-hidden">
-                            <div class="ss-block">
-                                <div id="ss-active-prompt-display"></div>
-                                <input id="ss-open-prompts-btn" class="menu_button" type="button" value="Configure Prompts..." />
+                        <div class="shardwright-accordion-content shardwright-hidden">
+                            <div class="shardwright-block">
+                                <div id="shardwright-active-prompt-display"></div>
+                                <input id="shardwright-open-prompts-btn" class="menu_button" type="button" value="Configure Prompts..." />
                             </div>
 
-                            <div class="ss-block">
+                            <div class="shardwright-block">
                                 <label>Advanced:</label>
-                                <div class="ss-buttons">
-                                    <input id="ss-open-themes-btn" class="menu_button" type="button" value="Themes" />
-                                    <input id="ss-open-rag-btn" class="menu_button" type="button" value="RAG Settings" />
+                                <div class="shardwright-buttons">
+                                    <input id="shardwright-open-themes-btn" class="menu_button" type="button" value="Themes" />
+                                    <input id="shardwright-open-rag-btn" class="menu_button" type="button" value="RAG Settings" />
                                 </div>
                             </div>
 
-                            <div class="ss-block">
+                            <div class="shardwright-block">
                                 <label class="checkbox_label">
-                                    <input id="ss-fab-enabled" type="checkbox" />
+                                    <input id="shardwright-fab-enabled" type="checkbox" />
                                     <span>Show Floating Quick Actions</span>
                                 </label>
                             </div>
                         </div>
                     </div>
 
-                    <div class="ss-review-accordion ss-settings-accordion" data-settings-section="debug">
-                        <div class="ss-accordion-header" role="button" tabindex="0" aria-expanded="false">
-                            <span class="ss-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
-                            <span class="ss-accordion-title">Debug</span>
+                    <div class="shardwright-review-accordion shardwright-settings-accordion" data-settings-section="debug">
+                        <div class="shardwright-accordion-header" role="button" tabindex="0" aria-expanded="false">
+                            <span class="shardwright-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
+                            <span class="shardwright-accordion-title">Debug</span>
                         </div>
-                        <div class="ss-accordion-content ss-hidden">
-                            <div class="ss-block">
+                        <div class="shardwright-accordion-content shardwright-hidden">
+                            <div class="shardwright-block">
                                 <label class="checkbox_label">
-                                    <input id="ss-debug-logging" type="checkbox" />
+                                    <input id="shardwright-debug-logging" type="checkbox" />
                                     <span>Enable Debug Logging</span>
                                 </label>
-                                <p class="ss-hint">Turns on developer-only <code>debug</code> console logs for Summary Sharder subsystems.</p>
+                                <p class="shardwright-hint">Turns on developer-only <code>debug</code> console logs for Shardwright subsystems.</p>
                             </div>
 
-                            <div class="ss-block">
-                                <input id="ss-export-debug-settings-btn" class="menu_button" type="button" value="Export Debug Settings..." />
-                                <p class="ss-hint">Exports a shareable Markdown table of current extension settings and active chat metadata. Secrets stay redacted.</p>
+                            <div class="shardwright-block">
+                                <input id="shardwright-export-debug-settings-btn" class="menu_button" type="button" value="Export Debug Settings..." />
+                                <p class="shardwright-hint">Exports a shareable Markdown table of current extension settings and active chat metadata. Secrets stay redacted.</p>
                             </div>
 
-                            <div class="ss-block ss-debug-suggestions">
+                            <div class="shardwright-block shardwright-debug-suggestions">
                                 <label>Useful Next Additions:</label>
-                                <p class="ss-hint"> Soon.</p>
+                                <p class="shardwright-hint"> Soon.</p>
                             </div>
                         </div>
                     </div>
 
-                    <div class="ss-action-bar">
-                        <div class="ss-action-bar-primary">
-                            <input id="ss-run-summarize" class="menu_button" type="button" value="Summarize Now" />
-                            <input id="ss-run-single-pass" class="menu_button ss-hidden" type="button" value="Run Sharder" />
-                            <input id="ss-run-single-pass-batch" class="menu_button ss-hidden" type="button" value="Batch Sharder" />
-                            <input id="ss-stop-summarize" class="menu_button ss-hidden" type="button" value="Stop" />
+                    <div class="shardwright-action-bar">
+                        <div class="shardwright-action-bar-primary">
+                            <input id="shardwright-run-summarize" class="menu_button" type="button" value="Summarize Now" />
+                            <input id="shardwright-run-single-pass" class="menu_button shardwright-hidden" type="button" value="Run Sharder" />
+                            <input id="shardwright-run-single-pass-batch" class="menu_button shardwright-hidden" type="button" value="Batch Sharder" />
+                            <input id="shardwright-stop-summarize" class="menu_button shardwright-hidden" type="button" value="Stop" />
                         </div>
-                        <div class="ss-action-bar-secondary">
-                            <input id="ss-visibility-button" class="menu_button" type="button" value="Manage Visibility" />
-                            <input id="ss-manage-chats-btn" class="menu_button" type="button" value="Manage Chats" />
-                            <input id="ss-interpretive-reviews-btn" class="menu_button" type="button" value="Interpretive Reviews" />
+                        <div class="shardwright-action-bar-secondary">
+                            <input id="shardwright-visibility-button" class="menu_button" type="button" value="Manage Visibility" />
+                            <input id="shardwright-manage-chats-btn" class="menu_button" type="button" value="Manage Chats" />
+                            <input id="shardwright-interpretive-reviews-btn" class="menu_button" type="button" value="Interpretive Reviews" />
                         </div>
                     </div>
                     </div>
@@ -573,8 +573,8 @@ export function renderSettingsUI(settings, callbacks) {
     mountInfoHints(container);
 
     const modeToggle = mountSegmentedToggle(
-        'ss-mode-mount',
-        'ss-mode',
+        'shardwright-mode-mount',
+        'shardwright-mode',
         [
             { value: 'auto', label: 'Automatic' },
             { value: 'manual', label: 'Manual' },
@@ -583,8 +583,8 @@ export function renderSettingsUI(settings, callbacks) {
     );
 
     const outputModeToggle = mountSegmentedToggle(
-        'ss-output-mode-mount',
-        'ss-output-mode',
+        'shardwright-output-mode-mount',
+        'shardwright-output-mode',
         [
             { value: 'system', label: 'System' },
             { value: 'lorebook', label: 'Lorebook' },
@@ -594,8 +594,8 @@ export function renderSettingsUI(settings, callbacks) {
 
     const summaryReview = ensureSummaryReviewSettings();
     const reviewModeToggle = mountSegmentedToggle(
-        'ss-summary-review-mode-mount',
-        'ss-summary-review-mode',
+        'shardwright-summary-review-mode-mount',
+        'shardwright-summary-review-mode',
         [
             { value: 'always', label: 'Always' },
             { value: 'never', label: 'Never' },
@@ -604,8 +604,8 @@ export function renderSettingsUI(settings, callbacks) {
     );
 
     const sharderProfileToggle = mountSegmentedToggle(
-        'ss-sharder-profile-mount',
-        'ss-sharder-profile',
+        'shardwright-sharder-profile-mount',
+        'shardwright-sharder-profile',
         [
             { value: NARRATIVE_PROFILE, label: NARRATIVE_DISPLAY_NAME },
             { value: ARCHITECTURAL_PROFILE, label: ARCHITECTURAL_DISPLAY_NAME },
@@ -613,9 +613,9 @@ export function renderSettingsUI(settings, callbacks) {
         normalizeSharderProfile(settings.sharderProfile),
     );
 
-    const lengthPairHost = document.getElementById('ss-length-percent-host');
+    const lengthPairHost = document.getElementById('shardwright-length-percent-host');
     const lengthPair = createRangeSliderPair({
-        id: 'ss-length-percent',
+        id: 'shardwright-length-percent',
         min: 1,
         max: 30,
         step: 1,
@@ -628,7 +628,7 @@ export function renderSettingsUI(settings, callbacks) {
     });
     lengthPairHost?.replaceChildren(lengthPair);
 
-    const bannedKeywordsHost = document.getElementById('ss-banned-keywords-host');
+    const bannedKeywordsHost = document.getElementById('shardwright-banned-keywords-host');
     const bannedTagInput = createTagInput({
         tags: parseCommaTags(settings.lorebookEntryOptions?.bannedKeywords || ''),
         placeholder: 'Add keyword...',
@@ -638,49 +638,49 @@ export function renderSettingsUI(settings, callbacks) {
             saveSettings(settings);
         },
     });
-    bannedTagInput.id = 'ss-banned-keywords';
+    bannedTagInput.id = 'shardwright-banned-keywords';
     bannedKeywordsHost?.replaceChildren(bannedTagInput);
 
-    document.getElementById('ss-auto-interval').value = settings.autoInterval || 20;
+    document.getElementById('shardwright-auto-interval').value = settings.autoInterval || 20;
 
-    const sharderModeEl = document.getElementById('ss-sharder-mode');
+    const sharderModeEl = document.getElementById('shardwright-sharder-mode');
     if (sharderModeEl) {
         sharderModeEl.checked = settings.sharderMode || false;
     }
 
-    const advancedControlEl = document.getElementById('ss-advanced-control');
+    const advancedControlEl = document.getElementById('shardwright-advanced-control');
     if (advancedControlEl) {
         advancedControlEl.checked = settings.advancedUserControl || false;
     }
 
-    const lengthControlEl = document.getElementById('ss-length-control');
+    const lengthControlEl = document.getElementById('shardwright-length-control');
     if (lengthControlEl) {
         lengthControlEl.checked = settings.summaryLengthControl || false;
     }
 
-    const summaryReviewToggle = document.getElementById('ss-summary-review-toggle');
+    const summaryReviewToggle = document.getElementById('shardwright-summary-review-toggle');
     if (summaryReviewToggle) {
         summaryReviewToggle.checked = summaryReview.mode !== 'never';
     }
 
-    const cleanupEl = document.getElementById('ss-context-cleanup');
+    const cleanupEl = document.getElementById('shardwright-context-cleanup');
     if (cleanupEl) {
         cleanupEl.checked = settings.contextCleanup?.enabled || false;
     }
 
-    const fabEnabledEl = document.getElementById('ss-fab-enabled');
+    const fabEnabledEl = document.getElementById('shardwright-fab-enabled');
     if (fabEnabledEl) {
         fabEnabledEl.checked = settings.fab?.enabled !== false;
     }
 
-    const debugLoggingEl = document.getElementById('ss-debug-logging');
+    const debugLoggingEl = document.getElementById('shardwright-debug-logging');
     if (debugLoggingEl) {
         debugLoggingEl.checked = settings.debugLogging === true;
     }
 
-    const useCharBookEl = document.getElementById('ss-use-char-book');
-    const useChatBookEl = document.getElementById('ss-use-chat-book');
-    const useCustomBooksEl = document.getElementById('ss-use-custom-books');
+    const useCharBookEl = document.getElementById('shardwright-use-char-book');
+    const useChatBookEl = document.getElementById('shardwright-use-chat-book');
+    const useCustomBooksEl = document.getElementById('shardwright-use-custom-books');
 
     if (useCharBookEl) {
         useCharBookEl.checked = settings.lorebookSelection?.useCharacterBook || false;
@@ -692,7 +692,7 @@ export function renderSettingsUI(settings, callbacks) {
         useCustomBooksEl.checked = settings.lorebookSelection?.useCustomBooks || false;
     }
 
-    const singlePassAutoIncludeEl = document.getElementById('ss-single-pass-auto-include-shards');
+    const singlePassAutoIncludeEl = document.getElementById('shardwright-single-pass-auto-include-shards');
     if (singlePassAutoIncludeEl) {
         singlePassAutoIncludeEl.checked = settings.autoIncludeShards === true;
     }
@@ -706,7 +706,7 @@ export function renderSettingsUI(settings, callbacks) {
 
     updateApiStatusDisplays(settings);
 
-    const lorebookDropdown = new LorebookDropdown('ss-lorebook-dropdown', {
+    const lorebookDropdown = new LorebookDropdown('shardwright-lorebook-dropdown', {
         initialSelection: settings.lorebookSelection?.customBookNames || [],
         onSelectionChange: (selection) => {
             if (!settings.lorebookSelection) {
@@ -721,7 +721,7 @@ export function renderSettingsUI(settings, callbacks) {
         lorebookDropdown.render();
     }
 
-    document.getElementById('ss-open-api-config-modal')?.addEventListener('click', async () => {
+    document.getElementById('shardwright-open-api-config-modal')?.addEventListener('click', async () => {
         await openApiConfigModal(settings);
         updateApiStatusDisplays(settings);
     });
@@ -732,7 +732,7 @@ export function renderSettingsUI(settings, callbacks) {
         toggleAutoInterval(e.target.value);
     });
 
-    document.getElementById('ss-auto-interval')?.addEventListener('input', (e) => {
+    document.getElementById('shardwright-auto-interval')?.addEventListener('input', (e) => {
         settings.autoInterval = Math.max(1, parseInt(e.target.value, 10) || 20);
         saveSettings(settings);
     });
@@ -794,7 +794,7 @@ export function renderSettingsUI(settings, callbacks) {
         saveSettings(settings);
     });
 
-    document.getElementById('ss-run-single-pass')?.addEventListener('click', async () => {
+    document.getElementById('shardwright-run-single-pass')?.addEventListener('click', async () => {
         const messages = getAllMessages();
         if (!messages || messages.length === 0) {
             toastr.warning('No messages available');
@@ -832,7 +832,7 @@ export function renderSettingsUI(settings, callbacks) {
         runSharder(startIdx, endIdx, settings);
     });
 
-    document.getElementById('ss-run-single-pass-batch')?.addEventListener('click', async () => {
+    document.getElementById('shardwright-run-single-pass-batch')?.addEventListener('click', async () => {
         const messages = getAllMessages();
         if (!messages || messages.length === 0) {
             toastr.warning('No messages available');
@@ -852,7 +852,7 @@ export function renderSettingsUI(settings, callbacks) {
         toggleLengthSlider(e.target.checked);
     });
 
-    document.getElementById('ss-context-cleanup')?.addEventListener('change', (e) => {
+    document.getElementById('shardwright-context-cleanup')?.addEventListener('change', (e) => {
         if (!settings.contextCleanup) settings.contextCleanup = {};
         settings.contextCleanup.enabled = e.target.checked;
         saveSettings(settings);
@@ -887,27 +887,27 @@ export function renderSettingsUI(settings, callbacks) {
         }
     });
 
-    document.getElementById('ss-lorebook-options-btn')?.addEventListener('click', () => {
+    document.getElementById('shardwright-lorebook-options-btn')?.addEventListener('click', () => {
         openLorebookOptionsModal(settings);
     });
 
-    document.getElementById('ss-open-prompts-btn')?.addEventListener('click', () => {
+    document.getElementById('shardwright-open-prompts-btn')?.addEventListener('click', () => {
         openPromptsModal(settings);
     });
 
-    document.getElementById('ss-open-cleanup-btn')?.addEventListener('click', () => {
+    document.getElementById('shardwright-open-cleanup-btn')?.addEventListener('click', () => {
         openCleanContextModal(settings);
     });
 
-    document.getElementById('ss-open-themes-btn')?.addEventListener('click', () => {
+    document.getElementById('shardwright-open-themes-btn')?.addEventListener('click', () => {
         openThemesModal(settings, () => saveSettings(settings));
     });
 
-    document.getElementById('ss-open-rag-btn')?.addEventListener('click', () => {
+    document.getElementById('shardwright-open-rag-btn')?.addEventListener('click', () => {
         openRagSettingsModal(settings);
     });
 
-    document.getElementById('ss-fab-enabled')?.addEventListener('change', (e) => {
+    document.getElementById('shardwright-fab-enabled')?.addEventListener('change', (e) => {
         if (!settings.fab) settings.fab = {};
         settings.fab.enabled = e.target.checked;
         saveSettings(settings);
@@ -918,35 +918,35 @@ export function renderSettingsUI(settings, callbacks) {
         settings.debugLogging = e.target.checked;
         saveSettings(settings);
         try {
-            localStorage.setItem('ss_debug', e.target.checked ? 'true' : 'false');
+            localStorage.setItem('shardwright:debug', e.target.checked ? 'true' : 'false');
         } catch {
             // Ignore storage failures; settings persistence still controls the logger.
         }
     });
 
-    document.getElementById('ss-export-debug-settings-btn')?.addEventListener('click', async () => {
+    document.getElementById('shardwright-export-debug-settings-btn')?.addEventListener('click', async () => {
         await openDebugExportModal(settings);
     });
 
-    document.getElementById('ss-run-summarize')?.addEventListener('click', () => {
+    document.getElementById('shardwright-run-summarize')?.addEventListener('click', () => {
         if (callbacks.onManualSummarize) {
             callbacks.onManualSummarize();
         }
     });
 
-    document.getElementById('ss-stop-summarize')?.addEventListener('click', () => {
+    document.getElementById('shardwright-stop-summarize')?.addEventListener('click', () => {
         stopSummarization();
     });
 
-    document.getElementById('ss-visibility-button')?.addEventListener('click', () => {
+    document.getElementById('shardwright-visibility-button')?.addEventListener('click', () => {
         openVisibilityModal(settings);
     });
 
-    document.getElementById('ss-manage-chats-btn')?.addEventListener('click', () => {
+    document.getElementById('shardwright-manage-chats-btn')?.addEventListener('click', () => {
         openChatManagerModal(settings);
     });
 
-    document.getElementById('ss-interpretive-reviews-btn')?.addEventListener('click', () => {
+    document.getElementById('shardwright-interpretive-reviews-btn')?.addEventListener('click', () => {
         openInterpretiveReviewModal();
     });
 

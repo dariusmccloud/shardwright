@@ -13,11 +13,11 @@ import {
 test('message identity schema descriptor exposes namespaced paths and defaults', () => {
     const descriptor = getMessageIdentitySchemaDescriptor();
 
-    assert.equal(descriptor.namespace, 'summary_sharder');
+    assert.equal(descriptor.namespace, 'shardwright');
     assert.equal(descriptor.messageIdentity.schemaVersion, MESSAGE_IDENTITY_SCHEMA_VERSION);
     assert.equal(descriptor.chatIdentityStatus.schemaVersion, CHAT_IDENTITY_STATUS_SCHEMA_VERSION);
-    assert.equal(descriptor.messageIdentity.path, 'extra.summary_sharder.messageIdentity');
-    assert.equal(descriptor.archive.path, 'extra.summary_sharder.archive');
+    assert.equal(descriptor.messageIdentity.path, 'extra.shardwright.messageIdentity');
+    assert.equal(descriptor.archive.path, 'extra.shardwright.archive');
     assert.equal(descriptor.evidencePolicy.defaultValue, EVIDENCE_POLICY_INCLUDE);
     assert.deepEqual(descriptor.evidencePolicy.allowedValues, [EVIDENCE_POLICY_INCLUDE, EVIDENCE_POLICY_EXCLUDE]);
     assert.equal(descriptor.promptVisibility.hostField, 'is_system');
@@ -29,7 +29,7 @@ test('message identity surface summary preserves independent hidden archive and 
             is_system: false,
             mes: 'A',
             extra: {
-                summary_sharder: {
+                shardwright: {
                     messageIdentity: {
                         schemaVersion: 1,
                         messageId: 'msg_alpha',
@@ -48,7 +48,7 @@ test('message identity surface summary preserves independent hidden archive and 
             mes: 'B',
             swipes: ['b1', 'b2'],
             extra: {
-                summary_sharder: {
+                shardwright: {
                     messageIdentity: {
                         schemaVersion: 1,
                         messageId: 'msg_beta',
@@ -68,7 +68,7 @@ test('message identity surface summary preserves independent hidden archive and 
             is_system: false,
             mes: 'C',
             extra: {
-                summary_sharder: {
+                shardwright: {
                     messageIdentity: {
                         schemaVersion: 1,
                         messageId: 'msg_alpha',
@@ -82,7 +82,7 @@ test('message identity surface summary preserves independent hidden archive and 
             is_system: false,
             mes: 'D',
             extra: {
-                summary_sharder: {
+                shardwright: {
                     messageIdentity: {
                         schemaVersion: 1,
                         messageId: '',
@@ -99,7 +99,7 @@ test('message identity surface summary preserves independent hidden archive and 
     ];
 
     const chatMetadata = {
-        summary_sharder: {
+        shardwright: {
             messageIdentity: {
                 schemaVersion: 1,
                 status: 'IDENTITY_PARTIAL',

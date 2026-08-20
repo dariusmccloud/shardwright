@@ -1,8 +1,10 @@
+import { ensureShardwrightRoot } from '../shardwright-runtime-identity.js';
+
 const TRACE_LIMIT = 50;
-const BYPASS_STORAGE_KEY = 'summarySharderProfilingBypass';
-const BYPASS_QUERY_PARAM = 'ss_profile_bypass';
-const DEBUG_STORAGE_KEY = 'summarySharderDebugTracing';
-const DEBUG_QUERY_PARAM = 'ss_debug_tracing';
+const BYPASS_STORAGE_KEY = 'shardwright:profiling-bypass';
+const BYPASS_QUERY_PARAM = 'shardwright_profile_bypass';
+const DEBUG_STORAGE_KEY = 'shardwright:debug-tracing';
+const DEBUG_QUERY_PARAM = 'shardwright_debug_tracing';
 const traces = [];
 let nextTraceId = 1;
 let bypassAnnouncementSent = false;
@@ -206,7 +208,8 @@ export function announceLoadProfilingBypass(logger = console, target = globalThi
 }
 
 export function installLoadTraceDebugApi(target = globalThis) {
-    target.summarySharderLoadProfiler = {
+    const root = ensureShardwrightRoot(target);
+    root.loadProfiler = {
         getTraces: () => getLoadTraces(),
         clearTraces: () => clearLoadTraces(),
         getFlags: () => getLoadProfilerFlags(target),
@@ -215,4 +218,5 @@ export function installLoadTraceDebugApi(target = globalThis) {
         isDebugTracingEnabled: () => isLoadDebugTracingEnabled(target),
         setDebugTracingEnabled: (enabled) => setLoadDebugTracingEnabled(enabled, target),
     };
+    return root.loadProfiler;
 }

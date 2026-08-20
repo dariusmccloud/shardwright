@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 
-import { buildManagedShardManifest } from './summary-sharder-memory/lib/core/summarization/shard-integrity-core.js';
+import { buildManagedShardManifest } from './shardwright-memory/lib/core/summarization/shard-integrity-core.js';
 
 const DEFAULT_HOST_ROOTS = Object.freeze([
     'D:/AI/Projects/SillyTavern',
@@ -25,7 +25,7 @@ function userMessage(idSuffix, mes, overrides = {}) {
         send_date: overrides.send_date || `2026-06-25T12:00:${String(idSuffix).slice(0, 2)}.000Z`,
         mes,
         extra: {
-            summary_sharder: {
+            shardwright: {
                 messageIdentity: {
                     schemaVersion: 1,
                     messageId: makeMessageId(idSuffix),
@@ -59,7 +59,7 @@ Schema: architectural-memory/v1
 
 ===END===`,
         extra: {
-            summary_sharder: {
+            shardwright: {
                 messageIdentity: {
                     schemaVersion: 1,
                     messageId: makeMessageId(idSuffix),
@@ -103,7 +103,7 @@ async function writeChat(userRoot, fixture) {
 
     const header = {
         chat_metadata: {
-            summary_sharder: {
+            shardwright: {
                 messageIdentity: {
                     schemaVersion: 1,
                     status: 'IDENTITY_COMPLETE',

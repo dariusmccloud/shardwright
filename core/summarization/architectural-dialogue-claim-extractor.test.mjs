@@ -23,7 +23,7 @@ function makeContext(messageOverrides = {}) {
             send_date: '2026-06-24T10:00:00.000Z',
             mes: '',
             extra: {
-                summary_sharder: {
+                shardwright: {
                     speakerIdentity: {
                         speakerEntityId: 'user:Chris',
                         sourceType: 'user',
@@ -41,7 +41,7 @@ test('assistant recommendation remains a proposed decision', () => {
         is_user: false,
         mes: 'We should keep browser-local state non-authoritative.',
         extra: {
-            summary_sharder: {
+            shardwright: {
                 speakerIdentity: {
                     speakerEntityId: 'character:jeep.png',
                     sourceType: 'character',
@@ -73,7 +73,7 @@ test('character self-commitment is bounded to character self authority', () => {
         is_user: false,
         mes: 'I still need to validate my own archive settings.',
         extra: {
-            summary_sharder: {
+            shardwright: {
                 speakerIdentity: {
                     speakerEntityId: 'character:jeep.png',
                     sourceType: 'character',

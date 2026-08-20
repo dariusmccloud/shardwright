@@ -1,5 +1,5 @@
 /**
- * Message visibility management for Summary Sharder
+ * Message visibility management for Shardwright
  */
 
 import { getChatRanges, saveChatRanges } from '../settings.js';
@@ -18,24 +18,24 @@ import { setApplyingVisibility, clearPendingVisibilityTimers } from './visibilit
 
 /** Inject the fold button into the name row before .name_text (idempotent). */
 function ensureFoldBtn(el) {
-    if (el.querySelector('.ss-fold-btn')) return;
+    if (el.querySelector('.shardwright-fold-btn')) return;
     const nameText = el.querySelector('.mes_block .name_text');
     const nameContainer = nameText?.parentElement;
     if (!nameContainer) return;
     const btn = document.createElement('button');
-    btn.className = 'ss-fold-btn';
+    btn.className = 'shardwright-fold-btn';
     btn.type = 'button';
     nameContainer.insertBefore(btn, nameText);
 }
 
 /** Remove the fold button from a .mes element (idempotent). */
 function removeFoldBtn(el) {
-    el.querySelector('.ss-fold-btn')?.remove();
+    el.querySelector('.shardwright-fold-btn')?.remove();
 }
 
 /**
  * Initialize delegated click handler for collapse toggle.
- * Matches real .ss-fold-btn elements — no layout reads needed.
+ * Matches real .shardwright-fold-btn elements — no layout reads needed.
  */
 export function initCollapseHandler() {
     const chatContainer = document.getElementById('chat');
@@ -43,7 +43,7 @@ export function initCollapseHandler() {
     chatContainer.dataset.ssCollapseInit = 'true';
 
     chatContainer.addEventListener('click', (event) => {
-        const btn = event.target.closest('.ss-fold-btn');
+        const btn = event.target.closest('.shardwright-fold-btn');
         if (!btn) return;
 
         const message = btn.closest('.mes');
@@ -53,12 +53,12 @@ export function initCollapseHandler() {
         const messageText = message.querySelector('.mes_text');
         if (!messageText) return;
 
-        if (message.classList.contains('ss-collapsed')) {
-            message.classList.replace('ss-collapsed', 'ss-expanded');
-            messageText.classList.remove('ss-text-hidden');
+        if (message.classList.contains('shardwright-collapsed')) {
+            message.classList.replace('shardwright-collapsed', 'shardwright-expanded');
+            messageText.classList.remove('shardwright-text-hidden');
         } else {
-            message.classList.replace('ss-expanded', 'ss-collapsed');
-            messageText.classList.add('ss-text-hidden');
+            message.classList.replace('shardwright-expanded', 'shardwright-collapsed');
+            messageText.classList.add('shardwright-text-hidden');
         }
     });
 }
@@ -76,11 +76,11 @@ export function initEditUnfoldHandler() {
         const editBtn = event.target.closest('.mes_edit');
         if (editBtn) {
             const message = editBtn.closest('.mes');
-            if (!message || !message.classList.contains('ss-collapsed')) return;
+            if (!message || !message.classList.contains('shardwright-collapsed')) return;
 
-            message.classList.replace('ss-collapsed', 'ss-expanded');
+            message.classList.replace('shardwright-collapsed', 'shardwright-expanded');
             const messageText = message.querySelector('.mes_text');
-            if (messageText) messageText.classList.remove('ss-text-hidden');
+            if (messageText) messageText.classList.remove('shardwright-text-hidden');
             message.dataset.ssEditUnfolded = 'true';
             return;
         }
@@ -91,10 +91,10 @@ export function initEditUnfoldHandler() {
         const message = doneOrCancelBtn.closest('.mes');
         if (!message || message.dataset.ssEditUnfolded !== 'true') return;
 
-        message.classList.replace('ss-expanded', 'ss-collapsed');
+        message.classList.replace('shardwright-expanded', 'shardwright-collapsed');
         const messageText = message.querySelector('.mes_text');
-        if (messageText) messageText.classList.add('ss-text-hidden');
-        message.removeAttribute('data-ss-edit-unfolded');
+        if (messageText) messageText.classList.add('shardwright-text-hidden');
+        message.removeAttribute('data-shardwright-edit-unfolded');
     });
 }
 
@@ -141,7 +141,7 @@ export async function applyVisibilitySettings(settings) {
             if (!state) continue;
 
             // Reset classes
-            el.classList.remove('ss-hidden', 'ss-summarized');
+            el.classList.remove('shardwright-hidden', 'shardwright-summarized');
 
             // Set is_system attribute
             el.setAttribute('is_system', String(state.isSystem));
@@ -150,12 +150,12 @@ export async function applyVisibilitySettings(settings) {
             const messageText = el.querySelector('.mes_text');
 
             if (state.collapsed) {
-                el.classList.add('ss-collapsed');
-                if (messageText) messageText.classList.add('ss-text-hidden');
+                el.classList.add('shardwright-collapsed');
+                if (messageText) messageText.classList.add('shardwright-text-hidden');
                 ensureFoldBtn(el);
             } else {
-                el.classList.remove('ss-collapsed', 'ss-expanded');
-                if (messageText) messageText.classList.remove('ss-text-hidden');
+                el.classList.remove('shardwright-collapsed', 'shardwright-expanded');
+                if (messageText) messageText.classList.remove('shardwright-text-hidden');
                 removeFoldBtn(el);
             }
         }
@@ -190,16 +190,16 @@ export function applyCollapseToHiddenMessages(settings) {
         const message = chat[index];
         if (!message || message.is_system !== true) continue;
         if (isArchivedMessage(message)) {
-            el.classList.remove('ss-collapsed', 'ss-expanded');
-            el.querySelector('.mes_text')?.classList.remove('ss-text-hidden');
+            el.classList.remove('shardwright-collapsed', 'shardwright-expanded');
+            el.querySelector('.mes_text')?.classList.remove('shardwright-text-hidden');
             removeFoldBtn(el);
             continue;
         }
         if (shouldIgnoreMessage(message, ignoreNames)) continue;
 
-        el.classList.add('ss-collapsed');
+        el.classList.add('shardwright-collapsed');
         const messageText = el.querySelector('.mes_text');
-        if (messageText) messageText.classList.add('ss-text-hidden');
+        if (messageText) messageText.classList.add('shardwright-text-hidden');
         ensureFoldBtn(el);
     }
 }
@@ -220,18 +220,18 @@ export function expandUnhiddenMessages() {
         const message = chat[index];
 
         if (isArchivedMessage(message)) {
-            el.classList.remove('ss-collapsed', 'ss-expanded');
-            el.querySelector('.mes_text')?.classList.remove('ss-text-hidden');
+            el.classList.remove('shardwright-collapsed', 'shardwright-expanded');
+            el.querySelector('.mes_text')?.classList.remove('shardwright-text-hidden');
             removeFoldBtn(el);
             continue;
         }
 
         // If message is not hidden but has collapse/expand styling or fold button, clean it up
         if (message && message.is_system !== true &&
-            (el.classList.contains('ss-collapsed') || el.classList.contains('ss-expanded') || el.querySelector('.ss-fold-btn'))) {
-            el.classList.remove('ss-collapsed', 'ss-expanded');
+            (el.classList.contains('shardwright-collapsed') || el.classList.contains('shardwright-expanded') || el.querySelector('.shardwright-fold-btn'))) {
+            el.classList.remove('shardwright-collapsed', 'shardwright-expanded');
             const messageText = el.querySelector('.mes_text');
-            if (messageText) messageText.classList.remove('ss-text-hidden');
+            if (messageText) messageText.classList.remove('shardwright-text-hidden');
             removeFoldBtn(el);
         }
     }

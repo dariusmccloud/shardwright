@@ -1,143 +1,143 @@
 export const PROMPTS_CSS = `
 /* Token Display */
-.ss-token-display {
+.shardwright-token-display {
     text-align: right;
     padding: 8px 12px;
-    background: var(--ss-bg-secondary);
+    background: var(--shardwright-bg-secondary);
     border-radius: 4px;
     flex-shrink: 0;
 }
 
-.ss-token-count {
+.shardwright-token-count {
     font-size: 18px;
     font-weight: bold;
-    color: var(--ss-primary);
+    color: var(--shardwright-primary);
 }
 
-.ss-token-label {
+.shardwright-token-label {
     font-size: 11px;
-    color: var(--ss-text-muted);
+    color: var(--shardwright-text-muted);
     display: block;
 }
 
 /* Coverage Summary */
-.ss-coverage-summary {
+.shardwright-coverage-summary {
     display: flex;
     gap: 15px;
     margin-bottom: 15px;
     padding: 10px;
-    background: var(--ss-bg-secondary);
+    background: var(--shardwright-bg-secondary);
     border-radius: 4px;
     flex-wrap: wrap;
 }
 
-.ss-coverage-stat {
+.shardwright-coverage-stat {
     font-size: 13px;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
 }
 
 /* Split Panel Layout */
-.ss-summary-review-content {
+.shardwright-summary-review-content {
     display: flex;
     gap: 15px;
     margin-bottom: 15px;
     min-height: 300px;
 }
 
-.ss-events-panel,
-.ss-summary-panel {
+.shardwright-events-panel,
+.shardwright-summary-panel {
     flex: 1;
     display: flex;
     flex-direction: column;
-    border: 1px solid var(--ss-border);
+    border: 1px solid var(--shardwright-border);
     border-radius: 4px;
     overflow: hidden;
 }
 
-.ss-summary-review-modal .ss-panel-header {
+.shardwright-summary-review-modal .shardwright-panel-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 10px 12px;
-    background: var(--ss-bg-secondary);
-    border-bottom: 1px solid var(--ss-border);
+    background: var(--shardwright-bg-secondary);
+    border-bottom: 1px solid var(--shardwright-border);
 }
 
-.ss-summary-review-modal .ss-panel-header h4 {
+.shardwright-summary-review-modal .shardwright-panel-header h4 {
     margin: 0;
     font-size: 14px;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
 }
 
-.ss-event-count {
+.shardwright-event-count {
     font-size: 12px;
-    color: var(--ss-text-secondary);
+    color: var(--shardwright-text-secondary);
 }
 
 /* Events Reference List */
-.ss-events-list-readonly {
+.shardwright-events-list-readonly {
     flex: 1;
     overflow-y: auto;
     padding: 10px;
-    background: var(--ss-bg-tertiary);
+    background: var(--shardwright-bg-tertiary);
 }
 
-.ss-event-reference-item {
+.shardwright-event-reference-item {
     display: flex;
     gap: 10px;
     padding: 10px;
     margin-bottom: 8px;
-    background: var(--ss-bg-secondary);
+    background: var(--shardwright-bg-secondary);
     border-radius: 4px;
-    border-left: 3px solid var(--ss-text-muted);
+    border-left: 3px solid var(--shardwright-text-muted);
 }
 
-.ss-event-reference-item:last-child {
+.shardwright-event-reference-item:last-child {
     margin-bottom: 0;
 }
 
-.ss-event-reference-item.ss-coverage-covered {
-    border-left-color: var(--ss-success);
+.shardwright-event-reference-item.shardwright-coverage-covered {
+    border-left-color: var(--shardwright-success);
 }
 
-.ss-event-reference-item.ss-coverage-partial {
-    border-left-color: var(--ss-warning);
+.shardwright-event-reference-item.shardwright-coverage-partial {
+    border-left-color: var(--shardwright-warning);
 }
 
-.ss-event-reference-item.ss-coverage-missing {
-    border-left-color: var(--ss-error);
+.shardwright-event-reference-item.shardwright-coverage-missing {
+    border-left-color: var(--shardwright-error);
 }
 
-.ss-event-coverage-indicator {
+.shardwright-event-coverage-indicator {
     display: flex;
     flex-direction: column;
     align-items: center;
     min-width: 50px;
 }
 
-.ss-coverage-emoji {
+.shardwright-coverage-emoji {
     font-size: 20px;
 }
 
-.ss-coverage-percent {
+.shardwright-coverage-percent {
     font-size: 11px;
-    color: var(--ss-text-secondary);
+    color: var(--shardwright-text-secondary);
 }
 
-.ss-event-content {
+.shardwright-event-content {
     flex: 1;
     min-width: 0;
 }
 
-.ss-event-content .ss-event-summary {
+.shardwright-event-content .shardwright-event-summary {
     font-weight: 500;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
     margin-bottom: 4px;
 }
 
-.ss-event-content .ss-event-description {
+.shardwright-event-content .shardwright-event-description {
     font-size: 12px;
-    color: var(--ss-text-secondary);
+    color: var(--shardwright-text-secondary);
     line-height: 1.4;
     word-break: break-word;
     min-height: auto;
@@ -148,118 +148,118 @@ export const PROMPTS_CSS = `
 }
 
 /* Summary Panel */
-.ss-summary-preview,
-.ss-summary-editor {
+.shardwright-summary-preview,
+.shardwright-summary-editor {
     flex: 1;
     padding: 10px;
-    background: var(--ss-bg-tertiary);
+    background: var(--shardwright-bg-tertiary);
     overflow-y: auto;
 }
 
-.ss-summary-preview pre {
+.shardwright-summary-preview pre {
     margin: 0;
     white-space: pre-wrap;
     word-wrap: break-word;
     font-family: inherit;
     font-size: 13px;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
 }
 
-.ss-summary-editor {
+.shardwright-summary-editor {
     width: 100%;
     min-height: 100px;
     font-size: 13px;
     border: none;
     overflow: auto;
     box-sizing: border-box;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
 }
 
 /* Simplified Mode (Summary Only) */
-.ss-summary-review-content-simple {
+.shardwright-summary-review-content-simple {
     margin-bottom: 15px;
     min-height: 300px;
     display: flex;
 }
 
-.ss-summary-panel-full {
+.shardwright-summary-panel-full {
     flex: 1;
     display: flex;
     flex-direction: column;
-    border: 1px solid var(--ss-border);
+    border: 1px solid var(--shardwright-border);
     border-radius: 4px;
     overflow: hidden;
 }
 
 /* Regenerate Section */
-.ss-regenerate-section {
+.shardwright-regenerate-section {
     padding: 15px;
-    background: var(--ss-bg-secondary);
+    background: var(--shardwright-bg-secondary);
     border-radius: 4px;
     margin-bottom: 15px;
 }
 
-.ss-regenerate-header {
+.shardwright-regenerate-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 10px;
 }
 
-.ss-regenerate-header h4 {
+.shardwright-regenerate-header h4 {
     margin: 0;
     font-size: 14px;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
 }
 
-.ss-regenerate-hint {
+.shardwright-regenerate-hint {
     font-size: 12px;
-    color: var(--ss-text-muted);
+    color: var(--shardwright-text-muted);
 }
 
-.ss-regenerate-controls {
+.shardwright-regenerate-controls {
     display: flex;
     gap: 10px;
 }
 
-.ss-regenerate-controls input[type="text"] {
+.shardwright-regenerate-controls input[type="text"] {
     flex: 1;
 }
 
 /* Archive Section */
-.ss-archive-section {
+.shardwright-archive-section {
     padding: 15px;
-    border-top: 1px solid var(--ss-border);
+    border-top: 1px solid var(--shardwright-border);
 }
 
-.ss-archive-section h4 {
+.shardwright-archive-section h4 {
     margin: 0 0 10px 0;
     font-size: 14px;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
 }
 
-.ss-archive-options {
+.shardwright-archive-options {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-.ss-archive-option {
+.shardwright-archive-option {
     display: flex;
     align-items: center;
     gap: 8px;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
     cursor: pointer;
 }
 
-.ss-archive-option.ss-disabled {
+.shardwright-archive-option.shardwright-disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
 
-.ss-coming-soon {
+.shardwright-coming-soon {
     font-size: 11px;
-    color: var(--ss-primary);
+    color: var(--shardwright-primary);
     margin-left: 5px;
 }
 
@@ -267,89 +267,89 @@ export const PROMPTS_CSS = `
    SECTION 19: PROMPTS MODAL TABS
    ========================================================================== */
 
-.ss-prompts-modal {
+.shardwright-prompts-modal {
     padding: 20px;
     min-width: 550px;
     max-width: 100%;
     box-sizing: border-box;
 }
 
-.ss-tab-header {
+.shardwright-tab-header {
     display: flex;
     gap: 5px;
     margin-bottom: 15px;
-    border-bottom: 2px solid var(--ss-border);
+    border-bottom: 2px solid var(--shardwright-border);
     padding-bottom: 10px;
 }
 
-.ss-tab-button {
-    background: var(--ss-bg-secondary);
-    border: 1px solid var(--ss-border);
+.shardwright-tab-button {
+    background: var(--shardwright-bg-secondary);
+    border: 1px solid var(--shardwright-border);
     border-radius: 6px 6px 0 0;
     padding: 10px 16px;
     cursor: pointer;
-    color: var(--ss-text-secondary);
+    color: var(--shardwright-text-secondary);
     font-weight: 500;
-    transition: all var(--ss-transition);
+    transition: all var(--shardwright-transition);
     position: relative;
 }
 
-.ss-tab-button:hover {
-    background: var(--ss-highlight);
-    color: var(--ss-text-primary);
-    border-color: var(--ss-primary);
+.shardwright-tab-button:hover {
+    background: var(--shardwright-highlight);
+    color: var(--shardwright-text-primary);
+    border-color: var(--shardwright-primary);
 }
 
-.ss-tab-button.active {
-    background: var(--ss-primary);
+.shardwright-tab-button.active {
+    background: var(--shardwright-primary);
     color: white;
-    border-color: var(--ss-primary);
+    border-color: var(--shardwright-primary);
 }
 
-.ss-tab-content {
+.shardwright-tab-content {
     min-height: 350px;
 }
 
 /* Tab Panel Visibility */
-.ss-prompts-modal .ss-tab-panel {
+.shardwright-prompts-modal .shardwright-tab-panel {
     display: none !important;
 }
 
-.ss-prompts-modal .ss-tab-panel.active {
+.shardwright-prompts-modal .shardwright-tab-panel.active {
     display: block !important;
 }
 
-.ss-api-config-modal .ss-tab-panel {
+.shardwright-api-config-modal .shardwright-tab-panel {
     display: none !important;
 }
 
-.ss-api-config-modal .ss-tab-panel.active {
+.shardwright-api-config-modal .shardwright-tab-panel.active {
     display: block !important;
 }
 
 /* Tab Content Styling */
-.ss-prompts-tab-content,
-.ss-sharder-prompts-tab,
-.ss-events-prompt-tab {
+.shardwright-prompts-tab-content,
+.shardwright-sharder-prompts-tab,
+.shardwright-events-prompt-tab {
     padding: 10px 0;
 }
 
-.ss-prompts-block {
+.shardwright-prompts-block {
     margin-bottom: 15px;
 }
 
-.ss-prompts-inline-row {
+.shardwright-prompts-inline-row {
     display: flex;
     align-items: center;
     gap: 5px;
 }
 
-.ss-prompts-select {
+.shardwright-prompts-select {
     flex: 1;
     min-width: 0;
 }
 
-.ss-prompts-editor {
+.shardwright-prompts-editor {
     width: 100%;
     height: 250px;
     font-family: monospace;
@@ -363,19 +363,19 @@ export const PROMPTS_CSS = `
 }
 
 /* Textarea action button bar */
-.ss-textarea-wrapper {
+.shardwright-textarea-wrapper {
     display: flex;
     flex-direction: column;
     width: 100%;
     gap: 4px;
 }
 
-.ss-textarea-wrapper .ss-prompts-editor {
+.shardwright-textarea-wrapper .shardwright-prompts-editor {
     flex: 0 0 auto;
     width: 100%;
 }
 
-.ss-textarea-actions {
+.shardwright-textarea-actions {
     display: flex;
     justify-content: flex-end;
     align-items: center;
@@ -384,7 +384,7 @@ export const PROMPTS_CSS = `
     padding: 0;
 }
 
-.ss-textarea-action-btn {
+.shardwright-textarea-action-btn {
     appearance: none;
     -webkit-appearance: none;
     width: 36px;
@@ -392,52 +392,52 @@ export const PROMPTS_CSS = `
     min-width: 36px;
     padding: 0;
     border-radius: 4px;
-    border: 1px solid var(--ss-border) !important;
-    background: var(--ss-bg-secondary) !important;
+    border: 1px solid var(--shardwright-border) !important;
+    background: var(--shardwright-bg-secondary) !important;
     background-image: none !important;
-    color: var(--ss-text-muted);
+    color: var(--shardwright-text-muted);
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     font-size: 13px;
     line-height: 1;
-    box-shadow: var(--ss-shadow) !important;
+    box-shadow: var(--shardwright-shadow) !important;
     text-shadow: none !important;
     filter: none !important;
-    transition: background var(--ss-transition), border-color var(--ss-transition), color var(--ss-transition);
+    transition: background var(--shardwright-transition), border-color var(--shardwright-transition), color var(--shardwright-transition);
 }
 
-.ss-textarea-action-btn:hover {
-    background: var(--ss-highlight) !important;
-    border-color: var(--ss-primary) !important;
-    color: var(--ss-primary) !important;
+.shardwright-textarea-action-btn:hover {
+    background: var(--shardwright-highlight) !important;
+    border-color: var(--shardwright-primary) !important;
+    color: var(--shardwright-primary) !important;
 }
 
-.ss-textarea-action-btn:active {
-    background: var(--ss-primary) !important;
+.shardwright-textarea-action-btn:active {
+    background: var(--shardwright-primary) !important;
     color: white !important;
 }
 
-.ss-prompts-buttons-row {
+.shardwright-prompts-buttons-row {
     display: flex;
     gap: 5px;
     flex-wrap: wrap;
 }
 
-.ss-prompts-hint {
+.shardwright-prompts-hint {
     font-size: 11px;
-    color: var(--ss-text-hint);
+    color: var(--shardwright-text-hint);
     margin-top: 5px;
 }
 
-.ss-popup-left-buttons {
+.shardwright-popup-left-buttons {
     display: flex;
     gap: 5px;
     margin-right: auto;
 }
 
-.popup .popup-controls.ss-popup-controls {
+.popup .popup-controls.shardwright-popup-controls {
     display: flex;
     justify-content: space-between;
     width: 100%;
@@ -446,104 +446,104 @@ export const PROMPTS_CSS = `
     flex-wrap: wrap;
 }
 
-.ss-prompts-tab-content .ss-block,
-.ss-sharder-prompts-tab .ss-block,
-.ss-events-prompt-tab .ss-block {
-    background: var(--ss-bg-secondary);
-    border: 1px solid var(--ss-border);
+.shardwright-prompts-tab-content .shardwright-block,
+.shardwright-sharder-prompts-tab .shardwright-block,
+.shardwright-events-prompt-tab .shardwright-block {
+    background: var(--shardwright-bg-secondary);
+    border: 1px solid var(--shardwright-border);
     border-radius: 6px;
     padding: 12px;
 }
 
-.ss-prompts-tab-content label,
-.ss-sharder-prompts-tab label,
-.ss-events-prompt-tab label {
+.shardwright-prompts-tab-content label,
+.shardwright-sharder-prompts-tab label,
+.shardwright-events-prompt-tab label {
     display: block;
     margin-bottom: 6px;
     font-weight: 500;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
 }
 
-.ss-prompts-tab-content textarea,
-.ss-sharder-prompts-tab textarea,
-.ss-events-prompt-tab textarea {
-    background: var(--ss-bg-input) !important;
-    color: var(--ss-text-primary) !important;
-    border: 1px solid var(--ss-border) !important;
+.shardwright-prompts-tab-content textarea,
+.shardwright-sharder-prompts-tab textarea,
+.shardwright-events-prompt-tab textarea {
+    background: var(--shardwright-bg-input) !important;
+    color: var(--shardwright-text-primary) !important;
+    border: 1px solid var(--shardwright-border) !important;
 }
 
-.ss-prompts-tab-content textarea:focus,
-.ss-sharder-prompts-tab textarea:focus,
-.ss-events-prompt-tab textarea:focus {
-    border-color: var(--ss-border-focus) !important;
+.shardwright-prompts-tab-content textarea:focus,
+.shardwright-sharder-prompts-tab textarea:focus,
+.shardwright-events-prompt-tab textarea:focus {
+    border-color: var(--shardwright-border-focus) !important;
 }
 
 /* ==========================================================================
    SECTION 20: CLEAN CONTEXT MODAL
    ========================================================================== */
 
-.ss-clean-context-modal {
+.shardwright-clean-context-modal {
     padding: 15px;
     min-width: 450px;
     max-width: 100%;
     box-sizing: border-box;
 }
 
-.ss-clean-context-title {
+.shardwright-clean-context-title {
     margin: 0 0 15px 0;
 }
 
-.ss-cleanup-toggles {
+.shardwright-cleanup-toggles {
     margin-bottom: 20px;
 }
 
-.ss-cleanup-toggles .ss-block {
+.shardwright-cleanup-toggles .shardwright-block {
     margin-bottom: 5px;
 }
 
-.ss-clean-context-hint {
+.shardwright-clean-context-hint {
     font-size: 11px;
-    color: var(--ss-text-hint);
+    color: var(--shardwright-text-hint);
     margin: 3px 0 8px 25px;
 }
 
-.ss-clean-context-custom-section {
+.shardwright-clean-context-custom-section {
     margin-top: 15px;
 }
 
-.ss-clean-context-custom-header {
+.shardwright-clean-context-custom-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 10px;
 }
 
-.ss-clean-context-custom-title {
+.shardwright-clean-context-custom-title {
     margin: 0;
 }
 
-.ss-clean-context-regex-list-scroll {
+.shardwright-clean-context-regex-list-scroll {
     max-height: 200px;
     overflow-y: auto;
 }
 
-.ss-clean-context-regex-empty {
+.shardwright-clean-context-regex-empty {
     text-align: center;
-    color: var(--ss-text-hint);
+    color: var(--shardwright-text-hint);
     padding: 20px;
 }
 
-.ss-clean-context-edit-block {
+.shardwright-clean-context-edit-block {
     margin-bottom: 15px;
 }
 
-.ss-clean-context-pattern-input {
+.shardwright-clean-context-pattern-input {
     font-family: monospace;
 }
 
-.ss-clean-context-edit-hint {
+.shardwright-clean-context-edit-hint {
     font-size: 11px;
-    color: var(--ss-text-hint);
+    color: var(--shardwright-text-hint);
     margin-top: 5px;
 }
 
@@ -551,31 +551,31 @@ export const PROMPTS_CSS = `
    SECTION 20A: API CONFIG MODAL
    ========================================================================== */
 
-.ss-api-feature-description {
+.shardwright-api-feature-description {
     margin-bottom: 15px;
-    color: var(--ss-text-muted);
+    color: var(--shardwright-text-muted);
 }
 
-.ss-api-autosave-hint {
+.shardwright-api-autosave-hint {
     margin: -8px 0 12px 0;
 }
 
-.ss-api-mode-selector {
+.shardwright-api-mode-selector {
     margin-bottom: 20px;
 }
 
-.ss-api-radio-label {
+.shardwright-api-radio-label {
     display: block;
     margin-bottom: 10px;
 }
 
-.ss-api-radio-hint {
+.shardwright-api-radio-hint {
     margin: 5px 0 0 25px;
-    color: var(--ss-text-muted);
+    color: var(--shardwright-text-muted);
     font-size: 0.9em;
 }
 
-.ss-external-api-selection {
+.shardwright-external-api-selection {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -583,65 +583,65 @@ export const PROMPTS_CSS = `
     margin-left: 25px;
 }
 
-.ss-profile-api-selection {
+.shardwright-profile-api-selection {
     margin: 10px 0 0 25px;
 }
 
-.ss-api-profile-warning {
+.shardwright-api-profile-warning {
     margin: 8px 0 0 25px;
 }
 
-.ss-api-select {
+.shardwright-api-select {
     width: 100%;
     max-width: 400px;
 }
 
-.ss-api-manage-apis-btn {
+.shardwright-api-manage-apis-btn {
     margin-top: 0;
     align-self: center;
 }
 
-.ss-api-config-divider {
+.shardwright-api-config-divider {
     margin: 20px 0;
 }
 
-.ss-api-generation-settings-hint {
+.shardwright-api-generation-settings-hint {
     margin-bottom: 15px;
-    color: var(--ss-text-muted);
+    color: var(--shardwright-text-muted);
     font-size: 0.9em;
 }
 
-.ss-api-setting-row {
+.shardwright-api-setting-row {
     display: flex;
     gap: 15px;
     flex-wrap: wrap;
 }
 
-.ss-api-setting-col {
+.shardwright-api-setting-col {
     flex: 1;
     min-width: 140px;
 }
 
-.ss-api-secondary-setting-row {
+.shardwright-api-secondary-setting-row {
     display: flex;
     gap: 15px;
     flex-wrap: wrap;
     margin-top: 15px;
 }
 
-.ss-api-option-column {
+.shardwright-api-option-column {
     flex: 1;
     min-width: 200px;
     max-width: 300px;
 }
 
-.ss-api-message-format-column {
+.shardwright-api-message-format-column {
     margin-top: 10px;
 }
 
-.ss-api-option-hint {
+.shardwright-api-option-hint {
     margin-top: 5px;
-    color: var(--ss-text-muted);
+    color: var(--shardwright-text-muted);
     font-size: 0.85em;
 }
 
@@ -649,71 +649,71 @@ export const PROMPTS_CSS = `
    SECTION 20B: SAVED APIS MODAL
    ========================================================================== */
 
-.ss-saved-api-intro {
+.shardwright-saved-api-intro {
     margin-bottom: 20px;
-    color: var(--ss-text-muted);
+    color: var(--shardwright-text-muted);
 }
 
-.ss-saved-api-selector-section {
+.shardwright-saved-api-selector-section {
     margin-bottom: 20px;
 }
 
-.ss-saved-api-selector-label {
+.shardwright-saved-api-selector-label {
     display: block;
     margin-bottom: 5px;
     font-weight: bold;
 }
 
-.ss-saved-api-selector {
+.shardwright-saved-api-selector {
     width: 100%;
 }
 
-.ss-saved-api-actions {
+.shardwright-saved-api-actions {
     display: flex;
     gap: 5px;
     margin-top: 10px;
 }
 
-.ss-saved-api-divider {
+.shardwright-saved-api-divider {
     margin: 20px 0;
 }
 
-.ss-saved-api-field {
+.shardwright-saved-api-field {
     margin-bottom: 15px;
 }
 
-.ss-saved-api-field-label {
+.shardwright-saved-api-field-label {
     display: block;
     margin-bottom: 5px;
     font-weight: bold;
 }
 
-.ss-saved-api-input {
+.shardwright-saved-api-input {
     width: 100%;
 }
 
-.ss-saved-api-help {
-    color: var(--ss-text-muted);
+.shardwright-saved-api-help {
+    color: var(--shardwright-text-muted);
 }
 
-.ss-saved-api-model-row {
+.shardwright-saved-api-model-row {
     display: flex;
     gap: 5px;
     align-items: center;
 }
 
-.ss-saved-api-model-select {
+.shardwright-saved-api-model-select {
     flex: 1;
 }
 
-.ss-saved-api-footer-actions {
+.shardwright-saved-api-footer-actions {
     display: flex;
     gap: 5px;
     justify-content: flex-end;
     margin-top: 20px;
 }
 
-.ss-saved-api-save-btn {
+.shardwright-saved-api-save-btn {
     font-weight: bold;
 }
 
@@ -721,91 +721,91 @@ export const PROMPTS_CSS = `
    SECTION 21: REGEX LIST
    ========================================================================== */
 
-.ss-regex-list {
-    border: 1px solid var(--ss-border);
+.shardwright-regex-list {
+    border: 1px solid var(--shardwright-border);
     border-radius: 4px;
-    background: var(--ss-bg-secondary);
+    background: var(--shardwright-bg-secondary);
 }
 
-.ss-regex-item {
+.shardwright-regex-item {
     display: flex;
     align-items: center;
     gap: 10px;
     padding: 12px;
     margin: 8px;
-    background: var(--ss-bg-tertiary);
+    background: var(--shardwright-bg-tertiary);
     border-radius: 4px;
-    border-left: 3px solid var(--ss-quote);
+    border-left: 3px solid var(--shardwright-quote);
 }
 
-.ss-regex-item:last-child {
+.shardwright-regex-item:last-child {
     margin-bottom: 8px;
 }
 
-.ss-regex-left {
+.shardwright-regex-left {
     display: flex;
     align-items: center;
 }
 
-.ss-regex-toggle {
+.shardwright-regex-toggle {
     width: 18px;
     height: 18px;
     cursor: pointer;
 }
 
-.ss-regex-center {
+.shardwright-regex-center {
     flex: 1;
     min-width: 0;
 }
 
-.ss-regex-name {
+.shardwright-regex-name {
     font-weight: 500;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
     margin-bottom: 4px;
 }
 
-.ss-regex-pattern {
+.shardwright-regex-pattern {
     font-family: monospace;
     font-size: 12px;
-    color: var(--ss-text-secondary);
+    color: var(--shardwright-text-secondary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.ss-regex-right {
+.shardwright-regex-right {
     display: flex;
     gap: 5px;
     flex-shrink: 0;
 }
 
-.ss-regex-edit,
-.ss-regex-delete {
+.shardwright-regex-edit,
+.shardwright-regex-delete {
     padding: 5px 10px;
     font-size: 12px;
 }
 
-.ss-regex-empty {
-    color: var(--ss-text-primary);
+.shardwright-regex-empty {
+    color: var(--shardwright-text-primary);
 }
 
 /* ==========================================================================
    SECTION 22: PLACEHOLDER MODAL
    ========================================================================== */
 
-.ss-placeholder-modal {
+.shardwright-placeholder-modal {
     padding: 30px;
     text-align: center;
     min-width: 300px;
 }
 
-.ss-placeholder-modal h3 {
+.shardwright-placeholder-modal h3 {
     margin: 0 0 10px 0;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
 }
 
-.ss-placeholder-modal p {
-    color: var(--ss-text-secondary);
+.shardwright-placeholder-modal p {
+    color: var(--shardwright-text-secondary);
     margin: 0;
 }
 `;

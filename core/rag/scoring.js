@@ -1,5 +1,5 @@
 /**
- * Client-side scoring helpers for Summary Sharder RAG retrieval.
+ * Client-side scoring helpers for Shardwright RAG retrieval.
  * Used for backends without native hybrid fusion.
  */
 

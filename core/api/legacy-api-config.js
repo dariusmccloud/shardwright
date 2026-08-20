@@ -1,5 +1,5 @@
 /**
- * API Configuration management for Summary Sharder
+ * API Configuration management for Shardwright
  * Handles saving, loading, and deleting API configurations
  * Uses SillyTavern's secrets system for secure key storage
  */
@@ -152,7 +152,7 @@ export async function saveCurrentApiConfig(settings, name) {
         secretId = existingSecretId;
     } else {
         // Store the API key in SillyTavern's secrets system
-        secretId = await writeSecretDirect(SECRET_KEY, settings.apiKey, `Summary Sharder: ${name}`);
+        secretId = await writeSecretDirect(SECRET_KEY, settings.apiKey, `Shardwright: ${name}`);
 
         if (!secretId) {
             return { success: false, error: 'Failed to save API key securely' };
@@ -250,7 +250,7 @@ export async function updateApiConfig(settings, configId) {
         if (existingSecretId) {
             config.secretId = existingSecretId;
         } else {
-            const secretId = await writeSecretDirect(SECRET_KEY, settings.apiKey, `Summary Sharder: ${config.name}`);
+            const secretId = await writeSecretDirect(SECRET_KEY, settings.apiKey, `Shardwright: ${config.name}`);
             if (!secretId) {
                 return { success: false, error: 'Failed to save API key securely' };
             }
@@ -268,7 +268,7 @@ export async function updateApiConfig(settings, configId) {
             if (existingSecretId) {
                 config.secretId = existingSecretId;
             } else {
-                const newSecretId = await writeSecretDirect(SECRET_KEY, settings.apiKey, `Summary Sharder: ${config.name}`);
+                const newSecretId = await writeSecretDirect(SECRET_KEY, settings.apiKey, `Shardwright: ${config.name}`);
                 if (!newSecretId) {
                     return { success: false, error: 'Failed to update API key' };
                 }

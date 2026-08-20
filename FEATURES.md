@@ -1,4 +1,4 @@
-# Summary Sharder - Feature Documentation
+# Shardwright - Feature Documentation
 
 A comprehensive SillyTavern extension for intelligent chat summarization and memory management.
 
@@ -38,7 +38,7 @@ A comprehensive SillyTavern extension for intelligent chat summarization and mem
 
 ## Overview
 
-Summary Sharder is a SillyTavern extension that compresses roleplay chat history into structured, recoverable "Memory Shards." As conversations grow long, older messages push beyond the LLM's context window and are lost. Summary Sharder captures that history — summarizing message ranges, managing message visibility, and routing output to system messages or lorebook entries — so nothing important is forgotten.
+Shardwright is a SillyTavern extension that compresses roleplay chat history into structured, recoverable "Memory Shards." As conversations grow long, older messages push beyond the LLM's context window and are lost. Shardwright captures that history — summarizing message ranges, managing message visibility, and routing output to system messages or lorebook entries — so nothing important is forgotten.
 
 In **Sharder mode**, summaries are generated as structured documents with 16 labeled sections (timeline, character states, relationships, key dialogue, and more), each tagged with scene codes for precise cross-referencing. An optional **RAG pipeline** vectorizes these shards and automatically injects relevant memories into future generations based on conversation context.
 

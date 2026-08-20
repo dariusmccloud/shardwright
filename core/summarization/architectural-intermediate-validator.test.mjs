@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 
 import { validateArchitecturalIntermediatePayload as validateBrowserPayload } from './architectural-intermediate-validator.js';
-import { validateArchitecturalIntermediatePayload as validateServerPayload } from '../../tools/server-plugin/summary-sharder-memory/architectural-intermediate-validator.js';
+import { validateArchitecturalIntermediatePayload as validateServerPayload } from '../../tools/server-plugin/shardwright-memory/architectural-intermediate-validator.js';
 
 function validPayload() {
     return {

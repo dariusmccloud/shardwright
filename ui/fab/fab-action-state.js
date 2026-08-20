@@ -13,7 +13,7 @@ export function getFabActionVisibility(sharderMode, ragEnabled, isGenerating) {
 }
 
 export function renderFabActionButton(action, icon, label, extraClass = '', disabled = false) {
-    const classes = ['ss-fab-action', 'menu_button', extraClass].filter(Boolean).join(' ');
+    const classes = ['shardwright-fab-action', 'menu_button', extraClass].filter(Boolean).join(' ');
     const disabledAttr = disabled ? ' disabled aria-disabled="true"' : '';
     return `
         <button type="button" class="${classes}" data-action="${escapeHtml(action)}"${disabledAttr}>

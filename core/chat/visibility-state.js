@@ -1,5 +1,5 @@
 /**
- * Shared visibility state for Summary Sharder
+ * Shared visibility state for Shardwright
  * Separate module to avoid circular imports between index.js and visibility-manager.js
  */
 

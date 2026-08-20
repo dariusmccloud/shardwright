@@ -107,20 +107,20 @@ function renderSourceBadges(sources) {
     const order = ['character', 'chat', 'own'];
     return order
         .filter(source => Array.isArray(sources) && sources.includes(source))
-        .map(source => `<span class="ss-cm-source-badge ss-cm-source-${source}">${escapeHtml(source)}</span>`)
+        .map(source => `<span class="shardwright-cm-source-badge shardwright-cm-source-${source}">${escapeHtml(source)}</span>`)
         .join('');
 }
 
 function renderEditableRow(collectionId, chunkCount, extraBadges = '') {
     const chunksText = typeof chunkCount === 'number' ? `${chunkCount} chunks` : '';
     return `
-        <div class="ss-cm-row" data-collection-id="${escapeHtml(collectionId)}">
-            <div class="ss-cm-row-main">
-                <span class="ss-cm-row-id" title="${escapeHtml(collectionId)}">${escapeHtml(truncate(collectionId, 70))}</span>
-                <div class="ss-cm-row-badges">${extraBadges}</div>
+        <div class="shardwright-cm-row" data-collection-id="${escapeHtml(collectionId)}">
+            <div class="shardwright-cm-row-main">
+                <span class="shardwright-cm-row-id" title="${escapeHtml(collectionId)}">${escapeHtml(truncate(collectionId, 70))}</span>
+                <div class="shardwright-cm-row-badges">${extraBadges}</div>
             </div>
-            <span class="ss-cm-row-chunks">${escapeHtml(chunksText)}</span>
-            <button class="ss-cm-row-remove menu_button" type="button" title="Remove this collection">&times;</button>
+            <span class="shardwright-cm-row-chunks">${escapeHtml(chunksText)}</span>
+            <button class="shardwright-cm-row-remove menu_button" type="button" title="Remove this collection">&times;</button>
         </div>
     `;
 }
@@ -129,15 +129,15 @@ function renderOverviewReadRow(collectionId, chunkCount, sources) {
     const chunksText = typeof chunkCount === 'number' ? `${chunkCount} chunks` : '';
     const badges = [renderSourceBadges(sources)];
     if (chunkCount === 0) {
-        badges.push('<span class="ss-cm-source-badge ss-cm-source-warning">0 chunks</span>');
+        badges.push('<span class="shardwright-cm-source-badge shardwright-cm-source-warning">0 chunks</span>');
     }
     return `
-        <div class="ss-cm-overview-row">
-            <div class="ss-cm-overview-main">
-                <span class="ss-cm-row-id" title="${escapeHtml(collectionId)}">${escapeHtml(truncate(collectionId, 76))}</span>
-                <div class="ss-cm-row-badges">${badges.join('')}</div>
+        <div class="shardwright-cm-overview-row">
+            <div class="shardwright-cm-overview-main">
+                <span class="shardwright-cm-row-id" title="${escapeHtml(collectionId)}">${escapeHtml(truncate(collectionId, 76))}</span>
+                <div class="shardwright-cm-row-badges">${badges.join('')}</div>
             </div>
-            <span class="ss-cm-row-chunks">${escapeHtml(chunksText)}</span>
+            <span class="shardwright-cm-row-chunks">${escapeHtml(chunksText)}</span>
         </div>
     `;
 }
@@ -150,91 +150,91 @@ function buildModalHtml(ctx) {
         isSharder,
         ownCollectionId,
     } = ctx;
-    const modeClass = isSharder ? 'ss-rag-mode-sharder' : 'ss-rag-mode-standard';
+    const modeClass = isSharder ? 'shardwright-rag-mode-sharder' : 'shardwright-rag-mode-standard';
     const modeLabel = isSharder ? 'Sharder' : 'Standard';
 
     return `
-        <div class="ss-collection-manager-modal">
-            <h3 class="ss-rag-title">
+        <div class="shardwright-collection-manager-modal">
+            <h3 class="shardwright-rag-title">
                 Collection Manager
-                <span class="ss-rag-mode-badge ${modeClass}">${escapeHtml(modeLabel)}</span>
+                <span class="shardwright-rag-mode-badge ${modeClass}">${escapeHtml(modeLabel)}</span>
             </h3>
 
-            <div class="ss-cm-context-grid">
-                <div class="ss-cm-context-card">
-                    <div class="ss-cm-context-label">Character</div>
-                    <div class="ss-cm-context-row">
-                        ${charAvatar ? `<img class="ss-cm-context-avatar" src="${escapeHtml(charAvatar)}" alt="" />` : ''}
-                        <span class="ss-cm-context-name">${escapeHtml(charName || 'No active character')}</span>
+            <div class="shardwright-cm-context-grid">
+                <div class="shardwright-cm-context-card">
+                    <div class="shardwright-cm-context-label">Character</div>
+                    <div class="shardwright-cm-context-row">
+                        ${charAvatar ? `<img class="shardwright-cm-context-avatar" src="${escapeHtml(charAvatar)}" alt="" />` : ''}
+                        <span class="shardwright-cm-context-name">${escapeHtml(charName || 'No active character')}</span>
                     </div>
                 </div>
-                <div class="ss-cm-context-card">
-                    <div class="ss-cm-context-label">Chat</div>
-                    <div class="ss-cm-context-row">
-                        <i class="fa-solid fa-comment ss-cm-chat-icon"></i>
-                        <span class="ss-cm-context-name">${escapeHtml(currentChatId || 'No active chat')}</span>
+                <div class="shardwright-cm-context-card">
+                    <div class="shardwright-cm-context-label">Chat</div>
+                    <div class="shardwright-cm-context-row">
+                        <i class="fa-solid fa-comment shardwright-cm-chat-icon"></i>
+                        <span class="shardwright-cm-context-name">${escapeHtml(currentChatId || 'No active chat')}</span>
                     </div>
                 </div>
             </div>
 
-            <div class="ss-cm-overview-card">
-                <div class="ss-cm-section-title">Effective Behavior</div>
-                <p class="ss-hint ss-rag-inline-hint">Current read and write behavior for this chat.</p>
-                <div class="ss-cm-overview-block">
-                    <div class="ss-cm-section-title">Reads</div>
-                    <div id="ss-cm-overview-reads" class="ss-cm-list"></div>
+            <div class="shardwright-cm-overview-card">
+                <div class="shardwright-cm-section-title">Effective Behavior</div>
+                <p class="shardwright-hint shardwright-rag-inline-hint">Current read and write behavior for this chat.</p>
+                <div class="shardwright-cm-overview-block">
+                    <div class="shardwright-cm-section-title">Reads</div>
+                    <div id="shardwright-cm-overview-reads" class="shardwright-cm-list"></div>
                 </div>
-                <div class="ss-cm-overview-block">
-                    <div class="ss-cm-section-title">Write Target</div>
-                    <div id="ss-cm-overview-write" class="ss-cm-write-target"></div>
-                    <select id="ss-cm-overview-write-select" class="text_pole ss-cm-add-select ss-cm-write-target-select"></select>
-                    <p id="ss-cm-overview-write-hint" class="ss-hint ss-rag-inline-hint"></p>
+                <div class="shardwright-cm-overview-block">
+                    <div class="shardwright-cm-section-title">Write Target</div>
+                    <div id="shardwright-cm-overview-write" class="shardwright-cm-write-target"></div>
+                    <select id="shardwright-cm-overview-write-select" class="text_pole shardwright-cm-add-select shardwright-cm-write-target-select"></select>
+                    <p id="shardwright-cm-overview-write-hint" class="shardwright-hint shardwright-rag-inline-hint"></p>
                 </div>
-                <div class="ss-cm-overview-block">
-                    <div class="ss-cm-section-title">Warnings</div>
-                    <div id="ss-cm-overview-warnings" class="ss-cm-list"></div>
+                <div class="shardwright-cm-overview-block">
+                    <div class="shardwright-cm-section-title">Warnings</div>
+                    <div id="shardwright-cm-overview-warnings" class="shardwright-cm-list"></div>
                 </div>
             </div>
 
-            <details class="ss-cm-accordion">
-                <summary class="ss-cm-accordion-summary">
+            <details class="shardwright-cm-accordion">
+                <summary class="shardwright-cm-accordion-summary">
                     <span>Character Collections</span>
-                    <span class="ss-cm-accordion-hint ss-hint">Shared reads for this character</span>
+                    <span class="shardwright-cm-accordion-hint shardwright-hint">Shared reads for this character</span>
                 </summary>
-                <div class="ss-cm-accordion-body">
-                    <div id="ss-cm-char-list" class="ss-cm-list"></div>
-                    <div class="ss-cm-add-row">
-                        <select id="ss-cm-char-add-select" class="text_pole ss-cm-add-select">
+                <div class="shardwright-cm-accordion-body">
+                    <div id="shardwright-cm-char-list" class="shardwright-cm-list"></div>
+                    <div class="shardwright-cm-add-row">
+                        <select id="shardwright-cm-char-add-select" class="text_pole shardwright-cm-add-select">
                             <option value="">Select a collection...</option>
                         </select>
-                        <button id="ss-cm-char-add-btn" class="menu_button" type="button">Add</button>
+                        <button id="shardwright-cm-char-add-btn" class="menu_button" type="button">Add</button>
                     </div>
                 </div>
             </details>
 
-            <details class="ss-cm-accordion">
-                <summary class="ss-cm-accordion-summary">
+            <details class="shardwright-cm-accordion">
+                <summary class="shardwright-cm-accordion-summary">
                     <span>Chat Collections</span>
-                    <span class="ss-cm-accordion-hint ss-hint">Extra reads for this chat</span>
+                    <span class="shardwright-cm-accordion-hint shardwright-hint">Extra reads for this chat</span>
                 </summary>
-                <div class="ss-cm-accordion-body">
-                    <div id="ss-cm-chat-list" class="ss-cm-list"></div>
-                    <div class="ss-cm-add-row">
-                        <select id="ss-cm-chat-add-select" class="text_pole ss-cm-add-select">
+                <div class="shardwright-cm-accordion-body">
+                    <div id="shardwright-cm-chat-list" class="shardwright-cm-list"></div>
+                    <div class="shardwright-cm-add-row">
+                        <select id="shardwright-cm-chat-add-select" class="text_pole shardwright-cm-add-select">
                             <option value="">Select a collection...</option>
                         </select>
-                        <button id="ss-cm-chat-add-btn" class="menu_button" type="button">Add</button>
+                        <button id="shardwright-cm-chat-add-btn" class="menu_button" type="button">Add</button>
                     </div>
                 </div>
             </details>
 
-            <div class="ss-cm-footer">
-                <button id="ss-cm-save" class="menu_button" type="button">
+            <div class="shardwright-cm-footer">
+                <button id="shardwright-cm-save" class="menu_button" type="button">
                     <i class="fa-solid fa-floppy-disk"></i> Save
                 </button>
             </div>
 
-            <input type="hidden" id="ss-cm-own-collection" value="${escapeHtml(ownCollectionId || '')}" />
+            <input type="hidden" id="shardwright-cm-own-collection" value="${escapeHtml(ownCollectionId || '')}" />
         </div>
     `;
 }
@@ -252,7 +252,7 @@ export async function openCollectionManagerModal(settings) {
         ? (isSharder ? getShardCollectionId(currentChatId) : getStandardCollectionId(currentChatId))
         : '';
 
-    const ss = extension_settings?.summary_sharder;
+    const ss = extension_settings?.shardwright;
     const existingCharBinding = charAvatarKey ? getCharacterBinding(charAvatarKey, ss) : null;
     const existingChatBinding = currentChatId ? getChatBinding(currentChatId, ss) : null;
 
@@ -296,30 +296,30 @@ export async function openCollectionManagerModal(settings) {
     const showPromise = popup.show();
 
     requestAnimationFrame(() => {
-        const root = document.querySelector('.ss-collection-manager-modal');
+        const root = document.querySelector('.shardwright-collection-manager-modal');
         if (!root) return;
 
-        const charList = root.querySelector('#ss-cm-char-list');
-        const chatList = root.querySelector('#ss-cm-chat-list');
-        const charAddSelect = root.querySelector('#ss-cm-char-add-select');
-        const chatAddSelect = root.querySelector('#ss-cm-chat-add-select');
-        const overviewReads = root.querySelector('#ss-cm-overview-reads');
-        const overviewWrite = root.querySelector('#ss-cm-overview-write');
-        const overviewWriteSelect = root.querySelector('#ss-cm-overview-write-select');
-        const overviewWriteHint = root.querySelector('#ss-cm-overview-write-hint');
-        const overviewWarnings = root.querySelector('#ss-cm-overview-warnings');
-        const saveBtn = root.querySelector('#ss-cm-save');
+        const charList = root.querySelector('#shardwright-cm-char-list');
+        const chatList = root.querySelector('#shardwright-cm-chat-list');
+        const charAddSelect = root.querySelector('#shardwright-cm-char-add-select');
+        const chatAddSelect = root.querySelector('#shardwright-cm-chat-add-select');
+        const overviewReads = root.querySelector('#shardwright-cm-overview-reads');
+        const overviewWrite = root.querySelector('#shardwright-cm-overview-write');
+        const overviewWriteSelect = root.querySelector('#shardwright-cm-overview-write-select');
+        const overviewWriteHint = root.querySelector('#shardwright-cm-overview-write-hint');
+        const overviewWarnings = root.querySelector('#shardwright-cm-overview-warnings');
+        const saveBtn = root.querySelector('#shardwright-cm-save');
 
         const getCollectionBadges = (id, scope) => {
             const badges = [];
             if ((scope === 'character' && chatDraft.collections.includes(id)) || (scope === 'chat' && charDraft.collections.includes(id))) {
-                badges.push('<span class="ss-cm-source-badge ss-cm-source-warning">duplicate</span>');
+                badges.push('<span class="shardwright-cm-source-badge shardwright-cm-source-warning">duplicate</span>');
             }
             if (!knownCollections.has(String(id))) {
-                badges.push('<span class="ss-cm-source-badge ss-cm-source-warning">missing</span>');
+                badges.push('<span class="shardwright-cm-source-badge shardwright-cm-source-warning">missing</span>');
             }
             if (chunkCountMap.has(String(id)) && Number(chunkCountMap.get(String(id))) === 0) {
-                badges.push('<span class="ss-cm-source-badge ss-cm-source-warning">0 chunks</span>');
+                badges.push('<span class="shardwright-cm-source-badge shardwright-cm-source-warning">0 chunks</span>');
             }
             return badges.join('');
         };
@@ -393,7 +393,7 @@ export async function openCollectionManagerModal(settings) {
         const renderCharList = () => {
             if (!charList) return;
             if (charDraft.collections.length === 0) {
-                charList.innerHTML = '<div class="ss-cm-empty">No shared character collections yet.</div>';
+                charList.innerHTML = '<div class="shardwright-cm-empty">No shared character collections yet.</div>';
                 return;
             }
 
@@ -401,9 +401,9 @@ export async function openCollectionManagerModal(settings) {
                 .map(id => renderEditableRow(id, chunkCountMap.get(id), getCollectionBadges(id, 'character')))
                 .join('');
 
-            for (const btn of charList.querySelectorAll('.ss-cm-row-remove')) {
+            for (const btn of charList.querySelectorAll('.shardwright-cm-row-remove')) {
                 btn.addEventListener('click', () => {
-                    const id = btn.closest('.ss-cm-row')?.getAttribute('data-collection-id');
+                    const id = btn.closest('.shardwright-cm-row')?.getAttribute('data-collection-id');
                     if (!id) return;
                     charDraft.collections = charDraft.collections.filter(c => c !== id);
                     if (charDraft.writeTarget === id) charDraft.writeTarget = '';
@@ -416,7 +416,7 @@ export async function openCollectionManagerModal(settings) {
         const renderChatList = () => {
             if (!chatList) return;
             if (chatDraft.collections.length === 0) {
-                chatList.innerHTML = '<div class="ss-cm-empty">No chat-only collections yet. Character collections remain active even when this list is empty.</div>';
+                chatList.innerHTML = '<div class="shardwright-cm-empty">No chat-only collections yet. Character collections remain active even when this list is empty.</div>';
                 return;
             }
 
@@ -424,9 +424,9 @@ export async function openCollectionManagerModal(settings) {
                 .map(id => renderEditableRow(id, chunkCountMap.get(id), getCollectionBadges(id, 'chat')))
                 .join('');
 
-            for (const btn of chatList.querySelectorAll('.ss-cm-row-remove')) {
+            for (const btn of chatList.querySelectorAll('.shardwright-cm-row-remove')) {
                 btn.addEventListener('click', () => {
-                    const id = btn.closest('.ss-cm-row')?.getAttribute('data-collection-id');
+                    const id = btn.closest('.shardwright-cm-row')?.getAttribute('data-collection-id');
                     if (!id) return;
                     chatDraft.collections = chatDraft.collections.filter(c => c !== id);
                     if (chatDraft.writeTarget === id) chatDraft.writeTarget = '';
@@ -450,12 +450,12 @@ export async function openCollectionManagerModal(settings) {
             if (overviewWrite) {
                 overviewWrite.innerHTML = state.effectiveWriteTarget
                     ? `
-                        <div class="ss-cm-write-target-row">
-                            <span class="ss-cm-row-id" title="${escapeHtml(state.effectiveWriteTarget)}">${escapeHtml(truncate(state.effectiveWriteTarget, 82))}</span>
-                            <span class="ss-cm-source-badge ss-cm-source-${escapeHtml(state.effectiveWriteSource || 'own')}">${escapeHtml(getWriteScopeLabel(state.effectiveWriteSource))}</span>
+                        <div class="shardwright-cm-write-target-row">
+                            <span class="shardwright-cm-row-id" title="${escapeHtml(state.effectiveWriteTarget)}">${escapeHtml(truncate(state.effectiveWriteTarget, 82))}</span>
+                            <span class="shardwright-cm-source-badge shardwright-cm-source-${escapeHtml(state.effectiveWriteSource || 'own')}">${escapeHtml(getWriteScopeLabel(state.effectiveWriteSource))}</span>
                         </div>
                     `
-                    : '<div class="ss-cm-empty">No write target resolved.</div>';
+                    : '<div class="shardwright-cm-empty">No write target resolved.</div>';
             }
 
             renderOverviewWriteSelect(state);
@@ -486,15 +486,15 @@ export async function openCollectionManagerModal(settings) {
             }
 
             if (overviewWarnings) {
-                overviewWarnings.classList.toggle('ss-cm-warning-list-active', warnings.length > 0);
+                overviewWarnings.classList.toggle('shardwright-cm-warning-list-active', warnings.length > 0);
                 overviewWarnings.innerHTML = warnings.length > 0
                     ? warnings.map(text => `
-                        <div class="ss-cm-warning-row">
-                            <i class="fa-solid fa-triangle-exclamation ss-cm-warning-icon" aria-hidden="true"></i>
+                        <div class="shardwright-cm-warning-row">
+                            <i class="fa-solid fa-triangle-exclamation shardwright-cm-warning-icon" aria-hidden="true"></i>
                             <span>${escapeHtml(text)}</span>
                         </div>
                     `).join('')
-                    : '<div class="ss-cm-empty">No configuration warnings.</div>';
+                    : '<div class="shardwright-cm-empty">No configuration warnings.</div>';
             }
         };
 
@@ -507,14 +507,14 @@ export async function openCollectionManagerModal(settings) {
             renderOverview();
         };
 
-        root.querySelector('#ss-cm-char-add-btn')?.addEventListener('click', () => {
+        root.querySelector('#shardwright-cm-char-add-btn')?.addEventListener('click', () => {
             const id = String(charAddSelect?.value || '').trim();
             if (!id || charDraft.collections.includes(id)) return;
             charDraft.collections.push(id);
             renderAll();
         });
 
-        root.querySelector('#ss-cm-chat-add-btn')?.addEventListener('click', () => {
+        root.querySelector('#shardwright-cm-chat-add-btn')?.addEventListener('click', () => {
             const id = String(chatAddSelect?.value || '').trim();
             if (!id || chatDraft.collections.includes(id)) return;
             chatDraft.collections.push(id);
@@ -527,7 +527,7 @@ export async function openCollectionManagerModal(settings) {
         });
 
         saveBtn?.addEventListener('click', () => {
-            const liveSettings = extension_settings?.summary_sharder;
+            const liveSettings = extension_settings?.shardwright;
 
             if (charAvatarKey) {
                 setCharacterBinding(charAvatarKey, {

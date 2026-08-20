@@ -30,7 +30,7 @@ test('persistArchitecturalReplayAuthorityArtifact posts the finalized artifact t
     const artifact = { artifactId: 'archreplay_test' };
     const response = await persistArchitecturalReplayAuthorityArtifact(artifact);
 
-    assert.equal(calls[1].url, '/api/plugins/summary-sharder-memory/architectural/replay-artifacts');
+    assert.equal(calls[1].url, '/api/plugins/shardwright-memory/architectural/replay-artifacts');
     assert.equal(calls[1].options.method, 'POST');
     assert.deepEqual(JSON.parse(calls[1].options.body), { artifact });
     assert.equal(response.created, true);
@@ -53,7 +53,7 @@ test('listInterpretiveReviews builds filtered query string', async () => {
     assert.deepEqual(response, { reviews: [] });
     assert.equal(
         calls[0],
-        '/api/plugins/summary-sharder-memory/interpretive/reviews?status=PENDING&reviewerEntityId=entity_reviewer_01',
+        '/api/plugins/shardwright-memory/interpretive/reviews?status=PENDING&reviewerEntityId=entity_reviewer_01',
     );
 });
 
@@ -73,7 +73,7 @@ test('listInterpretiveDelegationPolicies omits blank filters', async () => {
 
     assert.equal(
         calls[0],
-        '/api/plugins/summary-sharder-memory/interpretive/delegation-policies?memoryScopeId=scope_demo',
+        '/api/plugins/shardwright-memory/interpretive/delegation-policies?memoryScopeId=scope_demo',
     );
 });
 
@@ -120,7 +120,7 @@ test('createInterpretiveProposalFromArchitecturalShard posts to synthesis route'
 
     assert.equal(
         calls[1].url,
-        '/api/plugins/summary-sharder-memory/interpretive/synthesis/from-architectural-shard',
+        '/api/plugins/shardwright-memory/interpretive/synthesis/from-architectural-shard',
     );
     assert.equal(calls[1].options.method, 'POST');
     assert.deepEqual(JSON.parse(calls[1].options.body), {
@@ -166,7 +166,7 @@ test('getInterpretiveCandidate fetches encoded revision path', async () => {
 
     assert.equal(
         calls[0],
-        '/api/plugins/summary-sharder-memory/interpretive/candidates/interprev%3Atest%2Fvalue',
+        '/api/plugins/shardwright-memory/interpretive/candidates/interprev%3Atest%2Fvalue',
     );
     assert.equal(response.interpretation.interpretationRevisionId, 'interprev:test/value');
     assert.equal(response.interpretation.evidenceFindingState, 'AVAILABLE');
@@ -204,7 +204,7 @@ test('submitInterpretiveReviewDisposition posts encoded path with csrf header', 
         disposition: 'APPROVE',
     });
 
-    assert.equal(calls[1].url, '/api/plugins/summary-sharder-memory/interpretive/reviews/review%3Areq%2F01/dispositions');
+    assert.equal(calls[1].url, '/api/plugins/shardwright-memory/interpretive/reviews/review%3Areq%2F01/dispositions');
     assert.equal(calls[1].options.method, 'POST');
     assert.equal(calls[1].options.headers['x-csrf-token'], 'csrf-demo-token');
     assert.deepEqual(JSON.parse(calls[1].options.body), { disposition: 'APPROVE' });
@@ -241,7 +241,7 @@ test('recordInterpretiveSubjectDisposition posts encoded path', async () => {
         state: 'GRANTED',
     });
 
-    assert.equal(calls[1].url, '/api/plugins/summary-sharder-memory/interpretive/candidates/interprev%3Atest%2Fvalue/subject-disposition');
+    assert.equal(calls[1].url, '/api/plugins/shardwright-memory/interpretive/candidates/interprev%3Atest%2Fvalue/subject-disposition');
     assert.equal(calls[1].options.method, 'POST');
     assert.equal('x-csrf-token' in calls[1].options.headers, false);
     assert.deepEqual(JSON.parse(calls[1].options.body), { state: 'GRANTED' });
@@ -298,6 +298,6 @@ test('healthcheckArchitecturalAuthorityServer attaches an abortable signal', asy
     const response = await healthcheckArchitecturalAuthorityServer();
 
     assert.deepEqual(response, { ok: true });
-    assert.equal(calls[0].url, '/api/plugins/summary-sharder-memory/health');
+    assert.equal(calls[0].url, '/api/plugins/shardwright-memory/health');
     assert.equal(typeof calls[0].options.signal?.aborted, 'boolean');
 });

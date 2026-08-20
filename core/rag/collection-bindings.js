@@ -14,6 +14,7 @@
 
 import { extension_settings } from '../../../../../extensions.js';
 import { ragLog } from '../logger.js';
+import { filterShardwrightCollectionIds } from './collection-identity.js';
 
 /**
  * @typedef {Object} CharacterBinding
@@ -46,7 +47,7 @@ function normalizeCollectionList(values) {
 }
 
 function ensureBindingsRoot(settings) {
-    const ss = settings || extension_settings?.summary_sharder;
+    const ss = settings || extension_settings?.shardwright;
     if (!ss || typeof ss !== 'object') return null;
 
     if (!ss.collectionBindings || typeof ss.collectionBindings !== 'object') {
@@ -63,7 +64,7 @@ function ensureBindingsRoot(settings) {
 }
 
 function getBindingsRoot(settings) {
-    const ss = settings || extension_settings?.summary_sharder;
+    const ss = settings || extension_settings?.shardwright;
     const root = ss?.collectionBindings;
     if (!root || typeof root !== 'object') return null;
     return root;
@@ -183,11 +184,13 @@ export function resolveEffectiveBindingState(chatId, characterAvatar, settings, 
         createSourceMapEntries(ownCollections, 'own'),
     );
 
-    const effectiveReadIds = normalizeCollectionList([
+    const requestedReadIds = normalizeCollectionList([
         ...characterCollections,
         ...chatCollections,
         ...ownCollections,
     ]);
+    const identityState = filterShardwrightCollectionIds(requestedReadIds);
+    const effectiveReadIds = identityState.canonicalIds;
 
     const duplicateIds = Object.entries(sourceMap)
         .filter(([, sources]) => Array.isArray(sources) && sources.length > 1)
@@ -244,6 +247,8 @@ export function resolveEffectiveBindingState(chatId, characterAvatar, settings, 
         effectiveWriteSource,
         invalidWriteTarget,
         invalidWriteSource,
+        quarantinedCollectionIds: identityState.quarantined,
+        mixedCollectionIdentityInput: identityState.mixedIdentityInput,
         hasAnyBinding: !!(characterBinding || chatBinding),
     };
 }

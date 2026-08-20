@@ -27,29 +27,29 @@ function renderEventRow(event, index, modalState) {
         : 'Event ' + (index + 1);
 
     const row = document.createElement('div');
-    row.className = `ss-event-row ${!event.selected ? 'ss-event-excluded' : ''}`;
+    row.className = `shardwright-event-row ${!event.selected ? 'shardwright-event-excluded' : ''}`;
     row.dataset.eventId = event.id;
 
     row.innerHTML = `
-        <div class="ss-event-header">
-            <input type="checkbox" class="ss-event-checkbox" ${event.selected ? 'checked' : ''} />
-            <span class="ss-event-summary">${escapeHtml(summaryText)}</span>
+        <div class="shardwright-event-header">
+            <input type="checkbox" class="shardwright-event-checkbox" ${event.selected ? 'checked' : ''} />
+            <span class="shardwright-event-summary">${escapeHtml(summaryText)}</span>
         </div>
-        <div class="ss-event-messages">
+        <div class="shardwright-event-messages">
             From messages #${event.messageRange.startIndex}-${event.messageRange.endIndex}
         </div>
-        <textarea class="ss-event-description text_pole">${escapeHtml(description)}</textarea>
+        <textarea class="shardwright-event-description text_pole">${escapeHtml(description)}</textarea>
     `;
 
     // Checkbox handler
-    const checkbox = row.querySelector('.ss-event-checkbox');
+    const checkbox = row.querySelector('.shardwright-event-checkbox');
     checkbox.addEventListener('change', (e) => {
         modalState.events[index].selected = e.target.checked;
-        row.className = `ss-event-row ${!e.target.checked ? 'ss-event-excluded' : ''}`;
+        row.className = `shardwright-event-row ${!e.target.checked ? 'shardwright-event-excluded' : ''}`;
     });
 
     // Description handler
-    const textarea = row.querySelector('.ss-event-description');
+    const textarea = row.querySelector('.shardwright-event-description');
     textarea.addEventListener('input', (e) => {
         modalState.events[index].userDescription = e.target.value;
     });
@@ -65,7 +65,7 @@ function renderEventsList(container, modalState) {
 
     if (modalState.isRegenerating) {
         container.innerHTML = `
-            <div class="ss-events-loading">
+            <div class="shardwright-events-loading">
                 <div class="spinner"></div>
                 <p>Extracting events...</p>
             </div>
@@ -75,7 +75,7 @@ function renderEventsList(container, modalState) {
 
     if (modalState.events.length === 0) {
         container.innerHTML = `
-            <div class="ss-events-empty">
+            <div class="shardwright-events-empty">
                 <p>No events extracted. Try clicking "Regenerate" or check your message range.</p>
             </div>
         `;
@@ -92,10 +92,10 @@ function renderEventsList(container, modalState) {
  * Update button states based on modal state
  */
 function updateButtonStates(modalState) {
-    const includeAllBtn = document.getElementById('ss-events-include-all');
-    const excludeAllBtn = document.getElementById('ss-events-exclude-all');
-    const regenerateBtn = document.getElementById('ss-events-regenerate');
-    const confirmBtn = document.getElementById('ss-events-confirm');
+    const includeAllBtn = document.getElementById('shardwright-events-include-all');
+    const excludeAllBtn = document.getElementById('shardwright-events-exclude-all');
+    const regenerateBtn = document.getElementById('shardwright-events-regenerate');
+    const confirmBtn = document.getElementById('shardwright-events-confirm');
 
     const disabled = modalState.isRegenerating;
 
@@ -133,19 +133,19 @@ export async function openDraftingModal(events, messages, startIndex, endIndex, 
     const extractionContext = { messages, startIndex, endIndex, settings };
 
     const modalHtml = `
-        <div class="ss-events-modal">
-            <div class="ss-events-header">
+        <div class="shardwright-events-modal">
+            <div class="shardwright-events-header">
                 <h3>Drafting Mode</h3>
                 <p>Review and edit events before generating the summary. Uncheck events to exclude them.</p>
             </div>
 
-            <div class="ss-events-controls-top">
-                <input id="ss-events-include-all" type="button" class="menu_button" value="Include All" />
-                <input id="ss-events-exclude-all" type="button" class="menu_button" value="Exclude All" />
-                <input id="ss-events-regenerate" type="button" class="menu_button" value="Regenerate" />
+            <div class="shardwright-events-controls-top">
+                <input id="shardwright-events-include-all" type="button" class="menu_button" value="Include All" />
+                <input id="shardwright-events-exclude-all" type="button" class="menu_button" value="Exclude All" />
+                <input id="shardwright-events-regenerate" type="button" class="menu_button" value="Regenerate" />
             </div>
 
-            <div class="ss-events-list" id="ss-events-list-container">
+            <div class="shardwright-events-list" id="shardwright-events-list-container">
                 <!-- Events rendered here -->
             </div>
         </div>
@@ -169,13 +169,13 @@ export async function openDraftingModal(events, messages, startIndex, endIndex, 
 
     // Set up event listeners after popup is shown
     setTimeout(() => {
-        const listContainer = document.getElementById('ss-events-list-container');
+        const listContainer = document.getElementById('shardwright-events-list-container');
         if (listContainer) {
             renderEventsList(listContainer, modalState);
         }
 
         // Include All button
-        const includeAllBtn = document.getElementById('ss-events-include-all');
+        const includeAllBtn = document.getElementById('shardwright-events-include-all');
         if (includeAllBtn) {
             includeAllBtn.addEventListener('click', () => {
                 modalState.events.forEach(event => {
@@ -187,7 +187,7 @@ export async function openDraftingModal(events, messages, startIndex, endIndex, 
         }
 
         // Exclude All button
-        const excludeAllBtn = document.getElementById('ss-events-exclude-all');
+        const excludeAllBtn = document.getElementById('shardwright-events-exclude-all');
         if (excludeAllBtn) {
             excludeAllBtn.addEventListener('click', () => {
                 modalState.events.forEach(event => {
@@ -199,7 +199,7 @@ export async function openDraftingModal(events, messages, startIndex, endIndex, 
         }
 
         // Regenerate button
-        const regenerateBtn = document.getElementById('ss-events-regenerate');
+        const regenerateBtn = document.getElementById('shardwright-events-regenerate');
         if (regenerateBtn) {
             regenerateBtn.addEventListener('click', async () => {
                 if (modalState.isRegenerating) return;

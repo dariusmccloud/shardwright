@@ -1,0 +1,306 @@
+{
+  "pluginId": "shardwright-memory",
+  "canonicalRoot": "core",
+  "generatedBy": "tools/server-plugin/package-shardwright-memory.mjs",
+  "staticPayloadFiles": [
+    "package.json",
+    "README.md",
+    "index.js",
+    "core.js",
+    "architectural-replay.js",
+    "interpretive.js",
+    "subject-scoped-proposal-policy.js",
+    "promotion.js",
+    "rebuild.js",
+    "upgrade.js",
+    "schema.js",
+    "architectural-intermediate-validator.js",
+    "architectural-intermediate-validator.generated.cjs",
+    "sqlite-node.js",
+    "sqlite-bun.js"
+  ],
+  "sharedModules": [
+    {
+      "canonicalRelativePath": "core/api/structured-output.js",
+      "packagedRelativePath": "lib/core/api/structured-output.js",
+      "sha256": "5fb1943d2022e7d64aeaee7ec9fe50f5861c235c6c064f33fcc50ccc05bbe049"
+    },
+    {
+      "canonicalRelativePath": "core/chat/archive-policy.js",
+      "packagedRelativePath": "lib/core/chat/archive-policy.js",
+      "sha256": "7c1dc6fb6a66cbb02e56d48ff276cf17c2226199ae840df750e6979faf53f580"
+    },
+    {
+      "canonicalRelativePath": "core/summarization/architectural-authority-store.js",
+      "packagedRelativePath": "lib/core/summarization/architectural-authority-store.js",
+      "sha256": "4ece99b99dce8b5eb81d16065026a018d379ea4fc29b79a496e7314fd53d53f1"
+    },
+    {
+      "canonicalRelativePath": "core/summarization/architectural-dialogue-claim-extractor.js",
+      "packagedRelativePath": "lib/core/summarization/architectural-dialogue-claim-extractor.js",
+      "sha256": "69c8d4287d998d555af7c82785aaf188a5fba6c7cd1ac1bd7041765889f562ff"
+    },
+    {
+      "canonicalRelativePath": "core/summarization/architectural-finalized-schema-v1.json",
+      "packagedRelativePath": "lib/core/summarization/architectural-finalized-schema-v1.json",
+      "sha256": "681b721225c02078d567861a5df044ce30329d0e94555399a9761394d0b92ced"
+    },
+    {
+      "canonicalRelativePath": "core/summarization/architectural-finalized-semantic.js",
+      "packagedRelativePath": "lib/core/summarization/architectural-finalized-semantic.js",
+      "sha256": "3ddaeaa35d6b215a3ee684a1893871127c2692664dceba6550b632800d9a3396"
+    },
+    {
+      "canonicalRelativePath": "core/summarization/architectural-intermediate-schema-v1.json",
+      "packagedRelativePath": "lib/core/summarization/architectural-intermediate-schema-v1.json",
+      "sha256": "e745057f8a89c78398e42c7903751f42c5fd17e7ccf702e28b6b8fad2d7ae6c3"
+    },
+    {
+      "canonicalRelativePath": "core/summarization/architectural-intermediate-validator.generated.js",
+      "packagedRelativePath": "lib/core/summarization/architectural-intermediate-validator.generated.js",
+      "sha256": "225ac9a3dfcd2eb133aa01bfe838ea99172d34869d6bf3b4c6e1f4d40b87e055"
+    },
+    {
+      "canonicalRelativePath": "core/summarization/architectural-intermediate-validator.js",
+      "packagedRelativePath": "lib/core/summarization/architectural-intermediate-validator.js",
+      "sha256": "8cb08d4fcd57ea575ea0a91af4ce562b31fc901fe666157f4d9b1341595b3b0b"
+    },
+    {
+      "canonicalRelativePath": "core/summarization/architectural-rebuild-protocol.js",
+      "packagedRelativePath": "lib/core/summarization/architectural-rebuild-protocol.js",
+      "sha256": "1bb19ed4ea55cc71e0f5849ad00936e1e69d07b47712bf4f28f493e8763c7e8a"
+    },
+    {
+      "canonicalRelativePath": "core/summarization/architectural-record-parser.js",
+      "packagedRelativePath": "lib/core/summarization/architectural-record-parser.js",
+      "sha256": "0330bbb7fb3f98348a21810ee20c317daf98f854ac158268e9d4a21e271230c9"
+    },
+    {
+      "canonicalRelativePath": "core/summarization/architectural-semantic-prompt.js",
+      "packagedRelativePath": "lib/core/summarization/architectural-semantic-prompt.js",
+      "sha256": "cd215c673ee76e7c66028ad8a56dceb7e524fe04833f5e6e098acdbb894c0d87"
+    },
+    {
+      "canonicalRelativePath": "core/summarization/architectural-semantic-renderer.js",
+      "packagedRelativePath": "lib/core/summarization/architectural-semantic-renderer.js",
+      "sha256": "382ca3822138b5f87c500aa63c87212d73eeb96fd232e7a84d9d11a01cf50536"
+    },
+    {
+      "canonicalRelativePath": "core/summarization/architectural-semantic-replay-artifact.js",
+      "packagedRelativePath": "lib/core/summarization/architectural-semantic-replay-artifact.js",
+      "sha256": "afcdac0e13b1a448968cff08ef2abbce5ddf1e06cf9a72a67d292514a547739f"
+    },
+    {
+      "canonicalRelativePath": "core/summarization/architectural-semantic-request.js",
+      "packagedRelativePath": "lib/core/summarization/architectural-semantic-request.js",
+      "sha256": "003df837edcdcc1edabd8e94ceff267a130c29c485cc49b23bba60edc65b511e"
+    },
+    {
+      "canonicalRelativePath": "core/summarization/architectural-sharder-contract.js",
+      "packagedRelativePath": "lib/core/summarization/architectural-sharder-contract.js",
+      "sha256": "05682f2476ed4ec40ebbdc640a5a67dd0ff11770c89d3c01382d1ff459b01f08"
+    },
+    {
+      "canonicalRelativePath": "core/summarization/architectural-sharder-format.js",
+      "packagedRelativePath": "lib/core/summarization/architectural-sharder-format.js",
+      "sha256": "29f3563e2e7ccc08fb7ca0f3c54b203b80cc41f1e9ed5a6f0a7c9b861d8d01fa"
+    },
+    {
+      "canonicalRelativePath": "core/summarization/architectural-sharder-shell.js",
+      "packagedRelativePath": "lib/core/summarization/architectural-sharder-shell.js",
+      "sha256": "514abf15d0cf5497a97463a5ca6caed670acd22d4b0c2a3536b6b4f8e7deb561"
+    },
+    {
+      "canonicalRelativePath": "core/summarization/crypto-compat.js",
+      "packagedRelativePath": "lib/core/summarization/crypto-compat.js",
+      "sha256": "ba4006bf4023025eb8acd6d955c632c0231e3866601a415822936596a2c86a2d"
+    },
+    {
+      "canonicalRelativePath": "core/summarization/message-identity-core.js",
+      "packagedRelativePath": "lib/core/summarization/message-identity-core.js",
+      "sha256": "9fdb4cc749ebc9105b969f2d4adcffe4dbd8c9fa0ad3c4259fa1a21109421b00"
+    },
+    {
+      "canonicalRelativePath": "core/summarization/message-identity-schema.js",
+      "packagedRelativePath": "lib/core/summarization/message-identity-schema.js",
+      "sha256": "e6a7e5c76b1de571e41f284ce55a93ea124b4286c0a609cc48c204a3dbee9855"
+    },
+    {
+      "canonicalRelativePath": "core/summarization/saved-shard-identity.js",
+      "packagedRelativePath": "lib/core/summarization/saved-shard-identity.js",
+      "sha256": "a0a2c02f2590b735ec38483dd35446ec2a949f970fde04798a838a1cc89bf0de"
+    },
+    {
+      "canonicalRelativePath": "core/summarization/shard-integrity-core.js",
+      "packagedRelativePath": "lib/core/summarization/shard-integrity-core.js",
+      "sha256": "2418216e3dd8c7b91579f96426bd9fe5c17edf667a314bc2e34b3c111fc2c2f5"
+    },
+    {
+      "canonicalRelativePath": "core/summarization/sharder-section-registry.js",
+      "packagedRelativePath": "lib/core/summarization/sharder-section-registry.js",
+      "sha256": "8f48ae17969de26fe3cbb79933eac98e3698684d1255c8e12d19d455de61b9a2"
+    }
+  ],
+  "payloadFiles": [
+    {
+      "relativePath": "architectural-intermediate-validator.generated.cjs",
+      "sha256": "b5b25abea315c449ee1a5a479af1b8120a33fa30978cb59a79484e8dc16ec11f"
+    },
+    {
+      "relativePath": "architectural-intermediate-validator.js",
+      "sha256": "5c31e9f5320de0817886c4089cb60c1700266ba6d7b332f9b054250592ab9544"
+    },
+    {
+      "relativePath": "architectural-replay.js",
+      "sha256": "133168742c4c2e2c2fb33491db6bc1bb1abb0db708c4ccdae56ac8a93257340e"
+    },
+    {
+      "relativePath": "core.js",
+      "sha256": "744e34c2a2839e8c60d0d1b9328fc82d2862d56117eed09cc859b2723167c9d3"
+    },
+    {
+      "relativePath": "index.js",
+      "sha256": "c8788f99030c834c412faf60f907132132c5e0299fbed2a0fbd1bcbf568ab802"
+    },
+    {
+      "relativePath": "interpretive.js",
+      "sha256": "a5c6c72e587238dd50e0cdc01b2474a99317d02a896f1f76163dbcce1b6d2a4e"
+    },
+    {
+      "relativePath": "lib/core/api/structured-output.js",
+      "sha256": "5fb1943d2022e7d64aeaee7ec9fe50f5861c235c6c064f33fcc50ccc05bbe049"
+    },
+    {
+      "relativePath": "lib/core/chat/archive-policy.js",
+      "sha256": "7c1dc6fb6a66cbb02e56d48ff276cf17c2226199ae840df750e6979faf53f580"
+    },
+    {
+      "relativePath": "lib/core/summarization/architectural-authority-store.js",
+      "sha256": "4ece99b99dce8b5eb81d16065026a018d379ea4fc29b79a496e7314fd53d53f1"
+    },
+    {
+      "relativePath": "lib/core/summarization/architectural-dialogue-claim-extractor.js",
+      "sha256": "69c8d4287d998d555af7c82785aaf188a5fba6c7cd1ac1bd7041765889f562ff"
+    },
+    {
+      "relativePath": "lib/core/summarization/architectural-finalized-schema-v1.json",
+      "sha256": "681b721225c02078d567861a5df044ce30329d0e94555399a9761394d0b92ced"
+    },
+    {
+      "relativePath": "lib/core/summarization/architectural-finalized-semantic.js",
+      "sha256": "3ddaeaa35d6b215a3ee684a1893871127c2692664dceba6550b632800d9a3396"
+    },
+    {
+      "relativePath": "lib/core/summarization/architectural-intermediate-schema-v1.json",
+      "sha256": "e745057f8a89c78398e42c7903751f42c5fd17e7ccf702e28b6b8fad2d7ae6c3"
+    },
+    {
+      "relativePath": "lib/core/summarization/architectural-intermediate-validator.generated.js",
+      "sha256": "225ac9a3dfcd2eb133aa01bfe838ea99172d34869d6bf3b4c6e1f4d40b87e055"
+    },
+    {
+      "relativePath": "lib/core/summarization/architectural-intermediate-validator.js",
+      "sha256": "8cb08d4fcd57ea575ea0a91af4ce562b31fc901fe666157f4d9b1341595b3b0b"
+    },
+    {
+      "relativePath": "lib/core/summarization/architectural-rebuild-protocol.js",
+      "sha256": "1bb19ed4ea55cc71e0f5849ad00936e1e69d07b47712bf4f28f493e8763c7e8a"
+    },
+    {
+      "relativePath": "lib/core/summarization/architectural-record-parser.js",
+      "sha256": "0330bbb7fb3f98348a21810ee20c317daf98f854ac158268e9d4a21e271230c9"
+    },
+    {
+      "relativePath": "lib/core/summarization/architectural-semantic-prompt.js",
+      "sha256": "cd215c673ee76e7c66028ad8a56dceb7e524fe04833f5e6e098acdbb894c0d87"
+    },
+    {
+      "relativePath": "lib/core/summarization/architectural-semantic-renderer.js",
+      "sha256": "382ca3822138b5f87c500aa63c87212d73eeb96fd232e7a84d9d11a01cf50536"
+    },
+    {
+      "relativePath": "lib/core/summarization/architectural-semantic-replay-artifact.js",
+      "sha256": "afcdac0e13b1a448968cff08ef2abbce5ddf1e06cf9a72a67d292514a547739f"
+    },
+    {
+      "relativePath": "lib/core/summarization/architectural-semantic-request.js",
+      "sha256": "003df837edcdcc1edabd8e94ceff267a130c29c485cc49b23bba60edc65b511e"
+    },
+    {
+      "relativePath": "lib/core/summarization/architectural-sharder-contract.js",
+      "sha256": "05682f2476ed4ec40ebbdc640a5a67dd0ff11770c89d3c01382d1ff459b01f08"
+    },
+    {
+      "relativePath": "lib/core/summarization/architectural-sharder-format.js",
+      "sha256": "29f3563e2e7ccc08fb7ca0f3c54b203b80cc41f1e9ed5a6f0a7c9b861d8d01fa"
+    },
+    {
+      "relativePath": "lib/core/summarization/architectural-sharder-shell.js",
+      "sha256": "514abf15d0cf5497a97463a5ca6caed670acd22d4b0c2a3536b6b4f8e7deb561"
+    },
+    {
+      "relativePath": "lib/core/summarization/crypto-compat.js",
+      "sha256": "ba4006bf4023025eb8acd6d955c632c0231e3866601a415822936596a2c86a2d"
+    },
+    {
+      "relativePath": "lib/core/summarization/message-identity-core.js",
+      "sha256": "9fdb4cc749ebc9105b969f2d4adcffe4dbd8c9fa0ad3c4259fa1a21109421b00"
+    },
+    {
+      "relativePath": "lib/core/summarization/message-identity-schema.js",
+      "sha256": "e6a7e5c76b1de571e41f284ce55a93ea124b4286c0a609cc48c204a3dbee9855"
+    },
+    {
+      "relativePath": "lib/core/summarization/saved-shard-identity.js",
+      "sha256": "a0a2c02f2590b735ec38483dd35446ec2a949f970fde04798a838a1cc89bf0de"
+    },
+    {
+      "relativePath": "lib/core/summarization/shard-integrity-core.js",
+      "sha256": "2418216e3dd8c7b91579f96426bd9fe5c17edf667a314bc2e34b3c111fc2c2f5"
+    },
+    {
+      "relativePath": "lib/core/summarization/sharder-section-registry.js",
+      "sha256": "8f48ae17969de26fe3cbb79933eac98e3698684d1255c8e12d19d455de61b9a2"
+    },
+    {
+      "relativePath": "lib/packaged-shared-manifest.json",
+      "sha256": "ff1a866297805909abe025fa62d1193abded90b622d627a129e2c8e19bd5a5ef"
+    },
+    {
+      "relativePath": "package.json",
+      "sha256": "67adf49ca0fa88bd1ca07acacfd7fe4c653d826b02c681c83287dde18221780d"
+    },
+    {
+      "relativePath": "promotion.js",
+      "sha256": "30cef3b22a29abb4b2369d101eb5563d7842cf2c777148ecf22d24f4d6fd0e6a"
+    },
+    {
+      "relativePath": "README.md",
+      "sha256": "4f934428857a716c45271ff810e787a4ee5ca98039873ce73791cacc6ede4ef5"
+    },
+    {
+      "relativePath": "rebuild.js",
+      "sha256": "fe8c1402b5fdcc940025afdc52929961ed1969c4b1b73a08905f690aaecbad63"
+    },
+    {
+      "relativePath": "schema.js",
+      "sha256": "e994ea2eb745d0660c0d1053e4ac50da75df2d42334a2312442f8778c0590599"
+    },
+    {
+      "relativePath": "sqlite-bun.js",
+      "sha256": "9d91ec2f0f1ad350ecebcc38f77a93590691d02c5fec8f7e9023c0f2f0bbff62"
+    },
+    {
+      "relativePath": "sqlite-node.js",
+      "sha256": "1a8150a08da5f98b3fa175031edb2ae3429c5efea727198d4769b7cbb26c662e"
+    },
+    {
+      "relativePath": "subject-scoped-proposal-policy.js",
+      "sha256": "699d1f1d3211153c260bea3dc0ad55867fd85e284b7be3ef839931a3b808431d"
+    },
+    {
+      "relativePath": "upgrade.js",
+      "sha256": "c650da6b0f9a97013a56ed6e7b1298f302c3422f213d8762d98b681b4757dd04"
+    }
+  ]
+}

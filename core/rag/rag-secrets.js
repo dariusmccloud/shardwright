@@ -7,7 +7,7 @@ import { getRequestHeaders } from '../../../../../../script.js';
 import { ragLog } from '../logger.js';
 
 const SECRET_KEY = 'api_key_custom';
-const EMBEDDING_LABEL = 'Summary Sharder: RAG Embedding Key';
+const EMBEDDING_LABEL = 'Shardwright: RAG Embedding Key';
 
 /**
  * @param {string} secretId
@@ -215,7 +215,7 @@ export async function resolveRagEmbeddingApiKey(ragSettings) {
 // Re-ranker API key helpers (mirrors embedding key pattern)
 // ---------------------------------------------------------------------------
 
-const RERANKER_LABEL = 'Summary Sharder: RAG Re-ranker Key';
+const RERANKER_LABEL = 'Shardwright: RAG Re-ranker Key';
 
 /**
  * Store or replace the RAG re-ranker API key securely.

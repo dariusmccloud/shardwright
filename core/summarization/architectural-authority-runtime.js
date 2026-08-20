@@ -29,11 +29,11 @@ import {
 
 const PROJECTION_METADATA_SCHEMA_VERSION = 2;
 
-function getSummarySharderMetadataRoot(root = chat_metadata) {
-    if (!root.summary_sharder) {
-        root.summary_sharder = {};
+function getShardwrightMetadataRoot(root = chat_metadata) {
+    if (!root.shardwright) {
+        root.shardwright = {};
     }
-    return root.summary_sharder;
+    return root.shardwright;
 }
 
 function normalizeChatId(chatId) {
@@ -46,7 +46,7 @@ function projectionKeyFromIdentity({ source = 'system', uid = null, startIndex =
 }
 
 function ensureProjectionStore(root = chat_metadata) {
-    const ss = getSummarySharderMetadataRoot(root);
+    const ss = getShardwrightMetadataRoot(root);
     if (!ss.architecturalProjectionRegistry || typeof ss.architecturalProjectionRegistry !== 'object') {
         ss.architecturalProjectionRegistry = {};
     }
@@ -54,7 +54,7 @@ function ensureProjectionStore(root = chat_metadata) {
 }
 
 function ensureServerState(root = chat_metadata) {
-    const ss = getSummarySharderMetadataRoot(root);
+    const ss = getShardwrightMetadataRoot(root);
     if (!ss.architecturalAuthorityServerState || typeof ss.architecturalAuthorityServerState !== 'object') {
         ss.architecturalAuthorityServerState = {};
     }
@@ -94,13 +94,13 @@ export function getArchitecturalProjectionMetadata(root, identity) {
 }
 
 export function getArchitecturalChatBinding(root = chat_metadata) {
-    const ss = getSummarySharderMetadataRoot(root);
+    const ss = getShardwrightMetadataRoot(root);
     return ss.architecturalMemoryBinding || null;
 }
 
 export async function ensureArchitecturalChatScopeBinding(chatId, options = {}) {
-    const ss = getSummarySharderMetadataRoot(chat_metadata);
-    const binding = await bindChatToArchitecturalMemoryScope({ summary_sharder: ss }, {
+    const ss = getShardwrightMetadataRoot(chat_metadata);
+    const binding = await bindChatToArchitecturalMemoryScope({ shardwright: ss }, {
         chatId,
         requestedScopeId: options.memoryScopeId || null,
         requestedScopeAlias: options.scopeAlias || '',

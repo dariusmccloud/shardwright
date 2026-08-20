@@ -1,5 +1,5 @@
 /**
- * Abort Controller Manager for Summary Sharder
+ * Abort Controller Manager for Shardwright
  * Manages abort signals for all summarization operations
  */
 

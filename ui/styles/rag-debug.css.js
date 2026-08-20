@@ -1,103 +1,103 @@
 export const RAG_DEBUG_CSS = `
-.ss-rag-debug-modal {
+.shardwright-rag-debug-modal {
     max-height: 82vh;
 }
 
-.ss-rag-debug-tabs {
+.shardwright-rag-debug-tabs {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
     margin-bottom: 10px;
 }
 
-.ss-rag-debug-tab {
-    border: 1px solid var(--ss-border);
-    background: var(--ss-bg-secondary);
-    color: var(--ss-text-secondary);
+.shardwright-rag-debug-tab {
+    border: 1px solid var(--shardwright-border);
+    background: var(--shardwright-bg-secondary);
+    color: var(--shardwright-text-secondary);
     border-radius: 6px;
     padding: 6px 10px;
     cursor: pointer;
 }
 
-.ss-rag-debug-tab.active {
-    color: var(--ss-text-primary);
-    border-color: var(--ss-primary);
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--ss-primary) 30%, transparent);
+.shardwright-rag-debug-tab.active {
+    color: var(--shardwright-text-primary);
+    border-color: var(--shardwright-primary);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--shardwright-primary) 30%, transparent);
 }
 
-.ss-rag-debug-tab-panel {
+.shardwright-rag-debug-tab-panel {
     display: none;
 }
 
-.ss-rag-debug-tab-panel.active {
+.shardwright-rag-debug-tab-panel.active {
     display: block;
 }
 
-.ss-rag-debug-health-grid {
+.shardwright-rag-debug-health-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
     gap: 8px;
 }
 
-.ss-rag-debug-health-card {
-    border: 1px solid var(--ss-border);
+.shardwright-rag-debug-health-card {
+    border: 1px solid var(--shardwright-border);
     border-radius: 6px;
-    background: var(--ss-bg-primary);
+    background: var(--shardwright-bg-primary);
     padding: 10px;
 }
 
-.ss-rag-debug-health-card.ok {
-    border-color: color-mix(in srgb, var(--ss-success) 40%, var(--ss-border));
+.shardwright-rag-debug-health-card.ok {
+    border-color: color-mix(in srgb, var(--shardwright-success) 40%, var(--shardwright-border));
 }
 
-.ss-rag-debug-health-card.warn {
-    border-color: color-mix(in srgb, var(--ss-warning) 45%, var(--ss-border));
+.shardwright-rag-debug-health-card.warn {
+    border-color: color-mix(in srgb, var(--shardwright-warning) 45%, var(--shardwright-border));
 }
 
-.ss-rag-debug-health-card.error {
-    border-color: color-mix(in srgb, var(--ss-error) 45%, var(--ss-border));
+.shardwright-rag-debug-health-card.error {
+    border-color: color-mix(in srgb, var(--shardwright-error) 45%, var(--shardwright-border));
 }
 
-.ss-rag-debug-health-title {
-    color: var(--ss-text-primary);
+.shardwright-rag-debug-health-title {
+    color: var(--shardwright-text-primary);
     font-weight: 700;
 }
 
-.ss-rag-debug-health-state {
-    color: var(--ss-text-secondary);
+.shardwright-rag-debug-health-state {
+    color: var(--shardwright-text-secondary);
     font-size: 12px;
     margin-top: 4px;
 }
 
-.ss-rag-debug-health-meta {
-    color: var(--ss-text-muted);
+.shardwright-rag-debug-health-meta {
+    color: var(--shardwright-text-muted);
     font-size: 11px;
     margin-top: 6px;
 }
 
-.ss-rag-debug-block {
+.shardwright-rag-debug-block {
     margin-top: 8px;
-    border: 1px solid var(--ss-border);
+    border: 1px solid var(--shardwright-border);
     border-radius: 6px;
-    background: var(--ss-bg-primary);
+    background: var(--shardwright-bg-primary);
     padding: 8px;
 }
 
-.ss-rag-debug-list {
+.shardwright-rag-debug-list {
     display: flex;
     flex-direction: column;
     gap: 8px;
     margin-top: 8px;
 }
 
-.ss-rag-debug-item {
-    border: 1px solid var(--ss-border);
+.shardwright-rag-debug-item {
+    border: 1px solid var(--shardwright-border);
     border-radius: 6px;
-    background: var(--ss-bg-primary);
+    background: var(--shardwright-bg-primary);
     padding: 6px 8px;
 }
 
-.ss-rag-debug-item summary {
+.shardwright-rag-debug-item summary {
     cursor: pointer;
     display: grid;
     grid-template-columns: auto auto minmax(0, 1fr);
@@ -105,57 +105,57 @@ export const RAG_DEBUG_CSS = `
     align-items: center;
 }
 
-.ss-rag-debug-item summary > * {
+.shardwright-rag-debug-item summary > * {
     min-width: 0;
 }
 
-.ss-rag-debug-item-snippet {
+.shardwright-rag-debug-item-snippet {
     overflow-wrap: anywhere;
 }
 
-.ss-rag-debug-item-snippet.no-score {
+.shardwright-rag-debug-item-snippet.no-score {
     grid-column: 2 / -1;
 }
 
-.ss-rag-debug-item .badge {
-    color: var(--ss-primary);
+.shardwright-rag-debug-item .badge {
+    color: var(--shardwright-primary);
     font-weight: 700;
 }
 
-.ss-rag-debug-item-body {
+.shardwright-rag-debug-item-body {
     margin-top: 8px;
     display: grid;
     gap: 8px;
 }
 
-.ss-rag-debug-item-body pre {
+.shardwright-rag-debug-item-body pre {
     margin: 0;
     white-space: pre-wrap;
     word-break: break-word;
     font-size: 12px;
     line-height: 1.4;
-    border: 1px solid var(--ss-border);
+    border: 1px solid var(--shardwright-border);
     border-radius: 6px;
-    background: var(--ss-bg-secondary);
+    background: var(--shardwright-bg-secondary);
     padding: 8px;
     max-height: 240px;
     overflow: auto;
 }
 
-.ss-rag-debug-split {
+.shardwright-rag-debug-split {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
 }
 
-.ss-rag-debug-stage {
-    border: 1px solid var(--ss-border);
+.shardwright-rag-debug-stage {
+    border: 1px solid var(--shardwright-border);
     border-radius: 6px;
-    background: var(--ss-bg-primary);
+    background: var(--shardwright-bg-primary);
     padding: 6px 8px;
 }
 
-.ss-rag-debug-stage summary {
+.shardwright-rag-debug-stage summary {
     cursor: pointer;
     display: grid;
     grid-template-columns: auto 1fr auto auto;
@@ -163,38 +163,38 @@ export const RAG_DEBUG_CSS = `
     align-items: center;
 }
 
-.ss-rag-debug-stage summary > * {
+.shardwright-rag-debug-stage summary > * {
     min-width: 0;
 }
 
-.ss-rag-debug-stage summary > span:nth-child(2),
-.ss-rag-debug-stage summary > span:nth-child(4) {
+.shardwright-rag-debug-stage summary > span:nth-child(2),
+.shardwright-rag-debug-stage summary > span:nth-child(4) {
     overflow-wrap: anywhere;
 }
 
-.ss-rag-debug-stage .badge {
-    background: color-mix(in srgb, var(--ss-primary) 18%, transparent);
-    border: 1px solid color-mix(in srgb, var(--ss-primary) 50%, transparent);
-    color: var(--ss-primary);
+.shardwright-rag-debug-stage .badge {
+    background: color-mix(in srgb, var(--shardwright-primary) 18%, transparent);
+    border: 1px solid color-mix(in srgb, var(--shardwright-primary) 50%, transparent);
+    color: var(--shardwright-primary);
     border-radius: 999px;
     min-width: 20px;
     text-align: center;
     padding: 1px 6px;
 }
 
-.ss-rag-debug-row {
+.shardwright-rag-debug-row {
     display: grid;
     grid-template-columns: auto 1fr;
     gap: 10px;
     padding: 4px 0;
-    border-bottom: 1px dashed color-mix(in srgb, var(--ss-border) 80%, transparent);
+    border-bottom: 1px dashed color-mix(in srgb, var(--shardwright-border) 80%, transparent);
 }
 
-.ss-rag-debug-row:last-child {
+.shardwright-rag-debug-row:last-child {
     border-bottom: none;
 }
 
-.ss-rag-debug-score-step {
+.shardwright-rag-debug-score-step {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     display: grid;
     grid-template-columns: 150px 1fr;
@@ -202,7 +202,7 @@ export const RAG_DEBUG_CSS = `
     font-size: 12px;
 }
 
-.ss-rag-debug-bar-row {
+.shardwright-rag-debug-bar-row {
     display: grid;
     grid-template-columns: 140px 1fr auto;
     gap: 8px;
@@ -210,38 +210,38 @@ export const RAG_DEBUG_CSS = `
     margin: 4px 0;
 }
 
-.ss-rag-debug-bar-row .name,
-.ss-rag-debug-bar-row .count {
+.shardwright-rag-debug-bar-row .name,
+.shardwright-rag-debug-bar-row .count {
     font-size: 12px;
-    color: var(--ss-text-secondary);
+    color: var(--shardwright-text-secondary);
 }
 
-.ss-rag-debug-bar-row .bar {
+.shardwright-rag-debug-bar-row .bar {
     position: relative;
     height: 10px;
-    background: color-mix(in srgb, var(--ss-bg-secondary) 85%, transparent);
-    border: 1px solid var(--ss-border);
+    background: color-mix(in srgb, var(--shardwright-bg-secondary) 85%, transparent);
+    border: 1px solid var(--shardwright-border);
     border-radius: 999px;
     overflow: hidden;
 }
 
-.ss-rag-debug-bar-fill {
+.shardwright-rag-debug-bar-fill {
     position: absolute;
     left: 0;
     top: 0;
     bottom: 0;
-    background: color-mix(in srgb, var(--ss-primary) 70%, transparent);
+    background: color-mix(in srgb, var(--shardwright-primary) 70%, transparent);
     width: 0;
 }
 
-.ss-rag-debug-injection-preview {
+.shardwright-rag-debug-injection-preview {
     margin-top: 8px;
     white-space: pre-wrap;
     word-break: break-word;
-    border: 1px solid color-mix(in srgb, var(--ss-primary) 45%, var(--ss-border));
+    border: 1px solid color-mix(in srgb, var(--shardwright-primary) 45%, var(--shardwright-border));
     border-left-width: 4px;
     border-radius: 6px;
-    background: var(--ss-bg-primary);
+    background: var(--shardwright-bg-primary);
     padding: 10px;
     min-height: 80px;
     max-height: 260px;
@@ -249,11 +249,11 @@ export const RAG_DEBUG_CSS = `
 }
 
 @media (max-width: 600px) {
-    .ss-rag-debug-split {
+    .shardwright-rag-debug-split {
         grid-template-columns: 1fr;
     }
 
-    .ss-rag-debug-stage summary {
+    .shardwright-rag-debug-stage summary {
         grid-template-columns: auto 1fr;
     }
 }

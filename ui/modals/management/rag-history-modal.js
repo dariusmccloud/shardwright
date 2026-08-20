@@ -30,7 +30,7 @@ function formatTimestamp(ts) {
 
 function describeInjectionTarget(data) {
     if (data.injectionMode === 'variable') {
-        return `Chat variable: <code>{{getvar::${escapeHtml(data.variableName || 'ss_rag_memory')}}}</code>`;
+        return `Chat variable: <code>{{getvar::${escapeHtml(data.variableName || 'shardwright_rag_memory')}}}</code>`;
     }
     const posLabels = { 0: 'Before Main Prompt', 1: 'After Main Prompt', 2: 'In-chat' };
     const posLabel = posLabels[data.position] ?? `Position ${data.position}`;
@@ -39,22 +39,22 @@ function describeInjectionTarget(data) {
 
 function renderEntries(entries) {
     if (!Array.isArray(entries) || entries.length === 0) {
-        return '<p class="ss-hint ss-rag-inline-hint">No entries were injected.</p>';
+        return '<p class="shardwright-hint shardwright-rag-inline-hint">No entries were injected.</p>';
     }
     return entries.map((item, idx) => {
         const score = Number(item?.score);
         const hasScore = Number.isFinite(score);
-        const scoreSpan = hasScore ? `<span class="ss-rag-debug-item-score">score = ${score.toFixed(4)}</span>` : '';
-        const snippetClass = hasScore ? 'ss-rag-debug-item-snippet' : 'ss-rag-debug-item-snippet no-score';
+        const scoreSpan = hasScore ? `<span class="shardwright-rag-debug-item-score">score = ${score.toFixed(4)}</span>` : '';
+        const snippetClass = hasScore ? 'shardwright-rag-debug-item-snippet' : 'shardwright-rag-debug-item-snippet no-score';
         const behavior = String(item?.metadata?.chunkBehavior || '').trim().toLowerCase() || 'legacy';
         const scene = String(item?.metadata?.sceneCode || '').trim() || '(none)';
-        return `<details class="ss-rag-debug-item">
+        return `<details class="shardwright-rag-debug-item">
             <summary>
                 <span class="badge">${idx + 1}</span>
                 ${scoreSpan}
                 <span class="${snippetClass}">${escapeHtml(truncate(item?.text || '', 140))}</span>
             </summary>
-            <div class="ss-rag-debug-item-body">
+            <div class="shardwright-rag-debug-item-body">
                 <div><strong>behavior:</strong> ${escapeHtml(behavior)}</div>
                 <div><strong>scene:</strong> ${escapeHtml(scene)}</div>
                 <div><strong>importance:</strong> ${escapeHtml(String(item?.metadata?.importance ?? 'n/a'))}</div>
@@ -65,20 +65,36 @@ function renderEntries(entries) {
     }).join('');
 }
 
+function renderArchitecturalDiagnostics(diagnostics) {
+    if (!Array.isArray(diagnostics) || diagnostics.length === 0) {
+        return '<p class="shardwright-hint shardwright-rag-inline-hint">No Architectural retrieval exclusions were recorded.</p>';
+    }
+
+    const counts = new Map();
+    for (const item of diagnostics) {
+        const code = String(item?.code || 'ARCH_RAG_RESULT_EXCLUDED').trim();
+        counts.set(code, (counts.get(code) || 0) + 1);
+    }
+    return `<ul>${[...counts.entries()]
+        .map(([code, count]) => `<li><code>${escapeHtml(code)}</code>: ${count}</li>`)
+        .join('')}</ul>`;
+}
+
 function renderModalHtml(data) {
     if (!data) {
-        return `<div class="ss-rag-debug-modal">
+        return `<div class="shardwright-rag-debug-modal">
             <h3>RAG History</h3>
-            <p class="ss-hint ss-rag-inline-hint">No RAG injection has been performed yet this session.</p>
+            <p class="shardwright-hint shardwright-rag-inline-hint">No RAG injection has been performed yet this session.</p>
         </div>`;
     }
 
-    return `<div class="ss-rag-debug-modal">
+    return `<div class="shardwright-rag-debug-modal">
         <h3>RAG History — Last Injection</h3>
 
-        <div class="ss-rag-debug-info-grid">
+        <div class="shardwright-rag-debug-info-grid">
             <div><strong>Time:</strong> ${escapeHtml(formatTimestamp(data.timestamp))}</div>
             <div><strong>Mode:</strong> ${escapeHtml(data.mode)}</div>
+            <div><strong>Profile:</strong> ${escapeHtml(data.profile || 'n/a')}</div>
             <div><strong>Backend:</strong> ${escapeHtml(data.backend)}</div>
             <div><strong>Scoring:</strong> ${escapeHtml(data.scoringMethod)}</div>
             <div><strong>Threshold:</strong> ${escapeHtml(String(data.threshold ?? 'n/a'))}</div>
@@ -86,15 +102,15 @@ function renderModalHtml(data) {
             <div><strong>Entries:</strong> ${data.entries?.length || 0}</div>
         </div>
 
-        <div class="ss-rag-debug-info-grid" style="margin-top:6px;">
+        <div class="shardwright-rag-debug-info-grid" style="margin-top:6px;">
             <div><strong>Injected to:</strong> ${describeInjectionTarget(data)}</div>
         </div>
 
         <h4 style="margin-top:12px;">Query</h4>
-        <pre class="ss-rag-debug-injection-preview">${escapeHtml(String(data.queryText || '(empty)'))}</pre>
+        <pre class="shardwright-rag-debug-injection-preview">${escapeHtml(String(data.queryText || '(empty)'))}</pre>
 
         <h4 style="margin-top:12px;">Collections</h4>
-        <div class="ss-rag-debug-info-grid">
+        <div class="shardwright-rag-debug-info-grid">
             <div><strong>Read collections:</strong> ${escapeHtml(Array.isArray(data.collectionIds) && data.collectionIds.length > 0 ? data.collectionIds.join(', ') : '(none)')}</div>
             <div><strong>Write target:</strong> ${escapeHtml(String(data.writeTargetCollectionId || '(none)'))}</div>
         </div>
@@ -102,8 +118,13 @@ function renderModalHtml(data) {
         <h4 style="margin-top:12px;">Retrieved Entries</h4>
         ${renderEntries(data.entries)}
 
+        ${data.profile === 'architectural' ? `
+        <h4 style="margin-top:12px;">Architectural Exclusions</h4>
+        ${renderArchitecturalDiagnostics(data.architecturalDiagnostics)}
+        ` : ''}
+
         <h4 style="margin-top:12px;">Injection Preview</h4>
-        <pre class="ss-rag-debug-injection-preview">${escapeHtml(data.injectionText || '(empty)')}</pre>
+        <pre class="shardwright-rag-debug-injection-preview">${escapeHtml(data.injectionText || '(empty)')}</pre>
     </div>`;
 }
 

@@ -26,31 +26,31 @@ function sortByRangeDesc(items) {
 
 function buildRow(item, index) {
     const typeLabel = item.type === 'consolidation' ? 'Shard' : 'Extraction';
-    const typeClass = item.type === 'consolidation' ? 'ss-badge-shard' : 'ss-badge-extraction';
+    const typeClass = item.type === 'consolidation' ? 'shardwright-badge-shard' : 'shardwright-badge-extraction';
     const sourceLabel = item.source === 'lorebook' ? 'Lorebook' : 'System Message';
     const preview = String(item.preview || '').trim();
     const selectable = item.selectionEligible !== false;
     const disabledReason = String(item.selectionDisabledReason || '').trim();
     const disabledNote = disabledReason
-        ? `<div class="ss-hint" style="font-size:12px; line-height:1.35; margin-top:6px; color: var(--SmartThemeWarningColor, #f0ad4e);">${escapeHtml(disabledReason)}</div>`
+        ? `<div class="shardwright-hint" style="font-size:12px; line-height:1.35; margin-top:6px; color: var(--SmartThemeWarningColor, #f0ad4e);">${escapeHtml(disabledReason)}</div>`
         : '';
     const rangeLabel = Number.isFinite(item?.startIndex) && Number.isFinite(item?.endIndex)
         ? `${item.startIndex}-${item.endIndex}`
         : null;
 
     return `
-        <div class="ss-shard-select-row${selectable ? '' : ' ss-shard-select-row-disabled'}" data-row-index="${index}">
+        <div class="shardwright-shard-select-row${selectable ? '' : ' shardwright-shard-select-row-disabled'}" data-row-index="${index}">
             <label class="checkbox_label" style="display:flex; align-items:flex-start; gap:10px; width:100%;">
-                <input type="checkbox" class="ss-shard-select-checkbox" data-index="${index}" ${selectable ? '' : 'disabled'} />
+                <input type="checkbox" class="shardwright-shard-select-checkbox" data-index="${index}" ${selectable ? '' : 'disabled'} />
                 <div style="flex:1; min-width:0;">
                     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:4px;">
-                        <span class="ss-pill ${typeClass}">${escapeHtml(typeLabel)}</span>
+                        <span class="shardwright-pill ${typeClass}">${escapeHtml(typeLabel)}</span>
                         <strong>${escapeHtml(item.identifier || `Item ${index + 1}`)}</strong>
-                        <span class="ss-hint">${escapeHtml(sourceLabel)}</span>
-                        ${rangeLabel ? `<span class="ss-hint">Messages ${escapeHtml(rangeLabel)}</span>` : ''}
-                        ${selectable ? '' : '<span class="ss-pill" style="background: rgba(240, 173, 78, 0.18); color: var(--SmartThemeWarningColor, #f0ad4e);">Reference Only</span>'}
+                        <span class="shardwright-hint">${escapeHtml(sourceLabel)}</span>
+                        ${rangeLabel ? `<span class="shardwright-hint">Messages ${escapeHtml(rangeLabel)}</span>` : ''}
+                        ${selectable ? '' : '<span class="shardwright-pill" style="background: rgba(240, 173, 78, 0.18); color: var(--SmartThemeWarningColor, #f0ad4e);">Reference Only</span>'}
                     </div>
-                    <div class="ss-hint" style="font-size:12px; line-height:1.35;">${escapeHtml(preview || '(No preview)')}</div>
+                    <div class="shardwright-hint" style="font-size:12px; line-height:1.35;">${escapeHtml(preview || '(No preview)')}</div>
                     ${disabledNote}
                 </div>
             </label>
@@ -112,8 +112,8 @@ export function parseSelectedShards(selectedItems, settings) {
 }
 
 function updateCount(selectableTotal) {
-    const selected = document.querySelectorAll('.ss-shard-select-checkbox:checked').length;
-    const countEl = document.getElementById('ss-shard-select-count');
+    const selected = document.querySelectorAll('.shardwright-shard-select-checkbox:checked').length;
+    const countEl = document.getElementById('shardwright-shard-select-count');
     if (countEl) {
         countEl.textContent = `${selected} of ${selectableTotal} selected`;
     }
@@ -163,7 +163,7 @@ export async function openShardSelectionModal(settings, preloadedItems = null, m
 
     const listHtml = allItems.map((item, index) => buildRow(item, index)).join('');
     const overlapNote = overlappingCount > 0
-        ? `<div class="ss-hint" style="font-size:12px; line-height:1.45; margin-top:6px; color: var(--SmartThemeWarningColor, #f0ad4e);">
+        ? `<div class="shardwright-hint" style="font-size:12px; line-height:1.45; margin-top:6px; color: var(--SmartThemeWarningColor, #f0ad4e);">
                 ${overlappingCount} saved shard(s) overlap the current message range. They are shown here for reference only and cannot be selected in this run. Go back and revise the selected range if you want to use them as baselines.
            </div>`
         : '';
@@ -172,20 +172,20 @@ export async function openShardSelectionModal(settings, preloadedItems = null, m
         : (overlappingCount > 0 ? 'Continue Without Baseline' : 'Run From Scratch');
 
     const modalHtml = `
-        <div class="ss-consolidation-modal">
-            <div class="ss-consolidation-header">
+        <div class="shardwright-consolidation-modal">
+            <div class="shardwright-consolidation-header">
                 <h3>Sharder: Optional Existing Shards</h3>
                 <p>Select any extractions/shards to merge as baseline context. Leave empty to extract from scratch.</p>
                 ${overlapNote}
-                <p id="ss-shard-select-count">0 of ${selectableItems.length} selected</p>
+                <p id="shardwright-shard-select-count">0 of ${selectableItems.length} selected</p>
             </div>
 
-            <div class="ss-consolidation-controls">
-                <input id="ss-shard-select-all" type="button" class="menu_button" value="Select All" />
-                <input id="ss-shard-select-none" type="button" class="menu_button" value="Select None" />
+            <div class="shardwright-consolidation-controls">
+                <input id="shardwright-shard-select-all" type="button" class="menu_button" value="Select All" />
+                <input id="shardwright-shard-select-none" type="button" class="menu_button" value="Select None" />
             </div>
 
-            <div id="ss-shard-select-list" class="ss-extraction-list">
+            <div id="shardwright-shard-select-list" class="shardwright-extraction-list">
                 ${listHtml}
             </div>
         </div>
@@ -203,7 +203,7 @@ export async function openShardSelectionModal(settings, preloadedItems = null, m
             wide: true,
             large: true,
             onClosing: () => {
-                capturedIndices = Array.from(document.querySelectorAll('.ss-shard-select-checkbox:checked'))
+                capturedIndices = Array.from(document.querySelectorAll('.shardwright-shard-select-checkbox:checked'))
                     .map((cb) => parseInt(cb.dataset.index, 10))
                     .filter((idx) => Number.isInteger(idx) && idx >= 0 && idx < allItems.length);
                 return true;
@@ -214,18 +214,18 @@ export async function openShardSelectionModal(settings, preloadedItems = null, m
     const showPromise = popup.show();
 
     setTimeout(() => {
-        const checkboxes = Array.from(document.querySelectorAll('.ss-shard-select-checkbox'));
+        const checkboxes = Array.from(document.querySelectorAll('.shardwright-shard-select-checkbox'));
         const selectableCheckboxes = checkboxes.filter((cb) => !cb.disabled);
         checkboxes.forEach((cb) => {
             cb.addEventListener('change', () => updateCount(selectableItems.length));
         });
 
-        document.getElementById('ss-shard-select-all')?.addEventListener('click', () => {
+        document.getElementById('shardwright-shard-select-all')?.addEventListener('click', () => {
             selectableCheckboxes.forEach((cb) => { cb.checked = true; });
             updateCount(selectableItems.length);
         });
 
-        document.getElementById('ss-shard-select-none')?.addEventListener('click', () => {
+        document.getElementById('shardwright-shard-select-none')?.addEventListener('click', () => {
             checkboxes.forEach((cb) => { cb.checked = false; });
             updateCount(selectableItems.length);
         });

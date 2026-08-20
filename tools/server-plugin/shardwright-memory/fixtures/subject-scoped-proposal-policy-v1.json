@@ -1,0 +1,66 @@
+{
+  "evidenceFacts": {
+    "evidenceSetHash": "sha256:frozen-shared-design-evidence",
+    "proposalKind": "DESIGN_COMMITMENT",
+    "proposalTrack": "ARCHITECTURAL_DECISION",
+    "explicit": { "state": "VERIFIED", "basisRefs": ["msg:100"] },
+    "grounding": { "state": "VERIFIED", "basisRefs": ["msg:100", "msg:101"] },
+    "stability": { "state": "VERIFIED", "basisRefs": ["msg:101"] },
+    "enduring": { "state": "VERIFIED", "basisRefs": ["msg:102"] },
+    "acknowledgments": [
+      { "entityId": "subject:alpha", "state": "VERIFIED", "basisRefs": ["msg:101"] },
+      { "entityId": "user:operator", "state": "VERIFIED", "basisRefs": ["msg:102"] }
+    ],
+    "governanceValidation": { "state": "COMPATIBLE", "basisRefs": ["decision:governing-law"] }
+  },
+  "profiles": {
+    "alpha": {
+      "schemaVersion": 1,
+      "profileId": "profile:alpha:v1",
+      "policyVersion": 1,
+      "jurisdictionScopeId": "scope:shared-project",
+      "subjectEntityId": "subject:alpha",
+      "rules": [
+        {
+          "proposalKind": "DESIGN_COMMITMENT",
+          "proposalTrack": "ARCHITECTURAL_DECISION",
+          "requiredAcknowledgmentEntityIds": ["subject:alpha", "user:operator"],
+          "stabilityAuthorityEntityIds": ["subject:alpha"],
+          "enduringValueAuthorityEntityIds": ["subject:alpha"],
+          "unavailabilityAuthorityEntityIds": ["user:operator"],
+          "governanceValidationRequired": false,
+          "unavailableReviewerBehavior": "BLOCK_PROVISIONAL"
+        }
+      ]
+    },
+    "beta": {
+      "schemaVersion": 1,
+      "profileId": "profile:beta:v1",
+      "policyVersion": 1,
+      "jurisdictionScopeId": "scope:subject-beta",
+      "subjectEntityId": "subject:beta",
+      "rules": [
+        {
+          "proposalKind": "IDENTITY_SHIFT",
+          "proposalTrack": "PERSONAL_IDENTITY",
+          "requiredAcknowledgmentEntityIds": ["subject:beta"],
+          "stabilityAuthorityEntityIds": ["subject:beta"],
+          "enduringValueAuthorityEntityIds": ["subject:beta"],
+          "unavailabilityAuthorityEntityIds": ["user:operator"],
+          "governanceValidationRequired": false,
+          "unavailableReviewerBehavior": "BLOCK_PROVISIONAL"
+        },
+        {
+          "proposalKind": "GOVERNANCE_DECISION",
+          "proposalTrack": "PROJECT_GOVERNANCE",
+          "requiredAcknowledgmentEntityIds": ["subject:beta", "user:operator"],
+          "stabilityAuthorityEntityIds": ["subject:beta", "user:operator"],
+          "enduringValueAuthorityEntityIds": ["subject:beta"],
+          "unavailabilityAuthorityEntityIds": ["user:operator"],
+          "governanceValidationRequired": true,
+          "unavailableReviewerBehavior": "BLOCK_PROVISIONAL"
+        }
+      ]
+    }
+  }
+}

@@ -16,7 +16,7 @@ export class ChatDropdown extends BaseDropdown {
         super(containerId, {
             placeholder: 'Select chat...',
             searchPlaceholder: 'Search chats...',
-            containerClass: 'ss-chat-dropdown-container',
+            containerClass: 'shardwright-chat-dropdown-container',
             ...options
         });
         this.selectedChatFile = this.options.initialSelection;
@@ -34,16 +34,16 @@ export class ChatDropdown extends BaseDropdown {
 
         return `
             <div class="${this.options.containerClass} ${isDisabled ? 'disabled' : ''}">
-                <div class="ss-dropdown-trigger ${isDisabled ? 'disabled' : ''}" id="${this.containerId}-trigger">
-                    <span class="ss-dropdown-selected-text">${escapeHtml(displayText)}</span>
+                <div class="shardwright-dropdown-trigger ${isDisabled ? 'disabled' : ''}" id="${this.containerId}-trigger">
+                    <span class="shardwright-dropdown-selected-text">${escapeHtml(displayText)}</span>
                     <span class="fa-solid fa-chevron-down"></span>
                 </div>
-                <div class="ss-dropdown-menu" id="${this.containerId}-menu">
-                    <div class="ss-dropdown-search">
+                <div class="shardwright-dropdown-menu" id="${this.containerId}-menu">
+                    <div class="shardwright-dropdown-search">
                         <input type="text" placeholder="${this.options.searchPlaceholder}"
                                id="${this.containerId}-search" />
                     </div>
-                    <div class="ss-dropdown-options" id="${this.containerId}-options">
+                    <div class="shardwright-dropdown-options" id="${this.containerId}-options">
                         ${this.buildOptions()}
                     </div>
                 </div>
@@ -67,17 +67,17 @@ export class ChatDropdown extends BaseDropdown {
      */
     buildOptions() {
         if (this.isLoading) {
-            return '<div class="ss-dropdown-empty">Loading chats...</div>';
+            return '<div class="shardwright-dropdown-empty">Loading chats...</div>';
         }
 
         if (this.characterId === null) {
-            return '<div class="ss-dropdown-empty">Select a character first</div>';
+            return '<div class="shardwright-dropdown-empty">Select a character first</div>';
         }
 
         const filteredChats = this.getFilteredChats();
 
         if (filteredChats.length === 0) {
-            return '<div class="ss-dropdown-empty">No chats found</div>';
+            return '<div class="shardwright-dropdown-empty">No chats found</div>';
         }
 
         return filteredChats.map(chat => {
@@ -87,10 +87,10 @@ export class ChatDropdown extends BaseDropdown {
             const fileSize = chat.file_size || '';
 
             return `
-                <div class="ss-dropdown-option ${isSelected ? 'selected' : ''}" data-chat-file="${escapeHtml(chat.file_name)}">
-                    <div class="ss-chat-option-info">
-                        <span class="ss-chat-option-name">${escapeHtml(chatName)}</span>
-                        <span class="ss-chat-option-details">${messageCount} messages • ${fileSize}</span>
+                <div class="shardwright-dropdown-option ${isSelected ? 'selected' : ''}" data-chat-file="${escapeHtml(chat.file_name)}">
+                    <div class="shardwright-chat-option-info">
+                        <span class="shardwright-chat-option-name">${escapeHtml(chatName)}</span>
+                        <span class="shardwright-chat-option-details">${messageCount} messages • ${fileSize}</span>
                     </div>
                 </div>
             `;
@@ -138,8 +138,8 @@ export class ChatDropdown extends BaseDropdown {
         document.addEventListener('click', this.boundHandleOutsideClick);
 
         // Close when another dropdown opens
-        document.removeEventListener('ss-dropdown-opening', this.boundCloseOnOtherOpen);
-        document.addEventListener('ss-dropdown-opening', this.boundCloseOnOtherOpen);
+        document.removeEventListener('shardwright-dropdown-opening', this.boundCloseOnOtherOpen);
+        document.addEventListener('shardwright-dropdown-opening', this.boundCloseOnOtherOpen);
     }
 
     /**
@@ -149,7 +149,7 @@ export class ChatDropdown extends BaseDropdown {
         const optionsContainer = document.getElementById(`${this.containerId}-options`);
 
         optionsContainer?.addEventListener('click', (e) => {
-            const option = e.target.closest('.ss-dropdown-option');
+            const option = e.target.closest('.shardwright-dropdown-option');
             if (!option) return;
 
             const chatFile = option.dataset.chatFile;

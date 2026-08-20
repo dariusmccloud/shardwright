@@ -1,5 +1,5 @@
 /**
- * Lorebook Options Modal Component for Summary Sharder
+ * Lorebook Options Modal Component for Shardwright
  * Configures how summaries are saved to lorebooks
  */
 
@@ -24,15 +24,15 @@ export async function openLorebookOptionsModal(settings) {
     };
 
     const modalHtml = `
-        <div class="ss-lorebook-options-modal">
+        <div class="shardwright-lorebook-options-modal">
             <h3>Lorebook Entry Options</h3>
-            <p class="ss-option-hint ss-option-hint-intro">
+            <p class="shardwright-option-hint shardwright-option-hint-intro">
                 These settings apply to all summaries saved to lorebooks.
             </p>
 
-            <div class="ss-option-group">
-                <label for="ss-entry-type">Entry Type:</label>
-                <select id="ss-entry-type" class="text_pole ss-option-control">
+            <div class="shardwright-option-group">
+                <label for="shardwright-entry-type">Entry Type:</label>
+                <select id="shardwright-entry-type" class="text_pole shardwright-option-control">
                     <option value="constant" ${modalState.entryType === 'constant' ? 'selected' : ''}>
                         Constant (Always active)
                     </option>
@@ -46,75 +46,75 @@ export async function openLorebookOptionsModal(settings) {
                         Disabled (Saved but inactive)
                     </option>
                 </select>
-                <p class="ss-option-hint">
+                <p class="shardwright-option-hint">
                     Constant entries are always included. Normal entries trigger on keywords.
                 </p>
             </div>
 
-            <div class="ss-option-group">
-                <label for="ss-name-format">Entry Name Format:</label>
-                <input id="ss-name-format" type="text" class="text_pole ss-option-control"
+            <div class="shardwright-option-group">
+                <label for="shardwright-name-format">Entry Name Format:</label>
+                <input id="shardwright-name-format" type="text" class="text_pole shardwright-option-control"
                        value="${escapeHtml(modalState.nameFormat)}" />
-                <p class="ss-option-hint">
+                <p class="shardwright-option-hint">
                     Variables: {start}, {end}, {date}, {character}
                 </p>
             </div>
 
-            <div class="ss-option-group">
+            <div class="shardwright-option-group">
                 <label class="checkbox_label">
-                    <input id="ss-extract-keywords" type="checkbox"
+                    <input id="shardwright-extract-keywords" type="checkbox"
                            ${modalState.extractKeywords ? 'checked' : ''} />
                     <span>Extract keywords from summary (AI-generated)</span>
                 </label>
-                <p class="ss-option-hint">
+                <p class="shardwright-option-hint">
                     AI will extract relevant keywords (names, events, topics) from the summary content.
                 </p>
             </div>
 
-            <div class="ss-option-group">
+            <div class="shardwright-option-group">
                 <label class="checkbox_label">
-                    <input id="ss-keywords-enabled" type="checkbox"
+                    <input id="shardwright-keywords-enabled" type="checkbox"
                            ${modalState.keywordsEnabled ? 'checked' : ''} />
                     <span>Use format-based keywords (fallback)</span>
                 </label>
-                <p class="ss-option-hint">
+                <p class="shardwright-option-hint">
                     Used when AI extraction is disabled or returns no keywords.
                 </p>
             </div>
 
-            <div id="ss-keyword-options" class="${modalState.keywordsEnabled ? '' : 'ss-hidden'}">
-                <div class="ss-option-group">
-                    <label for="ss-keyword-format">Keyword Format:</label>
-                    <input id="ss-keyword-format" type="text" class="text_pole ss-option-control"
+            <div id="shardwright-keyword-options" class="${modalState.keywordsEnabled ? '' : 'shardwright-hidden'}">
+                <div class="shardwright-option-group">
+                    <label for="shardwright-keyword-format">Keyword Format:</label>
+                    <input id="shardwright-keyword-format" type="text" class="text_pole shardwright-option-control"
                            value="${escapeHtml(modalState.keywordFormat)}" />
-                    <p class="ss-option-hint">
+                    <p class="shardwright-option-hint">
                         Variables: {start}, {end}
                     </p>
                 </div>
             </div>
 
-            <div class="ss-option-group">
+            <div class="shardwright-option-group">
                 <label>Additional Keywords:</label>
-                <div id="ss-additional-keywords"></div>
-                <p class="ss-option-hint">
+                <div id="shardwright-additional-keywords"></div>
+                <p class="shardwright-option-hint">
                     Comma-separated list added to every entry (in addition to extracted/generated keywords)
                 </p>
             </div>
 
-            <hr class="ss-lorebook-separator" />
+            <hr class="shardwright-lorebook-separator" />
 
-            <div class="ss-option-group">
+            <div class="shardwright-option-group">
                 <label>Entry Order Strategy:</label>
-                <div id="ss-order-strategy"></div>
-                <p class="ss-option-hint">
+                <div id="shardwright-order-strategy"></div>
+                <p class="shardwright-option-hint">
                     Controls prompt inclusion priority. Higher order = included earlier in context.
                 </p>
             </div>
 
-            <div id="ss-fixed-order-options" class="${modalState.orderStrategy === 'fixed' ? '' : 'ss-hidden'}">
-                <div class="ss-option-group">
-                    <label for="ss-fixed-order-value">Fixed Order Value:</label>
-                    <input id="ss-fixed-order-value" type="number" class="text_pole ss-option-control"
+            <div id="shardwright-fixed-order-options" class="${modalState.orderStrategy === 'fixed' ? '' : 'shardwright-hidden'}">
+                <div class="shardwright-option-group">
+                    <label for="shardwright-fixed-order-value">Fixed Order Value:</label>
+                    <input id="shardwright-fixed-order-value" type="number" class="text_pole shardwright-option-control"
                            value="${modalState.fixedOrderValue}" min="0" max="999" />
                 </div>
             </div>
@@ -137,39 +137,39 @@ export async function openLorebookOptionsModal(settings) {
 
     // Attach event listeners after popup shows
     requestAnimationFrame(() => {
-        const keywordOptions = document.getElementById('ss-keyword-options');
-        const fixedOrderOptions = document.getElementById('ss-fixed-order-options');
+        const keywordOptions = document.getElementById('shardwright-keyword-options');
+        const fixedOrderOptions = document.getElementById('shardwright-fixed-order-options');
 
         const updateKeywordOptionsVisibility = () => {
-            keywordOptions?.classList.toggle('ss-hidden', !modalState.keywordsEnabled);
+            keywordOptions?.classList.toggle('shardwright-hidden', !modalState.keywordsEnabled);
         };
 
         const updateFixedOrderVisibility = () => {
-            fixedOrderOptions?.classList.toggle('ss-hidden', modalState.orderStrategy !== 'fixed');
+            fixedOrderOptions?.classList.toggle('shardwright-hidden', modalState.orderStrategy !== 'fixed');
         };
 
-        document.getElementById('ss-entry-type')?.addEventListener('change', (e) => {
+        document.getElementById('shardwright-entry-type')?.addEventListener('change', (e) => {
             modalState.entryType = e.target.value;
         });
 
-        document.getElementById('ss-name-format')?.addEventListener('input', (e) => {
+        document.getElementById('shardwright-name-format')?.addEventListener('input', (e) => {
             modalState.nameFormat = e.target.value;
         });
 
-        document.getElementById('ss-extract-keywords')?.addEventListener('change', (e) => {
+        document.getElementById('shardwright-extract-keywords')?.addEventListener('change', (e) => {
             modalState.extractKeywords = e.target.checked;
         });
 
-        document.getElementById('ss-keywords-enabled')?.addEventListener('change', (e) => {
+        document.getElementById('shardwright-keywords-enabled')?.addEventListener('change', (e) => {
             modalState.keywordsEnabled = e.target.checked;
             updateKeywordOptionsVisibility();
         });
 
-        document.getElementById('ss-keyword-format')?.addEventListener('input', (e) => {
+        document.getElementById('shardwright-keyword-format')?.addEventListener('input', (e) => {
             modalState.keywordFormat = e.target.value;
         });
 
-        const additionalKeywordsContainer = document.getElementById('ss-additional-keywords');
+        const additionalKeywordsContainer = document.getElementById('shardwright-additional-keywords');
         if (additionalKeywordsContainer) {
             const tagInput = createTagInput({
                 tags: parseCommaTags(modalState.additionalKeywords),
@@ -181,7 +181,7 @@ export async function openLorebookOptionsModal(settings) {
             additionalKeywordsContainer.replaceChildren(tagInput);
         }
 
-        const orderStrategyContainer = document.getElementById('ss-order-strategy');
+        const orderStrategyContainer = document.getElementById('shardwright-order-strategy');
         if (orderStrategyContainer) {
             const segmentedToggle = createSegmentedToggle({
                 options: [
@@ -197,7 +197,7 @@ export async function openLorebookOptionsModal(settings) {
             orderStrategyContainer.replaceChildren(segmentedToggle);
         }
 
-        document.getElementById('ss-fixed-order-value')?.addEventListener('input', (e) => {
+        document.getElementById('shardwright-fixed-order-value')?.addEventListener('input', (e) => {
             modalState.fixedOrderValue = parseInt(e.target.value, 10) || 100;
         });
 

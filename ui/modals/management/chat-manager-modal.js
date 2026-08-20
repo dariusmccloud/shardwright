@@ -32,19 +32,19 @@ let lorebookDropdown = null;
  */
 async function showExportModal(characterId, chatFileName) {
     const exportHtml = `
-        <div class="ss-export-modal">
+        <div class="shardwright-export-modal">
             <h3>Export Format</h3>
-            <div class="ss-export-options">
-                <label class="ss-radio-option">
-                    <input type="radio" name="ss-export-format" value="json" checked />
+            <div class="shardwright-export-options">
+                <label class="shardwright-radio-option">
+                    <input type="radio" name="shardwright-export-format" value="json" checked />
                     <span>JSON (full data)</span>
                 </label>
-                <label class="ss-radio-option">
-                    <input type="radio" name="ss-export-format" value="text-names" />
+                <label class="shardwright-radio-option">
+                    <input type="radio" name="shardwright-export-format" value="text-names" />
                     <span>Raw Text - Name: Message</span>
                 </label>
-                <label class="ss-radio-option">
-                    <input type="radio" name="ss-export-format" value="text-only" />
+                <label class="shardwright-radio-option">
+                    <input type="radio" name="shardwright-export-format" value="text-only" />
                     <span>Raw Text - Messages only</span>
                 </label>
             </div>
@@ -57,7 +57,7 @@ async function showExportModal(characterId, chatFileName) {
         okButton: 'Export',
         cancelButton: 'Cancel',
         onClosing: () => {
-            selectedFormat = popup.content.querySelector('input[name="ss-export-format"]:checked')?.value;
+            selectedFormat = popup.content.querySelector('input[name="shardwright-export-format"]:checked')?.value;
             return true;
         },
     });
@@ -117,66 +117,66 @@ async function showSummarizeModal(sourceCharacterId, sourceChatFileName) {
     }
 
     const summarizeHtml = `
-        <div class="ss-summarize-modal">
+        <div class="shardwright-summarize-modal">
             <h3>Summarize Chat</h3>
 
-            <div class="ss-summarize-section">
+            <div class="shardwright-summarize-section">
                 <label>Message Range (0-${maxIndex}):</label>
-                <div class="ss-range-inputs">
-                    <input type="number" id="ss-sum-start" class="text_pole" value="0" min="0" max="${maxIndex}" />
+                <div class="shardwright-range-inputs">
+                    <input type="number" id="shardwright-sum-start" class="text_pole" value="0" min="0" max="${maxIndex}" />
                     <span>to</span>
-                    <input type="number" id="ss-sum-end" class="text_pole" value="${maxIndex}" min="0" max="${maxIndex}" />
+                    <input type="number" id="shardwright-sum-end" class="text_pole" value="${maxIndex}" min="0" max="${maxIndex}" />
                 </div>
             </div>
 
-            <div class="ss-summarize-section">
+            <div class="shardwright-summarize-section">
                 <label>Output Destination:</label>
-                <div class="ss-destination-options">
-                    <label class="ss-radio-option">
-                        <input type="radio" name="ss-dest" value="current" checked />
+                <div class="shardwright-destination-options">
+                    <label class="shardwright-radio-option">
+                        <input type="radio" name="shardwright-dest" value="current" checked />
                         <span>Inject into current chat</span>
                     </label>
-                    <label class="ss-radio-option">
-                        <input type="radio" name="ss-dest" value="lorebook" />
+                    <label class="shardwright-radio-option">
+                        <input type="radio" name="shardwright-dest" value="lorebook" />
                         <span>Save to lorebook</span>
                     </label>
-                    <label class="ss-radio-option">
-                        <input type="radio" name="ss-dest" value="specific" />
+                    <label class="shardwright-radio-option">
+                        <input type="radio" name="shardwright-dest" value="specific" />
                         <span>Inject into specific chat</span>
                     </label>
                 </div>
             </div>
 
-            <div id="ss-cm-lorebook-section" class="ss-summarize-section ss-hidden">
+            <div id="shardwright-cm-lorebook-section" class="shardwright-summarize-section shardwright-hidden">
                 <label>Select Lorebook:</label>
-                <div id="ss-sum-lorebook-container"></div>
+                <div id="shardwright-sum-lorebook-container"></div>
             </div>
 
-            <div id="ss-specific-chat-section" class="ss-summarize-section ss-hidden">
+            <div id="shardwright-specific-chat-section" class="shardwright-summarize-section shardwright-hidden">
                 <label>Target Character:</label>
-                <div id="ss-sum-target-char-container"></div>
-                <label class="ss-cm-target-chat-label">Target Chat:</label>
-                <div id="ss-sum-target-chat-container"></div>
+                <div id="shardwright-sum-target-char-container"></div>
+                <label class="shardwright-cm-target-chat-label">Target Chat:</label>
+                <div id="shardwright-sum-target-chat-container"></div>
             </div>
 
-            <div id="ss-injection-position-section" class="ss-summarize-section">
+            <div id="shardwright-injection-position-section" class="shardwright-summarize-section">
                 <label>Injection Position:</label>
-                <div class="ss-position-options">
-                    <label class="ss-radio-option">
-                        <input type="radio" name="ss-position" value="beginning" />
+                <div class="shardwright-position-options">
+                    <label class="shardwright-radio-option">
+                        <input type="radio" name="shardwright-position" value="beginning" />
                         <span>At beginning of chat</span>
                     </label>
-                    <label class="ss-radio-option">
-                        <input type="radio" name="ss-position" value="end" checked />
+                    <label class="shardwright-radio-option">
+                        <input type="radio" name="shardwright-position" value="end" checked />
                         <span>At end of chat</span>
                     </label>
-                    <label class="ss-radio-option">
-                        <input type="radio" name="ss-position" value="custom" />
+                    <label class="shardwright-radio-option">
+                        <input type="radio" name="shardwright-position" value="custom" />
                         <span>At custom position</span>
                     </label>
                 </div>
-                <div id="ss-custom-position-input" class="ss-custom-position-wrapper ss-hidden">
-                    <input type="number" id="ss-custom-position" class="text_pole" min="0" placeholder="Message index (0-based)" />
+                <div id="shardwright-custom-position-input" class="shardwright-custom-position-wrapper shardwright-hidden">
+                    <input type="number" id="shardwright-custom-position" class="text_pole" min="0" placeholder="Message index (0-based)" />
                 </div>
             </div>
         </div>
@@ -198,14 +198,14 @@ async function showSummarizeModal(sourceCharacterId, sourceChatFileName) {
         wide: true,
         onClosing: () => {
             // Capture all values BEFORE popup DOM is destroyed
-            capturedStartIndex = parseInt(document.getElementById('ss-sum-start')?.value || '0', 10);
-            capturedEndIndex = parseInt(document.getElementById('ss-sum-end')?.value || String(maxIndex), 10);
-            capturedDestination = document.querySelector('input[name="ss-dest"]:checked')?.value || 'current';
+            capturedStartIndex = parseInt(document.getElementById('shardwright-sum-start')?.value || '0', 10);
+            capturedEndIndex = parseInt(document.getElementById('shardwright-sum-end')?.value || String(maxIndex), 10);
+            capturedDestination = document.querySelector('input[name="shardwright-dest"]:checked')?.value || 'current';
             capturedLorebooks = lorebookDropdown?.getSelection() || [];
             capturedTargetCharId = targetCharacterDropdown?.getSelection();
             capturedTargetChatFile = targetChatDropdown?.getSelection();
-            capturedInjectionPosition = document.querySelector('input[name="ss-position"]:checked')?.value || 'end';
-            const customPosValue = document.getElementById('ss-custom-position')?.value;
+            capturedInjectionPosition = document.querySelector('input[name="shardwright-position"]:checked')?.value || 'end';
+            const customPosValue = document.getElementById('shardwright-custom-position')?.value;
             capturedCustomPosition = customPosValue ? parseInt(customPosValue, 10) : null;
 
             // Cleanup dropdowns
@@ -231,14 +231,14 @@ async function showSummarizeModal(sourceCharacterId, sourceChatFileName) {
     // Use requestAnimationFrame instead of setTimeout to avoid blocking main thread
     requestAnimationFrame(() => {
         // Destination radio listeners
-        const destRadios = document.querySelectorAll('input[name="ss-dest"]');
-        const lorebookSection = document.getElementById('ss-cm-lorebook-section');
-        const specificSection = document.getElementById('ss-specific-chat-section');
-        const positionSection = document.getElementById('ss-injection-position-section');
+        const destRadios = document.querySelectorAll('input[name="shardwright-dest"]');
+        const lorebookSection = document.getElementById('shardwright-cm-lorebook-section');
+        const specificSection = document.getElementById('shardwright-specific-chat-section');
+        const positionSection = document.getElementById('shardwright-injection-position-section');
         const applyDestinationVisibility = (value) => {
-            lorebookSection?.classList.toggle('ss-hidden', value !== 'lorebook');
-            specificSection?.classList.toggle('ss-hidden', value !== 'specific');
-            positionSection?.classList.toggle('ss-hidden', value !== 'current' && value !== 'specific');
+            lorebookSection?.classList.toggle('shardwright-hidden', value !== 'lorebook');
+            specificSection?.classList.toggle('shardwright-hidden', value !== 'specific');
+            positionSection?.classList.toggle('shardwright-hidden', value !== 'current' && value !== 'specific');
         };
 
         destRadios.forEach(radio => {
@@ -248,18 +248,18 @@ async function showSummarizeModal(sourceCharacterId, sourceChatFileName) {
         });
 
         // Position radio listeners - show/hide custom position input
-        const positionRadios = document.querySelectorAll('input[name="ss-position"]');
-        const customPositionInput = document.getElementById('ss-custom-position-input');
+        const positionRadios = document.querySelectorAll('input[name="shardwright-position"]');
+        const customPositionInput = document.getElementById('shardwright-custom-position-input');
 
         positionRadios.forEach(radio => {
             radio.addEventListener('change', (e) => {
-                customPositionInput?.classList.toggle('ss-hidden', e.target.value !== 'custom');
+                customPositionInput?.classList.toggle('shardwright-hidden', e.target.value !== 'custom');
             });
         });
-        applyDestinationVisibility(document.querySelector('input[name="ss-dest"]:checked')?.value || 'current');
+        applyDestinationVisibility(document.querySelector('input[name="shardwright-dest"]:checked')?.value || 'current');
 
         // Initialize lorebook dropdown
-        lorebookDropdown = new LorebookDropdown('ss-sum-lorebook-container', {
+        lorebookDropdown = new LorebookDropdown('shardwright-sum-lorebook-container', {
             placeholder: 'Select lorebook...',
             initialSelection: [],
             onSelectionChange: () => {}
@@ -267,7 +267,7 @@ async function showSummarizeModal(sourceCharacterId, sourceChatFileName) {
         lorebookDropdown.render();
 
         // Initialize target character dropdown
-        targetCharacterDropdown = new CharacterDropdown('ss-sum-target-char-container', {
+        targetCharacterDropdown = new CharacterDropdown('shardwright-sum-target-char-container', {
             placeholder: 'Select character...',
             onSelectionChange: async (charId) => {
                 if (targetChatDropdown) {
@@ -278,7 +278,7 @@ async function showSummarizeModal(sourceCharacterId, sourceChatFileName) {
         targetCharacterDropdown.render();
 
         // Initialize target chat dropdown
-        targetChatDropdown = new ChatDropdown('ss-sum-target-chat-container', {
+        targetChatDropdown = new ChatDropdown('shardwright-sum-target-chat-container', {
             placeholder: 'Select chat...',
             onSelectionChange: () => {}
         });
@@ -711,24 +711,24 @@ async function injectIntoSpecificChat(summary, startIndex, endIndex, targetCharI
 export async function openChatManagerModal(settings) {
     // Build modal HTML
     const modalHtml = `
-        <div class="ss-chat-manager-modal">
-            <div class="ss-chat-manager-selectors">
-                <div class="ss-selector-row">
+        <div class="shardwright-chat-manager-modal">
+            <div class="shardwright-chat-manager-selectors">
+                <div class="shardwright-selector-row">
                     <label>Character:</label>
-                    <div id="ss-cm-character-container"></div>
+                    <div id="shardwright-cm-character-container"></div>
                 </div>
-                <div class="ss-selector-row">
+                <div class="shardwright-selector-row">
                     <label>Chat:</label>
-                    <div id="ss-cm-chat-container"></div>
+                    <div id="shardwright-cm-chat-container"></div>
                 </div>
             </div>
 
-            <div class="ss-chat-manager-actions">
+            <div class="shardwright-chat-manager-actions">
                 <h4>Actions</h4>
-                <div class="ss-action-buttons">
-                    <input type="button" id="ss-cm-delete-btn" class="menu_button" value="Delete Chat" disabled />
-                    <input type="button" id="ss-cm-export-btn" class="menu_button" value="Extract Chat" disabled />
-                    <input type="button" id="ss-cm-summarize-btn" class="menu_button" value="Summarize Chat" disabled />
+                <div class="shardwright-action-buttons">
+                    <input type="button" id="shardwright-cm-delete-btn" class="menu_button" value="Delete Chat" disabled />
+                    <input type="button" id="shardwright-cm-export-btn" class="menu_button" value="Extract Chat" disabled />
+                    <input type="button" id="shardwright-cm-summarize-btn" class="menu_button" value="Summarize Chat" disabled />
                 </div>
             </div>
         </div>
@@ -750,16 +750,16 @@ export async function openChatManagerModal(settings) {
     // Function to update action button states
     const updateActionButtons = () => {
         const hasSelection = selectedCharId !== null && selectedChatFile !== null;
-        document.getElementById('ss-cm-delete-btn').disabled = !hasSelection;
-        document.getElementById('ss-cm-export-btn').disabled = !hasSelection;
-        document.getElementById('ss-cm-summarize-btn').disabled = !hasSelection;
+        document.getElementById('shardwright-cm-delete-btn').disabled = !hasSelection;
+        document.getElementById('shardwright-cm-export-btn').disabled = !hasSelection;
+        document.getElementById('shardwright-cm-summarize-btn').disabled = !hasSelection;
     };
 
     // Setup dropdowns after popup renders
     // Use requestAnimationFrame instead of setTimeout to avoid blocking main thread
     requestAnimationFrame(() => {
         // Initialize character dropdown
-        characterDropdown = new CharacterDropdown('ss-cm-character-container', {
+        characterDropdown = new CharacterDropdown('shardwright-cm-character-container', {
             placeholder: 'Select character...',
             onSelectionChange: async (charId) => {
                 selectedCharId = charId;
@@ -773,7 +773,7 @@ export async function openChatManagerModal(settings) {
         characterDropdown.render();
 
         // Initialize chat dropdown
-        chatDropdown = new ChatDropdown('ss-cm-chat-container', {
+        chatDropdown = new ChatDropdown('shardwright-cm-chat-container', {
             placeholder: 'Select chat...',
             onSelectionChange: (chatFile) => {
                 selectedChatFile = chatFile;
@@ -783,7 +783,7 @@ export async function openChatManagerModal(settings) {
         chatDropdown.render();
 
         // Delete button handler
-        document.getElementById('ss-cm-delete-btn')?.addEventListener('click', async () => {
+        document.getElementById('shardwright-cm-delete-btn')?.addEventListener('click', async () => {
             if (selectedCharId === null || !selectedChatFile) return;
 
             const chatName = selectedChatFile.replace('.jsonl', '');
@@ -810,13 +810,13 @@ export async function openChatManagerModal(settings) {
         });
 
         // Export button handler
-        document.getElementById('ss-cm-export-btn')?.addEventListener('click', async () => {
+        document.getElementById('shardwright-cm-export-btn')?.addEventListener('click', async () => {
             if (selectedCharId === null || !selectedChatFile) return;
             await showExportModal(selectedCharId, selectedChatFile);
         });
 
         // Summarize button handler
-        document.getElementById('ss-cm-summarize-btn')?.addEventListener('click', async () => {
+        document.getElementById('shardwright-cm-summarize-btn')?.addEventListener('click', async () => {
             if (selectedCharId === null || !selectedChatFile) return;
             await showSummarizeModal(selectedCharId, selectedChatFile);
         });

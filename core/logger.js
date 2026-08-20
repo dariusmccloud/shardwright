@@ -4,11 +4,11 @@ const PREFIX = '[SummarySharder]';
 
 export function isDebugEnabled() {
     try {
-        const settingsValue = extension_settings?.summary_sharder?.debugLogging;
+        const settingsValue = extension_settings?.shardwright?.debugLogging;
         if (typeof settingsValue === 'boolean') {
             return settingsValue;
         }
-        return localStorage.getItem('ss_debug') === 'true';
+        return localStorage.getItem('shardwright:debug') === 'true';
     } catch {
         return false;
     }

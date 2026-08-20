@@ -1,5 +1,5 @@
 /**
- * Archive helpers for Summary Sharder RAG.
+ * Archive helpers for Shardwright RAG.
  * Warm archive inserts vector chunks into shard collection with archive metadata.
  * Cold archive stores entries in per-chat metadata for persistent audit/history.
  */
@@ -7,6 +7,7 @@
 import { chat_metadata, saveChatConditional } from '../../../../../../script.js';
 import { buildChunkHash } from './chunking.js';
 import { getShardCollectionId } from './collection-manager.js';
+import { getArchitecturalRagAdmissionRefusal } from './architectural-rag-boundary.js';
 import { extractKeywordsTfIdf } from './vectorize.js';
 import { insertChunks, listChunks } from './vector-client.js';
 import { throwIfAborted } from '../api/abort-controller.js';
@@ -158,12 +159,34 @@ async function listExistingHashes(collectionId, ragSettings) {
  */
 export async function archiveToWarm(items, startIndex, endIndex, settings, metadata = {}) {
     throwIfAborted('rag archive');
+    const normalized = normalizeArchiveItems(items);
+    const refusal = getArchitecturalRagAdmissionRefusal({
+        settings,
+        text: normalized.map(item => item.text).join('\n\n'),
+        metadata,
+    }) || normalized
+        .map(item => getArchitecturalRagAdmissionRefusal({
+            settings,
+            text: item.text,
+            metadata: item.metadata || null,
+        }))
+        .find(Boolean);
+    if (refusal) {
+        archiveLog.warn(refusal.message, refusal);
+        return {
+            success: false,
+            total: normalized.length,
+            inserted: 0,
+            skipped: normalized.length,
+            reason: refusal.reason,
+            code: refusal.code,
+        };
+    }
     const ragSettings = settings?.rag;
     if (!ragSettings?.enabled) {
         return { success: false, total: 0, inserted: 0, skipped: 0, reason: 'rag-disabled' };
     }
 
-    const normalized = normalizeArchiveItems(items);
     if (normalized.length === 0) {
         return { success: true, total: 0, inserted: 0, skipped: 0 };
     }
@@ -296,11 +319,11 @@ export async function archiveToCold(items, startIndex, endIndex, chatId = null, 
     }
 
     try {
-        if (!chat_metadata.summary_sharder) {
-            chat_metadata.summary_sharder = {};
+        if (!chat_metadata.shardwright) {
+            chat_metadata.shardwright = {};
         }
-        if (!Array.isArray(chat_metadata.summary_sharder.coldArchive)) {
-            chat_metadata.summary_sharder.coldArchive = [];
+        if (!Array.isArray(chat_metadata.shardwright.coldArchive)) {
+            chat_metadata.shardwright.coldArchive = [];
         }
 
         const now = Date.now();
@@ -325,12 +348,12 @@ export async function archiveToCold(items, startIndex, endIndex, chatId = null, 
             };
         });
 
-        chat_metadata.summary_sharder.coldArchive.push(...entries);
+        chat_metadata.shardwright.coldArchive.push(...entries);
 
         const limit = Math.max(1, Number(metadata?.limit || DEFAULT_COLD_ARCHIVE_LIMIT));
         let trimmed = 0;
-        while (chat_metadata.summary_sharder.coldArchive.length > limit) {
-            chat_metadata.summary_sharder.coldArchive.shift();
+        while (chat_metadata.shardwright.coldArchive.length > limit) {
+            chat_metadata.shardwright.coldArchive.shift();
             trimmed += 1;
         }
 
@@ -341,7 +364,7 @@ export async function archiveToCold(items, startIndex, endIndex, chatId = null, 
             success: true,
             appended: entries.length,
             trimmed,
-            total: chat_metadata.summary_sharder.coldArchive.length,
+            total: chat_metadata.shardwright.coldArchive.length,
         };
     } catch (error) {
         archiveLog.warn('Cold archive failed:', error?.message || error);
@@ -349,7 +372,7 @@ export async function archiveToCold(items, startIndex, endIndex, chatId = null, 
             success: false,
             appended: 0,
             trimmed: 0,
-            total: chat_metadata?.summary_sharder?.coldArchive?.length || 0,
+            total: chat_metadata?.shardwright?.coldArchive?.length || 0,
             error: String(error?.message || error),
         };
     }

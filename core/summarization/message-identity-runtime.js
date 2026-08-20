@@ -5,6 +5,7 @@ import {
 } from '../../../../../../script.js';
 
 import { log } from '../logger.js';
+import { migrateShardwrightMetadataIdentity } from '../shardwright-metadata-migration.js';
 import {
     buildMessageIdentitySnapshot,
     reconcileMessageDeletionTombstones,
@@ -58,6 +59,11 @@ export async function reconcileCurrentChatMessageIdentity(options = {}) {
 
     reconcileInFlight = true;
     try {
+        const metadataMigration = await migrateShardwrightMetadataIdentity({
+            messages: chat,
+            chatMetadata: chat_metadata,
+            now: options.now,
+        });
         let tombstoneResult = { changed: false, added: 0 };
         if (options.recordDeletion && sameChatAsSnapshot(context)) {
             tombstoneResult = reconcileMessageDeletionTombstones(
@@ -74,8 +80,10 @@ export async function reconcileCurrentChatMessageIdentity(options = {}) {
             now: options.now,
         });
 
-        const needsMessageSave = reconcileResult.messagesChanged;
-        const needsMetadataSave = reconcileResult.metadataChanged || tombstoneResult.changed;
+        const needsMessageSave = reconcileResult.messagesChanged || metadataMigration.messagesMigrated > 0;
+        const needsMetadataSave = reconcileResult.metadataChanged
+            || tombstoneResult.changed
+            || metadataMigration.chatMetadataMigrated;
         const shouldSuppressPassiveLoadSave = (needsMessageSave || needsMetadataSave)
             && (options.reason === 'chat-changed' || options.reason === 'initial-load');
         const diagnosticContext = {
@@ -107,6 +115,7 @@ export async function reconcileCurrentChatMessageIdentity(options = {}) {
         const snapshot = setCachedSnapshot(context);
         return {
             ...reconcileResult,
+            metadataMigration,
             tombstonesAdded: tombstoneResult.added,
             cachedSnapshot: snapshot,
             saveKind: shouldSuppressPassiveLoadSave

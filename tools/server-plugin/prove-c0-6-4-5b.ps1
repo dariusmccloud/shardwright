@@ -110,10 +110,10 @@ function Get-ReviewerRequest($Candidate, [string]$ReviewerRole) {
 }
 
 if ($InstallPayload) {
-    & powershell -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'install-summary-sharder-memory.ps1') | Out-Null
+    & powershell -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'install-shardwright-memory.ps1') | Out-Null
 }
 
-$baseUri = "http://127.0.0.1:$Port/api/plugins/summary-sharder-memory"
+$baseUri = "http://127.0.0.1:$Port/api/plugins/shardwright-memory"
 $csrf = Get-CsrfSession -TargetPort $Port
 $nowBase = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
 $stamp = Get-Date -Format 'yyyyMMddHHmmss'

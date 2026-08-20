@@ -22,9 +22,9 @@ let activeResizeHandler = null;
 
 const resolveHintContainer = (button) => {
     const popup = button?.closest?.('.popup') || null;
-    const modalRoot = button?.closest?.('.ss-modal') || button?.closest?.('[class*="ss-"][class*="-modal"]') || null;
+    const modalRoot = button?.closest?.('.shardwright-modal') || button?.closest?.('[class*="shardwright-"][class*="-modal"]') || null;
 
-    // Prefer popups when we're inside an actual Summary Sharder modal surface.
+    // Prefer popups when we're inside an actual Shardwright modal surface.
     // This keeps the hint above the modal and correctly aligned if the modal is dragged.
     if (popup && modalRoot) {
         return popup;
@@ -106,7 +106,7 @@ const showPopover = (button, trigger, anchorEvent) => {
     // in some SillyTavern surfaces (notably extension settings panels).
     const text = String(
         button?.dataset?.ssHintText
-            || button?.getAttribute?.('data-ss-hint-text')
+            || button?.getAttribute?.('data-shardwright-hint-text')
             || button?.getAttribute?.('title')
             || ''
     ).trim();
@@ -129,7 +129,7 @@ const showPopover = (button, trigger, anchorEvent) => {
     }
 
     const popover = document.createElement('div');
-    popover.className = 'ss-info-hint-popover';
+    popover.className = 'shardwright-info-hint-popover';
     popover.textContent = text;
     popover.setAttribute('role', 'tooltip');
     popover.style.setProperty('position', container === document.body ? 'fixed' : 'absolute', 'important');
@@ -137,11 +137,11 @@ const showPopover = (button, trigger, anchorEvent) => {
 
     const computed = window.getComputedStyle(button);
     const cssVars = [
-        '--ss-bg-primary',
-        '--ss-bg-secondary',
-        '--ss-border',
-        '--ss-text-primary',
-        '--ss-shadow',
+        '--shardwright-bg-primary',
+        '--shardwright-bg-secondary',
+        '--shardwright-border',
+        '--shardwright-text-primary',
+        '--shardwright-shadow',
     ];
     for (const cssVar of cssVars) {
         const value = computed.getPropertyValue(cssVar);
@@ -155,10 +155,10 @@ const showPopover = (button, trigger, anchorEvent) => {
         return value || fallback;
     };
 
-    const hintWidth = resolveVar('--ss-info-hint-width', '320px');
-    const hintMaxWidth = resolveVar('--ss-info-hint-max-width', 'calc(100vw - 32px)');
-    const bg = resolveVar('--ss-bg-primary', 'rgba(0, 0, 0, 0.85)');
-    const borderColor = resolveVar('--ss-border', 'rgba(255, 255, 255, 0.2)');
+    const hintWidth = resolveVar('--shardwright-info-hint-width', '320px');
+    const hintMaxWidth = resolveVar('--shardwright-info-hint-max-width', 'calc(100vw - 32px)');
+    const bg = resolveVar('--shardwright-bg-primary', 'rgba(0, 0, 0, 0.85)');
+    const borderColor = resolveVar('--shardwright-border', 'rgba(255, 255, 255, 0.2)');
     popover.style.setProperty('background', bg, 'important');
     popover.style.setProperty('background-color', bg, 'important');
     popover.style.setProperty('border', `1px solid ${borderColor}`, 'important');
@@ -201,8 +201,8 @@ const showPopover = (button, trigger, anchorEvent) => {
 export function infoHintHtml(id, text) {
     const safeText = escapeHtml(text);
     const safeId = id ? ` id="${escapeHtml(id)}"` : '';
-    // Include `title` as a robustness fallback if `data-ss-hint-text` gets stripped.
-    return `<button${safeId} type="button" class="ss-info-hint-btn" data-ss-hint-text="${safeText}" title="${safeText}" aria-label="Info">
+    // Include `title` as a robustness fallback if `data-shardwright-hint-text` gets stripped.
+    return `<button${safeId} type="button" class="shardwright-info-hint-btn" data-shardwright-hint-text="${safeText}" title="${safeText}" aria-label="Info">
         <i class="fa-solid fa-circle-info"></i>
     </button>`;
 }
@@ -225,7 +225,7 @@ export function mountInfoHints(container) {
     mountInfoHints._mountedRoots.add(root);
 
     root.addEventListener('click', (event) => {
-        const button = event.target?.closest?.('.ss-info-hint-btn');
+        const button = event.target?.closest?.('.shardwright-info-hint-btn');
         if (!button) return;
         if (root !== document && !root.contains(button)) return;
 
@@ -241,7 +241,7 @@ export function mountInfoHints(container) {
 
     if (allowHover) {
         root.addEventListener('mouseover', (event) => {
-            const button = event.target?.closest?.('.ss-info-hint-btn');
+            const button = event.target?.closest?.('.shardwright-info-hint-btn');
             if (!button) return;
             if (root !== document && !root.contains(button)) return;
             if (button.contains(event.relatedTarget)) return;
@@ -257,7 +257,7 @@ export function mountInfoHints(container) {
         }, true);
 
         root.addEventListener('mouseout', (event) => {
-            const button = event.target?.closest?.('.ss-info-hint-btn');
+            const button = event.target?.closest?.('.shardwright-info-hint-btn');
             if (!button) return;
             if (root !== document && !root.contains(button)) return;
             if (button.contains(event.relatedTarget)) return;

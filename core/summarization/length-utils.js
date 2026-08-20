@@ -1,5 +1,5 @@
 /**
- * Length control utilities for Summary Sharder
+ * Length control utilities for Shardwright
  * Shared functions for applying summary length constraints
  */
 

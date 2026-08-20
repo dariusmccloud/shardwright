@@ -1,5 +1,5 @@
 /**
- * RAG Collection Browser Modal for Summary Sharder
+ * RAG Collection Browser Modal for Shardwright
  */
 
 import { Popup, POPUP_RESULT, POPUP_TYPE } from '../../../../../../popup.js';
@@ -84,8 +84,8 @@ function normalizeChatId(chatId) {
  */
 function getCollectionModeLabel(collectionId) {
     const id = String(collectionId || '');
-    if (id.startsWith('ss_shards_')) return 'Sharder';
-    if (id.startsWith('ss_standard_')) return 'Standard';
+    if (id.startsWith('shardwright_shards_')) return 'Sharder';
+    if (id.startsWith('shardwright_standard_')) return 'Standard';
     return 'External';
 }
 
@@ -294,114 +294,114 @@ function renderModalHtml(state) {
     `).join('');
 
     return `
-        <div class="ss-rag-modal ss-rag-browser-modal">
-            <h3 class="ss-rag-title">Collection Browser</h3>
-            <p class="ss-hint ss-rag-inline-hint">
+        <div class="shardwright-rag-modal shardwright-rag-browser-modal">
+            <h3 class="shardwright-rag-title">Collection Browser</h3>
+            <p class="shardwright-hint shardwright-rag-inline-hint">
                 Inspect collections across backends. Use Collection Manager to control what the current chat reads and where new vectors are written.
             </p>
 
-            <div class="ss-rag-section">
+            <div class="shardwright-rag-section">
                 <h4>Collection Selector</h4>
-                <div class="ss-rag-backend-filter-row">
-                    <button type="button" class="ss-rag-backend-toggle active" data-backend="vectra">Vectra</button>
-                    <button type="button" class="ss-rag-backend-toggle active" data-backend="lancedb">LanceDB</button>
-                    <button type="button" class="ss-rag-backend-toggle active" data-backend="qdrant">Qdrant</button>
-                    <button type="button" class="ss-rag-backend-toggle active" data-backend="milvus">Milvus</button>
+                <div class="shardwright-rag-backend-filter-row">
+                    <button type="button" class="shardwright-rag-backend-toggle active" data-backend="vectra">Vectra</button>
+                    <button type="button" class="shardwright-rag-backend-toggle active" data-backend="lancedb">LanceDB</button>
+                    <button type="button" class="shardwright-rag-backend-toggle active" data-backend="qdrant">Qdrant</button>
+                    <button type="button" class="shardwright-rag-backend-toggle active" data-backend="milvus">Milvus</button>
                 </div>
-                <div class="ss-rag-collection-dropdown" id="ss-rag-browser-collection-dropdown">
-                    <div class="ss-rag-collection-dropdown-trigger" id="ss-rag-browser-collection-trigger" tabindex="0" role="combobox" aria-expanded="false">
-                        <span id="ss-rag-browser-collection-label">Loading...</span>
-                        <span class="fa-solid fa-chevron-down ss-rag-collection-dropdown-arrow"></span>
+                <div class="shardwright-rag-collection-dropdown" id="shardwright-rag-browser-collection-dropdown">
+                    <div class="shardwright-rag-collection-dropdown-trigger" id="shardwright-rag-browser-collection-trigger" tabindex="0" role="combobox" aria-expanded="false">
+                        <span id="shardwright-rag-browser-collection-label">Loading...</span>
+                        <span class="fa-solid fa-chevron-down shardwright-rag-collection-dropdown-arrow"></span>
                     </div>
-                    <div class="ss-rag-collection-dropdown-menu ss-hidden" id="ss-rag-browser-collection-menu">
-                        <div class="ss-rag-collection-dropdown-search-wrap">
-                            <input id="ss-rag-browser-collection-search" class="text_pole" type="text" placeholder="Search collections..." />
+                    <div class="shardwright-rag-collection-dropdown-menu shardwright-hidden" id="shardwright-rag-browser-collection-menu">
+                        <div class="shardwright-rag-collection-dropdown-search-wrap">
+                            <input id="shardwright-rag-browser-collection-search" class="text_pole" type="text" placeholder="Search collections..." />
                         </div>
-                        <div class="ss-rag-collection-dropdown-options" id="ss-rag-browser-collection-options"></div>
+                        <div class="shardwright-rag-collection-dropdown-options" id="shardwright-rag-browser-collection-options"></div>
                     </div>
                 </div>
-                <p id="ss-rag-browser-chat-hint" class="ss-hint ss-rag-inline-hint"></p>
+                <p id="shardwright-rag-browser-chat-hint" class="shardwright-hint shardwright-rag-inline-hint"></p>
             </div>
 
-            <div class="ss-rag-section">
+            <div class="shardwright-rag-section">
                 <h4>Current Chat Usage</h4>
-                <p class="ss-hint ss-rag-inline-hint">
+                <p class="shardwright-hint shardwright-rag-inline-hint">
                     Read-only summary of the active chat. Change reads and write target in Collection Manager.
                 </p>
-                <div id="ss-rag-browser-current-chat-summary" class="ss-rag-browser-summary-card"></div>
+                <div id="shardwright-rag-browser-current-chat-summary" class="shardwright-rag-browser-summary-card"></div>
             </div>
 
-            <div class="ss-rag-section">
+            <div class="shardwright-rag-section">
                 <h4>Collection Details</h4>
-                <div class="ss-rag-browser-stat-card">
-                    <div class="ss-rag-stat-info-grid">
-                        <div class="ss-rag-stat-row">
-                            <span class="ss-rag-stat-info-label">Collection</span>
-                            <span id="ss-rag-stat-collection" class="ss-rag-stat-info-value">N/A</span>
+                <div class="shardwright-rag-browser-stat-card">
+                    <div class="shardwright-rag-stat-info-grid">
+                        <div class="shardwright-rag-stat-row">
+                            <span class="shardwright-rag-stat-info-label">Collection</span>
+                            <span id="shardwright-rag-stat-collection" class="shardwright-rag-stat-info-value">N/A</span>
                         </div>
-                        <div class="ss-rag-stat-row">
-                            <span class="ss-rag-stat-info-label">Mode</span>
-                            <span id="ss-rag-stat-mode" class="ss-rag-stat-info-value">N/A</span>
+                        <div class="shardwright-rag-stat-row">
+                            <span class="shardwright-rag-stat-info-label">Mode</span>
+                            <span id="shardwright-rag-stat-mode" class="shardwright-rag-stat-info-value">N/A</span>
                         </div>
-                        <div class="ss-rag-stat-row">
-                            <span class="ss-rag-stat-info-label">Chunks</span>
-                            <span id="ss-rag-stat-chunks" class="ss-rag-stat-info-value">0</span>
+                        <div class="shardwright-rag-stat-row">
+                            <span class="shardwright-rag-stat-info-label">Chunks</span>
+                            <span id="shardwright-rag-stat-chunks" class="shardwright-rag-stat-info-value">0</span>
                         </div>
-                        <div class="ss-rag-stat-row">
-                            <span class="ss-rag-stat-info-label">Used by</span>
-                            <span id="ss-rag-stat-character-chat" class="ss-rag-stat-info-value">N/A</span>
+                        <div class="shardwright-rag-stat-row">
+                            <span class="shardwright-rag-stat-info-label">Used by</span>
+                            <span id="shardwright-rag-stat-character-chat" class="shardwright-rag-stat-info-value">N/A</span>
                         </div>
-                        <div class="ss-rag-stat-row">
-                            <span class="ss-rag-stat-info-label">Embedding Source</span>
-                            <span id="ss-rag-stat-source" class="ss-rag-stat-info-value">N/A</span>
+                        <div class="shardwright-rag-stat-row">
+                            <span class="shardwright-rag-stat-info-label">Embedding Source</span>
+                            <span id="shardwright-rag-stat-source" class="shardwright-rag-stat-info-value">N/A</span>
                         </div>
-                        <div class="ss-rag-stat-row">
-                            <span class="ss-rag-stat-info-label">Vector Backend</span>
-                            <span id="ss-rag-stat-backend" class="ss-rag-stat-info-value">N/A</span>
+                        <div class="shardwright-rag-stat-row">
+                            <span class="shardwright-rag-stat-info-label">Vector Backend</span>
+                            <span id="shardwright-rag-stat-backend" class="shardwright-rag-stat-info-value">N/A</span>
                         </div>
                     </div>
-                    <div class="ss-rag-browser-action-row">
-                        <button id="ss-rag-browser-browse-btn" class="menu_button" type="button">Browse</button>
-                        <button id="ss-rag-browser-rename-btn" class="menu_button" type="button">Rename</button>
-                        <button id="ss-rag-browser-link-btn" class="menu_button" type="button">Add to chat</button>
-                        <button id="ss-rag-browser-export-btn" class="menu_button" type="button">Export</button>
-                        <button id="ss-rag-browser-import-btn" class="menu_button" type="button">Import</button>
-                        <button id="ss-rag-browser-revectorize-btn" class="menu_button" type="button">Revectorize</button>
-                        <button id="ss-rag-browser-delete-btn" class="menu_button ss-rag-btn-destructive" type="button">Delete</button>
+                    <div class="shardwright-rag-browser-action-row">
+                        <button id="shardwright-rag-browser-browse-btn" class="menu_button" type="button">Browse</button>
+                        <button id="shardwright-rag-browser-rename-btn" class="menu_button" type="button">Rename</button>
+                        <button id="shardwright-rag-browser-link-btn" class="menu_button" type="button">Add to chat</button>
+                        <button id="shardwright-rag-browser-export-btn" class="menu_button" type="button">Export</button>
+                        <button id="shardwright-rag-browser-import-btn" class="menu_button" type="button">Import</button>
+                        <button id="shardwright-rag-browser-revectorize-btn" class="menu_button" type="button">Revectorize</button>
+                        <button id="shardwright-rag-browser-delete-btn" class="menu_button shardwright-rag-btn-destructive" type="button">Delete</button>
                     </div>
                 </div>
             </div>
 
-            <div class="ss-rag-section">
+            <div class="shardwright-rag-section">
                 <h4>Chunk Browser</h4>
-                <div class="ss-rag-grid-two">
-                    <div class="ss-block">
-                        <label for="ss-rag-browser-chunk-search">Search</label>
-                        <input id="ss-rag-browser-chunk-search" class="text_pole" type="text" placeholder="Filter chunks..." />
+                <div class="shardwright-rag-grid-two">
+                    <div class="shardwright-block">
+                        <label for="shardwright-rag-browser-chunk-search">Search</label>
+                        <input id="shardwright-rag-browser-chunk-search" class="text_pole" type="text" placeholder="Filter chunks..." />
                     </div>
-                    <div class="ss-block">
-                        <label for="ss-rag-browser-page-size">Page Size</label>
-                        <select id="ss-rag-browser-page-size" class="text_pole">${pageSizeOptions}</select>
+                    <div class="shardwright-block">
+                        <label for="shardwright-rag-browser-page-size">Page Size</label>
+                        <select id="shardwright-rag-browser-page-size" class="text_pole">${pageSizeOptions}</select>
                     </div>
                 </div>
-                <div class="ss-rag-actions-row">
-                    <input id="ss-rag-browser-prev" class="menu_button" type="button" value="Previous Page" />
-                    <input id="ss-rag-browser-next" class="menu_button" type="button" value="Next Page" />
+                <div class="shardwright-rag-actions-row">
+                    <input id="shardwright-rag-browser-prev" class="menu_button" type="button" value="Previous Page" />
+                    <input id="shardwright-rag-browser-next" class="menu_button" type="button" value="Next Page" />
                 </div>
-                <p id="ss-rag-browser-page-info" class="ss-hint ss-rag-inline-hint">Click "Browse" to load collection items.</p>
-                <div id="ss-rag-browser-items" class="ss-rag-browser-items"></div>
+                <p id="shardwright-rag-browser-page-info" class="shardwright-hint shardwright-rag-inline-hint">Click "Browse" to load collection items.</p>
+                <div id="shardwright-rag-browser-items" class="shardwright-rag-browser-items"></div>
             </div>
 
-            <div class="ss-rag-section">
+            <div class="shardwright-rag-section">
                 <h4>Test Query</h4>
-                <div class="ss-block">
-                    <label for="ss-rag-browser-query-text">Query Text</label>
-                    <textarea id="ss-rag-browser-query-text" class="text_pole ss-rag-template" placeholder="Type a test query..."></textarea>
+                <div class="shardwright-block">
+                    <label for="shardwright-rag-browser-query-text">Query Text</label>
+                    <textarea id="shardwright-rag-browser-query-text" class="text_pole shardwright-rag-template" placeholder="Type a test query..."></textarea>
                 </div>
-                <div class="ss-rag-actions-row">
-                    <input id="ss-rag-browser-run-query" class="menu_button" type="button" value="Run Query" />
+                <div class="shardwright-rag-actions-row">
+                    <input id="shardwright-rag-browser-run-query" class="menu_button" type="button" value="Run Query" />
                 </div>
-                <div id="ss-rag-browser-query-results" class="ss-rag-browser-query-results"></div>
+                <div id="shardwright-rag-browser-query-results" class="shardwright-rag-browser-query-results"></div>
             </div>
         </div>
     `;
@@ -419,22 +419,22 @@ function renderChunkItem(item) {
     const index = Number(item?.index ?? meta?.messageIndex ?? 0);
 
     return `
-        <details class="ss-rag-browser-item ${isDisabled ? 'disabled' : ''}">
+        <details class="shardwright-rag-browser-item ${isDisabled ? 'disabled' : ''}">
             <summary>
                 <input type="checkbox"
-                       class="ss-rag-browser-item-toggle"
+                       class="shardwright-rag-browser-item-toggle"
                        data-hash="${escapeHtml(String(hash))}"
                        ${isDisabled ? '' : 'checked'} />
-                <span class="ss-rag-browser-item-index">#${index}</span>
-                <span class="ss-rag-browser-item-preview">${escapeHtml(truncate(text, 140))}</span>
-                <span class="ss-rag-browser-item-actions">
-                    <button type="button" class="menu_button ss-rag-browser-action" data-action="edit" data-hash="${escapeHtml(String(hash))}">Edit</button>
-                    <button type="button" class="menu_button ss-rag-browser-action" data-action="delete" data-hash="${escapeHtml(String(hash))}">Delete</button>
+                <span class="shardwright-rag-browser-item-index">#${index}</span>
+                <span class="shardwright-rag-browser-item-preview">${escapeHtml(truncate(text, 140))}</span>
+                <span class="shardwright-rag-browser-item-actions">
+                    <button type="button" class="menu_button shardwright-rag-browser-action" data-action="edit" data-hash="${escapeHtml(String(hash))}">Edit</button>
+                    <button type="button" class="menu_button shardwright-rag-browser-action" data-action="delete" data-hash="${escapeHtml(String(hash))}">Delete</button>
                 </span>
             </summary>
-            <div class="ss-rag-browser-item-body">
-                <pre class="ss-rag-browser-text">${escapeHtml(text)}</pre>
-                <pre class="ss-rag-browser-meta">${escapeHtml(JSON.stringify(meta, null, 2))}</pre>
+            <div class="shardwright-rag-browser-item-body">
+                <pre class="shardwright-rag-browser-text">${escapeHtml(text)}</pre>
+                <pre class="shardwright-rag-browser-meta">${escapeHtml(JSON.stringify(meta, null, 2))}</pre>
             </div>
         </details>
     `;
@@ -447,7 +447,7 @@ function renderChunkItem(item) {
 function renderChunkList(container, items) {
     if (!container) return;
     if (!Array.isArray(items) || items.length === 0) {
-        container.innerHTML = '<p class="ss-hint ss-rag-inline-hint">No chunks found for this page.</p>';
+        container.innerHTML = '<p class="shardwright-hint shardwright-rag-inline-hint">No chunks found for this page.</p>';
         return;
     }
     container.innerHTML = items.map(renderChunkItem).join('');
@@ -546,15 +546,15 @@ function updateCollectionSelector(state, dom) {
     if (!dom.collectionOptions) return;
 
     if (collections.length === 0) {
-        dom.collectionOptions.innerHTML = '<div class="ss-rag-collection-dropdown-empty">No collections found</div>';
+        dom.collectionOptions.innerHTML = '<div class="shardwright-rag-collection-dropdown-empty">No collections found</div>';
         return;
     }
 
     dom.collectionOptions.innerHTML = collections.map(collection => `
-        <div class="ss-rag-collection-dropdown-item ${collection.id === state.collectionId ? 'selected' : ''}"
+        <div class="shardwright-rag-collection-dropdown-item ${collection.id === state.collectionId ? 'selected' : ''}"
              data-id="${escapeHtml(collection.id)}">
-            <span class="ss-rag-collection-item-id">${escapeHtml(collection.id)}</span>
-            <span class="ss-rag-collection-item-meta">${Number(collection.chunkCount || 0)} chunks · ${escapeHtml(collection.backend || 'unknown')}</span>
+            <span class="shardwright-rag-collection-item-id">${escapeHtml(collection.id)}</span>
+            <span class="shardwright-rag-collection-item-meta">${Number(collection.chunkCount || 0)} chunks · ${escapeHtml(collection.backend || 'unknown')}</span>
         </div>
     `).join('');
 }
@@ -569,7 +569,7 @@ function updateLinkButton(state, dom) {
     let enabled = false;
 
     const currentChatId = normalizeChatId(state.currentChatId);
-    const binding = getChatBinding(state.currentChatId, extension_settings?.summary_sharder);
+    const binding = getChatBinding(state.currentChatId, extension_settings?.shardwright);
     const isExplicitlyLinked = !!(binding?.collections || []).includes(state.collectionId);
 
     const isOwnCollection = state.collectionId && (
@@ -612,11 +612,11 @@ function updateCurrentChatUsageSummary(state, dom) {
     if (!dom.currentChatSummary) return;
 
     if (!state.currentChatId) {
-        dom.currentChatSummary.innerHTML = '<div class="ss-rag-browser-summary-empty">No active chat detected.</div>';
+        dom.currentChatSummary.innerHTML = '<div class="shardwright-rag-browser-summary-empty">No active chat detected.</div>';
         return;
     }
 
-    const liveSettings = extension_settings?.summary_sharder;
+    const liveSettings = extension_settings?.shardwright;
     const resolvedReadIds = getActiveCollectionIds(state.currentChatId, liveSettings);
     const readIds = Array.isArray(resolvedReadIds)
         ? resolvedReadIds
@@ -630,35 +630,35 @@ function updateCurrentChatUsageSummary(state, dom) {
             ? 'count unavailable'
             : `${chunkCount} chunk${chunkCount === 1 ? '' : 's'}`;
         const selectedBadge = selectedId && selectedId === collectionId
-            ? '<span class="ss-rag-browser-summary-badge">selected</span>'
+            ? '<span class="shardwright-rag-browser-summary-badge">selected</span>'
             : '';
         return `
-            <div class="ss-rag-browser-summary-row">
-                <div class="ss-rag-browser-summary-main">
-                    <span class="ss-rag-browser-summary-id" title="${escapeHtml(collectionId)}">${escapeHtml(truncate(collectionId, 82))}</span>
-                    <div class="ss-rag-browser-summary-badges">${selectedBadge}${extraBadge}</div>
+            <div class="shardwright-rag-browser-summary-row">
+                <div class="shardwright-rag-browser-summary-main">
+                    <span class="shardwright-rag-browser-summary-id" title="${escapeHtml(collectionId)}">${escapeHtml(truncate(collectionId, 82))}</span>
+                    <div class="shardwright-rag-browser-summary-badges">${selectedBadge}${extraBadge}</div>
                 </div>
-                <span class="ss-rag-browser-summary-meta">${escapeHtml(countLabel)}</span>
+                <span class="shardwright-rag-browser-summary-meta">${escapeHtml(countLabel)}</span>
             </div>
         `;
     };
 
     const readsHtml = readIds.length > 0
         ? readIds.map(id => renderCollectionRow(id)).join('')
-        : '<div class="ss-rag-browser-summary-empty">No active read collections.</div>';
+        : '<div class="shardwright-rag-browser-summary-empty">No active read collections.</div>';
 
     const writeTargetHtml = writeTarget
-        ? renderCollectionRow(writeTarget, '<span class="ss-rag-browser-summary-badge">write target</span>')
-        : '<div class="ss-rag-browser-summary-empty">No write target resolved.</div>';
+        ? renderCollectionRow(writeTarget, '<span class="shardwright-rag-browser-summary-badge">write target</span>')
+        : '<div class="shardwright-rag-browser-summary-empty">No write target resolved.</div>';
 
     dom.currentChatSummary.innerHTML = `
-        <div class="ss-rag-browser-summary-section">
-            <div class="ss-rag-browser-summary-label">Reads</div>
-            <div class="ss-rag-browser-summary-list">${readsHtml}</div>
+        <div class="shardwright-rag-browser-summary-section">
+            <div class="shardwright-rag-browser-summary-label">Reads</div>
+            <div class="shardwright-rag-browser-summary-list">${readsHtml}</div>
         </div>
-        <div class="ss-rag-browser-summary-section">
-            <div class="ss-rag-browser-summary-label">Write Target</div>
-            <div class="ss-rag-browser-summary-list">${writeTargetHtml}</div>
+        <div class="shardwright-rag-browser-summary-section">
+            <div class="shardwright-rag-browser-summary-label">Write Target</div>
+            <div class="shardwright-rag-browser-summary-list">${writeTargetHtml}</div>
         </div>
     `;
 }
@@ -680,7 +680,7 @@ function updateCollectionHint(state, dom) {
         return;
     }
 
-    const binding = getChatBinding(state.currentChatId, extension_settings?.summary_sharder);
+    const binding = getChatBinding(state.currentChatId, extension_settings?.shardwright);
     if ((binding?.collections || []).includes(state.collectionId)) {
         dom.chatHint.textContent = 'This collection is currently added to the active chat. Use Collection Manager to review the full read/write configuration.';
         return;
@@ -716,7 +716,7 @@ function updateCollectionHint(state, dom) {
 function getChatsLinkedToCollection(state, collectionId) {
     if (!collectionId) return [];
 
-    const ss = extension_settings?.summary_sharder;
+    const ss = extension_settings?.shardwright;
 
     // Build a lookup map from chatId -> displayName for the current character's chats
     const displayNameMap = new Map();
@@ -994,7 +994,7 @@ async function runQuery(state, dom) {
 
     if (!dom.queryResults) return;
     if (merged.length === 0) {
-        dom.queryResults.innerHTML = '<p class="ss-hint ss-rag-inline-hint">No query results.</p>';
+        dom.queryResults.innerHTML = '<p class="shardwright-hint shardwright-rag-inline-hint">No query results.</p>';
         return;
     }
 
@@ -1010,9 +1010,9 @@ async function runQuery(state, dom) {
     }).join('');
 
     dom.queryResults.innerHTML = `
-        <div class="ss-rag-browser-query-panel">
-            <p class="ss-hint ss-rag-inline-hint">Top ${merged.length} results</p>
-            <ul class="ss-rag-browser-query-list">${resultsHtml}</ul>
+        <div class="shardwright-rag-browser-query-panel">
+            <p class="shardwright-hint shardwright-rag-inline-hint">Top ${merged.length} results</p>
+            <ul class="shardwright-rag-browser-query-list">${resultsHtml}</ul>
         </div>
     `;
 }
@@ -1093,15 +1093,15 @@ function showChunkEditModal(item) {
         }
 
         const modalHtml = `
-            <div class="ss-owned-popup-content ss-rag-edit-modal">
+            <div class="shardwright-owned-popup-content shardwright-rag-edit-modal">
                 <h3>Edit Chunk</h3>
-                <p class="ss-hint ss-rag-inline-hint">Keywords</p>
-                <div id="ss-rag-edit-tag-host" class="ss-weighted-tag-container"></div>
-                <input id="ss-rag-edit-tag-input" class="text_pole" type="text" placeholder="Type keyword and press Enter or comma" />
-                <p class="ss-hint ss-rag-inline-hint">Chunk Text</p>
-                <textarea id="ss-rag-edit-text" class="text_pole ss-rag-template" rows="10">${escapeHtml(String(item?.text || ''))}</textarea>
-                <div class="ss-rag-actions-row ss-rag-actions-row-tight">
-                    <button type="button" id="ss-rag-edit-save" class="menu_button">Save Changes</button>
+                <p class="shardwright-hint shardwright-rag-inline-hint">Keywords</p>
+                <div id="shardwright-rag-edit-tag-host" class="shardwright-weighted-tag-container"></div>
+                <input id="shardwright-rag-edit-tag-input" class="text_pole" type="text" placeholder="Type keyword and press Enter or comma" />
+                <p class="shardwright-hint shardwright-rag-inline-hint">Chunk Text</p>
+                <textarea id="shardwright-rag-edit-text" class="text_pole shardwright-rag-template" rows="10">${escapeHtml(String(item?.text || ''))}</textarea>
+                <div class="shardwright-rag-actions-row shardwright-rag-actions-row-tight">
+                    <button type="button" id="shardwright-rag-edit-save" class="menu_button">Save Changes</button>
                 </div>
             </div>
         `;
@@ -1118,7 +1118,7 @@ function showChunkEditModal(item) {
             container.innerHTML = '';
             for (const tag of tags) {
                 const el = document.createElement('span');
-                el.className = 'ss-weighted-tag';
+                el.className = 'shardwright-weighted-tag';
                 el.dataset.keyword = tag.keyword;
 
                 const label = document.createElement('span');
@@ -1126,7 +1126,7 @@ function showChunkEditModal(item) {
 
                 const weightInput = document.createElement('input');
                 weightInput.type = 'number';
-                weightInput.className = 'ss-weighted-tag-weight';
+                weightInput.className = 'shardwright-weighted-tag-weight';
                 weightInput.step = '0.1';
                 weightInput.min = '0.1';
                 weightInput.value = String(Number(tag.weight).toFixed(1));
@@ -1134,7 +1134,7 @@ function showChunkEditModal(item) {
 
                 const removeBtn = document.createElement('button');
                 removeBtn.type = 'button';
-                removeBtn.className = 'ss-weighted-tag-remove';
+                removeBtn.className = 'shardwright-weighted-tag-remove';
                 removeBtn.dataset.keyword = tag.keyword;
                 removeBtn.textContent = '✕';
 
@@ -1164,10 +1164,10 @@ function showChunkEditModal(item) {
         const showPromise = popup.show();
 
         const setupEventListeners = () => {
-            const tagHost = document.getElementById('ss-rag-edit-tag-host');
-            const tagInput = document.getElementById('ss-rag-edit-tag-input');
-            const textarea = document.getElementById('ss-rag-edit-text');
-            const saveBtn = document.getElementById('ss-rag-edit-save');
+            const tagHost = document.getElementById('shardwright-rag-edit-tag-host');
+            const tagInput = document.getElementById('shardwright-rag-edit-tag-input');
+            const textarea = document.getElementById('shardwright-rag-edit-text');
+            const saveBtn = document.getElementById('shardwright-rag-edit-save');
 
             if (!textarea || !saveBtn) {
                 ragLog.warn('[RAG Edit Modal] Required elements not found, retrying...');
@@ -1188,7 +1188,7 @@ function showChunkEditModal(item) {
             });
 
             tagHost?.addEventListener('click', (event) => {
-                const target = event.target instanceof Element ? event.target.closest('.ss-weighted-tag-remove') : null;
+                const target = event.target instanceof Element ? event.target.closest('.shardwright-weighted-tag-remove') : null;
                 if (!target) return;
                 event.preventDefault();
                 const keyword = String(target.getAttribute('data-keyword') || '').trim().toLowerCase();
@@ -1204,7 +1204,7 @@ function showChunkEditModal(item) {
                 const input = event.target instanceof HTMLInputElement
                     ? event.target
                     : null;
-                if (!input || !input.classList.contains('ss-weighted-tag-weight')) return;
+                if (!input || !input.classList.contains('shardwright-weighted-tag-weight')) return;
                 const keyword = String(input.getAttribute('data-keyword') || '').trim().toLowerCase();
                 const tag = tags.find(entry => entry.keyword.toLowerCase() === keyword);
                 if (!tag) return;
@@ -1270,12 +1270,12 @@ function showExportFormatChoice() {
     let resolved = false;
     return new Promise((resolve) => {
         const modalHtml = `
-            <div class="ss-owned-popup-content ss-rag-export-modal">
+            <div class="shardwright-owned-popup-content shardwright-rag-export-modal">
                 <h3>Export Collection</h3>
-                <p class="ss-hint ss-rag-inline-hint">Choose export format:</p>
-                <div class="ss-rag-actions-row ss-rag-actions-row-tight">
-                    <button type="button" id="ss-rag-export-json" class="menu_button">JSON</button>
-                    <button type="button" id="ss-rag-export-csv" class="menu_button">CSV</button>
+                <p class="shardwright-hint shardwright-rag-inline-hint">Choose export format:</p>
+                <div class="shardwright-rag-actions-row shardwright-rag-actions-row-tight">
+                    <button type="button" id="shardwright-rag-export-json" class="menu_button">JSON</button>
+                    <button type="button" id="shardwright-rag-export-csv" class="menu_button">CSV</button>
                 </div>
             </div>
         `;
@@ -1288,8 +1288,8 @@ function showExportFormatChoice() {
         const showPromise = popup.show();
 
         requestAnimationFrame(() => {
-            const jsonBtn = document.getElementById('ss-rag-export-json');
-            const csvBtn = document.getElementById('ss-rag-export-csv');
+            const jsonBtn = document.getElementById('shardwright-rag-export-json');
+            const csvBtn = document.getElementById('shardwright-rag-export-csv');
 
             jsonBtn?.addEventListener('click', () => {
                 if (resolved) return;
@@ -1856,7 +1856,7 @@ async function handleLinkToggle(state, settings, dom) {
         return;
     }
 
-    const ss = extension_settings?.summary_sharder;
+    const ss = extension_settings?.shardwright;
     const existingBinding = getChatBinding(state.currentChatId, ss);
     const currentAlias = getCollectionAlias(state.currentChatId);
     const currentOverride = getCollectionIdOverride(state.currentChatId);
@@ -2119,41 +2119,41 @@ export async function openRagBrowserModal(settings) {
 
     requestAnimationFrame(async () => {
         const dom = {
-            collectionTrigger: document.getElementById('ss-rag-browser-collection-trigger'),
-            collectionLabel: document.getElementById('ss-rag-browser-collection-label'),
-            collectionMenu: document.getElementById('ss-rag-browser-collection-menu'),
-            collectionSearch: document.getElementById('ss-rag-browser-collection-search'),
-            collectionOptions: document.getElementById('ss-rag-browser-collection-options'),
-            chatHint: document.getElementById('ss-rag-browser-chat-hint'),
-            currentChatSummary: document.getElementById('ss-rag-browser-current-chat-summary'),
-            statCollection: document.getElementById('ss-rag-stat-collection'),
-            statMode: document.getElementById('ss-rag-stat-mode'),
-            statChunks: document.getElementById('ss-rag-stat-chunks'),
-            statCharacterChat: document.getElementById('ss-rag-stat-character-chat'),
-            statSource: document.getElementById('ss-rag-stat-source'),
-            statBackend: document.getElementById('ss-rag-stat-backend'),
-            browseBtn: document.getElementById('ss-rag-browser-browse-btn'),
-            renameBtn: document.getElementById('ss-rag-browser-rename-btn'),
-            linkBtn: document.getElementById('ss-rag-browser-link-btn'),
-            exportBtn: document.getElementById('ss-rag-browser-export-btn'),
-            importBtn: document.getElementById('ss-rag-browser-import-btn'),
-            revectorizeBtn: document.getElementById('ss-rag-browser-revectorize-btn'),
-            deleteBtn: document.getElementById('ss-rag-browser-delete-btn'),
-            pageInfo: document.getElementById('ss-rag-browser-page-info'),
-            items: document.getElementById('ss-rag-browser-items'),
-            prevBtn: document.getElementById('ss-rag-browser-prev'),
-            nextBtn: document.getElementById('ss-rag-browser-next'),
-            pageSizeSelect: document.getElementById('ss-rag-browser-page-size'),
-            chunkSearch: document.getElementById('ss-rag-browser-chunk-search'),
-            queryInput: document.getElementById('ss-rag-browser-query-text'),
-            queryResults: document.getElementById('ss-rag-browser-query-results'),
-            runQueryBtn: document.getElementById('ss-rag-browser-run-query'),
+            collectionTrigger: document.getElementById('shardwright-rag-browser-collection-trigger'),
+            collectionLabel: document.getElementById('shardwright-rag-browser-collection-label'),
+            collectionMenu: document.getElementById('shardwright-rag-browser-collection-menu'),
+            collectionSearch: document.getElementById('shardwright-rag-browser-collection-search'),
+            collectionOptions: document.getElementById('shardwright-rag-browser-collection-options'),
+            chatHint: document.getElementById('shardwright-rag-browser-chat-hint'),
+            currentChatSummary: document.getElementById('shardwright-rag-browser-current-chat-summary'),
+            statCollection: document.getElementById('shardwright-rag-stat-collection'),
+            statMode: document.getElementById('shardwright-rag-stat-mode'),
+            statChunks: document.getElementById('shardwright-rag-stat-chunks'),
+            statCharacterChat: document.getElementById('shardwright-rag-stat-character-chat'),
+            statSource: document.getElementById('shardwright-rag-stat-source'),
+            statBackend: document.getElementById('shardwright-rag-stat-backend'),
+            browseBtn: document.getElementById('shardwright-rag-browser-browse-btn'),
+            renameBtn: document.getElementById('shardwright-rag-browser-rename-btn'),
+            linkBtn: document.getElementById('shardwright-rag-browser-link-btn'),
+            exportBtn: document.getElementById('shardwright-rag-browser-export-btn'),
+            importBtn: document.getElementById('shardwright-rag-browser-import-btn'),
+            revectorizeBtn: document.getElementById('shardwright-rag-browser-revectorize-btn'),
+            deleteBtn: document.getElementById('shardwright-rag-browser-delete-btn'),
+            pageInfo: document.getElementById('shardwright-rag-browser-page-info'),
+            items: document.getElementById('shardwright-rag-browser-items'),
+            prevBtn: document.getElementById('shardwright-rag-browser-prev'),
+            nextBtn: document.getElementById('shardwright-rag-browser-next'),
+            pageSizeSelect: document.getElementById('shardwright-rag-browser-page-size'),
+            chunkSearch: document.getElementById('shardwright-rag-browser-chunk-search'),
+            queryInput: document.getElementById('shardwright-rag-browser-query-text'),
+            queryResults: document.getElementById('shardwright-rag-browser-query-results'),
+            runQueryBtn: document.getElementById('shardwright-rag-browser-run-query'),
         };
 
-        const modalRoot = document.querySelector('.ss-rag-browser-modal');
+        const modalRoot = document.querySelector('.shardwright-rag-browser-modal');
 
         // Apply saved backend toggle states
-        modalRoot?.querySelectorAll('.ss-rag-backend-toggle').forEach(btn => {
+        modalRoot?.querySelectorAll('.shardwright-rag-backend-toggle').forEach(btn => {
             const backend = String(btn.getAttribute('data-backend') || '').toLowerCase();
             if (state.activeBackends.includes(backend)) {
                 btn.classList.add('active');
@@ -2173,7 +2173,7 @@ export async function openRagBrowserModal(settings) {
         modalRoot?.addEventListener('click', (event) => {
             const target = event.target instanceof Element ? event.target : null;
             if (!target) return;
-            if (target.closest('.ss-rag-browser-item-toggle')) {
+            if (target.closest('.shardwright-rag-browser-item-toggle')) {
                 event.stopPropagation();
             }
             // Don't preventDefault/stopPropagation on action buttons - let the second handler process them
@@ -2181,7 +2181,7 @@ export async function openRagBrowserModal(settings) {
 
         modalRoot?.addEventListener('change', async (event) => {
             const toggle = event.target instanceof HTMLInputElement
-                ? event.target.closest('.ss-rag-browser-item-toggle')
+                ? event.target.closest('.shardwright-rag-browser-item-toggle')
                 : null;
             if (!toggle) return;
 
@@ -2206,7 +2206,7 @@ export async function openRagBrowserModal(settings) {
 
         modalRoot?.addEventListener('click', async (event) => {
             const button = event.target instanceof Element
-                ? event.target.closest('.ss-rag-browser-action')
+                ? event.target.closest('.shardwright-rag-browser-action')
                 : null;
             if (!button) return;
 
@@ -2253,18 +2253,18 @@ export async function openRagBrowserModal(settings) {
         });
 
         const openCollectionMenu = () => {
-            dom.collectionMenu?.classList.remove('ss-hidden');
+            dom.collectionMenu?.classList.remove('shardwright-hidden');
             dom.collectionTrigger?.setAttribute('aria-expanded', 'true');
             dom.collectionSearch?.focus();
         };
 
         const closeCollectionMenu = () => {
-            dom.collectionMenu?.classList.add('ss-hidden');
+            dom.collectionMenu?.classList.add('shardwright-hidden');
             dom.collectionTrigger?.setAttribute('aria-expanded', 'false');
         };
 
         dom.collectionTrigger?.addEventListener('click', () => {
-            const isOpen = !dom.collectionMenu?.classList.contains('ss-hidden');
+            const isOpen = !dom.collectionMenu?.classList.contains('shardwright-hidden');
             if (isOpen) {
                 closeCollectionMenu();
             } else {
@@ -2287,7 +2287,7 @@ export async function openRagBrowserModal(settings) {
 
         dom.collectionOptions?.addEventListener('click', async (event) => {
             const item = event.target instanceof Element
-                ? event.target.closest('.ss-rag-collection-dropdown-item')
+                ? event.target.closest('.shardwright-rag-collection-dropdown-item')
                 : null;
             if (!item) return;
             const selectedId = String(item.getAttribute('data-id') || '').trim();
@@ -2297,7 +2297,7 @@ export async function openRagBrowserModal(settings) {
         });
 
         document.addEventListener('click', (event) => {
-            const dropdown = document.getElementById('ss-rag-browser-collection-dropdown');
+            const dropdown = document.getElementById('shardwright-rag-browser-collection-dropdown');
             if (dropdown && !dropdown.contains(event.target)) {
                 closeCollectionMenu();
             }
@@ -2333,7 +2333,7 @@ export async function openRagBrowserModal(settings) {
 
         modalRoot?.addEventListener('click', async (event) => {
             const toggle = event.target instanceof Element
-                ? event.target.closest('.ss-rag-backend-toggle')
+                ? event.target.closest('.shardwright-rag-backend-toggle')
                 : null;
             if (!toggle) return;
 
@@ -2443,13 +2443,13 @@ export async function openRagBrowserModal(settings) {
             dom.collectionLabel.textContent = 'Loading...';
         }
         if (dom.collectionOptions) {
-            dom.collectionOptions.innerHTML = '<div class="ss-rag-collection-dropdown-empty">Loading collections...</div>';
+            dom.collectionOptions.innerHTML = '<div class="shardwright-rag-collection-dropdown-empty">Loading collections...</div>';
         }
         if (dom.chatHint) {
             dom.chatHint.textContent = 'Loading collection metadata...';
         }
         if (dom.currentChatSummary) {
-            dom.currentChatSummary.innerHTML = '<div class="ss-rag-browser-summary-empty">Loading current chat usage...</div>';
+            dom.currentChatSummary.innerHTML = '<div class="shardwright-rag-browser-summary-empty">Loading current chat usage...</div>';
         }
         clearChunkView(state, dom);
 
@@ -2472,7 +2472,7 @@ export async function openRagBrowserModal(settings) {
                 dom.collectionLabel.textContent = 'Failed to load';
             }
             if (dom.collectionOptions) {
-                dom.collectionOptions.innerHTML = '<div class="ss-rag-collection-dropdown-empty">Failed to load collections</div>';
+                dom.collectionOptions.innerHTML = '<div class="shardwright-rag-collection-dropdown-empty">Failed to load collections</div>';
             }
             if (dom.chatHint) {
                 dom.chatHint.textContent = 'Collection list unavailable.';

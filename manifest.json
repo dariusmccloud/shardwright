@@ -1,11 +1,11 @@
 {
-    "display_name": "Summary Sharder",
-    "loading_order": 10,
+    "display_name": "Shardwright",
+    "loading_order": 11,
     "requires": [],
     "optional": [],
-    "generate_interceptor": "summary_sharder_rearrangeChat",
+    "generate_interceptor": "shardwright_rearrangeChat",
     "js": "index.js",
-    "author": "Promansis",
-    "version": "0.9",    
-    "homePage": "https://github.com/Promansis/summary-sharder"
+    "author": "Darius McCloud",
+    "version": "0.10.0",
+    "homePage": "https://github.com/dariusmccloud/shardwright"
 }

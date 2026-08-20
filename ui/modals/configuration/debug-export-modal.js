@@ -216,7 +216,7 @@ function buildSelectedRagSnapshot(settings) {
         snapshot.position = Number(rag.position) || 0;
         snapshot.depth = Number(rag.depth) || 0;
     } else {
-        snapshot.injectionVariableName = rag.injectionVariableName || 'ss_rag_memory';
+        snapshot.injectionVariableName = rag.injectionVariableName || 'shardwright_rag_memory';
     }
 
     if (scoringMethod === 'hybrid') {
@@ -375,14 +375,14 @@ async function copyMarkdown(markdown, textarea) {
 export async function openDebugExportModal(settings) {
     const markdown = buildExportMarkdown(settings);
     const modalHtml = `
-        <div class="ss-debug-export-modal">
+        <div class="shardwright-debug-export-modal">
             <h3>Debug Settings Export</h3>
-            <p class="ss-text-hint">Share this for bug reports. API keys, tokens, passwords, and secure secret IDs are redacted.</p>
-            <div class="ss-debug-export-actions">
-                <button id="ss-debug-export-copy" class="menu_button" type="button">Copy Markdown</button>
-                <button id="ss-debug-export-download" class="menu_button" type="button">Download .md</button>
+            <p class="shardwright-text-hint">Share this for bug reports. API keys, tokens, passwords, and secure secret IDs are redacted.</p>
+            <div class="shardwright-debug-export-actions">
+                <button id="shardwright-debug-export-copy" class="menu_button" type="button">Copy Markdown</button>
+                <button id="shardwright-debug-export-download" class="menu_button" type="button">Download .md</button>
             </div>
-            <textarea id="ss-debug-export-output" class="text_pole ss-debug-export-textarea" readonly spellcheck="false">${escapeHtml(markdown)}</textarea>
+            <textarea id="shardwright-debug-export-output" class="text_pole shardwright-debug-export-textarea" readonly spellcheck="false">${escapeHtml(markdown)}</textarea>
         </div>
     `;
 
@@ -396,7 +396,7 @@ export async function openDebugExportModal(settings) {
             wide: true,
             large: true,
             onOpen: async (activePopup) => {
-                activePopup?.dlg?.classList.add('ss-debug-export-popup');
+                activePopup?.dlg?.classList.add('shardwright-debug-export-popup');
             },
         }),
     );
@@ -405,11 +405,11 @@ export async function openDebugExportModal(settings) {
 
     requestAnimationFrame(() => {
         const root = popup?.dlg;
-        const textarea = root?.querySelector('#ss-debug-export-output');
-        root?.querySelector('#ss-debug-export-copy')?.addEventListener('click', () => {
+        const textarea = root?.querySelector('#shardwright-debug-export-output');
+        root?.querySelector('#shardwright-debug-export-copy')?.addEventListener('click', () => {
             copyMarkdown(markdown, textarea);
         });
-        root?.querySelector('#ss-debug-export-download')?.addEventListener('click', () => {
+        root?.querySelector('#shardwright-debug-export-download')?.addEventListener('click', () => {
             downloadMarkdown(markdown);
             toastr.success('Debug settings downloaded');
         });

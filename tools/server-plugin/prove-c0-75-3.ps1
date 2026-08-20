@@ -57,7 +57,7 @@ function Wait-ForHealth([hashtable]$HostSpec, [int]$Attempts = 60) {
     for ($i = 0; $i -lt $Attempts; $i++) {
         Start-Sleep -Seconds 1
         try {
-            Invoke-WebRequest -Uri "http://127.0.0.1:$($HostSpec.Port)/api/plugins/summary-sharder-memory/health" -UseBasicParsing -TimeoutSec 2 | Out-Null
+            Invoke-WebRequest -Uri "http://127.0.0.1:$($HostSpec.Port)/api/plugins/shardwright-memory/health" -UseBasicParsing -TimeoutSec 2 | Out-Null
             return
         } catch {}
     }
@@ -217,7 +217,7 @@ function Invoke-JsonRequestAllowError {
 }
 
 function Get-NoTokenPromotionStatus([hashtable]$HostSpec) {
-    return Invoke-JsonRequestAllowError -Method 'POST' -Uri "http://127.0.0.1:$($HostSpec.Port)/api/plugins/summary-sharder-memory/rebuild/promotion/authorize" -Body @{
+    return Invoke-JsonRequestAllowError -Method 'POST' -Uri "http://127.0.0.1:$($HostSpec.Port)/api/plugins/shardwright-memory/rebuild/promotion/authorize" -Body @{
         reconstructionRunId = 'missing'
         authorizedBy = 'proof'
     } -TimeoutSec 15
@@ -231,7 +231,7 @@ function Invoke-CandidateRun {
     )
 
     $csrf = Get-CsrfSession -Port $HostSpec.Port
-    $base = "http://127.0.0.1:$($HostSpec.Port)/api/plugins/summary-sharder-memory"
+    $base = "http://127.0.0.1:$($HostSpec.Port)/api/plugins/shardwright-memory"
     $init = Invoke-JsonRequest -Method 'POST' -Uri "$base/rebuild/candidate/init" -Body @{
         memoryScopeId = $ScopeId
         requestKey = $RequestKey
@@ -256,7 +256,7 @@ function Invoke-PromotionAuthorization {
         [string]$AuthorizedBy
     )
 
-    return Invoke-JsonRequest -Method 'POST' -Uri "http://127.0.0.1:$($HostSpec.Port)/api/plugins/summary-sharder-memory/rebuild/promotion/authorize" -Body @{
+    return Invoke-JsonRequest -Method 'POST' -Uri "http://127.0.0.1:$($HostSpec.Port)/api/plugins/shardwright-memory/rebuild/promotion/authorize" -Body @{
         reconstructionRunId = $ReconstructionRunId
         authorizedBy = $AuthorizedBy
         expiresAt = [int64]([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() + 3600000)
@@ -270,7 +270,7 @@ function Invoke-PromotionExecution {
         [string]$AuthorizationId
     )
 
-    return Invoke-JsonRequest -Method 'POST' -Uri "http://127.0.0.1:$($HostSpec.Port)/api/plugins/summary-sharder-memory/rebuild/promotion/execute" -Body @{
+    return Invoke-JsonRequest -Method 'POST' -Uri "http://127.0.0.1:$($HostSpec.Port)/api/plugins/shardwright-memory/rebuild/promotion/execute" -Body @{
         authorizationId = $AuthorizationId
     } -Session $Csrf.Session -CsrfToken $Csrf.Token -TimeoutSec 90
 }
@@ -282,14 +282,14 @@ function Invoke-PromotionExecutionAllowError {
         [string]$AuthorizationId
     )
 
-    return Invoke-JsonRequestAllowError -Method 'POST' -Uri "http://127.0.0.1:$($HostSpec.Port)/api/plugins/summary-sharder-memory/rebuild/promotion/execute" -Body @{
+    return Invoke-JsonRequestAllowError -Method 'POST' -Uri "http://127.0.0.1:$($HostSpec.Port)/api/plugins/shardwright-memory/rebuild/promotion/execute" -Body @{
         authorizationId = $AuthorizationId
     } -Session $Csrf.Session -CsrfToken $Csrf.Token -TimeoutSec 90
 }
 
 function Get-VerifiedCandidateHash([string]$CandidateDbPath) {
     $script = @'
-import { computePersistedCanonicalCandidateState } from "__ROOT_URL__/tools/server-plugin/summary-sharder-memory/rebuild.js";
+import { computePersistedCanonicalCandidateState } from "__ROOT_URL__/tools/server-plugin/shardwright-memory/rebuild.js";
 
 const state = computePersistedCanonicalCandidateState("__DB__");
 process.stdout.write(state.canonicalCandidateHash);
@@ -308,8 +308,8 @@ function Get-LiveScopeState {
     $rootUrl = 'file:///' + ($summarySharderRoot.Replace('\', '/') -replace ' ', '%20')
     $script = @'
 import fs from "node:fs";
-import { getStoragePaths, readOperationalStateMarker, resolveOperationalDbPath } from "__ROOT_URL__/tools/server-plugin/summary-sharder-memory/core.js";
-import { computeScopedAuthorityState } from "__ROOT_URL__/tools/server-plugin/summary-sharder-memory/rebuild.js";
+import { getStoragePaths, readOperationalStateMarker, resolveOperationalDbPath } from "__ROOT_URL__/tools/server-plugin/shardwright-memory/core.js";
+import { computeScopedAuthorityState } from "__ROOT_URL__/tools/server-plugin/shardwright-memory/rebuild.js";
 
 const userRoot = process.env.SUMMARY_SHARDER_USER_ROOT;
 const scopeIds = JSON.parse(process.env.SUMMARY_SHARDER_SCOPE_IDS || "[]");
@@ -344,7 +344,7 @@ process.stdout.write(JSON.stringify({
 function Get-LiveTableNames([hashtable]$HostSpec) {
     $rootUrl = 'file:///' + ($summarySharderRoot.Replace('\', '/') -replace ' ', '%20')
     $script = @'
-import { createAdapter, getStoragePaths, readOperationalStateMarker, resolveOperationalDbPath } from "__ROOT_URL__/tools/server-plugin/summary-sharder-memory/core.js";
+import { createAdapter, getStoragePaths, readOperationalStateMarker, resolveOperationalDbPath } from "__ROOT_URL__/tools/server-plugin/shardwright-memory/core.js";
 
 const userRoot = process.env.SUMMARY_SHARDER_USER_ROOT;
 const paths = getStoragePaths(userRoot);
@@ -422,7 +422,7 @@ function Get-ReportFingerprint($Report) {
 }
 
 if ($InstallPayload) {
-    & powershell -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'install-summary-sharder-memory.ps1') | Out-Null
+    & powershell -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'install-shardwright-memory.ps1') | Out-Null
 }
 
 if ($RestartHosts) {
@@ -439,8 +439,8 @@ $results = @()
 foreach ($hostSpec in $hosts) {
     Reset-AuthorityStorage -HostSpec $hostSpec
     $corpusBefore = Get-CorpusFingerprints -HostSpec $hostSpec -WrittenEntries $stageResult.written
-    $health = Invoke-JsonRequest -Method 'GET' -Uri "http://127.0.0.1:$($hostSpec.Port)/api/plugins/summary-sharder-memory/health" -TimeoutSec 15
-    $capabilities = Invoke-JsonRequest -Method 'GET' -Uri "http://127.0.0.1:$($hostSpec.Port)/api/plugins/summary-sharder-memory/capabilities" -TimeoutSec 15
+    $health = Invoke-JsonRequest -Method 'GET' -Uri "http://127.0.0.1:$($hostSpec.Port)/api/plugins/shardwright-memory/health" -TimeoutSec 15
+    $capabilities = Invoke-JsonRequest -Method 'GET' -Uri "http://127.0.0.1:$($hostSpec.Port)/api/plugins/shardwright-memory/capabilities" -TimeoutSec 15
     $noTokenAuthorize = Get-NoTokenPromotionStatus -HostSpec $hostSpec
 
     $seedRun = Invoke-CandidateRun -HostSpec $hostSpec -ScopeId $scopes.seed -RequestKey "c075-seed-$($hostSpec.Name)"
@@ -473,21 +473,21 @@ foreach ($hostSpec in $hosts) {
     $storageAfterStaleExecute = Get-StorageFingerprints -HostSpec $hostSpec
 
     $preparedMarkerBeforeRecovery = Set-RecoveryMarkerState -HostSpec $hostSpec -State 'PREPARED' -UseParentPointer
-    $preparedRecoveryHealth = Invoke-JsonRequest -Method 'GET' -Uri "http://127.0.0.1:$($hostSpec.Port)/api/plugins/summary-sharder-memory/health" -TimeoutSec 15
+    $preparedRecoveryHealth = Invoke-JsonRequest -Method 'GET' -Uri "http://127.0.0.1:$($hostSpec.Port)/api/plugins/shardwright-memory/health" -TimeoutSec 15
     $preparedStateAfterRecovery = Get-LiveScopeState -HostSpec $hostSpec -ScopeIds @($scopes.seed, $scopes.target, $scopes.recoveryPrepared)
 
     $validRun = Invoke-CandidateRun -HostSpec $hostSpec -ScopeId $scopes.recoveryValid -RequestKey "c075-valid-$($hostSpec.Name)"
     $validAuthorization = Invoke-PromotionAuthorization -HostSpec $hostSpec -Csrf $validRun.csrf -ReconstructionRunId $validRun.init.manifest.reconstructionRunId -AuthorizedBy 'c0.75 proof'
     $validExecute = Invoke-PromotionExecution -HostSpec $hostSpec -Csrf $validRun.csrf -AuthorizationId $validAuthorization.authorization.authorizationId
     $validMarkerBeforeRecovery = Set-RecoveryMarkerState -HostSpec $hostSpec -State 'VERIFYING'
-    $validRecoveryHealth = Invoke-JsonRequest -Method 'GET' -Uri "http://127.0.0.1:$($hostSpec.Port)/api/plugins/summary-sharder-memory/health" -TimeoutSec 15
+    $validRecoveryHealth = Invoke-JsonRequest -Method 'GET' -Uri "http://127.0.0.1:$($hostSpec.Port)/api/plugins/shardwright-memory/health" -TimeoutSec 15
     $validStateAfterRecovery = Get-LiveScopeState -HostSpec $hostSpec -ScopeIds @($scopes.seed, $scopes.target, $scopes.recoveryValid)
 
     $invalidRun = Invoke-CandidateRun -HostSpec $hostSpec -ScopeId $scopes.recoveryInvalid -RequestKey "c075-invalid-$($hostSpec.Name)"
     $invalidAuthorization = Invoke-PromotionAuthorization -HostSpec $hostSpec -Csrf $invalidRun.csrf -ReconstructionRunId $invalidRun.init.manifest.reconstructionRunId -AuthorizedBy 'c0.75 proof'
     $invalidExecute = Invoke-PromotionExecution -HostSpec $hostSpec -Csrf $invalidRun.csrf -AuthorizationId $invalidAuthorization.authorization.authorizationId
     $invalidMarkerBeforeRecovery = Set-RecoveryMarkerState -HostSpec $hostSpec -State 'VERIFYING' -CorruptStagedLive
-    $invalidRecoveryHealth = Invoke-JsonRequest -Method 'GET' -Uri "http://127.0.0.1:$($hostSpec.Port)/api/plugins/summary-sharder-memory/health" -TimeoutSec 15
+    $invalidRecoveryHealth = Invoke-JsonRequest -Method 'GET' -Uri "http://127.0.0.1:$($hostSpec.Port)/api/plugins/shardwright-memory/health" -TimeoutSec 15
     $invalidStateAfterRecovery = Get-LiveScopeState -HostSpec $hostSpec -ScopeIds @($scopes.seed, $scopes.target, $scopes.recoveryValid, $scopes.recoveryInvalid)
 
     $liveTableNames = Get-LiveTableNames -HostSpec $hostSpec

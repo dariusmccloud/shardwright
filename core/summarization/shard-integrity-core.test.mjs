@@ -22,7 +22,7 @@ function makeMessage(index, overrides = {}) {
         send_date: overrides.send_date || `2026-06-24T00:00:0${index}.000Z`,
         is_system: overrides.is_system ?? false,
         extra: {
-            summary_sharder: {
+            shardwright: {
                 messageIdentity: {
                     schemaVersion: 1,
                     messageId,
@@ -175,7 +175,7 @@ test('validateShardManifest reports STALE when source revision hash changes', as
         endIndex: 1,
     });
 
-    messages[1].extra.summary_sharder.messageIdentity.revisionHash = 'sha256:changed';
+    messages[1].extra.shardwright.messageIdentity.revisionHash = 'sha256:changed';
 
     const result = await validateShardManifest(manifest, messages);
     assert.equal(result.contentHealth, SHARD_CONTENT_HEALTH_VALUES.STALE);

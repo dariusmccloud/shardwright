@@ -34,14 +34,14 @@ export function tagsToString(tags = []) {
  */
 export function createTagInput({ tags = [], onChange = () => {}, placeholder = 'Add tag...' } = {}) {
     const root = document.createElement('div');
-    root.className = 'ss-tag-input';
+    root.className = 'shardwright-tag-input';
 
     const tagContainer = document.createElement('div');
-    tagContainer.className = 'ss-tag-container';
+    tagContainer.className = 'shardwright-tag-container';
 
     const input = document.createElement('input');
     input.type = 'text';
-    input.className = 'text_pole ss-tag-input-field';
+    input.className = 'text_pole shardwright-tag-input-field';
     input.placeholder = placeholder;
     input.autocomplete = 'off';
 
@@ -53,13 +53,13 @@ export function createTagInput({ tags = [], onChange = () => {}, placeholder = '
         }
         tagList.forEach((tag, index) => {
             const tagEl = document.createElement('span');
-            tagEl.className = 'ss-tag';
+            tagEl.className = 'shardwright-tag';
             tagEl.dataset.index = String(index);
             tagEl.textContent = tag;
 
             const removeBtn = document.createElement('button');
             removeBtn.type = 'button';
-            removeBtn.className = 'ss-tag-remove';
+            removeBtn.className = 'shardwright-tag-remove';
             removeBtn.dataset.index = String(index);
             removeBtn.setAttribute('aria-label', `Remove ${tag}`);
             removeBtn.textContent = 'x';
@@ -96,7 +96,7 @@ export function createTagInput({ tags = [], onChange = () => {}, placeholder = '
     };
 
     root.addEventListener('click', (e) => {
-        const removeBtn = e.target.closest('.ss-tag-remove');
+        const removeBtn = e.target.closest('.shardwright-tag-remove');
         if (removeBtn) {
             const index = Number(removeBtn.dataset.index);
             if (!Number.isNaN(index) && index >= 0 && index < tagList.length) {

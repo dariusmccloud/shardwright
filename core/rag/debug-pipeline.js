@@ -751,7 +751,7 @@ async function fetchLatestAnchors(collectionId, rag, limit = 50) {
  * @returns {Promise<Object>}
  */
 export async function runDebugPipeline(overrides = {}) {
-    const settings = overrides.settings || extension_settings?.summary_sharder || {};
+    const settings = overrides.settings || extension_settings?.shardwright || {};
     const ragBase = getActiveRagSettings(settings) || {};
     const isSharder = settings?.sharderMode === true;
     const context = SillyTavern.getContext?.() || {};

@@ -3,7 +3,7 @@ export const INTERPRETIVE_REVIEW_CSS = `
    INTERPRETIVE REVIEW MODAL
    ========================================================================== */
 
-.ss-interpretive-review-modal {
+.shardwright-interpretive-review-modal {
     padding: 14px;
     width: min(1560px, 97vw);
     max-width: 100%;
@@ -17,16 +17,16 @@ export const INTERPRETIVE_REVIEW_CSS = `
     overflow: hidden;
     border-radius: 18px;
     background:
-        radial-gradient(1200px 420px at 50% -120px, color-mix(in srgb, var(--ss-primary) 10%, transparent), transparent 60%),
-        linear-gradient(180deg, color-mix(in srgb, var(--ss-bg-primary) 94%, white 6%), color-mix(in srgb, var(--ss-bg-primary) 98%, black 2%));
+        radial-gradient(1200px 420px at 50% -120px, color-mix(in srgb, var(--shardwright-primary) 10%, transparent), transparent 60%),
+        linear-gradient(180deg, color-mix(in srgb, var(--shardwright-bg-primary) 94%, white 6%), color-mix(in srgb, var(--shardwright-bg-primary) 98%, black 2%));
 }
 
-.ss-interpretive-review-modal.ss-interpretive-review-fullscreen {
+.shardwright-interpretive-review-modal.shardwright-interpretive-review-fullscreen {
     width: 100%;
     max-width: none;
 }
 
-.popup:has(.ss-interpretive-review-modal) {
+.popup:has(.shardwright-interpretive-review-modal) {
     display: flex !important;
     flex-direction: column;
     width: min(1700px, 98vw) !important;
@@ -35,43 +35,43 @@ export const INTERPRETIVE_REVIEW_CSS = `
     overflow: hidden !important;
 }
 
-.popup:has(.ss-interpretive-review-modal) .popup-content {
+.popup:has(.shardwright-interpretive-review-modal) .popup-content {
     flex: 1 1 auto;
     min-height: 0;
     width: 100%;
     overflow: hidden;
 }
 
-.popup:has(.ss-interpretive-review-modal) .popup-controls {
+.popup:has(.shardwright-interpretive-review-modal) .popup-controls {
     flex: 0 0 auto;
 }
 
-.popup.ss-interpretive-review-popup-fullscreen {
+.popup.shardwright-interpretive-review-popup-fullscreen {
     width: calc(100vw - 12px) !important;
     max-width: calc(100vw - 12px) !important;
     max-height: calc(100vh - 12px) !important;
     height: calc(100vh - 12px) !important;
 }
 
-.popup.ss-interpretive-review-popup-fullscreen .popup-content {
+.popup.shardwright-interpretive-review-popup-fullscreen .popup-content {
     height: 100%;
     max-height: 100%;
     width: 100%;
 }
 
-.ss-interpretive-review-toolbar {
+.shardwright-interpretive-review-toolbar {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 12px;
     padding: 14px 16px;
-    border: 1px solid color-mix(in srgb, var(--ss-border) 78%, transparent);
+    border: 1px solid color-mix(in srgb, var(--shardwright-border) 78%, transparent);
     border-radius: 16px;
-    background: linear-gradient(180deg, color-mix(in srgb, var(--ss-bg-primary) 92%, white 8%), color-mix(in srgb, var(--ss-bg-primary) 97%, black 3%));
+    background: linear-gradient(180deg, color-mix(in srgb, var(--shardwright-bg-primary) 92%, white 8%), color-mix(in srgb, var(--shardwright-bg-primary) 97%, black 3%));
     box-shadow: 0 18px 36px color-mix(in srgb, black 16%, transparent);
 }
 
-.ss-interpretive-review-toolbar-intro {
+.shardwright-interpretive-review-toolbar-intro {
     display: grid;
     gap: 6px;
     min-width: 0;
@@ -79,7 +79,7 @@ export const INTERPRETIVE_REVIEW_CSS = `
     text-align: center;
 }
 
-.ss-interpretive-review-toolbar-intro h3 {
+.shardwright-interpretive-review-toolbar-intro h3 {
     margin: 0;
     font-size: 25px;
     line-height: 1.1;
@@ -87,42 +87,42 @@ export const INTERPRETIVE_REVIEW_CSS = `
     font-weight: 700;
 }
 
-.ss-interpretive-review-toolbar-intro .ss-hint {
+.shardwright-interpretive-review-toolbar-intro .shardwright-hint {
     max-width: 72ch;
-    color: color-mix(in srgb, var(--ss-text-primary) 74%, transparent);
+    color: color-mix(in srgb, var(--shardwright-text-primary) 74%, transparent);
     font-size: 12px;
 }
 
-.ss-interpretive-review-toolbar .ss-hint {
+.shardwright-interpretive-review-toolbar .shardwright-hint {
     margin: 0;
 }
 
-.ss-interpretive-review-filter {
+.shardwright-interpretive-review-filter {
     display: grid;
     gap: 4px;
     min-width: 220px;
 }
 
-.ss-interpretive-review-toolbar-actions {
+.shardwright-interpretive-review-toolbar-actions {
     display: flex;
     justify-content: flex-end;
     align-items: center;
     min-width: 0;
 }
 
-.ss-interpretive-review-toolbar-buttons {
+.shardwright-interpretive-review-toolbar-buttons {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
 }
 
-.ss-interpretive-review-toolbar-buttons .menu_button {
+.shardwright-interpretive-review-toolbar-buttons .menu_button {
     min-height: 32px;
     padding: 6px 12px;
     border-radius: 999px;
-    border: 1px solid color-mix(in srgb, var(--ss-border) 82%, transparent);
-    background: color-mix(in srgb, var(--ss-bg-primary) 90%, white 10%);
-    color: var(--ss-text-primary);
+    border: 1px solid color-mix(in srgb, var(--shardwright-border) 82%, transparent);
+    background: color-mix(in srgb, var(--shardwright-bg-primary) 90%, white 10%);
+    color: var(--shardwright-text-primary);
     transition:
         transform 0.15s ease,
         border-color 0.15s ease,
@@ -130,23 +130,23 @@ export const INTERPRETIVE_REVIEW_CSS = `
         box-shadow 0.15s ease;
 }
 
-.ss-interpretive-review-toolbar-buttons .menu_button:hover,
-.ss-interpretive-review-toolbar-buttons .menu_button:focus-visible {
-    border-color: color-mix(in srgb, var(--ss-primary) 42%, var(--ss-border));
-    background: color-mix(in srgb, var(--ss-primary) 12%, var(--ss-bg-primary));
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ss-primary) 18%, transparent);
+.shardwright-interpretive-review-toolbar-buttons .menu_button:hover,
+.shardwright-interpretive-review-toolbar-buttons .menu_button:focus-visible {
+    border-color: color-mix(in srgb, var(--shardwright-primary) 42%, var(--shardwright-border));
+    background: color-mix(in srgb, var(--shardwright-primary) 12%, var(--shardwright-bg-primary));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--shardwright-primary) 18%, transparent);
     transform: translateY(-1px);
     outline: none;
 }
 
-.ss-interpretive-review-toolbar-buttons #ss-interpretive-review-close-toggle {
+.shardwright-interpretive-review-toolbar-buttons #shardwright-interpretive-review-close-toggle {
     border-color: rgba(255, 124, 124, 0.72);
     background: linear-gradient(180deg, rgba(82, 22, 22, 0.98), rgba(60, 16, 16, 0.98));
     color: #ffdede;
 }
 
-.ss-interpretive-review-toolbar-buttons #ss-interpretive-review-close-toggle:hover,
-.ss-interpretive-review-toolbar-buttons #ss-interpretive-review-close-toggle:focus-visible {
+.shardwright-interpretive-review-toolbar-buttons #shardwright-interpretive-review-close-toggle:hover,
+.shardwright-interpretive-review-toolbar-buttons #shardwright-interpretive-review-close-toggle:focus-visible {
     border-color: rgba(255, 155, 155, 0.96);
     background: linear-gradient(180deg, rgba(116, 30, 30, 1), rgba(90, 24, 24, 1));
     color: #fff3f3;
@@ -154,7 +154,7 @@ export const INTERPRETIVE_REVIEW_CSS = `
     outline: none;
 }
 
-.ss-interpretive-review-copyable {
+.shardwright-interpretive-review-copyable {
     appearance: none;
     border: 0;
     border-radius: 3px;
@@ -171,22 +171,66 @@ export const INTERPRETIVE_REVIEW_CSS = `
         box-shadow 0.15s ease;
 }
 
-.ss-interpretive-review-copyable:hover,
-.ss-interpretive-review-copyable:focus-visible {
-    background: color-mix(in srgb, var(--ss-primary) 12%, var(--ss-bg-primary));
-    color: var(--ss-text-primary);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--ss-primary) 20%, transparent);
+.shardwright-interpretive-review-copyable:hover,
+.shardwright-interpretive-review-copyable:focus-visible {
+    background: color-mix(in srgb, var(--shardwright-primary) 12%, var(--shardwright-bg-primary));
+    color: var(--shardwright-text-primary);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--shardwright-primary) 20%, transparent);
     outline: none;
 }
 
-.ss-interpretive-review-toolbar-panel {
-    border: 1px solid var(--ss-border);
-    border-radius: 8px;
-    padding: 10px 12px;
-    background: color-mix(in srgb, var(--ss-bg-primary) 94%, white 6%);
+.shardwright-interpretive-source-navigation {
+    margin: 0 6px 4px 0;
+    padding: 3px 8px;
+    border: 1px solid color-mix(in srgb, var(--shardwright-primary) 55%, var(--shardwright-border));
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--shardwright-primary) 12%, var(--shardwright-bg-primary));
+    color: var(--shardwright-text-primary);
+    cursor: pointer;
 }
 
-.ss-interpretive-review-layout {
+.shardwright-interpretive-source-navigation-status {
+    display: block;
+    margin-top: 3px;
+    color: var(--shardwright-text-muted);
+    font-size: 0.82em;
+}
+
+.shardwright-interpretive-review-evidence-table th,
+.shardwright-interpretive-review-evidence-table td,
+.shardwright-interpretive-review-evidence-source {
+    text-align: left;
+}
+
+.shardwright-interpretive-review-speaker-key {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid color-mix(in srgb, var(--shardwright-border) 78%, transparent);
+    color: var(--shardwright-text-muted);
+    font-size: 0.85em;
+}
+
+#chat .mes.shardwright-interpretive-source-target {
+    outline: 3px solid var(--shardwright-primary);
+    outline-offset: -3px;
+    animation: shardwright-interpretive-source-pulse 1s ease-in-out 2;
+}
+
+@keyframes shardwright-interpretive-source-pulse {
+    50% { box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--shardwright-primary) 10%, transparent); }
+}
+
+.shardwright-interpretive-review-toolbar-panel {
+    border: 1px solid var(--shardwright-border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: color-mix(in srgb, var(--shardwright-bg-primary) 94%, white 6%);
+}
+
+.shardwright-interpretive-review-layout {
     display: grid;
     grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
     gap: 12px;
@@ -194,7 +238,7 @@ export const INTERPRETIVE_REVIEW_CSS = `
     overflow: hidden;
 }
 
-.ss-interpretive-review-column {
+.shardwright-interpretive-review-column {
     min-width: 0;
     min-height: 0;
     display: grid;
@@ -202,11 +246,11 @@ export const INTERPRETIVE_REVIEW_CSS = `
     overflow: hidden;
 }
 
-.ss-interpretive-review-queue,
-.ss-interpretive-review-detail {
-    border: 1px solid color-mix(in srgb, var(--ss-border) 82%, transparent);
+.shardwright-interpretive-review-queue,
+.shardwright-interpretive-review-detail {
+    border: 1px solid color-mix(in srgb, var(--shardwright-border) 82%, transparent);
     border-radius: 14px;
-    background: linear-gradient(180deg, color-mix(in srgb, var(--ss-bg-primary) 94%, white 6%), color-mix(in srgb, var(--ss-bg-primary) 98%, black 2%));
+    background: linear-gradient(180deg, color-mix(in srgb, var(--shardwright-bg-primary) 94%, white 6%), color-mix(in srgb, var(--shardwright-bg-primary) 98%, black 2%));
     overflow: hidden;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
@@ -214,46 +258,46 @@ export const INTERPRETIVE_REVIEW_CSS = `
     box-shadow: 0 16px 32px color-mix(in srgb, black 14%, transparent);
 }
 
-.ss-interpretive-review-queue {
+.shardwright-interpretive-review-queue {
     grid-template-rows: auto auto minmax(0, 1fr);
 }
 
-.ss-interpretive-review-queue-header,
-.ss-interpretive-review-detail-header {
+.shardwright-interpretive-review-queue-header,
+.shardwright-interpretive-review-detail-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
     padding: 10px 12px;
-    border-bottom: 1px solid color-mix(in srgb, var(--ss-border) 80%, transparent);
-    background: linear-gradient(180deg, color-mix(in srgb, var(--ss-bg-primary) 88%, black 12%), color-mix(in srgb, var(--ss-bg-primary) 94%, white 6%));
+    border-bottom: 1px solid color-mix(in srgb, var(--shardwright-border) 80%, transparent);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--shardwright-bg-primary) 88%, black 12%), color-mix(in srgb, var(--shardwright-bg-primary) 94%, white 6%));
 }
 
-.ss-interpretive-review-queue-controls {
+.shardwright-interpretive-review-queue-controls {
     display: grid;
     gap: 6px;
     padding: 10px 12px;
-    border-bottom: 1px solid color-mix(in srgb, var(--ss-border) 80%, transparent);
-    background: color-mix(in srgb, var(--ss-bg-primary) 94%, white 6%);
+    border-bottom: 1px solid color-mix(in srgb, var(--shardwright-border) 80%, transparent);
+    background: color-mix(in srgb, var(--shardwright-bg-primary) 94%, white 6%);
 }
 
-.ss-interpretive-review-detail-header {
+.shardwright-interpretive-review-detail-header {
     display: block;
 }
 
-.ss-interpretive-review-detail-header-main {
+.shardwright-interpretive-review-detail-header-main {
     display: grid;
     gap: 10px;
 }
 
-.ss-interpretive-review-detail-header-top {
+.shardwright-interpretive-review-detail-header-top {
     display: flex;
     align-items: start;
     justify-content: space-between;
     gap: 10px;
 }
 
-.ss-interpretive-review-queue-list {
+.shardwright-interpretive-review-queue-list {
     display: grid;
     gap: 6px;
     padding: 6px;
@@ -263,22 +307,22 @@ export const INTERPRETIVE_REVIEW_CSS = `
     scrollbar-gutter: stable;
 }
 
-.ss-interpretive-review-queue-empty,
-.ss-interpretive-review-detail-empty {
+.shardwright-interpretive-review-queue-empty,
+.shardwright-interpretive-review-detail-empty {
     padding: 14px 12px;
 }
 
-.ss-interpretive-review-item {
+.shardwright-interpretive-review-item {
     display: grid;
     gap: 4px;
     width: 100%;
     margin: 0;
     padding: 10px 12px;
-    border: 1px solid color-mix(in srgb, var(--ss-border) 82%, transparent);
+    border: 1px solid color-mix(in srgb, var(--shardwright-border) 82%, transparent);
     border-left-width: 3px;
     border-radius: 11px;
-    background: color-mix(in srgb, var(--ss-bg-primary) 92%, white 8%);
-    color: var(--ss-text-primary);
+    background: color-mix(in srgb, var(--shardwright-bg-primary) 92%, white 8%);
+    color: var(--shardwright-text-primary);
     text-align: left;
     cursor: pointer;
     box-shadow: inset 0 1px 0 color-mix(in srgb, white 4%, transparent);
@@ -289,28 +333,28 @@ export const INTERPRETIVE_REVIEW_CSS = `
         box-shadow 0.15s ease;
 }
 
-.ss-interpretive-review-item:hover,
-.ss-interpretive-review-item:focus-visible {
-    background: color-mix(in srgb, var(--ss-primary) 11%, var(--ss-bg-primary));
-    border-color: color-mix(in srgb, var(--ss-primary) 34%, var(--ss-border));
+.shardwright-interpretive-review-item:hover,
+.shardwright-interpretive-review-item:focus-visible {
+    background: color-mix(in srgb, var(--shardwright-primary) 11%, var(--shardwright-bg-primary));
+    border-color: color-mix(in srgb, var(--shardwright-primary) 34%, var(--shardwright-border));
     transform: translateX(2px);
     outline: none;
 }
 
-.ss-interpretive-review-item.active {
-    background: color-mix(in srgb, var(--ss-primary) 18%, var(--ss-bg-primary));
-    border-color: color-mix(in srgb, var(--ss-primary) 48%, var(--ss-border));
+.shardwright-interpretive-review-item.active {
+    background: color-mix(in srgb, var(--shardwright-primary) 18%, var(--shardwright-bg-primary));
+    border-color: color-mix(in srgb, var(--shardwright-primary) 48%, var(--shardwright-border));
     box-shadow:
-        inset 3px 0 0 color-mix(in srgb, var(--ss-primary) 65%, white 35%),
+        inset 3px 0 0 color-mix(in srgb, var(--shardwright-primary) 65%, white 35%),
         0 8px 18px color-mix(in srgb, black 12%, transparent);
 }
 
-.ss-interpretive-review-item-title,
-.ss-interpretive-review-detail-title {
+.shardwright-interpretive-review-item-title,
+.shardwright-interpretive-review-detail-title {
     font-weight: 600;
 }
 
-.ss-interpretive-review-item-title {
+.shardwright-interpretive-review-item-title {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -320,46 +364,46 @@ export const INTERPRETIVE_REVIEW_CSS = `
     line-height: 1.3;
 }
 
-.ss-interpretive-review-item-title > span:first-child {
+.shardwright-interpretive-review-item-title > span:first-child {
     min-width: 0;
 }
 
-.ss-interpretive-review-item-title .ss-interpretive-review-inline-meta {
+.shardwright-interpretive-review-item-title .shardwright-interpretive-review-inline-meta {
     margin-left: auto;
     flex: 0 0 auto;
     justify-content: flex-end;
 }
 
-.ss-interpretive-review-group-item {
+.shardwright-interpretive-review-group-item {
     align-content: start;
 }
 
-.ss-interpretive-review-group-rows {
+.shardwright-interpretive-review-group-rows {
     display: grid;
     gap: 6px;
     margin-top: 2px;
 }
 
-.ss-interpretive-review-group-row {
+.shardwright-interpretive-review-group-row {
     display: flex;
     align-items: start;
     justify-content: space-between;
     gap: 6px;
     padding-top: 6px;
-    border-top: 1px solid color-mix(in srgb, var(--ss-border) 70%, transparent);
+    border-top: 1px solid color-mix(in srgb, var(--shardwright-border) 70%, transparent);
 }
 
-.ss-interpretive-review-group-row-button {
+.shardwright-interpretive-review-group-row-button {
     display: flex;
     align-items: start;
     justify-content: space-between;
     gap: 6px;
     width: 100%;
     padding: 6px 9px;
-    border: 1px solid color-mix(in srgb, var(--ss-border) 80%, transparent);
+    border: 1px solid color-mix(in srgb, var(--shardwright-border) 80%, transparent);
     border-radius: 10px;
-    background: color-mix(in srgb, var(--ss-bg-primary) 90%, white 10%);
-    color: var(--ss-text-primary);
+    background: color-mix(in srgb, var(--shardwright-bg-primary) 90%, white 10%);
+    color: var(--shardwright-text-primary);
     text-align: left;
     cursor: pointer;
     transition:
@@ -368,37 +412,37 @@ export const INTERPRETIVE_REVIEW_CSS = `
         transform 0.15s ease;
 }
 
-.ss-interpretive-review-group-row-button:hover,
-.ss-interpretive-review-group-row-button:focus-visible {
-    background: color-mix(in srgb, var(--ss-primary) 10%, var(--ss-bg-primary));
-    border-color: color-mix(in srgb, var(--ss-primary) 34%, var(--ss-border));
+.shardwright-interpretive-review-group-row-button:hover,
+.shardwright-interpretive-review-group-row-button:focus-visible {
+    background: color-mix(in srgb, var(--shardwright-primary) 10%, var(--shardwright-bg-primary));
+    border-color: color-mix(in srgb, var(--shardwright-primary) 34%, var(--shardwright-border));
     transform: translateX(2px);
     outline: none;
 }
 
-.ss-interpretive-review-group-row-button.active {
-    background: color-mix(in srgb, var(--ss-primary) 16%, var(--ss-bg-primary));
-    border-color: color-mix(in srgb, var(--ss-primary) 48%, var(--ss-border));
+.shardwright-interpretive-review-group-row-button.active {
+    background: color-mix(in srgb, var(--shardwright-primary) 16%, var(--shardwright-bg-primary));
+    border-color: color-mix(in srgb, var(--shardwright-primary) 48%, var(--shardwright-border));
 }
 
-.ss-interpretive-review-group-row-main {
+.shardwright-interpretive-review-group-row-main {
     display: grid;
     gap: 1px;
 }
 
-.ss-interpretive-review-group-name {
+.shardwright-interpretive-review-group-name {
     font-weight: 600;
 }
 
-.ss-interpretive-review-item-meta,
-.ss-interpretive-review-inline-meta {
+.shardwright-interpretive-review-item-meta,
+.shardwright-interpretive-review-inline-meta {
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
     align-content: flex-start;
 }
 
-.ss-interpretive-review-detail-body {
+.shardwright-interpretive-review-detail-body {
     padding: 12px;
     display: flex;
     flex-direction: column;
@@ -410,24 +454,24 @@ export const INTERPRETIVE_REVIEW_CSS = `
     scrollbar-gutter: stable;
 }
 
-.ss-interpretive-review-detail-tabs {
+.shardwright-interpretive-review-detail-tabs {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
     padding: 4px;
-    border: 1px solid color-mix(in srgb, var(--ss-border) 80%, transparent);
+    border: 1px solid color-mix(in srgb, var(--shardwright-border) 80%, transparent);
     border-radius: 999px;
-    background: color-mix(in srgb, var(--ss-bg-primary) 90%, white 10%);
+    background: color-mix(in srgb, var(--shardwright-bg-primary) 90%, white 10%);
     width: fit-content;
 }
 
-.ss-interpretive-review-detail-tab {
+.shardwright-interpretive-review-detail-tab {
     appearance: none;
     border: 1px solid transparent;
     border-radius: 999px;
     padding: 6px 12px;
     background: transparent;
-    color: color-mix(in srgb, var(--ss-text-primary) 78%, transparent);
+    color: color-mix(in srgb, var(--shardwright-text-primary) 78%, transparent);
     font: inherit;
     font-size: 12px;
     cursor: pointer;
@@ -438,406 +482,406 @@ export const INTERPRETIVE_REVIEW_CSS = `
         transform 0.15s ease;
 }
 
-.ss-interpretive-review-detail-tab:hover,
-.ss-interpretive-review-detail-tab:focus-visible {
-    border-color: color-mix(in srgb, var(--ss-primary) 45%, var(--ss-border));
-    color: var(--ss-text-primary);
-    background: color-mix(in srgb, var(--ss-primary) 10%, var(--ss-bg-primary));
+.shardwright-interpretive-review-detail-tab:hover,
+.shardwright-interpretive-review-detail-tab:focus-visible {
+    border-color: color-mix(in srgb, var(--shardwright-primary) 45%, var(--shardwright-border));
+    color: var(--shardwright-text-primary);
+    background: color-mix(in srgb, var(--shardwright-primary) 10%, var(--shardwright-bg-primary));
     transform: translateY(-1px);
     outline: none;
 }
 
-.ss-interpretive-review-detail-tab.active {
-    border-color: color-mix(in srgb, var(--ss-primary) 58%, var(--ss-border));
-    background: color-mix(in srgb, var(--ss-primary) 18%, var(--ss-bg-primary));
-    color: var(--ss-text-primary);
+.shardwright-interpretive-review-detail-tab.active {
+    border-color: color-mix(in srgb, var(--shardwright-primary) 58%, var(--shardwright-border));
+    background: color-mix(in srgb, var(--shardwright-primary) 18%, var(--shardwright-bg-primary));
+    color: var(--shardwright-text-primary);
     box-shadow: 0 4px 12px color-mix(in srgb, black 10%, transparent);
 }
 
-.ss-interpretive-review-detail-view {
+.shardwright-interpretive-review-detail-view {
     display: none;
     min-width: 0;
 }
 
-.ss-interpretive-review-detail-view.active {
+.shardwright-interpretive-review-detail-view.active {
     display: flex;
     flex-direction: column;
     gap: 10px;
     min-width: 0;
 }
 
-.ss-interpretive-review-section {
+.shardwright-interpretive-review-section {
     margin: 0;
 }
 
-.ss-interpretive-review-section h4 {
+.shardwright-interpretive-review-section h4 {
     margin: 0;
     font-size: 15px;
 }
 
-.ss-interpretive-review-field-tools {
+.shardwright-interpretive-review-field-tools {
     display: grid;
     gap: 6px;
     margin-top: 6px;
 }
 
-.ss-interpretive-token-palette {
+.shardwright-interpretive-token-palette {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
 }
 
-.ss-interpretive-token-button {
+.shardwright-interpretive-token-button {
     appearance: none;
-    border: 1px solid var(--ss-border);
+    border: 1px solid var(--shardwright-border);
     border-radius: 999px;
     padding: 4px 10px;
-    background: color-mix(in srgb, var(--ss-bg-primary) 94%, white 6%);
-    color: var(--ss-text-primary);
+    background: color-mix(in srgb, var(--shardwright-bg-primary) 94%, white 6%);
+    color: var(--shardwright-text-primary);
     font: inherit;
     font-size: 11px;
     line-height: 1.2;
     cursor: pointer;
 }
 
-.ss-interpretive-token-button:hover,
-.ss-interpretive-token-button:focus-visible {
-    border-color: color-mix(in srgb, var(--ss-primary) 50%, var(--ss-border));
-    background: color-mix(in srgb, var(--ss-primary) 14%, var(--ss-bg-primary));
+.shardwright-interpretive-token-button:hover,
+.shardwright-interpretive-token-button:focus-visible {
+    border-color: color-mix(in srgb, var(--shardwright-primary) 50%, var(--shardwright-border));
+    background: color-mix(in srgb, var(--shardwright-primary) 14%, var(--shardwright-bg-primary));
     outline: none;
 }
 
-.ss-interpretive-token-button.selected,
-.ss-interpretive-token-button[aria-pressed="true"] {
-    border-color: color-mix(in srgb, var(--ss-primary) 60%, var(--ss-border));
-    background: color-mix(in srgb, var(--ss-primary) 22%, var(--ss-bg-primary));
+.shardwright-interpretive-token-button.selected,
+.shardwright-interpretive-token-button[aria-pressed="true"] {
+    border-color: color-mix(in srgb, var(--shardwright-primary) 60%, var(--shardwright-border));
+    background: color-mix(in srgb, var(--shardwright-primary) 22%, var(--shardwright-bg-primary));
 }
 
-.ss-interpretive-review-inline-details {
+.shardwright-interpretive-review-inline-details {
     margin-top: 8px;
 }
 
-.ss-interpretive-review-inline-details summary {
+.shardwright-interpretive-review-inline-details summary {
     cursor: pointer;
-    color: color-mix(in srgb, var(--ss-text-primary) 82%, transparent);
+    color: color-mix(in srgb, var(--shardwright-text-primary) 82%, transparent);
 }
 
-.ss-interpretive-review-inline-details[open] summary {
+.shardwright-interpretive-review-inline-details[open] summary {
     margin-bottom: 8px;
 }
 
-.ss-interpretive-review-static-note {
+.shardwright-interpretive-review-static-note {
     align-content: start;
 }
 
-.ss-interpretive-review-inline-help {
+.shardwright-interpretive-review-inline-help {
     position: relative;
 }
 
-.ss-interpretive-review-inline-help summary {
+.shardwright-interpretive-review-inline-help summary {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     width: 22px;
     height: 22px;
-    border: 1px solid var(--ss-border);
+    border: 1px solid var(--shardwright-border);
     border-radius: 999px;
     cursor: pointer;
     list-style: none;
     font-size: 12px;
-    background: color-mix(in srgb, var(--ss-bg-primary) 94%, white 6%);
+    background: color-mix(in srgb, var(--shardwright-bg-primary) 94%, white 6%);
 }
 
-.ss-interpretive-review-inline-help summary::-webkit-details-marker {
+.shardwright-interpretive-review-inline-help summary::-webkit-details-marker {
     display: none;
 }
 
-.ss-interpretive-review-inline-help-body {
+.shardwright-interpretive-review-inline-help-body {
     margin-top: 8px;
     display: grid;
     gap: 8px;
     padding: 10px;
-    border: 1px solid var(--ss-border);
+    border: 1px solid var(--shardwright-border);
     border-radius: 8px;
-    background: color-mix(in srgb, var(--ss-bg-primary) 96%, white 4%);
+    background: color-mix(in srgb, var(--shardwright-bg-primary) 96%, white 4%);
 }
 
-.ss-interpretive-review-inline-help-row {
+.shardwright-interpretive-review-inline-help-row {
     display: grid;
     gap: 2px;
 }
 
-.ss-review-section,
-.ss-interpretive-review-disclosure,
-.ss-interpretive-review-static-section {
-    --ss-review-section-title-size: 14px;
-    --ss-review-section-title-weight: 600;
-    --ss-review-section-description-size: 11px;
-    --ss-review-section-border-style: solid;
-    --ss-review-section-surface-mix: 94%;
-    --ss-review-section-header-mix: 90%;
+.shardwright-review-section,
+.shardwright-interpretive-review-disclosure,
+.shardwright-interpretive-review-static-section {
+    --shardwright-review-section-title-size: 14px;
+    --shardwright-review-section-title-weight: 600;
+    --shardwright-review-section-description-size: 11px;
+    --shardwright-review-section-border-style: solid;
+    --shardwright-review-section-surface-mix: 94%;
+    --shardwright-review-section-header-mix: 90%;
     display: block;
     flex: 0 0 auto;
-    border: 1px var(--ss-review-section-border-style) var(--ss-border);
+    border: 1px var(--shardwright-review-section-border-style) var(--shardwright-border);
     border-radius: 12px;
-    background: linear-gradient(180deg, color-mix(in srgb, var(--ss-bg-primary) var(--ss-review-section-surface-mix), white 6%), color-mix(in srgb, var(--ss-bg-primary) 98%, black 2%));
+    background: linear-gradient(180deg, color-mix(in srgb, var(--shardwright-bg-primary) var(--shardwright-review-section-surface-mix), white 6%), color-mix(in srgb, var(--shardwright-bg-primary) 98%, black 2%));
     overflow: hidden;
     margin: 0;
     box-shadow: 0 8px 18px color-mix(in srgb, black 9%, transparent);
 }
 
-.ss-review-section__header,
-.ss-interpretive-review-disclosure-summary,
-.ss-interpretive-review-static-header {
+.shardwright-review-section__header,
+.shardwright-interpretive-review-disclosure-summary,
+.shardwright-interpretive-review-static-header {
     display: grid;
     gap: 4px;
     padding: 10px 12px;
-    background: linear-gradient(180deg, color-mix(in srgb, var(--ss-bg-primary) var(--ss-review-section-header-mix), black 10%), color-mix(in srgb, var(--ss-bg-primary) 96%, white 4%));
+    background: linear-gradient(180deg, color-mix(in srgb, var(--shardwright-bg-primary) var(--shardwright-review-section-header-mix), black 10%), color-mix(in srgb, var(--shardwright-bg-primary) 96%, white 4%));
 }
 
-.ss-review-section__title,
-.ss-interpretive-review-disclosure-title {
-    font-size: var(--ss-review-section-title-size);
-    font-weight: var(--ss-review-section-title-weight);
+.shardwright-review-section__title,
+.shardwright-interpretive-review-disclosure-title {
+    font-size: var(--shardwright-review-section-title-size);
+    font-weight: var(--shardwright-review-section-title-weight);
     padding-right: 20px;
 }
 
-.ss-review-section__description,
-.ss-interpretive-review-disclosure-description {
-    font-size: var(--ss-review-section-description-size);
+.shardwright-review-section__description,
+.shardwright-interpretive-review-disclosure-description {
+    font-size: var(--shardwright-review-section-description-size);
     line-height: 1.4;
-    color: color-mix(in srgb, var(--ss-text-primary) 62%, transparent);
+    color: color-mix(in srgb, var(--shardwright-text-primary) 62%, transparent);
     letter-spacing: 0.01em;
     padding-right: 20px;
     text-align: left;
 }
 
-.ss-review-section__body,
-.ss-interpretive-review-disclosure-body {
+.shardwright-review-section__body,
+.shardwright-interpretive-review-disclosure-body {
     padding: 12px;
     text-align: left;
 }
 
-.ss-review-section--static,
-.ss-interpretive-review-static-section {
-    --ss-review-section-title-size: 18px;
-    --ss-review-section-title-weight: 700;
-    --ss-review-section-description-size: 12px;
+.shardwright-review-section--static,
+.shardwright-interpretive-review-static-section {
+    --shardwright-review-section-title-size: 18px;
+    --shardwright-review-section-title-weight: 700;
+    --shardwright-review-section-description-size: 12px;
 }
 
-.ss-interpretive-review-subsection {
-    --ss-review-section-border-style: dashed;
-    --ss-review-section-surface-mix: 96%;
+.shardwright-interpretive-review-subsection {
+    --shardwright-review-section-border-style: dashed;
+    --shardwright-review-section-surface-mix: 96%;
     margin-inline-start: 12px;
 }
 
-.ss-interpretive-review-disclosure {
+.shardwright-interpretive-review-disclosure {
     display: block;
 }
 
-.ss-interpretive-review-disclosure-summary {
+.shardwright-interpretive-review-disclosure-summary {
     position: relative;
     cursor: pointer;
     list-style: none;
 }
 
-.ss-interpretive-review-disclosure-summary::-webkit-details-marker {
+.shardwright-interpretive-review-disclosure-summary::-webkit-details-marker {
     display: none;
 }
 
-.ss-interpretive-review-disclosure-summary::after {
+.shardwright-interpretive-review-disclosure-summary::after {
     content: '+';
     position: absolute;
     right: 14px;
     margin-top: 2px;
-    color: var(--ss-text-primary);
+    color: var(--shardwright-text-primary);
     font-size: 16px;
     line-height: 1;
 }
 
-.ss-interpretive-review-disclosure[open] .ss-interpretive-review-disclosure-summary::after {
+.shardwright-interpretive-review-disclosure[open] .shardwright-interpretive-review-disclosure-summary::after {
     content: '-';
 }
 
-.ss-interpretive-review-disclosure-body {
+.shardwright-interpretive-review-disclosure-body {
     display: none;
 }
 
-.ss-interpretive-review-disclosure[open] > .ss-interpretive-review-disclosure-body {
+.shardwright-interpretive-review-disclosure[open] > .shardwright-interpretive-review-disclosure-body {
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
 
-.ss-interpretive-review-static-section {
+.shardwright-interpretive-review-static-section {
 }
 
-.ss-interpretive-review-static-header {
-    border-bottom: 1px solid color-mix(in srgb, var(--ss-border) 80%, transparent);
+.shardwright-interpretive-review-static-header {
+    border-bottom: 1px solid color-mix(in srgb, var(--shardwright-border) 80%, transparent);
 }
 
-.ss-interpretive-review-static-section .ss-interpretive-review-card {
+.shardwright-interpretive-review-static-section .shardwright-interpretive-review-card {
     margin-top: 8px;
 }
 
-.ss-interpretive-review-context {
+.shardwright-interpretive-review-context {
     padding: 16px 18px;
     font-size: 17px;
     line-height: 1.45;
-    background: linear-gradient(180deg, color-mix(in srgb, var(--ss-bg-primary) 94%, white 6%), color-mix(in srgb, var(--ss-bg-primary) 98%, black 2%));
-    border-top: 1px solid color-mix(in srgb, var(--ss-border) 80%, transparent);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--shardwright-bg-primary) 94%, white 6%), color-mix(in srgb, var(--shardwright-bg-primary) 98%, black 2%));
+    border-top: 1px solid color-mix(in srgb, var(--shardwright-border) 80%, transparent);
     text-align: left;
 }
 
-.ss-interpretive-review-context-support {
+.shardwright-interpretive-review-context-support {
     padding: 12px 18px 14px;
-    border-top: 1px solid color-mix(in srgb, var(--ss-border) 60%, transparent);
-    background: color-mix(in srgb, var(--ss-bg-primary) 97%, white 3%);
+    border-top: 1px solid color-mix(in srgb, var(--shardwright-border) 60%, transparent);
+    background: color-mix(in srgb, var(--shardwright-bg-primary) 97%, white 3%);
     text-align: left;
 }
 
-.ss-interpretive-review-context-why {
+.shardwright-interpretive-review-context-why {
     font-size: 13px;
     line-height: 1.5;
-    color: color-mix(in srgb, var(--ss-text-primary) 88%, transparent);
+    color: color-mix(in srgb, var(--shardwright-text-primary) 88%, transparent);
 }
 
-.ss-interpretive-review-statement {
+.shardwright-interpretive-review-statement {
     white-space: pre-wrap;
     line-height: 1.45;
 }
 
-.ss-interpretive-review-summary-note {
+.shardwright-interpretive-review-summary-note {
     font-size: 12px;
     line-height: 1.55;
 }
 
-.ss-interpretive-review-grid {
+.shardwright-interpretive-review-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 12px;
 }
 
-.ss-interpretive-review-summary-grid {
+.shardwright-interpretive-review-summary-grid {
     grid-template-columns: minmax(260px, 1fr) minmax(320px, 1.1fr);
     align-items: stretch;
 }
 
-.ss-interpretive-review-review-column {
+.shardwright-interpretive-review-review-column {
     display: grid;
     gap: 12px;
     min-width: 0;
 }
 
-.ss-interpretive-review-overview {
+.shardwright-interpretive-review-overview {
     display: grid;
     gap: 10px;
-    --ss-review-section-title-size: 14px;
-    --ss-review-section-title-weight: 600;
-    --ss-review-section-description-size: 11px;
+    --shardwright-review-section-title-size: 14px;
+    --shardwright-review-section-title-weight: 600;
+    --shardwright-review-section-description-size: 11px;
 }
 
-.ss-interpretive-review-review-main {
+.shardwright-interpretive-review-review-main {
     display: grid;
     gap: 12px;
     min-width: 0;
 }
 
-.ss-interpretive-review-overview-grid {
+.shardwright-interpretive-review-overview-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 10px;
 }
 
-.ss-interpretive-review-facts {
+.shardwright-interpretive-review-facts {
     display: flex;
     flex-wrap: wrap;
     gap: 8px 16px;
     text-align: left;
 }
 
-.ss-interpretive-review-fact {
+.shardwright-interpretive-review-fact {
     display: inline-flex;
     line-height: 1.45;
 }
 
-.ss-interpretive-review-fact strong {
+.shardwright-interpretive-review-fact strong {
     display: inline;
     margin: 0;
     font-size: 12px;
 }
 
-.ss-interpretive-review-card {
-    border: 1px solid color-mix(in srgb, var(--ss-border) 82%, transparent);
+.shardwright-interpretive-review-card {
+    border: 1px solid color-mix(in srgb, var(--shardwright-border) 82%, transparent);
     border-radius: 11px;
     padding: 10px;
-    background: linear-gradient(180deg, color-mix(in srgb, var(--ss-bg-primary) 92%, white 8%), color-mix(in srgb, var(--ss-bg-primary) 97%, black 3%));
+    background: linear-gradient(180deg, color-mix(in srgb, var(--shardwright-bg-primary) 92%, white 8%), color-mix(in srgb, var(--shardwright-bg-primary) 97%, black 3%));
     text-align: left;
     box-shadow: 0 8px 18px color-mix(in srgb, black 8%, transparent);
 }
 
-.ss-interpretive-review-overview .ss-interpretive-review-summary-note {
-    color: color-mix(in srgb, var(--ss-text-primary) 86%, transparent);
+.shardwright-interpretive-review-overview .shardwright-interpretive-review-summary-note {
+    color: color-mix(in srgb, var(--shardwright-text-primary) 86%, transparent);
 }
 
-.ss-interpretive-review-card-actions {
+.shardwright-interpretive-review-card-actions {
     display: flex;
     justify-content: flex-start;
     margin-top: 10px;
 }
 
-.ss-interpretive-review-status-card {
-    background: linear-gradient(180deg, color-mix(in srgb, var(--ss-bg-primary) 94%, white 6%), color-mix(in srgb, var(--ss-bg-primary) 98%, black 2%));
+.shardwright-interpretive-review-status-card {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--shardwright-bg-primary) 94%, white 6%), color-mix(in srgb, var(--shardwright-bg-primary) 98%, black 2%));
 }
 
-.ss-interpretive-review-status-strip {
+.shardwright-interpretive-review-status-strip {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     gap: 0;
-    border: 1px solid color-mix(in srgb, var(--ss-border) 76%, transparent);
+    border: 1px solid color-mix(in srgb, var(--shardwright-border) 76%, transparent);
     border-radius: 12px;
     overflow: hidden;
-    background: linear-gradient(180deg, color-mix(in srgb, var(--ss-bg-primary) 93%, white 7%), color-mix(in srgb, var(--ss-bg-primary) 97%, black 3%));
+    background: linear-gradient(180deg, color-mix(in srgb, var(--shardwright-bg-primary) 93%, white 7%), color-mix(in srgb, var(--shardwright-bg-primary) 97%, black 3%));
     box-shadow: 0 8px 18px color-mix(in srgb, black 8%, transparent);
 }
 
-.ss-interpretive-review-lifecycle-section .ss-review-section__body {
+.shardwright-interpretive-review-lifecycle-section .shardwright-review-section__body {
     display: grid;
     gap: 12px;
 }
 
-.ss-interpretive-review-lifecycle-section .ss-interpretive-review-card {
+.shardwright-interpretive-review-lifecycle-section .shardwright-interpretive-review-card {
     padding: 14px 16px;
 }
 
-.ss-interpretive-review-lifecycle-section .ss-interpretive-review-list {
+.shardwright-interpretive-review-lifecycle-section .shardwright-interpretive-review-list {
     gap: 12px;
 }
 
-.ss-interpretive-review-status-strip-cell {
+.shardwright-interpretive-review-status-strip-cell {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 8px;
     align-items: center;
     padding: 7px 10px;
-    border-left: 1px solid color-mix(in srgb, var(--ss-border) 62%, transparent);
+    border-left: 1px solid color-mix(in srgb, var(--shardwright-border) 62%, transparent);
 }
 
-.ss-interpretive-review-status-strip-cell:first-child {
+.shardwright-interpretive-review-status-strip-cell:first-child {
     border-left: 0;
 }
 
-.ss-interpretive-review-status-strip-label,
-.ss-interpretive-review-policy-audit-label {
+.shardwright-interpretive-review-status-strip-label,
+.shardwright-interpretive-review-policy-audit-label {
     font-size: 11px;
     font-weight: 600;
-    color: color-mix(in srgb, var(--ss-text-primary) 74%, transparent);
+    color: color-mix(in srgb, var(--shardwright-text-primary) 74%, transparent);
     text-transform: uppercase;
     letter-spacing: 0.03em;
     line-height: 1.2;
 }
 
-.ss-interpretive-review-status-strip-value {
+.shardwright-interpretive-review-status-strip-value {
     display: flex;
     justify-content: flex-end;
     align-items: center;
@@ -847,29 +891,29 @@ export const INTERPRETIVE_REVIEW_CSS = `
     text-align: right;
 }
 
-.ss-interpretive-review-policy-audit-card {
+.shardwright-interpretive-review-policy-audit-card {
     display: grid;
     gap: 0;
     margin-top: 6px;
-    border: 1px solid color-mix(in srgb, var(--ss-border) 76%, transparent);
+    border: 1px solid color-mix(in srgb, var(--shardwright-border) 76%, transparent);
     border-radius: 12px;
     overflow: hidden;
-    background: linear-gradient(180deg, color-mix(in srgb, var(--ss-bg-primary) 93%, white 7%), color-mix(in srgb, var(--ss-bg-primary) 97%, black 3%));
+    background: linear-gradient(180deg, color-mix(in srgb, var(--shardwright-bg-primary) 93%, white 7%), color-mix(in srgb, var(--shardwright-bg-primary) 97%, black 3%));
     box-shadow: 0 8px 18px color-mix(in srgb, black 8%, transparent);
 }
 
-.ss-interpretive-review-policy-audit-row {
+.shardwright-interpretive-review-policy-audit-row {
     display: grid;
     gap: 12px;
     padding: 14px 16px;
-    border-top: 1px solid color-mix(in srgb, var(--ss-border) 62%, transparent);
+    border-top: 1px solid color-mix(in srgb, var(--shardwright-border) 62%, transparent);
 }
 
-.ss-interpretive-review-policy-audit-row:first-child {
+.shardwright-interpretive-review-policy-audit-row:first-child {
     border-top: 0;
 }
 
-.ss-interpretive-review-policy-audit-value {
+.shardwright-interpretive-review-policy-audit-value {
     display: flex;
     justify-content: flex-start;
     align-items: center;
@@ -880,116 +924,173 @@ export const INTERPRETIVE_REVIEW_CSS = `
     line-height: 1.5;
 }
 
-.ss-interpretive-review-detail-view[data-detail-view-panel="review"] .ss-interpretive-review-card,
-.ss-interpretive-review-detail-view[data-detail-view-panel="review"] .ss-interpretive-review-section {
+.shardwright-interpretive-review-detail-view[data-detail-view-panel="review"] .shardwright-interpretive-review-card,
+.shardwright-interpretive-review-detail-view[data-detail-view-panel="review"] .shardwright-interpretive-review-section {
     width: 100%;
 }
 
-.ss-interpretive-review-detail-view[data-detail-view-panel="technical"].active {
+.shardwright-interpretive-review-detail-view[data-detail-view-panel="technical"].active {
     gap: 14px;
 }
 
-.ss-interpretive-review-detail-view[data-detail-view-panel="technical"] .ss-review-section__header,
-.ss-interpretive-review-detail-view[data-detail-view-panel="technical"] .ss-interpretive-review-static-header,
-.ss-interpretive-review-detail-view[data-detail-view-panel="technical"] .ss-interpretive-review-disclosure-summary {
+.shardwright-interpretive-review-detail-view[data-detail-view-panel="technical"] .shardwright-review-section__header,
+.shardwright-interpretive-review-detail-view[data-detail-view-panel="technical"] .shardwright-interpretive-review-static-header,
+.shardwright-interpretive-review-detail-view[data-detail-view-panel="technical"] .shardwright-interpretive-review-disclosure-summary {
     padding: 12px 16px;
 }
 
-.ss-interpretive-review-detail-view[data-detail-view-panel="technical"] .ss-review-section__body,
-.ss-interpretive-review-detail-view[data-detail-view-panel="technical"] .ss-interpretive-review-disclosure-body {
+.shardwright-interpretive-review-detail-view[data-detail-view-panel="technical"] .shardwright-review-section__body,
+.shardwright-interpretive-review-detail-view[data-detail-view-panel="technical"] .shardwright-interpretive-review-disclosure-body {
     padding: 16px 18px;
 }
 
-.ss-interpretive-review-detail-view[data-detail-view-panel="technical"] .ss-interpretive-review-card {
+.shardwright-interpretive-review-detail-view[data-detail-view-panel="technical"] .shardwright-interpretive-review-card {
     padding: 14px 16px;
 }
 
-.ss-interpretive-review-detail-view[data-detail-view-panel="technical"] .ss-interpretive-review-list {
+.shardwright-interpretive-review-detail-view[data-detail-view-panel="technical"] .shardwright-interpretive-review-list {
     gap: 10px;
 }
 
-.ss-interpretive-review-detail-view[data-detail-view-panel="technical"] .ss-interpretive-review-policy-audit-card {
+.shardwright-interpretive-review-detail-view[data-detail-view-panel="technical"] .shardwright-interpretive-review-policy-audit-card {
     margin-top: 8px;
 }
 
-.ss-interpretive-review-detail-view[data-detail-view-panel="technical"] .ss-interpretive-review-policy-audit-row {
+.shardwright-interpretive-review-detail-view[data-detail-view-panel="technical"] .shardwright-interpretive-review-policy-audit-row {
     gap: 12px;
     padding: 14px 16px;
 }
 
-.ss-interpretive-review-detail-view[data-detail-view-panel="technical"] .ss-interpretive-review-policy-audit-value {
+.shardwright-interpretive-review-detail-view[data-detail-view-panel="technical"] .shardwright-interpretive-review-policy-audit-value {
     gap: 8px 10px;
 }
 
-.ss-interpretive-review-evidence-body {
+.shardwright-interpretive-review-evidence-body {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-.ss-interpretive-review-evidence-note {
+.shardwright-interpretive-review-evidence-note {
     display: grid;
     gap: 6px;
     padding: 12px;
 }
 
-.ss-interpretive-review-evidence-note .ss-interpretive-review-inline-meta {
+.shardwright-interpretive-review-evidence-note .shardwright-interpretive-review-inline-meta {
     min-height: 0;
 }
 
-.ss-interpretive-review-evidence-findings {
+.shardwright-interpretive-review-evidence-findings {
     display: grid;
     gap: 10px;
 }
 
-.ss-interpretive-review-evidence-finding {
+.shardwright-interpretive-review-evidence-finding {
+    display: grid;
     gap: 10px;
     padding: 12px;
 }
 
-.ss-interpretive-review-evidence-meta {
+.shardwright-interpretive-review-evidence-source,
+.shardwright-interpretive-review-evidence-context {
+    color: color-mix(in srgb, var(--shardwright-text-primary) 70%, transparent);
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.shardwright-interpretive-review-evidence-previews {
+    display: grid;
+    gap: 8px;
+}
+
+.shardwright-interpretive-review-evidence-preview {
+    display: grid;
+    gap: 5px;
+    padding: 10px;
+    border-left: 3px solid color-mix(in srgb, var(--shardwright-accent) 58%, var(--shardwright-border));
+    background: color-mix(in srgb, var(--shardwright-bg-primary) 88%, white 12%);
+}
+
+.shardwright-interpretive-review-evidence-preview-heading {
+    font-weight: 650;
+    line-height: 1.35;
+}
+
+.shardwright-interpretive-review-evidence-excerpt {
+    margin: 2px 0 0;
+    white-space: pre-wrap;
+    line-height: 1.5;
+}
+
+.shardwright-interpretive-review-evidence-fields {
+    display: grid;
+    gap: 6px;
+    margin: 2px 0 0;
+}
+
+.shardwright-interpretive-review-evidence-field {
+    display: grid;
+    grid-template-columns: minmax(90px, 0.28fr) minmax(0, 1fr);
+    gap: 10px;
+}
+
+.shardwright-interpretive-review-evidence-field dt {
+    font-weight: 650;
+}
+
+.shardwright-interpretive-review-evidence-field dd {
+    margin: 0;
+}
+
+.shardwright-interpretive-review-evidence-blocker {
     display: grid;
     gap: 6px;
 }
 
-.ss-interpretive-review-evidence-meta-row {
+.shardwright-interpretive-review-evidence-meta {
+    display: grid;
+    gap: 6px;
+}
+
+.shardwright-interpretive-review-evidence-meta-row {
     display: grid;
     gap: 3px;
     justify-items: start;
     text-align: left;
 }
 
-.ss-interpretive-review-evidence-meta-row strong {
+.shardwright-interpretive-review-evidence-meta-row strong {
     margin-bottom: 0;
 }
 
-.ss-interpretive-review-lifecycle-section .ss-interpretive-review-inline-meta {
+.shardwright-interpretive-review-lifecycle-section .shardwright-interpretive-review-inline-meta {
     gap: 4px 6px;
 }
 
-.ss-interpretive-review-lifecycle-section .ss-interpretive-review-badge {
+.shardwright-interpretive-review-lifecycle-section .shardwright-interpretive-review-badge {
     padding: 1px 7px;
     font-size: 10px;
     line-height: 1.2;
 }
 
-.ss-interpretive-review-lifecycle-section .ss-interpretive-review-policy-audit-value {
+.shardwright-interpretive-review-lifecycle-section .shardwright-interpretive-review-policy-audit-value {
     justify-content: flex-start;
 }
 
-.ss-interpretive-review-lifecycle-section .ss-interpretive-review-policy-audit-card .ss-interpretive-review-badge {
+.shardwright-interpretive-review-lifecycle-section .shardwright-interpretive-review-policy-audit-card .shardwright-interpretive-review-badge {
     padding: 2px 8px;
     font-size: 11px;
     line-height: 1.3;
 }
 
-.ss-interpretive-review-card strong,
-.ss-interpretive-review-list strong {
+.shardwright-interpretive-review-card strong,
+.shardwright-interpretive-review-list strong {
     display: block;
     margin-bottom: 4px;
 }
 
-.ss-interpretive-action-card {
+.shardwright-interpretive-action-card {
     display: grid;
     gap: 8px;
     text-align: left;
@@ -997,163 +1098,163 @@ export const INTERPRETIVE_REVIEW_CSS = `
     max-width: none;
 }
 
-.ss-interpretive-action-form {
+.shardwright-interpretive-action-form {
     display: grid;
     gap: 10px;
     min-width: 0;
 }
 
-.ss-interpretive-review-list {
+.shardwright-interpretive-review-list {
     display: grid;
     gap: 6px;
 }
 
-.ss-interpretive-review-history-card {
+.shardwright-interpretive-review-history-card {
     gap: 6px;
 }
 
-.ss-interpretive-review-history-heading {
+.shardwright-interpretive-review-history-heading {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
     gap: 10px;
 }
 
-.ss-interpretive-review-inline-meta--compact {
+.shardwright-interpretive-review-inline-meta--compact {
     margin-top: -2px;
 }
 
-.ss-interpretive-review-history-block {
+.shardwright-interpretive-review-history-block {
     display: grid;
     gap: 4px;
     padding: 7px 9px;
-    border: 1px solid color-mix(in srgb, var(--ss-border) 75%, transparent);
+    border: 1px solid color-mix(in srgb, var(--shardwright-border) 75%, transparent);
     border-radius: 10px;
-    background: color-mix(in srgb, var(--ss-bg-primary) 95%, white 5%);
+    background: color-mix(in srgb, var(--shardwright-bg-primary) 95%, white 5%);
 }
 
-.ss-interpretive-review-history-block-label {
+.shardwright-interpretive-review-history-block-label {
     font-size: 11px;
     font-weight: 600;
-    color: color-mix(in srgb, var(--ss-text-primary) 70%, transparent);
+    color: color-mix(in srgb, var(--shardwright-text-primary) 70%, transparent);
     text-transform: uppercase;
     letter-spacing: 0.03em;
 }
 
-.ss-interpretive-review-history-meta {
+.shardwright-interpretive-review-history-meta {
     display: grid;
     gap: 4px;
     padding-top: 8px;
-    border-top: 1px solid color-mix(in srgb, var(--ss-border) 70%, transparent);
-    color: color-mix(in srgb, var(--ss-text-primary) 80%, transparent);
+    border-top: 1px solid color-mix(in srgb, var(--shardwright-border) 70%, transparent);
+    color: color-mix(in srgb, var(--shardwright-text-primary) 80%, transparent);
     font-size: 12px;
     line-height: 1.45;
 }
 
-.ss-interpretive-review-history-subdetails {
-    --ss-review-section-title-size: 12px;
-    --ss-review-section-title-weight: 600;
-    --ss-review-section-description-size: 0;
-    --ss-review-section-surface-mix: 97%;
-    --ss-review-section-header-mix: 94%;
+.shardwright-interpretive-review-history-subdetails {
+    --shardwright-review-section-title-size: 12px;
+    --shardwright-review-section-title-weight: 600;
+    --shardwright-review-section-description-size: 0;
+    --shardwright-review-section-surface-mix: 97%;
+    --shardwright-review-section-header-mix: 94%;
     margin-top: 4px;
     margin-inline-start: 0;
     border-style: solid;
-    background: color-mix(in srgb, var(--ss-bg-primary) 97%, white 3%);
+    background: color-mix(in srgb, var(--shardwright-bg-primary) 97%, white 3%);
 }
 
-.ss-interpretive-review-history-subdetails .ss-interpretive-review-disclosure-summary,
-.ss-interpretive-review-history-subdetails .ss-review-section__header {
+.shardwright-interpretive-review-history-subdetails .shardwright-interpretive-review-disclosure-summary,
+.shardwright-interpretive-review-history-subdetails .shardwright-review-section__header {
     padding: 8px 10px;
 }
 
-.ss-interpretive-review-history-subdetails .ss-interpretive-review-disclosure-body,
-.ss-interpretive-review-history-subdetails .ss-review-section__body {
+.shardwright-interpretive-review-history-subdetails .shardwright-interpretive-review-disclosure-body,
+.shardwright-interpretive-review-history-subdetails .shardwright-review-section__body {
     padding: 10px;
 }
 
-.ss-interpretive-review-history-subdetails .ss-review-section__title,
-.ss-interpretive-review-history-subdetails .ss-interpretive-review-disclosure-title {
+.shardwright-interpretive-review-history-subdetails .shardwright-review-section__title,
+.shardwright-interpretive-review-history-subdetails .shardwright-interpretive-review-disclosure-title {
     padding-right: 18px;
 }
 
-.ss-interpretive-review-form-grid {
+.shardwright-interpretive-review-form-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 10px;
 }
 
-.ss-interpretive-action-form .ss-interpretive-review-form-grid {
+.shardwright-interpretive-action-form .shardwright-interpretive-review-form-grid {
     grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr);
     align-items: end;
 }
 
-.ss-interpretive-action-form [data-field="delegationPolicyId"],
-.ss-interpretive-action-form [data-field="delegationPolicyUnavailable"] {
+.shardwright-interpretive-action-form [data-field="delegationPolicyId"],
+.shardwright-interpretive-action-form [data-field="delegationPolicyUnavailable"] {
     grid-column: 1 / -1;
 }
 
-.ss-interpretive-review-field {
+.shardwright-interpretive-review-field {
     display: grid;
     gap: 4px;
     text-align: left;
 }
 
-.ss-interpretive-review-field[hidden],
-.ss-interpretive-review-static-note[hidden],
-.ss-interpretive-review-section[hidden],
-.ss-interpretive-review-reason-groups[hidden] {
+.shardwright-interpretive-review-field[hidden],
+.shardwright-interpretive-review-static-note[hidden],
+.shardwright-interpretive-review-section[hidden],
+.shardwright-interpretive-review-reason-groups[hidden] {
     display: none !important;
 }
 
-.ss-interpretive-review-field > span:first-child {
+.shardwright-interpretive-review-field > span:first-child {
     font-size: 12px;
     font-weight: 600;
 }
 
-.ss-interpretive-review-reason-groups {
+.shardwright-interpretive-review-reason-groups {
     display: grid;
     gap: 10px;
     margin-top: 8px;
     padding-top: 8px;
-    border-top: 1px solid color-mix(in srgb, var(--ss-border) 70%, transparent);
+    border-top: 1px solid color-mix(in srgb, var(--shardwright-border) 70%, transparent);
 }
 
-.ss-interpretive-review-reason-group {
+.shardwright-interpretive-review-reason-group {
     display: grid;
     gap: 8px;
 }
 
-.ss-interpretive-review-reason-group + .ss-interpretive-review-reason-group {
+.shardwright-interpretive-review-reason-group + .shardwright-interpretive-review-reason-group {
     padding-top: 10px;
-    border-top: 1px solid color-mix(in srgb, var(--ss-border) 70%, transparent);
+    border-top: 1px solid color-mix(in srgb, var(--shardwright-border) 70%, transparent);
 }
 
-.ss-interpretive-review-reason-group-header {
+.shardwright-interpretive-review-reason-group-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
 }
 
-.ss-interpretive-review-comment-field {
+.shardwright-interpretive-review-comment-field {
     margin-top: 8px;
     padding-top: 8px;
-    border-top: 1px solid color-mix(in srgb, var(--ss-border) 70%, transparent);
+    border-top: 1px solid color-mix(in srgb, var(--shardwright-border) 70%, transparent);
 }
 
-.ss-interpretive-review-form-actions {
+.shardwright-interpretive-review-form-actions {
     display: flex;
     justify-content: flex-end;
     gap: 8px;
 }
 
-.ss-interpretive-review-action-surface .ss-interpretive-review-form-actions,
-.ss-interpretive-action-card .ss-interpretive-review-form-actions {
+.shardwright-interpretive-review-action-surface .shardwright-interpretive-review-form-actions,
+.shardwright-interpretive-action-card .shardwright-interpretive-review-form-actions {
     justify-content: flex-start;
 }
 
-.ss-interpretive-review-action-surface .ss-review-section__body {
+.shardwright-interpretive-review-action-surface .shardwright-review-section__body {
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -1163,79 +1264,79 @@ export const INTERPRETIVE_REVIEW_CSS = `
     overflow-x: hidden;
 }
 
-.ss-interpretive-review-action-surface .ss-interpretive-action-card {
+.shardwright-interpretive-review-action-surface .shardwright-interpretive-action-card {
     width: 100%;
     max-width: none;
 }
 
-.ss-interpretive-review-primary-action {
+.shardwright-interpretive-review-primary-action {
     display: grid;
     gap: 10px;
     padding: 12px;
-    border: 1px solid color-mix(in srgb, var(--ss-primary) 36%, var(--ss-border));
+    border: 1px solid color-mix(in srgb, var(--shardwright-primary) 36%, var(--shardwright-border));
     border-radius: 14px;
-    background: linear-gradient(180deg, color-mix(in srgb, var(--ss-bg-primary) 88%, var(--ss-primary) 12%), color-mix(in srgb, var(--ss-bg-primary) 94%, white 6%));
+    background: linear-gradient(180deg, color-mix(in srgb, var(--shardwright-bg-primary) 88%, var(--shardwright-primary) 12%), color-mix(in srgb, var(--shardwright-bg-primary) 94%, white 6%));
 }
 
-.ss-interpretive-review-primary-action .ss-interpretive-action-card {
-    border-color: color-mix(in srgb, var(--ss-primary) 40%, var(--ss-border));
-    background: color-mix(in srgb, var(--ss-bg-primary) 94%, white 6%);
+.shardwright-interpretive-review-primary-action .shardwright-interpretive-action-card {
+    border-color: color-mix(in srgb, var(--shardwright-primary) 40%, var(--shardwright-border));
+    background: color-mix(in srgb, var(--shardwright-bg-primary) 94%, white 6%);
 }
 
-.ss-interpretive-review-primary-action .menu_button[type="submit"],
-.ss-interpretive-review-form-actions .menu_button[type="submit"] {
+.shardwright-interpretive-review-primary-action .menu_button[type="submit"],
+.shardwright-interpretive-review-form-actions .menu_button[type="submit"] {
     min-height: 38px;
     padding: 8px 16px;
-    border: 1px solid color-mix(in srgb, var(--ss-primary) 55%, var(--ss-border));
+    border: 1px solid color-mix(in srgb, var(--shardwright-primary) 55%, var(--shardwright-border));
     border-radius: 12px;
-    background: linear-gradient(180deg, color-mix(in srgb, var(--ss-primary) 30%, var(--ss-bg-primary)), color-mix(in srgb, var(--ss-primary) 18%, var(--ss-bg-primary)));
-    color: color-mix(in srgb, white 88%, var(--ss-text-primary) 12%);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--shardwright-primary) 30%, var(--shardwright-bg-primary)), color-mix(in srgb, var(--shardwright-primary) 18%, var(--shardwright-bg-primary)));
+    color: color-mix(in srgb, white 88%, var(--shardwright-text-primary) 12%);
     font-weight: 700;
     letter-spacing: 0.01em;
     box-shadow: 0 6px 16px color-mix(in srgb, black 14%, transparent);
 }
 
-.ss-interpretive-review-primary-action .menu_button[type="submit"]:hover,
-.ss-interpretive-review-primary-action .menu_button[type="submit"]:focus-visible,
-.ss-interpretive-review-form-actions .menu_button[type="submit"]:hover,
-.ss-interpretive-review-form-actions .menu_button[type="submit"]:focus-visible {
-    border-color: color-mix(in srgb, var(--ss-primary) 72%, white 28%);
-    background: linear-gradient(180deg, color-mix(in srgb, var(--ss-primary) 40%, var(--ss-bg-primary)), color-mix(in srgb, var(--ss-primary) 24%, var(--ss-bg-primary)));
+.shardwright-interpretive-review-primary-action .menu_button[type="submit"]:hover,
+.shardwright-interpretive-review-primary-action .menu_button[type="submit"]:focus-visible,
+.shardwright-interpretive-review-form-actions .menu_button[type="submit"]:hover,
+.shardwright-interpretive-review-form-actions .menu_button[type="submit"]:focus-visible {
+    border-color: color-mix(in srgb, var(--shardwright-primary) 72%, white 28%);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--shardwright-primary) 40%, var(--shardwright-bg-primary)), color-mix(in srgb, var(--shardwright-primary) 24%, var(--shardwright-bg-primary)));
     color: white;
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ss-primary) 20%, transparent), 0 8px 18px color-mix(in srgb, black 16%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--shardwright-primary) 20%, transparent), 0 8px 18px color-mix(in srgb, black 16%, transparent);
     outline: none;
     transform: translateY(-1px);
 }
 
-.ss-interpretive-review-form-actions .menu_button[type="submit"] {
+.shardwright-interpretive-review-form-actions .menu_button[type="submit"] {
     min-width: 132px;
 }
 
-.ss-interpretive-action-status {
-    border: 1px solid var(--ss-border);
+.shardwright-interpretive-action-status {
+    border: 1px solid var(--shardwright-border);
     border-radius: 10px;
     padding: 8px 10px;
     font-size: 12px;
     line-height: 1.4;
-    background: color-mix(in srgb, var(--ss-bg-primary) 92%, white 8%);
+    background: color-mix(in srgb, var(--shardwright-bg-primary) 92%, white 8%);
 }
 
-.ss-interpretive-action-status.tone-info {
+.shardwright-interpretive-action-status.tone-info {
     border-color: rgba(84, 162, 255, 0.45);
     color: #9bc2ff;
 }
 
-.ss-interpretive-action-status.tone-success {
+.shardwright-interpretive-action-status.tone-success {
     border-color: rgba(60, 190, 90, 0.55);
     color: #7fe08a;
 }
 
-.ss-interpretive-action-status.tone-error {
+.shardwright-interpretive-action-status.tone-error {
     border-color: rgba(230, 80, 80, 0.55);
     color: #ff8b8b;
 }
 
-.ss-interpretive-review-pre {
+.shardwright-interpretive-review-pre {
     margin: 0;
     white-space: pre-wrap;
     word-break: break-word;
@@ -1244,165 +1345,165 @@ export const INTERPRETIVE_REVIEW_CSS = `
     line-height: 1.4;
 }
 
-.ss-interpretive-review-badge {
+.shardwright-interpretive-review-badge {
     display: inline-flex;
     align-items: center;
     gap: 4px;
     padding: 2px 8px;
     border-radius: 999px;
-    border: 1px solid var(--ss-border);
+    border: 1px solid var(--shardwright-border);
     font-size: 11px;
     line-height: 1.3;
-    background: color-mix(in srgb, var(--ss-bg-primary) 90%, white 10%);
+    background: color-mix(in srgb, var(--shardwright-bg-primary) 90%, white 10%);
     white-space: nowrap;
 }
 
-.ss-interpretive-review-badge.state-pending,
-.ss-interpretive-review-badge.state-high,
-.ss-interpretive-review-badge.state-blocked,
-.ss-interpretive-review-badge.state-contested {
+.shardwright-interpretive-review-badge.state-pending,
+.shardwright-interpretive-review-badge.state-high,
+.shardwright-interpretive-review-badge.state-blocked,
+.shardwright-interpretive-review-badge.state-contested {
     border-color: rgba(255, 170, 0, 0.55);
     color: #ffbf47;
 }
 
-.ss-interpretive-review-badge.state-approved,
-.ss-interpretive-review-badge.state-complete,
-.ss-interpretive-review-badge.state-granted,
-.ss-interpretive-review-badge.state-eligible,
-.ss-interpretive-review-badge.state-authorized,
-.ss-interpretive-review-badge.state-published,
-.ss-interpretive-review-badge.state-active {
+.shardwright-interpretive-review-badge.state-approved,
+.shardwright-interpretive-review-badge.state-complete,
+.shardwright-interpretive-review-badge.state-granted,
+.shardwright-interpretive-review-badge.state-eligible,
+.shardwright-interpretive-review-badge.state-authorized,
+.shardwright-interpretive-review-badge.state-published,
+.shardwright-interpretive-review-badge.state-active {
     border-color: rgba(60, 190, 90, 0.55);
     color: #7fe08a;
 }
 
-.ss-interpretive-review-badge.state-rejected,
-.ss-interpretive-review-badge.state-failed,
-.ss-interpretive-review-badge.state-revoked {
+.shardwright-interpretive-review-badge.state-rejected,
+.shardwright-interpretive-review-badge.state-failed,
+.shardwright-interpretive-review-badge.state-revoked {
     border-color: rgba(230, 80, 80, 0.55);
     color: #ff8b8b;
 }
 
 @media (max-width: 960px) {
-    .ss-interpretive-review-modal {
+    .shardwright-interpretive-review-modal {
         display: block;
         height: auto;
         min-height: 0;
         overflow: visible;
     }
 
-    .popup:has(.ss-interpretive-review-modal) {
+    .popup:has(.shardwright-interpretive-review-modal) {
         height: min(96vh, calc(100vh - 16px)) !important;
         overflow: hidden !important;
     }
 
-    .popup:has(.ss-interpretive-review-modal) .popup-content {
+    .popup:has(.shardwright-interpretive-review-modal) .popup-content {
         height: 100%;
         max-height: 100%;
         overflow-y: auto;
         overflow-x: hidden;
     }
 
-    .ss-interpretive-review-toolbar {
+    .shardwright-interpretive-review-toolbar {
         grid-template-columns: 1fr;
         position: sticky;
         top: 0;
         z-index: 3;
-        background: var(--ss-bg-primary);
+        background: var(--shardwright-bg-primary);
         padding-bottom: 10px;
     }
 
-    .ss-interpretive-review-toolbar-buttons {
+    .shardwright-interpretive-review-toolbar-buttons {
         justify-content: flex-start;
     }
 
-    .ss-interpretive-review-toolbar-actions {
+    .shardwright-interpretive-review-toolbar-actions {
         justify-content: flex-start;
     }
 
-    .ss-interpretive-review-detail-header-top {
+    .shardwright-interpretive-review-detail-header-top {
         flex-direction: column;
         align-items: stretch;
     }
 
-    .ss-interpretive-review-layout {
+    .shardwright-interpretive-review-layout {
         display: block;
         height: auto;
         min-height: 0;
         overflow: visible;
-        --ss-interpretive-review-pane-height: auto;
+        --shardwright-interpretive-review-pane-height: auto;
     }
 
-    .ss-interpretive-review-column,
-    .ss-interpretive-review-queue,
-    .ss-interpretive-review-detail {
+    .shardwright-interpretive-review-column,
+    .shardwright-interpretive-review-queue,
+    .shardwright-interpretive-review-detail {
         display: block;
         flex: 0 0 auto;
         min-height: 0;
         overflow: visible;
     }
 
-    .ss-interpretive-review-column + .ss-interpretive-review-column,
-    .ss-interpretive-review-queue + .ss-interpretive-review-detail {
+    .shardwright-interpretive-review-column + .shardwright-interpretive-review-column,
+    .shardwright-interpretive-review-queue + .shardwright-interpretive-review-detail {
         margin-top: 10px;
     }
 
-    .ss-interpretive-review-queue-controls {
+    .shardwright-interpretive-review-queue-controls {
         padding-top: 8px;
     }
 
-    .ss-interpretive-review-queue-list,
-    .ss-interpretive-review-detail-body {
+    .shardwright-interpretive-review-queue-list,
+    .shardwright-interpretive-review-detail-body {
         max-height: none;
         overflow: visible;
     }
 
-    .ss-interpretive-review-detail-tabs {
+    .shardwright-interpretive-review-detail-tabs {
         position: sticky;
         top: 0;
         z-index: 2;
-        background: var(--ss-bg-primary);
+        background: var(--shardwright-bg-primary);
         padding-top: 2px;
         padding-bottom: 8px;
         width: 100%;
     }
 
-    .ss-interpretive-review-review-column {
+    .shardwright-interpretive-review-review-column {
         gap: 10px;
     }
 
-    .ss-interpretive-review-context {
+    .shardwright-interpretive-review-context {
         font-size: 16px;
         padding: 14px;
     }
 
-    .ss-interpretive-review-context-support {
+    .shardwright-interpretive-review-context-support {
         padding: 10px 14px 12px;
     }
 
-    .ss-interpretive-action-form .ss-interpretive-review-form-grid {
+    .shardwright-interpretive-action-form .shardwright-interpretive-review-form-grid {
         grid-template-columns: 1fr;
     }
 
-    .ss-interpretive-review-policy-audit-row {
+    .shardwright-interpretive-review-policy-audit-row {
         grid-template-columns: 1fr;
     }
 
-    .ss-interpretive-review-status-strip {
+    .shardwright-interpretive-review-status-strip {
         grid-template-columns: 1fr;
     }
 
-    .ss-interpretive-review-status-strip-cell {
+    .shardwright-interpretive-review-status-strip-cell {
         border-left: 0;
-        border-top: 1px solid color-mix(in srgb, var(--ss-border) 62%, transparent);
+        border-top: 1px solid color-mix(in srgb, var(--shardwright-border) 62%, transparent);
     }
 
-    .ss-interpretive-review-status-strip-cell:first-child {
+    .shardwright-interpretive-review-status-strip-cell:first-child {
         border-top: 0;
     }
 
-    .ss-interpretive-review-status-strip-value,
-    .ss-interpretive-review-policy-audit-value {
+    .shardwright-interpretive-review-status-strip-value,
+    .shardwright-interpretive-review-policy-audit-value {
         justify-content: flex-start;
         text-align: left;
     }

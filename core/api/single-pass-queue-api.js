@@ -99,7 +99,7 @@ function reconcileDomMesidsAfterBatch(systemInsertionIndices = []) {
         }
 
         const text = el.querySelector('.mes_text')?.textContent || '';
-        const isInsertedSummary = el.getAttribute('data-ss-batch-summary') === '1'
+        const isInsertedSummary = el.getAttribute('data-shardwright-batch-summary') === '1'
             || (systemInsertionSet.has(currentMesid) && (text.includes('[MEMORY SHARD: Messages ') || text.includes('[SUMMARY: Messages ')));
 
         // Newly inserted summary rows are already in shifted coordinates.
@@ -148,7 +148,7 @@ function reconcileDomMesidsAfterBatch(systemInsertionIndices = []) {
 
             const keepEl = els.find((el) => {
                 const text = el.querySelector('.mes_text')?.textContent || '';
-                return el.getAttribute('data-ss-batch-summary') === '1'
+                return el.getAttribute('data-shardwright-batch-summary') === '1'
                     || text.includes('[MEMORY SHARD: Messages ')
                     || text.includes('[SUMMARY: Messages ');
             }) || els[0];
@@ -273,10 +273,10 @@ export async function runSharderQueue(ranges, settings, batchConfig = {}) {
 
     createAbortController();
     const originalText = 'Batch Sharder';
-    const lockButtons = ['ss-run-single-pass'];
+    const lockButtons = ['shardwright-run-single-pass'];
     const opId = startUiOperation({
         feature: 'sharder-batch',
-        primaryButton: 'ss-run-single-pass-batch',
+        primaryButton: 'shardwright-run-single-pass-batch',
         disabled: true,
         label: null,
         lockButtons,
@@ -329,7 +329,7 @@ export async function runSharderQueue(ranges, settings, batchConfig = {}) {
 
             updateUiOperation({
                 feature: 'sharder-batch',
-                primaryButton: 'ss-run-single-pass-batch',
+                primaryButton: 'shardwright-run-single-pass-batch',
                 disabled: true,
                 label: `Generating ${current}/${total} (${runtimeRange.start}-${runtimeRange.end})...`,
                 lockButtons,
@@ -502,7 +502,7 @@ export async function runSharderQueue(ranges, settings, batchConfig = {}) {
 
                     updateUiOperation({
                         feature: 'sharder-batch',
-                        primaryButton: 'ss-run-single-pass-batch',
+                        primaryButton: 'shardwright-run-single-pass-batch',
                         disabled: true,
                         label: `Reviewing ${index + 1}/${total} (${generated.runtimeRange.start}-${generated.runtimeRange.end})...`,
                         lockButtons,
@@ -600,7 +600,7 @@ export async function runSharderQueue(ranges, settings, batchConfig = {}) {
         clearAbortController();
         endUiOperation({
             feature: 'sharder-batch',
-            primaryButton: 'ss-run-single-pass-batch',
+            primaryButton: 'shardwright-run-single-pass-batch',
             disabled: false,
             label: originalText,
             lockButtons,

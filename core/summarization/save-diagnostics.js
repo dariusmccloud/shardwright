@@ -23,16 +23,18 @@ function buildDiagnosticContext(context = {}) {
 }
 
 export async function withSummarySharderSaveDiagnostics(context, fn) {
-    const previous = globalThis.summarySharderSaveDiagnosticContext;
-    globalThis.summarySharderSaveDiagnosticContext = buildDiagnosticContext(context);
+    const diagnostics = ensureShardwrightNamespace('diagnostics', globalThis);
+    const previous = diagnostics.saveContext;
+    diagnostics.saveContext = buildDiagnosticContext(context);
 
     try {
         return await fn();
     } finally {
         if (typeof previous === 'undefined') {
-            delete globalThis.summarySharderSaveDiagnosticContext;
+            delete diagnostics.saveContext;
         } else {
-            globalThis.summarySharderSaveDiagnosticContext = previous;
+            diagnostics.saveContext = previous;
         }
     }
 }
+import { ensureShardwrightNamespace } from '../shardwright-runtime-identity.js';

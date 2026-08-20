@@ -5,29 +5,29 @@ export const RESPONSIVE_CSS = `
 
 @media (max-width: 768px) {
     /* Remove min-width constraints that cause overflow on mobile */
-    .ss-prompts-modal {
+    .shardwright-prompts-modal {
         min-width: unset !important;
         width: 100%;
         padding: 10px;
     }
 
-    .ss-chat-manager-modal {
+    .shardwright-chat-manager-modal {
         min-width: unset !important;
         width: 100%;
         padding: 10px;
     }
 
-    .ss-clean-context-modal {
+    .shardwright-clean-context-modal {
         min-width: unset !important;
         width: 100%;
     }
 
     /* Tab buttons: allow wrapping and fill available space */
-    .ss-tab-header {
+    .shardwright-tab-header {
         flex-wrap: wrap;
     }
 
-    .ss-tab-button {
+    .shardwright-tab-button {
         padding: 8px 10px;
         font-size: 13px;
         flex: 1 1 auto;
@@ -35,84 +35,84 @@ export const RESPONSIVE_CSS = `
     }
 
     /* Ensure textareas stay readable on mobile */
-    .ss-prompts-tab-content textarea,
-    .ss-sharder-prompts-tab textarea,
-    .ss-events-prompt-tab textarea {
+    .shardwright-prompts-tab-content textarea,
+    .shardwright-sharder-prompts-tab textarea,
+    .shardwright-events-prompt-tab textarea {
         font-size: 12px !important;
     }
 
     /* Stack chat manager action buttons vertically */
-    .ss-action-buttons {
+    .shardwright-action-buttons {
         flex-direction: column;
     }
 
-    .ss-action-buttons .menu_button {
+    .shardwright-action-buttons .menu_button {
         min-width: unset;
     }
 
     /* Popup footer controls: allow wrapping on narrow screens */
-    .popup:has(.ss-prompts-modal) .popup-controls {
+    .popup:has(.shardwright-prompts-modal) .popup-controls {
         flex-wrap: wrap;
         gap: 5px;
     }
 
-    .ss-popup-left-buttons {
+    .shardwright-popup-left-buttons {
         flex-wrap: wrap;
     }
 
     /* RAG Settings Modal */
-    .ss-rag-modal {
+    .shardwright-rag-modal {
         padding: 10px;
     }
 
-    .ss-rag-status-bar {
+    .shardwright-rag-status-bar {
         grid-template-columns: 1fr;
     }
 
-    .ss-rag-grid-two {
+    .shardwright-rag-grid-two {
         grid-template-columns: 1fr;
     }
 
-    .ss-rag-accordion[data-rag-section="backend"] .ss-accordion-content {
+    .shardwright-rag-accordion[data-rag-section="backend"] .shardwright-accordion-content {
         grid-template-columns: 1fr;
     }
 
-    #ss-rag-reranker-config,
-    #ss-rag-qdrant-config {
+    #shardwright-rag-reranker-config,
+    #shardwright-rag-qdrant-config {
         grid-template-columns: 1fr;
     }
 
-    .ss-rag-actions-primary {
+    .shardwright-rag-actions-primary {
         grid-template-columns: 1fr;
     }
 
-    .ss-rag-actions-secondary {
+    .shardwright-rag-actions-secondary {
         flex-direction: column;
     }
 
-    .ss-rag-actions-secondary .menu_button {
+    .shardwright-rag-actions-secondary .menu_button {
         min-width: unset;
         width: 100%;
     }
 
-    .ss-rag-vectorization-grid {
+    .shardwright-rag-vectorization-grid {
         grid-template-columns: 1fr;
     }
 
-    .ss-rag-actions-row {
+    .shardwright-rag-actions-row {
         flex-direction: column;
     }
 
-    .ss-rag-actions-row .menu_button {
+    .shardwright-rag-actions-row .menu_button {
         min-width: unset;
         width: 100%;
     }
 
-    .ss-rag-section {
+    .shardwright-rag-section {
         padding: 8px;
     }
 
-    .ss-rag-template {
+    .shardwright-rag-template {
         min-height: 80px;
         font-size: 12px;
     }

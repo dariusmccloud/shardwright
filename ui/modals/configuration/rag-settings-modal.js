@@ -1,5 +1,5 @@
 /**
- * RAG Settings Modal Component for Summary Sharder
+ * RAG Settings Modal Component for Shardwright
  */
 
 import { Popup, POPUP_RESULT, POPUP_TYPE } from '../../../../../../popup.js';
@@ -33,6 +33,7 @@ import {
     purgeCollection,
 } from '../../../core/rag/index.js';
 import { ragLog } from '../../../core/logger.js';
+import { getArchitecturalRagUiPosture } from '../../../core/rag/architectural-rag-ui.js';
 
 const HYBRID_WEIGHT_STEP = 0.05;
 const HYBRID_WEIGHT_DEFAULT_ALPHA = 0.4;
@@ -123,20 +124,20 @@ function toFloat(v, fallback) {
 function buildRagAccordion(key, title, icon, content, defaultOpen = false) {
     const openDisplay = key === 'backend' ? 'grid' : 'block';
     const expanded = defaultOpen ? ' expanded' : '';
-    const hiddenClass = defaultOpen ? '' : ' ss-hidden';
+    const hiddenClass = defaultOpen ? '' : ' shardwright-hidden';
     const ariaExpanded = defaultOpen ? 'true' : 'false';
 
     return `
-        <div class="ss-review-accordion ss-rag-accordion${expanded}" data-rag-section="${key}">
-            <div class="ss-accordion-header" role="button" tabindex="0" aria-expanded="${ariaExpanded}">
-                <span class="ss-accordion-toggle">
+        <div class="shardwright-review-accordion shardwright-rag-accordion${expanded}" data-rag-section="${key}">
+            <div class="shardwright-accordion-header" role="button" tabindex="0" aria-expanded="${ariaExpanded}">
+                <span class="shardwright-accordion-toggle">
                     <i class="fa-solid fa-chevron-right"></i>
                 </span>
-                <span class="ss-accordion-title">
+                <span class="shardwright-accordion-title">
                     <i class="fa-solid ${icon}"></i> ${title}
                 </span>
             </div>
-            <div class="ss-accordion-content${hiddenClass}" data-expanded-display="${openDisplay}">
+            <div class="shardwright-accordion-content${hiddenClass}" data-expanded-display="${openDisplay}">
                 ${content}
             </div>
         </div>
@@ -148,7 +149,7 @@ function buildRagAccordion(key, title, icon, content, defaultOpen = false) {
  * @param {boolean} isSharder
  * @returns {string}
  */
-function renderModalHtml(rag, isSharder) {
+function renderModalHtml(rag, isSharder, architecturalPosture = null) {
     const backend = rag.backend || 'vectra';
     const isQdrant = backend === 'qdrant';
     const isMilvus = backend === 'milvus';
@@ -158,109 +159,115 @@ function renderModalHtml(rag, isSharder) {
     const showWeightedSlider = rag.scoringMethod === 'hybrid' && isHybridWeighted && rerankerEnabled;
     const showWeightedInputs = isHybridWeighted && !rerankerEnabled;
     const normalizedWeights = normalizeHybridWeights(rag.hybridAlpha ?? HYBRID_WEIGHT_DEFAULT_ALPHA, rag.hybridBeta ?? HYBRID_WEIGHT_DEFAULT_BETA);
-    const modeBadgeClass = isSharder ? 'ss-rag-mode-sharder' : 'ss-rag-mode-standard';
+    const modeBadgeClass = isSharder ? 'shardwright-rag-mode-sharder' : 'shardwright-rag-mode-standard';
     const modeLabel = isSharder ? 'Sharder Mode' : 'Standard Mode';
 
     return `
-        <div class="ss-rag-modal">
-            <h3 class="ss-rag-title">RAG Settings - <span class="ss-rag-mode-badge ${modeBadgeClass}">${modeLabel}</span></h3>
-            <div class="ss-rag-master-toggle">
+        <div class="shardwright-rag-modal">
+            <h3 class="shardwright-rag-title">RAG Settings - <span class="shardwright-rag-mode-badge ${modeBadgeClass}">${modeLabel}</span></h3>
+            <div class="shardwright-rag-master-toggle">
                 <label class="checkbox_label">
-                    <input id="ss-rag-enabled" class="ss-rag-control" type="checkbox" ${rag.enabled ? 'checked' : ''} />
+                    <input id="shardwright-rag-enabled" class="shardwright-rag-control" type="checkbox" ${rag.enabled ? 'checked' : ''} />
                     <span>Enable RAG</span>
                 </label>
             </div>
+            ${architecturalPosture ? `
+                <div class="shardwright-rag-warning">
+                    <strong>${architecturalPosture.label}:</strong> ${architecturalPosture.description}<br />
+                    ${architecturalPosture.warmArchive}
+                </div>
+            ` : ''}
 
-            <div id="ss-rag-body" class="${rag.enabled ? '' : 'ss-hidden'}">
-                <div class="ss-rag-status-bar">
-                    <div class="ss-rag-status-item" id="ss-rag-status-reranker">
-                        <div class="ss-rag-status-label">Re-Ranker</div>
-                        <div class="ss-rag-status-value" id="ss-rag-reranker-status">Checking...</div>
+            <div id="shardwright-rag-body" class="${rag.enabled ? '' : 'shardwright-hidden'}">
+                <div class="shardwright-rag-status-bar">
+                    <div class="shardwright-rag-status-item" id="shardwright-rag-status-reranker">
+                        <div class="shardwright-rag-status-label">Re-Ranker</div>
+                        <div class="shardwright-rag-status-value" id="shardwright-rag-reranker-status">Checking...</div>
                     </div>
-                    <div class="ss-rag-status-item" id="ss-rag-status-embedding">
-                        <div class="ss-rag-status-label">Embedding Source</div>
-                        <div class="ss-rag-status-value" id="ss-rag-embedding-status">Checking...</div>
+                    <div class="shardwright-rag-status-item" id="shardwright-rag-status-embedding">
+                        <div class="shardwright-rag-status-label">Embedding Source</div>
+                        <div class="shardwright-rag-status-value" id="shardwright-rag-embedding-status">Checking...</div>
                     </div>
-                    <div class="ss-rag-status-item" id="ss-rag-status-backend">
-                        <div class="ss-rag-status-label">Backend</div>
-                        <div class="ss-rag-status-value" id="ss-rag-backend-health">Checking...</div>
+                    <div class="shardwright-rag-status-item" id="shardwright-rag-status-backend">
+                        <div class="shardwright-rag-status-label">Backend</div>
+                        <div class="shardwright-rag-status-value" id="shardwright-rag-backend-health">Checking...</div>
                     </div>
                 </div>
-                <div class="ss-rag-status-actions">
-                    <div class="ss-rag-actions-primary">
-                        <input id="ss-rag-refresh-health" class="menu_button" type="button" value="Refresh Health" />
-                        <input id="ss-rag-test-embedding" class="menu_button ss-rag-control" type="button" value="Test Embedding Source" />
-                        <input id="ss-rag-test-reranker" class="menu_button ss-rag-control" type="button" value="Test Re-ranker" />
-                        <input id="ss-rag-init-backend" class="menu_button ss-rag-control" type="button" value="Initialize Backend" />
+                <div class="shardwright-rag-status-actions">
+                    <div class="shardwright-rag-actions-primary">
+                        <input id="shardwright-rag-refresh-health" class="menu_button" type="button" value="Refresh Health" />
+                        <input id="shardwright-rag-test-embedding" class="menu_button shardwright-rag-control" type="button" value="Test Embedding Source" />
+                        <input id="shardwright-rag-test-reranker" class="menu_button shardwright-rag-control" type="button" value="Test Re-ranker" />
+                        <input id="shardwright-rag-init-backend" class="menu_button shardwright-rag-control" type="button" value="Initialize Backend" />
                     </div>
-                    <div class="ss-rag-actions-secondary">
-                        <input id="ss-rag-vectorize-all" class="menu_button ss-rag-control" type="button" value="Vectorize All Shards" />
-                        <input id="ss-rag-open-browser" class="menu_button ss-rag-control" type="button" value="Browse Collections" />
-                        <input id="ss-rag-open-debug" class="menu_button ss-rag-control" type="button" value="Debug RAG" />
-                        <input id="ss-rag-open-history" class="menu_button ss-rag-control" type="button" value="RAG History" />
-                        <input id="ss-rag-purge-all" class="menu_button ss-rag-control ss-rag-btn-destructive" type="button" value="Purge All Vectors" />
-                        <input id="ss-rag-reset-defaults" class="menu_button ss-rag-control" type="button" value="Reset to Defaults" />
+                    <div class="shardwright-rag-actions-secondary">
+                        <input id="shardwright-rag-vectorize-all" class="menu_button shardwright-rag-control" type="button" value="Vectorize All Shards" />
+                        <input id="shardwright-rag-open-browser" class="menu_button shardwright-rag-control" type="button" value="Browse Collections" />
+                        <input id="shardwright-rag-open-debug" class="menu_button shardwright-rag-control" type="button" value="Debug RAG" />
+                        <input id="shardwright-rag-open-history" class="menu_button shardwright-rag-control" type="button" value="RAG History" />
+                        <input id="shardwright-rag-purge-all" class="menu_button shardwright-rag-control shardwright-rag-btn-destructive" type="button" value="Purge All Vectors" />
+                        <input id="shardwright-rag-reset-defaults" class="menu_button shardwright-rag-control" type="button" value="Reset to Defaults" />
                     </div>
-                    <p id="ss-rag-embedding-test-status" class="ss-rag-inline-hint ss-text-hint">Embedding source test: not run</p>
-                    <p id="ss-rag-reranker-test-status" class="ss-rag-inline-hint ss-text-hint">Re-ranker test: not run</p>
-                    <p id="ss-rag-autosave-status" class="ss-rag-inline-hint ss-text-hint">All changes autosave.</p>
+                    <p id="shardwright-rag-embedding-test-status" class="shardwright-rag-inline-hint shardwright-text-hint">Embedding source test: not run</p>
+                    <p id="shardwright-rag-reranker-test-status" class="shardwright-rag-inline-hint shardwright-text-hint">Re-ranker test: not run</p>
+                    <p id="shardwright-rag-autosave-status" class="shardwright-rag-inline-hint shardwright-text-hint">All changes autosave.</p>
                 </div>
-                <div id="ss-rag-warning" class="ss-rag-warning ss-hidden"></div>
+                <div id="shardwright-rag-warning" class="shardwright-rag-warning shardwright-hidden"></div>
 
                 ${buildRagAccordion('backend', 'Backend', 'fa-server', `
-                    <div class="ss-rag-backend-left">
-                        <div class="ss-block">
-                            <label for="ss-rag-backend">Backend Source</label>
-                            <select id="ss-rag-backend" class="text_pole ss-rag-control">
+                    <div class="shardwright-rag-backend-left">
+                        <div class="shardwright-block">
+                            <label for="shardwright-rag-backend">Backend Source</label>
+                            <select id="shardwright-rag-backend" class="text_pole shardwright-rag-control">
                                 <option value="vectra" ${backend === 'vectra' ? 'selected' : ''}>Vectra (default, local)</option>
                                 <option value="lancedb" ${backend === 'lancedb' ? 'selected' : ''}>LanceDB (local)</option>
                                 <option value="qdrant" ${backend === 'qdrant' ? 'selected' : ''}>Qdrant</option>
                                 <option value="milvus" ${backend === 'milvus' ? 'selected' : ''}>Milvus</option>
                             </select>
                         </div>
-                        <div id="ss-rag-qdrant-config" class="${isQdrant ? '' : 'ss-hidden'}">                            
-                            <div id="ss-rag-qdrant-local" class="${qdrantUseCloud ? 'ss-hidden' : ''}">
-                                <div class="ss-block">
-                                    <label for="ss-rag-qdrant-address">API Address</label>
-                                    <input id="ss-rag-qdrant-address" class="text_pole ss-rag-control" type="text" value="${rag.backendConfig?.qdrantAddress || 'localhost:6333'}" placeholder="localhost:6333">
+                        <div id="shardwright-rag-qdrant-config" class="${isQdrant ? '' : 'shardwright-hidden'}">
+                            <div id="shardwright-rag-qdrant-local" class="${qdrantUseCloud ? 'shardwright-hidden' : ''}">
+                                <div class="shardwright-block">
+                                    <label for="shardwright-rag-qdrant-address">API Address</label>
+                                    <input id="shardwright-rag-qdrant-address" class="text_pole shardwright-rag-control" type="text" value="${rag.backendConfig?.qdrantAddress || 'localhost:6333'}" placeholder="localhost:6333">
                                 </div>
-                                <div class="ss-block">
-                                    <label for="ss-rag-qdrant-local-key">Qdrant Key (optional)</label>
-                                    <input id="ss-rag-qdrant-local-key" class="text_pole ss-rag-control" type="password" value="${rag.backendConfig?.qdrantApiKey || ''}">
+                                <div class="shardwright-block">
+                                    <label for="shardwright-rag-qdrant-local-key">Qdrant Key (optional)</label>
+                                    <input id="shardwright-rag-qdrant-local-key" class="text_pole shardwright-rag-control" type="password" value="${rag.backendConfig?.qdrantApiKey || ''}">
                                 </div>                                                                                             
                             </div>
-                            <div id="ss-rag-qdrant-cloud" class="${qdrantUseCloud ? '' : 'ss-hidden'}">
-                                <div class="ss-block">
-                                    <label for="ss-rag-qdrant-url">Cloud URL</label>
-                                    <input id="ss-rag-qdrant-url" class="text_pole ss-rag-control" type="text" value="${rag.backendConfig?.qdrantUrl || ''}" placeholder="https://cluster-id.region.aws.cloud.qdrant.io" />
+                            <div id="shardwright-rag-qdrant-cloud" class="${qdrantUseCloud ? '' : 'shardwright-hidden'}">
+                                <div class="shardwright-block">
+                                    <label for="shardwright-rag-qdrant-url">Cloud URL</label>
+                                    <input id="shardwright-rag-qdrant-url" class="text_pole shardwright-rag-control" type="text" value="${rag.backendConfig?.qdrantUrl || ''}" placeholder="https://cluster-id.region.aws.cloud.qdrant.io" />
                                 </div>
-                                <div class="ss-block">
-                                    <label for="ss-rag-qdrant-cloud-key">Qdrant Cloud Key</label>
-                                    <input id="ss-rag-qdrant-cloud-key" class="text_pole ss-rag-control" type="password" value="${rag.backendConfig?.qdrantApiKey || ''}" />
+                                <div class="shardwright-block">
+                                    <label for="shardwright-rag-qdrant-cloud-key">Qdrant Cloud Key</label>
+                                    <input id="shardwright-rag-qdrant-cloud-key" class="text_pole shardwright-rag-control" type="password" value="${rag.backendConfig?.qdrantApiKey || ''}" />
                                 </div>
                             </div>
                             <label class="checkbox_label">
-                                <input id="ss-rag-qdrant-use-cloud" class="ss-rag-control" type="checkbox" ${qdrantUseCloud ? 'checked' : ''} />
+                                <input id="shardwright-rag-qdrant-use-cloud" class="shardwright-rag-control" type="checkbox" ${qdrantUseCloud ? 'checked' : ''} />
                                 <span>Use Qdrant Cloud</span>
                             </label>                            
                         </div>
 
-                        <div id="ss-rag-milvus-config" class="${isMilvus ? '' : 'ss-hidden'}">
-                            <h5 class="ss-rag-subsection-title">Milvus Connection</h5>
-                            <div class="ss-block">
-                                <label for="ss-rag-milvus-address">Milvus Address</label>
-                                <input id="ss-rag-milvus-address" class="text_pole ss-rag-control" type="text" value="${rag.backendConfig?.milvusAddress || 'localhost:19530'}" />
+                        <div id="shardwright-rag-milvus-config" class="${isMilvus ? '' : 'shardwright-hidden'}">
+                            <h5 class="shardwright-rag-subsection-title">Milvus Connection</h5>
+                            <div class="shardwright-block">
+                                <label for="shardwright-rag-milvus-address">Milvus Address</label>
+                                <input id="shardwright-rag-milvus-address" class="text_pole shardwright-rag-control" type="text" value="${rag.backendConfig?.milvusAddress || 'localhost:19530'}" />
                             </div>
-                            <div class="ss-block">
-                                <label for="ss-rag-milvus-token">Milvus Token (optional)</label>
-                                <input id="ss-rag-milvus-token" class="text_pole ss-rag-control" type="password" value="${rag.backendConfig?.milvusToken || ''}" />
+                            <div class="shardwright-block">
+                                <label for="shardwright-rag-milvus-token">Milvus Token (optional)</label>
+                                <input id="shardwright-rag-milvus-token" class="text_pole shardwright-rag-control" type="password" value="${rag.backendConfig?.milvusToken || ''}" />
                             </div>
                         </div>
                     </div>
-                    <div class="ss-rag-backend-right">
-                        <div class="ss-block">
-                            <label for="ss-rag-source">Embedding Source</label>
-                            <select id="ss-rag-source" class="text_pole ss-rag-control">
+                    <div class="shardwright-rag-backend-right">
+                        <div class="shardwright-block">
+                            <label for="shardwright-rag-source">Embedding Source</label>
+                            <select id="shardwright-rag-source" class="text_pole shardwright-rag-control">
                                 <option value="transformers" ${(rag.source || 'transformers') === 'transformers' ? 'selected' : ''}>Transformers (local)</option>
                                 <option value="openai" ${rag.source === 'openai' ? 'selected' : ''}>OpenAI</option>
                                 <option value="ollama" ${rag.source === 'ollama' ? 'selected' : ''}>Ollama</option>
@@ -274,244 +281,244 @@ function renderModalHtml(rag, isSharder) {
                                 <option value="custom" ${rag.source === 'custom' ? 'selected' : ''}>Custom OpenAI-Compatible (Direct)</option>
                             </select>
                         </div>
-                        <div class="ss-block">
-                            <label id="ss-rag-api-url-label" for="ss-rag-api-url">Embedding API URL (optional override)</label>
-                            <input id="ss-rag-api-url" class="text_pole ss-rag-control" type="text" value="${rag.apiUrl || ''}" placeholder="Leave blank to use default; e.g. http://localhost:11434" />
-                            <p id="ss-rag-api-url-hint" class="ss-rag-inline-hint ss-text-hint">Overrides the default URL for this source. Useful for OpenAI-compatible proxies or custom endpoints.</p>
+                        <div class="shardwright-block">
+                            <label id="shardwright-rag-api-url-label" for="shardwright-rag-api-url">Embedding API URL (optional override)</label>
+                            <input id="shardwright-rag-api-url" class="text_pole shardwright-rag-control" type="text" value="${rag.apiUrl || ''}" placeholder="Leave blank to use default; e.g. http://localhost:11434" />
+                            <p id="shardwright-rag-api-url-hint" class="shardwright-rag-inline-hint shardwright-text-hint">Overrides the default URL for this source. Useful for OpenAI-compatible proxies or custom endpoints.</p>
                         </div>
-                        <div class="ss-block">
-                            <label for="ss-rag-model">Embedding Model (optional) ${infoHintHtml('ss-rag-embedding-model-hint', 'Model name sent to the embedding provider. For Custom source, this is required.')}</label>
-                            <input id="ss-rag-model" class="text_pole ss-rag-control" type="text" value="${rag.model || ''}" placeholder="text-embedding-3-large" />
+                        <div class="shardwright-block">
+                            <label for="shardwright-rag-model">Embedding Model (optional) ${infoHintHtml('shardwright-rag-embedding-model-hint', 'Model name sent to the embedding provider. For Custom source, this is required.')}</label>
+                            <input id="shardwright-rag-model" class="text_pole shardwright-rag-control" type="text" value="${rag.model || ''}" placeholder="text-embedding-3-large" />
                         </div>
-                        <div class="ss-block">
-                            <label for="ss-rag-embedding-key">Embedding API Key (secure storage)</label>
-                            <input id="ss-rag-embedding-key" class="text_pole" type="password" value="" placeholder="Enter new key to update; leave blank to keep current" />
-                            <div class="ss-rag-actions-row ss-rag-actions-row-tight">
-                                <input id="ss-rag-store-embedding-key" class="menu_button" type="button" value="Store Key" />
-                                <input id="ss-rag-clear-embedding-key" class="menu_button" type="button" value="Clear Key" />
+                        <div class="shardwright-block">
+                            <label for="shardwright-rag-embedding-key">Embedding API Key (secure storage)</label>
+                            <input id="shardwright-rag-embedding-key" class="text_pole" type="password" value="" placeholder="Enter new key to update; leave blank to keep current" />
+                            <div class="shardwright-rag-actions-row shardwright-rag-actions-row-tight">
+                                <input id="shardwright-rag-store-embedding-key" class="menu_button" type="button" value="Store Key" />
+                                <input id="shardwright-rag-clear-embedding-key" class="menu_button" type="button" value="Clear Key" />
                             </div>
-                            <p id="ss-rag-embedding-key-status" class="ss-rag-inline-hint ss-text-hint">Checking secure key status...</p>
+                            <p id="shardwright-rag-embedding-key-status" class="shardwright-rag-inline-hint shardwright-text-hint">Checking secure key status...</p>
                         </div>
                     </div>
-                    <h5 class="ss-rag-subsection-title">Vectorization</h5>
-                    <div class="ss-rag-vectorization-grid">
-                        <div class="ss-block">
+                    <h5 class="shardwright-rag-subsection-title">Vectorization</h5>
+                    <div class="shardwright-rag-vectorization-grid">
+                        <div class="shardwright-block">
                             <label class="checkbox_label">
-                                <input id="ss-rag-auto-vectorize-new" class="ss-rag-control" type="checkbox" ${rag.autoVectorizeNewSummaries ? 'checked' : ''} />
+                                <input id="shardwright-rag-auto-vectorize-new" class="shardwright-rag-control" type="checkbox" ${rag.autoVectorizeNewSummaries ? 'checked' : ''} />
                                 <span>Auto-Vector New Summaries</span>
                             </label>
                         </div>
                         ${isSharder ? `
-                        <div class="ss-block">
-                            <label for="ss-rag-chunking-mode">Shard Chunking Mode ${infoHintHtml('ss-rag-chunking-mode-hint', 'Section-aware mode splits shards into superseding, cumulative, and rolling chunks with replacement/merge pruning behavior.')}</label>
-                            <div id="ss-rag-chunking-mode-host"></div>
+                        <div class="shardwright-block">
+                            <label for="shardwright-rag-chunking-mode">Shard Chunking Mode ${infoHintHtml('shardwright-rag-chunking-mode-hint', 'Section-aware mode splits shards into superseding, cumulative, and rolling chunks with replacement/merge pruning behavior.')}</label>
+                            <div id="shardwright-rag-chunking-mode-host"></div>
                         </div>
                         ` : `
-                        <div class="ss-block">
-                            <label for="ss-rag-prose-chunking-mode">Prose Chunking Mode ${infoHintHtml('ss-rag-prose-chunking-mode-hint', 'Paragraph splits on double newlines. Full Summary indexes the whole summary as one chunk.')}</label>
-                            <div id="ss-rag-prose-chunking-mode-host"></div>
+                        <div class="shardwright-block">
+                            <label for="shardwright-rag-prose-chunking-mode">Prose Chunking Mode ${infoHintHtml('shardwright-rag-prose-chunking-mode-hint', 'Paragraph splits on double newlines. Full Summary indexes the whole summary as one chunk.')}</label>
+                            <div id="shardwright-rag-prose-chunking-mode-host"></div>
                         </div>
                         `}
-                        <div class="ss-block">
+                        <div class="shardwright-block">
                             <label class="checkbox_label">
-                                <input id="ss-rag-use-lorebooks-vectorization" class="ss-rag-control" type="checkbox" ${rag.useLorebooksForVectorization ? 'checked' : ''} />
-                                <span>Use Lorebook ${infoHintHtml('ss-rag-vectorization-lorebooks-hint', 'Selected lorebooks are scanned for shard-style entries when bulk vectorizing.')}</span>
+                                <input id="shardwright-rag-use-lorebooks-vectorization" class="shardwright-rag-control" type="checkbox" ${rag.useLorebooksForVectorization ? 'checked' : ''} />
+                                <span>Use Lorebook ${infoHintHtml('shardwright-rag-vectorization-lorebooks-hint', 'Selected lorebooks are scanned for shard-style entries when bulk vectorizing.')}</span>
                             </label>
-                            <div id="ss-rag-vectorization-lorebook-options" class="ss-rag-vectorization-lorebook-options ${rag.useLorebooksForVectorization ? '' : 'ss-hidden'}">
-                                <div id="ss-rag-vectorization-lorebook-dropdown"></div>
+                            <div id="shardwright-rag-vectorization-lorebook-options" class="shardwright-rag-vectorization-lorebook-options ${rag.useLorebooksForVectorization ? '' : 'shardwright-hidden'}">
+                                <div id="shardwright-rag-vectorization-lorebook-dropdown"></div>
                             </div>
                         </div>
 
-                        <div class="ss-rag-stats" id="ss-rag-stats">Loading collection stats...</div>
+                        <div class="shardwright-rag-stats" id="shardwright-rag-stats">Loading collection stats...</div>
                     </div>
                 `)}
 
                 ${buildRagAccordion('retrieval', 'Retrieval', 'fa-magnifying-glass', `
-                    <div class="ss-rag-grid-two">
-                        <div class="ss-block">
+                    <div class="shardwright-rag-grid-two">
+                        <div class="shardwright-block">
                             <label class="checkbox_label">
-                                <input id="ss-rag-include-lorebook-shards" class="ss-rag-control" type="checkbox" ${rag.includeLorebooksInShardSelection ? 'checked' : ''} />
-                                <span>Scan Lorebooks for Shard Selection (System output only) ${infoHintHtml('ss-rag-lorebook-selection-hint', 'Overrides shard discovery gating so sharder shard pickers also scan selected lorebooks while output mode is set to system.')}</span>
+                                <input id="shardwright-rag-include-lorebook-shards" class="shardwright-rag-control" type="checkbox" ${rag.includeLorebooksInShardSelection ? 'checked' : ''} />
+                                <span>Scan Lorebooks for Shard Selection (System output only) ${infoHintHtml('shardwright-rag-lorebook-selection-hint', 'Overrides shard discovery gating so sharder shard pickers also scan selected lorebooks while output mode is set to system.')}</span>
                             </label>
                         </div>
                     </div>
 
-                    <div class="ss-rag-subsection">
-                        <div class="ss-block">
+                    <div class="shardwright-rag-subsection">
+                        <div class="shardwright-block">
                             <label class="checkbox_label">
-                                <input id="ss-rag-reranker-enabled" class="ss-rag-control" type="checkbox" ${rag.reranker?.enabled ? 'checked' : ''} />
-                                <span>Enable Re-ranker (Optional) ${infoHintHtml('ss-rag-reranker-enabled-hint', 'Re-sorts retrieved chunks with a stronger relevance model so the most useful memories rise to the top.')}</span>
+                                <input id="shardwright-rag-reranker-enabled" class="shardwright-rag-control" type="checkbox" ${rag.reranker?.enabled ? 'checked' : ''} />
+                                <span>Enable Re-ranker (Optional) ${infoHintHtml('shardwright-rag-reranker-enabled-hint', 'Re-sorts retrieved chunks with a stronger relevance model so the most useful memories rise to the top.')}</span>
                             </label>
                         </div>
-                        <div id="ss-rag-reranker-config" class="${rag.reranker?.enabled ? '' : 'ss-hidden'}">
-                            <div class="ss-block">
-                                <label for="ss-rag-reranker-provider">Re-ranker Provider</label>
-                                <select id="ss-rag-reranker-provider" class="text_pole ss-rag-control">
+                        <div id="shardwright-rag-reranker-config" class="${rag.reranker?.enabled ? '' : 'shardwright-hidden'}">
+                            <div class="shardwright-block">
+                                <label for="shardwright-rag-reranker-provider">Re-ranker Provider</label>
+                                <select id="shardwright-rag-reranker-provider" class="text_pole shardwright-rag-control">
                                     <option value="similharity" ${(rag.reranker?.provider || 'similharity') === 'similharity' ? 'selected' : ''}>Similharity Proxy</option>
                                     <option value="openrouter" ${rag.reranker?.provider === 'openrouter' ? 'selected' : ''}>OpenRouter (Direct)</option>
                                     <option value="linkapi" ${rag.reranker?.provider === 'linkapi' ? 'selected' : ''}>LinkAPI (Direct)</option>
                                     <option value="custom" ${rag.reranker?.provider === 'custom' ? 'selected' : ''}>Custom Endpoint (Direct)</option>
                                 </select>
                             </div>
-                            <div class="ss-block">
-                                <label id="ss-rag-reranker-url-label" for="ss-rag-reranker-url">Re-ranker API URL</label>
-                                <input id="ss-rag-reranker-url" class="text_pole ss-rag-control" type="text" value="${rag.reranker?.apiUrl || ''}" placeholder="http://localhost:8080/rerank" />
-                                <p id="ss-rag-reranker-url-hint" class="ss-rag-inline-hint ss-text-hint">Upstream reranker URL passed to Similharity.</p>
+                            <div class="shardwright-block">
+                                <label id="shardwright-rag-reranker-url-label" for="shardwright-rag-reranker-url">Re-ranker API URL</label>
+                                <input id="shardwright-rag-reranker-url" class="text_pole shardwright-rag-control" type="text" value="${rag.reranker?.apiUrl || ''}" placeholder="http://localhost:8080/rerank" />
+                                <p id="shardwright-rag-reranker-url-hint" class="shardwright-rag-inline-hint shardwright-text-hint">Upstream reranker URL passed to Similharity.</p>
                             </div>
-                            <div class="ss-block">
-                                <label for="ss-rag-reranker-model">Re-ranker Model (optional)</label>
-                                <input id="ss-rag-reranker-model" class="text_pole ss-rag-control" type="text" value="${rag.reranker?.model || ''}" placeholder="bge-reranker-v2-m3" />
+                            <div class="shardwright-block">
+                                <label for="shardwright-rag-reranker-model">Re-ranker Model (optional)</label>
+                                <input id="shardwright-rag-reranker-model" class="text_pole shardwright-rag-control" type="text" value="${rag.reranker?.model || ''}" placeholder="bge-reranker-v2-m3" />
                             </div>
-                            <div class="ss-block">
-                                <label for="ss-rag-reranker-key">Re-ranker API Key (secure storage)</label>
-                                <input id="ss-rag-reranker-key" class="text_pole" type="password" value="" placeholder="Enter new key to update; leave blank to keep current" />
-                                <div class="ss-rag-actions-row ss-rag-actions-row-tight">
-                                    <input id="ss-rag-store-reranker-key" class="menu_button" type="button" value="Store Key" />
-                                    <input id="ss-rag-clear-reranker-key" class="menu_button" type="button" value="Clear Key" />
+                            <div class="shardwright-block">
+                                <label for="shardwright-rag-reranker-key">Re-ranker API Key (secure storage)</label>
+                                <input id="shardwright-rag-reranker-key" class="text_pole" type="password" value="" placeholder="Enter new key to update; leave blank to keep current" />
+                                <div class="shardwright-rag-actions-row shardwright-rag-actions-row-tight">
+                                    <input id="shardwright-rag-store-reranker-key" class="menu_button" type="button" value="Store Key" />
+                                    <input id="shardwright-rag-clear-reranker-key" class="menu_button" type="button" value="Clear Key" />
                                 </div>
-                                <p id="ss-rag-reranker-key-status" class="ss-rag-inline-hint ss-text-hint">Checking secure key status...</p>
+                                <p id="shardwright-rag-reranker-key-status" class="shardwright-rag-inline-hint shardwright-text-hint">Checking secure key status...</p>
                             </div>
                         </div>
                     </div>
-                    <div class="ss-rag-grid-two">
-                        <div class="ss-block">
-                            <label for="ss-rag-insert-count">Insert Count</label>
-                            <span class="ss-rag-sublabel">Chunks injected per generation</span>
-                            <input id="ss-rag-insert-count" class="text_pole ss-rag-control" type="number" min="1" value="${rag.insertCount ?? 5}" />
+                    <div class="shardwright-rag-grid-two">
+                        <div class="shardwright-block">
+                            <label for="shardwright-rag-insert-count">Insert Count</label>
+                            <span class="shardwright-rag-sublabel">Chunks injected per generation</span>
+                            <input id="shardwright-rag-insert-count" class="text_pole shardwright-rag-control" type="number" min="1" value="${rag.insertCount ?? 5}" />
                         </div>
-                        <div class="ss-block">
-                            <label for="ss-rag-query-count">Query Count</label>
-                            <span class="ss-rag-sublabel">Recent messages used as the search query</span>
-                            <input id="ss-rag-query-count" class="text_pole ss-rag-control" type="number" min="1" value="${rag.queryCount ?? 2}" />
+                        <div class="shardwright-block">
+                            <label for="shardwright-rag-query-count">Query Count</label>
+                            <span class="shardwright-rag-sublabel">Recent messages used as the search query</span>
+                            <input id="shardwright-rag-query-count" class="text_pole shardwright-rag-control" type="number" min="1" value="${rag.queryCount ?? 2}" />
                         </div>
-                        <div class="ss-block">
-                            <label for="ss-rag-protect-count">Protect Count</label>
-                            <span class="ss-rag-sublabel">Recent messages checked for duplicate content</span>
-                            <input id="ss-rag-protect-count" class="text_pole ss-rag-control" type="number" min="0" value="${rag.protectCount ?? 5}" />
+                        <div class="shardwright-block">
+                            <label for="shardwright-rag-protect-count">Protect Count</label>
+                            <span class="shardwright-rag-sublabel">Recent messages checked for duplicate content</span>
+                            <input id="shardwright-rag-protect-count" class="text_pole shardwright-rag-control" type="number" min="0" value="${rag.protectCount ?? 5}" />
                         </div>
-                        <div class="ss-block">
-                            <label for="ss-rag-max-items">Max Items per Section</label>
-                            <span class="ss-rag-sublabel">Cap items per section in compacted blocks (Rolling/Anchors)</span>
-                            <input id="ss-rag-max-items" class="text_pole ss-rag-control" type="number" min="1" value="${rag.maxItemsPerCompactedSection ?? 5}" />
+                        <div class="shardwright-block">
+                            <label for="shardwright-rag-max-items">Max Items per Section</label>
+                            <span class="shardwright-rag-sublabel">Cap items per section in compacted blocks (Rolling/Anchors)</span>
+                            <input id="shardwright-rag-max-items" class="text_pole shardwright-rag-control" type="number" min="1" value="${rag.maxItemsPerCompactedSection ?? 5}" />
                         </div>
-                        <div class="ss-block">
-                            <label for="ss-rag-threshold">Score Threshold ${infoHintHtml('ss-rag-score-threshold-hint', 'Minimum relevance score a chunk must meet to be included (0-1). Higher = stricter.')}</label>
-                            <div id="ss-rag-threshold-host"></div>
+                        <div class="shardwright-block">
+                            <label for="shardwright-rag-threshold">Score Threshold ${infoHintHtml('shardwright-rag-score-threshold-hint', 'Minimum relevance score a chunk must meet to be included (0-1). Higher = stricter.')}</label>
+                            <div id="shardwright-rag-threshold-host"></div>
                         </div>
                         ${!isSharder ? `
-                        <div class="ss-block">
-                            <label for="ss-rag-freshness">Recency Freshness Weight ${infoHintHtml('ss-rag-freshness-weight-hint', 'Gives a small score boost to the most recent summaries (0-1). Prevents context loss for non-sharder mode.')}</label>
-                            <div id="ss-rag-freshness-host"></div>
+                        <div class="shardwright-block">
+                            <label for="shardwright-rag-freshness">Recency Freshness Weight ${infoHintHtml('shardwright-rag-freshness-weight-hint', 'Gives a small score boost to the most recent summaries (0-1). Prevents context loss for non-sharder mode.')}</label>
+                            <div id="shardwright-rag-freshness-host"></div>
                         </div>
-                        <div class="ss-block">
-                            <label for="ss-rag-recent-count">Recent Summary Count ${infoHintHtml('ss-rag-recent-count-hint', 'Number of most-recent summaries to always include, regardless of relevance score.')}</label>
-                            <input id="ss-rag-recent-count" class="text_pole ss-rag-control" type="number" min="0" value="${rag.recentSummaryCount ?? 1}" />
+                        <div class="shardwright-block">
+                            <label for="shardwright-rag-recent-count">Recent Summary Count ${infoHintHtml('shardwright-rag-recent-count-hint', 'Number of most-recent summaries to always include, regardless of relevance score.')}</label>
+                            <input id="shardwright-rag-recent-count" class="text_pole shardwright-rag-control" type="number" min="0" value="${rag.recentSummaryCount ?? 1}" />
                         </div>
-                        <div class="ss-block">
-                            <label for="ss-rag-max-chunks-per-shard">Max Chunks per Shard ${infoHintHtml('ss-rag-max-chunks-per-shard-hint', 'Cap paragraphs from the same summary to prevent one long entry from crowding out others.')}</label>
-                            <input id="ss-rag-max-chunks-per-shard" class="text_pole ss-rag-control" type="number" min="1" value="${rag.maxChunksPerShard ?? 2}" />
+                        <div class="shardwright-block">
+                            <label for="shardwright-rag-max-chunks-per-shard">Max Chunks per Shard ${infoHintHtml('shardwright-rag-max-chunks-per-shard-hint', 'Cap paragraphs from the same summary to prevent one long entry from crowding out others.')}</label>
+                            <input id="shardwright-rag-max-chunks-per-shard" class="text_pole shardwright-rag-control" type="number" min="1" value="${rag.maxChunksPerShard ?? 2}" />
                         </div>
                         ` : ''}
                     </div>
 
-                    <div class="ss-rag-grid-two">
-                        <div class="ss-block">
-                            <label for="ss-rag-scoring">Scoring Method ${infoHintHtml('ss-rag-scoring-method-hint', 'How matches are scored: keyword, BM25, or hybrid (vector + BM25).')}</label>
-                            <select id="ss-rag-scoring" class="text_pole ss-rag-control">
+                    <div class="shardwright-rag-grid-two">
+                        <div class="shardwright-block">
+                            <label for="shardwright-rag-scoring">Scoring Method ${infoHintHtml('shardwright-rag-scoring-method-hint', 'How matches are scored: keyword, BM25, or hybrid (vector + BM25).')}</label>
+                            <select id="shardwright-rag-scoring" class="text_pole shardwright-rag-control">
                                 <option value="keyword" ${rag.scoringMethod === 'keyword' ? 'selected' : ''}>Keyword</option>
                                 <option value="bm25" ${rag.scoringMethod === 'bm25' ? 'selected' : ''}>BM25</option>
                                 <option value="hybrid" ${rag.scoringMethod === 'hybrid' ? 'selected' : ''}>Hybrid</option>
                             </select>
-                            <p class="ss-rag-inline-hint ss-text-hint" id="ss-rag-hybrid-hint"></p>
+                            <p class="shardwright-rag-inline-hint shardwright-text-hint" id="shardwright-rag-hybrid-hint"></p>
                         </div>
-                        <div class="ss-block">
-                            <label for="ss-rag-injection-mode">Injection Mode ${infoHintHtml('ss-rag-injection-mode-hint', 'Where memories are inserted: the extension prompt or a variable you place in your prompt text.')}</label>
-                            <select id="ss-rag-injection-mode" class="text_pole ss-rag-control">
+                        <div class="shardwright-block">
+                            <label for="shardwright-rag-injection-mode">Injection Mode ${infoHintHtml('shardwright-rag-injection-mode-hint', 'Where memories are inserted: the extension prompt or a variable you place in your prompt text.')}</label>
+                            <select id="shardwright-rag-injection-mode" class="text_pole shardwright-rag-control">
                                 <option value="extension_prompt" ${(rag.injectionMode ?? 'extension_prompt') === 'extension_prompt' ? 'selected' : ''}>Extension Prompt (Position / Depth)</option>
                                 <option value="variable" ${rag.injectionMode === 'variable' ? 'selected' : ''}>Variable ({{getvar::...}})</option>
                             </select>
                         </div>
                     </div>
 
-                    <div id="ss-rag-ext-prompt-controls" class="${(rag.injectionMode ?? 'extension_prompt') !== 'extension_prompt' ? 'ss-hidden' : ''}">
-                        <div class="ss-rag-grid-two">
-                            <div class="ss-block">
-                                <label for="ss-rag-position">Injection Position</label>
-                                <select id="ss-rag-position" class="text_pole ss-rag-control">
+                    <div id="shardwright-rag-ext-prompt-controls" class="${(rag.injectionMode ?? 'extension_prompt') !== 'extension_prompt' ? 'shardwright-hidden' : ''}">
+                        <div class="shardwright-rag-grid-two">
+                            <div class="shardwright-block">
+                                <label for="shardwright-rag-position">Injection Position</label>
+                                <select id="shardwright-rag-position" class="text_pole shardwright-rag-control">
                                     <option value="0" ${(rag.position ?? 0) === 0 ? 'selected' : ''}>After System Prompt (0)</option>
                                     <option value="1" ${(rag.position ?? 0) === 1 ? 'selected' : ''}>In Chat at Depth (1)</option>
                                     <option value="2" ${(rag.position ?? 0) === 2 ? 'selected' : ''}>Before System Prompt (2)</option>
                                 </select>
                             </div>
-                            <div class="ss-block">
-                                <label for="ss-rag-depth">Injection Depth</label>
-                                <input id="ss-rag-depth" class="text_pole ss-rag-control" type="number" min="0" value="${rag.depth ?? 2}" />
+                            <div class="shardwright-block">
+                                <label for="shardwright-rag-depth">Injection Depth</label>
+                                <input id="shardwright-rag-depth" class="text_pole shardwright-rag-control" type="number" min="0" value="${rag.depth ?? 2}" />
                             </div>
                         </div>
                     </div>
 
-                    <div id="ss-rag-var-controls" class="${rag.injectionMode === 'variable' ? '' : 'ss-hidden'}">
-                        <div class="ss-block">
-                            <label for="ss-rag-var-name">Variable Name</label>
-                            <input id="ss-rag-var-name" class="text_pole ss-rag-control" type="text" value="${rag.injectionVariableName || 'ss_rag_memory'}" />
-                            <p class="ss-text-hint">Place <code>{{getvar::${rag.injectionVariableName || 'ss_rag_memory'}}}</code> anywhere in your character card, system prompt, or author's note to inject memories there.</p>
+                    <div id="shardwright-rag-var-controls" class="${rag.injectionMode === 'variable' ? '' : 'shardwright-hidden'}">
+                        <div class="shardwright-block">
+                            <label for="shardwright-rag-var-name">Variable Name</label>
+                            <input id="shardwright-rag-var-name" class="text_pole shardwright-rag-control" type="text" value="${rag.injectionVariableName || 'shardwright_rag_memory'}" />
+                            <p class="shardwright-text-hint">Place <code>{{getvar::${rag.injectionVariableName || 'shardwright_rag_memory'}}}</code> anywhere in your character card, system prompt, or author's note to inject memories there.</p>
                         </div>
                     </div>
 
-                    <div id="ss-rag-hybrid-controls" class="${rag.scoringMethod === 'hybrid' ? '' : 'ss-hidden'}">
-                        <div class="ss-rag-grid-two">
-                            <div class="ss-block">
-                                <label for="ss-rag-hybrid-fusion">Hybrid Fusion Method ${infoHintHtml('ss-rag-hybrid-fusion-hint', 'How vector and BM25 scores are combined (RRF or weighted blend).')}</label>
-                                <div id="ss-rag-hybrid-fusion-host"></div>
+                    <div id="shardwright-rag-hybrid-controls" class="${rag.scoringMethod === 'hybrid' ? '' : 'shardwright-hidden'}">
+                        <div class="shardwright-rag-grid-two">
+                            <div class="shardwright-block">
+                                <label for="shardwright-rag-hybrid-fusion">Hybrid Fusion Method ${infoHintHtml('shardwright-rag-hybrid-fusion-hint', 'How vector and BM25 scores are combined (RRF or weighted blend).')}</label>
+                                <div id="shardwright-rag-hybrid-fusion-host"></div>
                             </div>
-                            <div class="ss-block">
-                                <label for="ss-rag-hybrid-overfetch">Hybrid Overfetch Multiplier ${infoHintHtml('ss-rag-hybrid-overfetch-hint', 'Fetches extra candidates before fusion so hybrid scoring has more to choose from. Higher = more recall, more cost.')}</label>
-                                <input id="ss-rag-hybrid-overfetch" class="text_pole ss-rag-control" type="number" min="1" max="12" value="${rag.hybridOverfetchMultiplier ?? 4}" />
+                            <div class="shardwright-block">
+                                <label for="shardwright-rag-hybrid-overfetch">Hybrid Overfetch Multiplier ${infoHintHtml('shardwright-rag-hybrid-overfetch-hint', 'Fetches extra candidates before fusion so hybrid scoring has more to choose from. Higher = more recall, more cost.')}</label>
+                                <input id="shardwright-rag-hybrid-overfetch" class="text_pole shardwright-rag-control" type="number" min="1" max="12" value="${rag.hybridOverfetchMultiplier ?? 4}" />
                             </div>
                         </div>
-                        <div class="ss-rag-grid-two">
-                            <div class="ss-block ${rag.hybridFusionMethod !== 'weighted' ? '' : 'ss-hidden'}" id="ss-rag-rrf-k-wrap">
-                                <label for="ss-rag-hybrid-rrf-k">RRF k</label>
-                                <input id="ss-rag-hybrid-rrf-k" class="text_pole ss-rag-control" type="number" min="1" max="500" value="${rag.hybridRrfK ?? 60}" />
+                        <div class="shardwright-rag-grid-two">
+                            <div class="shardwright-block ${rag.hybridFusionMethod !== 'weighted' ? '' : 'shardwright-hidden'}" id="shardwright-rag-rrf-k-wrap">
+                                <label for="shardwright-rag-hybrid-rrf-k">RRF k</label>
+                                <input id="shardwright-rag-hybrid-rrf-k" class="text_pole shardwright-rag-control" type="number" min="1" max="500" value="${rag.hybridRrfK ?? 60}" />
                             </div>
-                            <div class="ss-block ${showWeightedSlider ? '' : 'ss-hidden'}" id="ss-rag-weighted-slider-wrap">
-                                <label for="ss-rag-hybrid-weight">Vector vs BM25 ${infoHintHtml('ss-rag-hybrid-weight-hint', 'Adjusts how much semantic similarity (vector) vs keyword relevance (BM25) contributes in hybrid mode.')}</label>
-                                <div class="ss-rag-weighted-scale">
-                                    <span class="ss-rag-weighted-label">Vector <strong id="ss-rag-hybrid-weight-vector">${formatWeight(normalizedWeights.alpha)}</strong></span>
-                                    <span class="ss-rag-weighted-label">BM25 <strong id="ss-rag-hybrid-weight-bm25">${formatWeight(normalizedWeights.beta)}</strong></span>
+                            <div class="shardwright-block ${showWeightedSlider ? '' : 'shardwright-hidden'}" id="shardwright-rag-weighted-slider-wrap">
+                                <label for="shardwright-rag-hybrid-weight">Vector vs BM25 ${infoHintHtml('shardwright-rag-hybrid-weight-hint', 'Adjusts how much semantic similarity (vector) vs keyword relevance (BM25) contributes in hybrid mode.')}</label>
+                                <div class="shardwright-rag-weighted-scale">
+                                    <span class="shardwright-rag-weighted-label">Vector <strong id="shardwright-rag-hybrid-weight-vector">${formatWeight(normalizedWeights.alpha)}</strong></span>
+                                    <span class="shardwright-rag-weighted-label">BM25 <strong id="shardwright-rag-hybrid-weight-bm25">${formatWeight(normalizedWeights.beta)}</strong></span>
                                 </div>
-                                <div id="ss-rag-hybrid-weight-host"></div>
+                                <div id="shardwright-rag-hybrid-weight-host"></div>
                             </div>
-                            <div class="ss-block ${showWeightedInputs ? '' : 'ss-hidden'}" id="ss-rag-weighted-alpha-wrap">
-                                <label for="ss-rag-hybrid-alpha">Weighted Alpha (Vector)</label>
-                                <input id="ss-rag-hybrid-alpha" class="text_pole ss-rag-control" type="number" min="0" max="1" step="0.05" value="${rag.hybridAlpha ?? 0.4}" />
+                            <div class="shardwright-block ${showWeightedInputs ? '' : 'shardwright-hidden'}" id="shardwright-rag-weighted-alpha-wrap">
+                                <label for="shardwright-rag-hybrid-alpha">Weighted Alpha (Vector)</label>
+                                <input id="shardwright-rag-hybrid-alpha" class="text_pole shardwright-rag-control" type="number" min="0" max="1" step="0.05" value="${rag.hybridAlpha ?? 0.4}" />
                             </div>
-                            <div class="ss-block ${showWeightedInputs ? '' : 'ss-hidden'}" id="ss-rag-weighted-beta-wrap">
-                                <label for="ss-rag-hybrid-beta">Weighted Beta (BM25)</label>
-                                <input id="ss-rag-hybrid-beta" class="text_pole ss-rag-control" type="number" min="0" max="1" step="0.05" value="${rag.hybridBeta ?? 0.6}" />
+                            <div class="shardwright-block ${showWeightedInputs ? '' : 'shardwright-hidden'}" id="shardwright-rag-weighted-beta-wrap">
+                                <label for="shardwright-rag-hybrid-beta">Weighted Beta (BM25)</label>
+                                <input id="shardwright-rag-hybrid-beta" class="text_pole shardwright-rag-control" type="number" min="0" max="1" step="0.05" value="${rag.hybridBeta ?? 0.6}" />
                             </div>
                         </div>
-                        <p id="ss-rag-hybrid-weighted-hint" class="ss-rag-inline-hint ss-text-hint ss-rag-hybrid-weighted-hint ${rag.scoringMethod === 'hybrid' && rag.hybridFusionMethod === 'weighted' ? '' : 'ss-hidden'}">Values are normalized as proportional weights (e.g., 2:3 = 0.4:0.6).</p>
+                        <p id="shardwright-rag-hybrid-weighted-hint" class="shardwright-rag-inline-hint shardwright-text-hint shardwright-rag-hybrid-weighted-hint ${rag.scoringMethod === 'hybrid' && rag.hybridFusionMethod === 'weighted' ? '' : 'shardwright-hidden'}">Values are normalized as proportional weights (e.g., 2:3 = 0.4:0.6).</p>
                     </div>
 
-                    <div class="ss-block">
-                        <label for="ss-rag-template">Injection Template ({{text}} required)</label>
-                        <textarea id="ss-rag-template" class="text_pole ss-rag-control ss-rag-template">${rag.template || 'Recalled memories:\n{{text}}'}</textarea>
+                    <div class="shardwright-block">
+                        <label for="shardwright-rag-template">Injection Template ({{text}} required)</label>
+                        <textarea id="shardwright-rag-template" class="text_pole shardwright-rag-control shardwright-rag-template">${rag.template || 'Recalled memories:\n{{text}}'}</textarea>
                     </div>
 
                     ${isSharder ? `
-                    <div class="ss-block">
+                    <div class="shardwright-block">
                         <label class="checkbox_label">
-                            <input id="ss-rag-scene-expand" class="ss-rag-control" type="checkbox" ${rag.sceneExpansion !== false ? 'checked' : ''} />
-                            <span>Scene Expansion ${infoHintHtml('ss-rag-scene-expansion-hint', 'If a chunk from a scene is found, pull in the rest of that scene for fuller context.')}</span>
+                            <input id="shardwright-rag-scene-expand" class="shardwright-rag-control" type="checkbox" ${rag.sceneExpansion !== false ? 'checked' : ''} />
+                            <span>Scene Expansion ${infoHintHtml('shardwright-rag-scene-expansion-hint', 'If a chunk from a scene is found, pull in the rest of that scene for fuller context.')}</span>
                         </label>
                     </div>
-                    <div class="ss-block ${rag.sceneExpansion !== false ? '' : 'ss-hidden'}" id="ss-rag-scene-max-wrap">
-                        <label for="ss-rag-scene-max">Max Scene Expansion Chunks</label>
-                        <div id="ss-rag-scene-max-host"></div>
+                    <div class="shardwright-block ${rag.sceneExpansion !== false ? '' : 'shardwright-hidden'}" id="shardwright-rag-scene-max-wrap">
+                        <label for="shardwright-rag-scene-max">Max Scene Expansion Chunks</label>
+                        <div id="shardwright-rag-scene-max-host"></div>
                     </div>
                     ` : `
-                    <p class="ss-rag-inline-hint ss-text-hint ss-rag-scene-mode-hint">Scene Expansion is available in Sharder Mode.</p>
+                    <p class="shardwright-rag-inline-hint shardwright-text-hint shardwright-rag-scene-mode-hint">Scene Expansion is available in Sharder Mode.</p>
                     `}
 
                 `)}
@@ -525,7 +532,7 @@ function renderModalHtml(rag, isSharder) {
  * @param {string} collectionId
  */
 async function updateStats(rag, collectionId) {
-    const statsEl = document.getElementById('ss-rag-stats');
+    const statsEl = document.getElementById('shardwright-rag-stats');
     if (!statsEl) return;
 
     try {
@@ -538,7 +545,7 @@ async function updateStats(rag, collectionId) {
 }
 
 function setControlState(disabled) {
-    for (const el of document.querySelectorAll('.ss-rag-control')) {
+    for (const el of document.querySelectorAll('.shardwright-rag-control')) {
         if (typeof el.setDisabled === 'function') {
             el.setDisabled(!!disabled);
             continue;
@@ -552,18 +559,18 @@ function setControlState(disabled) {
 
 function setupRagAccordionHandlers() {
     const toggleAccordion = (header) => {
-        const accordion = header.closest('.ss-review-accordion');
+        const accordion = header.closest('.shardwright-review-accordion');
         if (!accordion) return;
 
-        const content = accordion.querySelector('.ss-accordion-content');
+        const content = accordion.querySelector('.shardwright-accordion-content');
         if (!content) return;
 
         const isExpanded = accordion.classList.toggle('expanded');
-        content.classList.toggle('ss-hidden', !isExpanded);
+        content.classList.toggle('shardwright-hidden', !isExpanded);
         header.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
     };
 
-    for (const header of document.querySelectorAll('.ss-rag-accordion .ss-accordion-header')) {
+    for (const header of document.querySelectorAll('.shardwright-rag-accordion .shardwright-accordion-header')) {
         if (!header.hasAttribute('role')) {
             header.setAttribute('role', 'button');
         }
@@ -585,16 +592,16 @@ function setupRagAccordionHandlers() {
 }
 
 function updateBackendConditionalUi() {
-    const backend = document.getElementById('ss-rag-backend')?.value || 'vectra';
+    const backend = document.getElementById('shardwright-rag-backend')?.value || 'vectra';
 
-    const qdrant = document.getElementById('ss-rag-qdrant-config');
-    const milvus = document.getElementById('ss-rag-milvus-config');
+    const qdrant = document.getElementById('shardwright-rag-qdrant-config');
+    const milvus = document.getElementById('shardwright-rag-milvus-config');
 
-    qdrant?.classList.toggle('ss-hidden', backend !== 'qdrant');
-    milvus?.classList.toggle('ss-hidden', backend !== 'milvus');
+    qdrant?.classList.toggle('shardwright-hidden', backend !== 'qdrant');
+    milvus?.classList.toggle('shardwright-hidden', backend !== 'milvus');
     updateQdrantCloudUi();
 
-    const hybridHint = document.getElementById('ss-rag-hybrid-hint');
+    const hybridHint = document.getElementById('shardwright-rag-hybrid-hint');
 
     if (hybridHint) {
         hybridHint.textContent = (backend === 'qdrant' || backend === 'milvus')
@@ -604,17 +611,17 @@ function updateBackendConditionalUi() {
 }
 
 function updateMasterToggleUi() {
-    const enabled = !!document.getElementById('ss-rag-enabled')?.checked;
-    const body = document.getElementById('ss-rag-body');
-    body?.classList.toggle('ss-hidden', !enabled);
+    const enabled = !!document.getElementById('shardwright-rag-enabled')?.checked;
+    const body = document.getElementById('shardwright-rag-body');
+    body?.classList.toggle('shardwright-hidden', !enabled);
 }
 
 function updateQdrantCloudUi() {
-    const useCloud = !!document.getElementById('ss-rag-qdrant-use-cloud')?.checked;
-    const local = document.getElementById('ss-rag-qdrant-local');
-    const cloud = document.getElementById('ss-rag-qdrant-cloud');
-    local?.classList.toggle('ss-hidden', useCloud);
-    cloud?.classList.toggle('ss-hidden', !useCloud);
+    const useCloud = !!document.getElementById('shardwright-rag-qdrant-use-cloud')?.checked;
+    const local = document.getElementById('shardwright-rag-qdrant-local');
+    const cloud = document.getElementById('shardwright-rag-qdrant-cloud');
+    local?.classList.toggle('shardwright-hidden', useCloud);
+    cloud?.classList.toggle('shardwright-hidden', !useCloud);
 }
 
 function updateChunkingUi() {
@@ -622,40 +629,40 @@ function updateChunkingUi() {
 }
 
 function updateHybridUi() {
-    const scoringMethod = document.getElementById('ss-rag-scoring')?.value || 'keyword';
-    const fusionMethod = document.getElementById('ss-rag-hybrid-fusion')?.value || 'rrf';
-    const rerankerEnabled = !!document.getElementById('ss-rag-reranker-enabled')?.checked;
+    const scoringMethod = document.getElementById('shardwright-rag-scoring')?.value || 'keyword';
+    const fusionMethod = document.getElementById('shardwright-rag-hybrid-fusion')?.value || 'rrf';
+    const rerankerEnabled = !!document.getElementById('shardwright-rag-reranker-enabled')?.checked;
 
-    const hybridWrap = document.getElementById('ss-rag-hybrid-controls');
-    const rrfWrap = document.getElementById('ss-rag-rrf-k-wrap');
-    const sliderWrap = document.getElementById('ss-rag-weighted-slider-wrap');
-    const alphaWrap = document.getElementById('ss-rag-weighted-alpha-wrap');
-    const betaWrap = document.getElementById('ss-rag-weighted-beta-wrap');
-    const weightedHint = document.getElementById('ss-rag-hybrid-weighted-hint');
+    const hybridWrap = document.getElementById('shardwright-rag-hybrid-controls');
+    const rrfWrap = document.getElementById('shardwright-rag-rrf-k-wrap');
+    const sliderWrap = document.getElementById('shardwright-rag-weighted-slider-wrap');
+    const alphaWrap = document.getElementById('shardwright-rag-weighted-alpha-wrap');
+    const betaWrap = document.getElementById('shardwright-rag-weighted-beta-wrap');
+    const weightedHint = document.getElementById('shardwright-rag-hybrid-weighted-hint');
     const showWeightedSlider = scoringMethod === 'hybrid' && fusionMethod === 'weighted' && rerankerEnabled;
     const showWeightedInputs = scoringMethod === 'hybrid' && fusionMethod === 'weighted' && !rerankerEnabled;
 
-    hybridWrap?.classList.toggle('ss-hidden', scoringMethod !== 'hybrid');
-    rrfWrap?.classList.toggle('ss-hidden', !(scoringMethod === 'hybrid' && fusionMethod !== 'weighted'));
-    sliderWrap?.classList.toggle('ss-hidden', !showWeightedSlider);
-    alphaWrap?.classList.toggle('ss-hidden', !showWeightedInputs);
-    betaWrap?.classList.toggle('ss-hidden', !showWeightedInputs);
-    weightedHint?.classList.toggle('ss-hidden', !(scoringMethod === 'hybrid' && fusionMethod === 'weighted'));
+    hybridWrap?.classList.toggle('shardwright-hidden', scoringMethod !== 'hybrid');
+    rrfWrap?.classList.toggle('shardwright-hidden', !(scoringMethod === 'hybrid' && fusionMethod !== 'weighted'));
+    sliderWrap?.classList.toggle('shardwright-hidden', !showWeightedSlider);
+    alphaWrap?.classList.toggle('shardwright-hidden', !showWeightedInputs);
+    betaWrap?.classList.toggle('shardwright-hidden', !showWeightedInputs);
+    weightedHint?.classList.toggle('shardwright-hidden', !(scoringMethod === 'hybrid' && fusionMethod === 'weighted'));
     syncWeightedSliderFromInputs();
 }
 
 function updateInjectionModeUi() {
-    const mode = document.getElementById('ss-rag-injection-mode')?.value || 'extension_prompt';
-    document.getElementById('ss-rag-ext-prompt-controls')?.classList.toggle('ss-hidden', mode !== 'extension_prompt');
-    document.getElementById('ss-rag-var-controls')?.classList.toggle('ss-hidden', mode !== 'variable');
+    const mode = document.getElementById('shardwright-rag-injection-mode')?.value || 'extension_prompt';
+    document.getElementById('shardwright-rag-ext-prompt-controls')?.classList.toggle('shardwright-hidden', mode !== 'extension_prompt');
+    document.getElementById('shardwright-rag-var-controls')?.classList.toggle('shardwright-hidden', mode !== 'variable');
 }
 
 function updateExpansionUi() {
-    const sceneExpandEl = document.getElementById('ss-rag-scene-expand');
+    const sceneExpandEl = document.getElementById('shardwright-rag-scene-expand');
     if (!sceneExpandEl) return; // not present in standard mode
     const sceneEnabled = !!sceneExpandEl.checked;
-    const sceneWrap = document.getElementById('ss-rag-scene-max-wrap');
-    sceneWrap?.classList.toggle('ss-hidden', !sceneEnabled);
+    const sceneWrap = document.getElementById('shardwright-rag-scene-max-wrap');
+    sceneWrap?.classList.toggle('shardwright-hidden', !sceneEnabled);
 }
 
 /** Default URLs and models for each embedding source (static, allocated once). */
@@ -706,15 +713,15 @@ const PROXY_OVERRIDE_SOURCES = new Set(['ollama', 'llamacpp', 'vllm', 'koboldcpp
 const PLUGIN_ONLY_SOURCES = new Set(['transformers']);
 
 function updateEmbeddingModeUi() {
-    const source = document.getElementById('ss-rag-source')?.value || 'transformers';
+    const source = document.getElementById('shardwright-rag-source')?.value || 'transformers';
     const isCustom = ALWAYS_DIRECT_EMBEDDING_SOURCES.has(source);
     const isOpenAICompat = OPENAI_COMPATIBLE_EMBEDDING_SOURCES.has(source);
     const isPluginOnly = PLUGIN_ONLY_SOURCES.has(source);
-    const urlLabel = document.getElementById('ss-rag-api-url-label');
-    const urlHint = document.getElementById('ss-rag-api-url-hint');
-    const urlInput = document.getElementById('ss-rag-api-url');
-    const modelInput = document.getElementById('ss-rag-model');
-    const embeddingKeyBlock = document.getElementById('ss-rag-embedding-key')?.closest('.ss-block');
+    const urlLabel = document.getElementById('shardwright-rag-api-url-label');
+    const urlHint = document.getElementById('shardwright-rag-api-url-hint');
+    const urlInput = document.getElementById('shardwright-rag-api-url');
+    const modelInput = document.getElementById('shardwright-rag-model');
+    const embeddingKeyBlock = document.getElementById('shardwright-rag-embedding-key')?.closest('.shardwright-block');
 
     const defaults = EMBEDDING_SOURCE_DEFAULTS[source] || { url: '', model: '' };
 
@@ -769,16 +776,16 @@ function updateEmbeddingModeUi() {
 }
 
 function updateRerankerUi() {
-    const enabled = !!document.getElementById('ss-rag-reranker-enabled')?.checked;
-    const provider = document.getElementById('ss-rag-reranker-provider')?.value || 'similharity';
+    const enabled = !!document.getElementById('shardwright-rag-reranker-enabled')?.checked;
+    const provider = document.getElementById('shardwright-rag-reranker-provider')?.value || 'similharity';
     const isDirect = isDirectRerankerProvider(provider);
-    const wrap = document.getElementById('ss-rag-reranker-config');
-    const urlLabel = document.getElementById('ss-rag-reranker-url-label');
-    const urlHint = document.getElementById('ss-rag-reranker-url-hint');
-    const urlInput = document.getElementById('ss-rag-reranker-url');
-    const modelInput = document.getElementById('ss-rag-reranker-model');
+    const wrap = document.getElementById('shardwright-rag-reranker-config');
+    const urlLabel = document.getElementById('shardwright-rag-reranker-url-label');
+    const urlHint = document.getElementById('shardwright-rag-reranker-url-hint');
+    const urlInput = document.getElementById('shardwright-rag-reranker-url');
+    const modelInput = document.getElementById('shardwright-rag-reranker-model');
 
-    wrap?.classList.toggle('ss-hidden', !enabled);
+    wrap?.classList.toggle('shardwright-hidden', !enabled);
     updateHybridUi();
 
     const defaults = RERANKER_PROVIDER_DEFAULTS[provider] || { url: '', model: '' };
@@ -812,7 +819,7 @@ function updateRerankerUi() {
 
 function setRangePairValue(id, value) {
     const input = document.getElementById(id);
-    const pair = input?.closest?.('.ss-range-pair');
+    const pair = input?.closest?.('.shardwright-range-pair');
     if (pair && typeof pair.setValue === 'function') {
         pair.setValue(value);
         return;
@@ -827,15 +834,15 @@ function setRangePairValue(id, value) {
 }
 
 function setHybridWeightLabels(alpha, beta) {
-    const vectorEl = document.getElementById('ss-rag-hybrid-weight-vector');
-    const bm25El = document.getElementById('ss-rag-hybrid-weight-bm25');
+    const vectorEl = document.getElementById('shardwright-rag-hybrid-weight-vector');
+    const bm25El = document.getElementById('shardwright-rag-hybrid-weight-bm25');
     if (vectorEl) vectorEl.textContent = formatWeight(alpha);
     if (bm25El) bm25El.textContent = formatWeight(beta);
 }
 
 function setHybridWeightInputs(alpha, beta) {
-    const alphaInput = document.getElementById('ss-rag-hybrid-alpha');
-    const betaInput = document.getElementById('ss-rag-hybrid-beta');
+    const alphaInput = document.getElementById('shardwright-rag-hybrid-alpha');
+    const betaInput = document.getElementById('shardwright-rag-hybrid-beta');
     if (alphaInput) alphaInput.value = formatWeight(alpha);
     if (betaInput) betaInput.value = formatWeight(beta);
 }
@@ -848,17 +855,17 @@ function applyHybridSliderValue(betaValue) {
 }
 
 function syncWeightedSliderFromInputs() {
-    const alphaInput = document.getElementById('ss-rag-hybrid-alpha');
-    const betaInput = document.getElementById('ss-rag-hybrid-beta');
+    const alphaInput = document.getElementById('shardwright-rag-hybrid-alpha');
+    const betaInput = document.getElementById('shardwright-rag-hybrid-beta');
     if (!alphaInput && !betaInput) return;
 
     const rawAlpha = toFloat(alphaInput?.value, HYBRID_WEIGHT_DEFAULT_ALPHA);
     const rawBeta = toFloat(betaInput?.value, HYBRID_WEIGHT_DEFAULT_BETA);
     const normalized = normalizeHybridWeights(rawAlpha, rawBeta);
-    setRangePairValue('ss-rag-hybrid-weight', normalized.beta);
+    setRangePairValue('shardwright-rag-hybrid-weight', normalized.beta);
     setHybridWeightLabels(normalized.alpha, normalized.beta);
-    const sliderWrap = document.getElementById('ss-rag-weighted-slider-wrap');
-    const sliderVisible = sliderWrap && !sliderWrap.classList.contains('ss-hidden');
+    const sliderWrap = document.getElementById('shardwright-rag-weighted-slider-wrap');
+    const sliderVisible = sliderWrap && !sliderWrap.classList.contains('shardwright-hidden');
     if (sliderVisible) {
         setHybridWeightInputs(normalized.alpha, normalized.beta);
     }
@@ -880,26 +887,26 @@ function readRagDraft(base, isSharder) {
         },
     };
 
-    draft.enabled = !!document.getElementById('ss-rag-enabled')?.checked;
-    draft.backend = document.getElementById('ss-rag-backend')?.value || 'vectra';
-    draft.source = document.getElementById('ss-rag-source')?.value?.trim() || 'transformers';
-    draft.apiUrl = document.getElementById('ss-rag-api-url')?.value?.trim() || '';
-    draft.model = document.getElementById('ss-rag-model')?.value?.trim() || '';
+    draft.enabled = !!document.getElementById('shardwright-rag-enabled')?.checked;
+    draft.backend = document.getElementById('shardwright-rag-backend')?.value || 'vectra';
+    draft.source = document.getElementById('shardwright-rag-source')?.value?.trim() || 'transformers';
+    draft.apiUrl = document.getElementById('shardwright-rag-api-url')?.value?.trim() || '';
+    draft.model = document.getElementById('shardwright-rag-model')?.value?.trim() || '';
 
-    draft.backendConfig.qdrantAddress = document.getElementById('ss-rag-qdrant-address')?.value?.trim() || 'localhost:6333';
-    draft.backendConfig.qdrantUseCloud = !!document.getElementById('ss-rag-qdrant-use-cloud')?.checked;
-    const qdrantLocalKey = document.getElementById('ss-rag-qdrant-local-key')?.value || '';
-    const qdrantCloudKey = document.getElementById('ss-rag-qdrant-cloud-key')?.value || '';
+    draft.backendConfig.qdrantAddress = document.getElementById('shardwright-rag-qdrant-address')?.value?.trim() || 'localhost:6333';
+    draft.backendConfig.qdrantUseCloud = !!document.getElementById('shardwright-rag-qdrant-use-cloud')?.checked;
+    const qdrantLocalKey = document.getElementById('shardwright-rag-qdrant-local-key')?.value || '';
+    const qdrantCloudKey = document.getElementById('shardwright-rag-qdrant-cloud-key')?.value || '';
     draft.backendConfig.qdrantApiKey = draft.backendConfig.qdrantUseCloud ? qdrantCloudKey : qdrantLocalKey;
-    draft.backendConfig.qdrantUrl = document.getElementById('ss-rag-qdrant-url')?.value?.trim() || '';
-    draft.backendConfig.milvusAddress = document.getElementById('ss-rag-milvus-address')?.value?.trim() || 'localhost:19530';
-    draft.backendConfig.milvusToken = document.getElementById('ss-rag-milvus-token')?.value || '';
+    draft.backendConfig.qdrantUrl = document.getElementById('shardwright-rag-qdrant-url')?.value?.trim() || '';
+    draft.backendConfig.milvusAddress = document.getElementById('shardwright-rag-milvus-address')?.value?.trim() || 'localhost:19530';
+    draft.backendConfig.milvusToken = document.getElementById('shardwright-rag-milvus-token')?.value || '';
 
     draft.reranker = {
-        enabled: !!document.getElementById('ss-rag-reranker-enabled')?.checked,
-        provider: document.getElementById('ss-rag-reranker-provider')?.value || 'similharity',
-        apiUrl: document.getElementById('ss-rag-reranker-url')?.value?.trim() || '',
-        model: document.getElementById('ss-rag-reranker-model')?.value?.trim() || '',
+        enabled: !!document.getElementById('shardwright-rag-reranker-enabled')?.checked,
+        provider: document.getElementById('shardwright-rag-reranker-provider')?.value || 'similharity',
+        apiUrl: document.getElementById('shardwright-rag-reranker-url')?.value?.trim() || '',
+        model: document.getElementById('shardwright-rag-reranker-model')?.value?.trim() || '',
         secretId: base.reranker?.secretId || null,
         providerConfigs: base.reranker?.providerConfigs && typeof base.reranker.providerConfigs === 'object'
             ? { ...base.reranker.providerConfigs }
@@ -923,46 +930,46 @@ function readRagDraft(base, isSharder) {
         secretId: draft.reranker.secretId,
     };
 
-    draft.autoVectorizeNewSummaries = !!document.getElementById('ss-rag-auto-vectorize-new')?.checked;
-    draft.useLorebooksForVectorization = !!document.getElementById('ss-rag-use-lorebooks-vectorization')?.checked;
-    draft.includeLorebooksInShardSelection = !!document.getElementById('ss-rag-include-lorebook-shards')?.checked;
+    draft.autoVectorizeNewSummaries = !!document.getElementById('shardwright-rag-auto-vectorize-new')?.checked;
+    draft.useLorebooksForVectorization = !!document.getElementById('shardwright-rag-use-lorebooks-vectorization')?.checked;
+    draft.includeLorebooksInShardSelection = !!document.getElementById('shardwright-rag-include-lorebook-shards')?.checked;
 
     if (isSharder) {
         draft.chunkingStrategy = 'per_message';
         draft.batchSize = 5;
-        const chunkingMode = document.getElementById('ss-rag-chunking-mode')?.value === 'section'
+        const chunkingMode = document.getElementById('shardwright-rag-chunking-mode')?.value === 'section'
             ? 'section'
             : 'standard';
         draft.chunkingMode = chunkingMode;
         draft.sceneAwareChunking = false;
         draft.sectionAwareChunking = chunkingMode === 'section';
-        draft.sceneExpansion = !!document.getElementById('ss-rag-scene-expand')?.checked;
-        draft.maxSceneExpansionChunks = Math.max(1, Math.min(25, toInt(document.getElementById('ss-rag-scene-max')?.value, 10)));
+        draft.sceneExpansion = !!document.getElementById('shardwright-rag-scene-expand')?.checked;
+        draft.maxSceneExpansionChunks = Math.max(1, Math.min(25, toInt(document.getElementById('shardwright-rag-scene-max')?.value, 10)));
     } else {
-        draft.proseChunkingMode = document.getElementById('ss-rag-prose-chunking-mode')?.value === 'full_summary'
+        draft.proseChunkingMode = document.getElementById('shardwright-rag-prose-chunking-mode')?.value === 'full_summary'
             ? 'full_summary'
             : 'paragraph';
     }
 
-    draft.scoringMethod = document.getElementById('ss-rag-scoring')?.value || 'keyword';
-    draft.hybridFusionMethod = document.getElementById('ss-rag-hybrid-fusion')?.value || 'rrf';
-    draft.hybridRrfK = Math.max(1, Math.min(500, toInt(document.getElementById('ss-rag-hybrid-rrf-k')?.value, 60)));
-    draft.hybridAlpha = Math.min(1, Math.max(0, toFloat(document.getElementById('ss-rag-hybrid-alpha')?.value, 0.4)));
-    draft.hybridBeta = Math.min(1, Math.max(0, toFloat(document.getElementById('ss-rag-hybrid-beta')?.value, 0.6)));
-    draft.hybridOverfetchMultiplier = Math.max(1, Math.min(12, toInt(document.getElementById('ss-rag-hybrid-overfetch')?.value, 4)));
-    draft.insertCount = Math.max(1, toInt(document.getElementById('ss-rag-insert-count')?.value, 5));
-    draft.queryCount = Math.max(1, toInt(document.getElementById('ss-rag-query-count')?.value, 2));
-    draft.protectCount = Math.max(0, toInt(document.getElementById('ss-rag-protect-count')?.value, 5));
-    draft.maxItemsPerCompactedSection = Math.max(1, toInt(document.getElementById('ss-rag-max-items')?.value, 5));
-    draft.scoreThreshold = Math.min(1, Math.max(0, toFloat(document.getElementById('ss-rag-threshold')?.value, 0.25)));
-    draft.recencyFreshnessWeight = Math.min(1, Math.max(0, toFloat(document.getElementById('ss-rag-freshness')?.value, 0.1)));
-    draft.recentSummaryCount = Math.max(0, toInt(document.getElementById('ss-rag-recent-count')?.value, 1));
-    draft.maxChunksPerShard = Math.max(1, toInt(document.getElementById('ss-rag-max-chunks-per-shard')?.value, 2));
-    draft.position = toInt(document.getElementById('ss-rag-position')?.value, 0);
-    draft.depth = Math.max(0, toInt(document.getElementById('ss-rag-depth')?.value, 2));
-    draft.template = document.getElementById('ss-rag-template')?.value || 'Recalled memories:\n{{text}}';
-    draft.injectionMode = document.getElementById('ss-rag-injection-mode')?.value || 'extension_prompt';
-    draft.injectionVariableName = document.getElementById('ss-rag-var-name')?.value?.trim() || 'ss_rag_memory';
+    draft.scoringMethod = document.getElementById('shardwright-rag-scoring')?.value || 'keyword';
+    draft.hybridFusionMethod = document.getElementById('shardwright-rag-hybrid-fusion')?.value || 'rrf';
+    draft.hybridRrfK = Math.max(1, Math.min(500, toInt(document.getElementById('shardwright-rag-hybrid-rrf-k')?.value, 60)));
+    draft.hybridAlpha = Math.min(1, Math.max(0, toFloat(document.getElementById('shardwright-rag-hybrid-alpha')?.value, 0.4)));
+    draft.hybridBeta = Math.min(1, Math.max(0, toFloat(document.getElementById('shardwright-rag-hybrid-beta')?.value, 0.6)));
+    draft.hybridOverfetchMultiplier = Math.max(1, Math.min(12, toInt(document.getElementById('shardwright-rag-hybrid-overfetch')?.value, 4)));
+    draft.insertCount = Math.max(1, toInt(document.getElementById('shardwright-rag-insert-count')?.value, 5));
+    draft.queryCount = Math.max(1, toInt(document.getElementById('shardwright-rag-query-count')?.value, 2));
+    draft.protectCount = Math.max(0, toInt(document.getElementById('shardwright-rag-protect-count')?.value, 5));
+    draft.maxItemsPerCompactedSection = Math.max(1, toInt(document.getElementById('shardwright-rag-max-items')?.value, 5));
+    draft.scoreThreshold = Math.min(1, Math.max(0, toFloat(document.getElementById('shardwright-rag-threshold')?.value, 0.25)));
+    draft.recencyFreshnessWeight = Math.min(1, Math.max(0, toFloat(document.getElementById('shardwright-rag-freshness')?.value, 0.1)));
+    draft.recentSummaryCount = Math.max(0, toInt(document.getElementById('shardwright-rag-recent-count')?.value, 1));
+    draft.maxChunksPerShard = Math.max(1, toInt(document.getElementById('shardwright-rag-max-chunks-per-shard')?.value, 2));
+    draft.position = toInt(document.getElementById('shardwright-rag-position')?.value, 0);
+    draft.depth = Math.max(0, toInt(document.getElementById('shardwright-rag-depth')?.value, 2));
+    draft.template = document.getElementById('shardwright-rag-template')?.value || 'Recalled memories:\n{{text}}';
+    draft.injectionMode = document.getElementById('shardwright-rag-injection-mode')?.value || 'extension_prompt';
+    draft.injectionVariableName = document.getElementById('shardwright-rag-var-name')?.value?.trim() || 'shardwright_rag_memory';
 
     return draft;
 }
@@ -991,55 +998,55 @@ function updateDomFromDraft(draft, isSharder) {
         }
     };
 
-    setChecked('ss-rag-enabled', draft.enabled);
-    setValue('ss-rag-backend', draft.backend || 'vectra');
-    setValue('ss-rag-source', draft.source || 'transformers');
-    setValue('ss-rag-api-url', draft.apiUrl || '');
-    setValue('ss-rag-model', draft.model || '');
+    setChecked('shardwright-rag-enabled', draft.enabled);
+    setValue('shardwright-rag-backend', draft.backend || 'vectra');
+    setValue('shardwright-rag-source', draft.source || 'transformers');
+    setValue('shardwright-rag-api-url', draft.apiUrl || '');
+    setValue('shardwright-rag-model', draft.model || '');
 
-    setValue('ss-rag-qdrant-address', draft.backendConfig?.qdrantAddress || 'localhost:6333');
-    setChecked('ss-rag-qdrant-use-cloud', draft.backendConfig?.qdrantUseCloud === true);
-    setValue('ss-rag-qdrant-local-key', draft.backendConfig?.qdrantApiKey || '');
-    setValue('ss-rag-qdrant-cloud-key', draft.backendConfig?.qdrantApiKey || '');
-    setValue('ss-rag-qdrant-url', draft.backendConfig?.qdrantUrl || '');
-    setValue('ss-rag-milvus-address', draft.backendConfig?.milvusAddress || 'localhost:19530');
-    setValue('ss-rag-milvus-token', draft.backendConfig?.milvusToken || '');
+    setValue('shardwright-rag-qdrant-address', draft.backendConfig?.qdrantAddress || 'localhost:6333');
+    setChecked('shardwright-rag-qdrant-use-cloud', draft.backendConfig?.qdrantUseCloud === true);
+    setValue('shardwright-rag-qdrant-local-key', draft.backendConfig?.qdrantApiKey || '');
+    setValue('shardwright-rag-qdrant-cloud-key', draft.backendConfig?.qdrantApiKey || '');
+    setValue('shardwright-rag-qdrant-url', draft.backendConfig?.qdrantUrl || '');
+    setValue('shardwright-rag-milvus-address', draft.backendConfig?.milvusAddress || 'localhost:19530');
+    setValue('shardwright-rag-milvus-token', draft.backendConfig?.milvusToken || '');
 
-    setChecked('ss-rag-auto-vectorize-new', draft.autoVectorizeNewSummaries !== false);
-    setChecked('ss-rag-use-lorebooks-vectorization', draft.useLorebooksForVectorization === true);
-    setChecked('ss-rag-include-lorebook-shards', draft.includeLorebooksInShardSelection === true);
+    setChecked('shardwright-rag-auto-vectorize-new', draft.autoVectorizeNewSummaries !== false);
+    setChecked('shardwright-rag-use-lorebooks-vectorization', draft.useLorebooksForVectorization === true);
+    setChecked('shardwright-rag-include-lorebook-shards', draft.includeLorebooksInShardSelection === true);
 
     if (isSharder) {
-        setValue('ss-rag-chunking-mode', draft.chunkingMode || 'standard');
-        setChecked('ss-rag-scene-expand', draft.sceneExpansion !== false);
-        setRangePairValue('ss-rag-scene-max', draft.maxSceneExpansionChunks ?? 10);
+        setValue('shardwright-rag-chunking-mode', draft.chunkingMode || 'standard');
+        setChecked('shardwright-rag-scene-expand', draft.sceneExpansion !== false);
+        setRangePairValue('shardwright-rag-scene-max', draft.maxSceneExpansionChunks ?? 10);
     } else {
-        setValue('ss-rag-prose-chunking-mode', draft.proseChunkingMode || 'paragraph');
+        setValue('shardwright-rag-prose-chunking-mode', draft.proseChunkingMode || 'paragraph');
     }
 
-    setValue('ss-rag-scoring', draft.scoringMethod || 'keyword');
-    setValue('ss-rag-hybrid-fusion', draft.hybridFusionMethod || 'rrf');
-    setValue('ss-rag-hybrid-rrf-k', draft.hybridRrfK ?? 60);
-    setValue('ss-rag-hybrid-alpha', draft.hybridAlpha ?? 0.4);
-    setValue('ss-rag-hybrid-beta', draft.hybridBeta ?? 0.6);
+    setValue('shardwright-rag-scoring', draft.scoringMethod || 'keyword');
+    setValue('shardwright-rag-hybrid-fusion', draft.hybridFusionMethod || 'rrf');
+    setValue('shardwright-rag-hybrid-rrf-k', draft.hybridRrfK ?? 60);
+    setValue('shardwright-rag-hybrid-alpha', draft.hybridAlpha ?? 0.4);
+    setValue('shardwright-rag-hybrid-beta', draft.hybridBeta ?? 0.6);
     syncWeightedSliderFromInputs();
-    setValue('ss-rag-hybrid-overfetch', draft.hybridOverfetchMultiplier ?? 4);
-    setValue('ss-rag-insert-count', draft.insertCount ?? 5);
-    setValue('ss-rag-query-count', draft.queryCount ?? 2);
-    setValue('ss-rag-protect-count', draft.protectCount ?? 5);
-    setValue('ss-rag-max-items', draft.maxItemsPerCompactedSection ?? 5);
-    setRangePairValue('ss-rag-threshold', draft.scoreThreshold ?? 0.25);
-    setRangePairValue('ss-rag-freshness', draft.recencyFreshnessWeight ?? 0.1);
-    setValue('ss-rag-position', draft.position ?? 0);
-    setValue('ss-rag-depth', draft.depth ?? 2);
-    setValue('ss-rag-template', draft.template || 'Recalled memories:\n{{text}}');
-    setValue('ss-rag-injection-mode', draft.injectionMode || 'extension_prompt');
-    setValue('ss-rag-var-name', draft.injectionVariableName || 'ss_rag_memory');
+    setValue('shardwright-rag-hybrid-overfetch', draft.hybridOverfetchMultiplier ?? 4);
+    setValue('shardwright-rag-insert-count', draft.insertCount ?? 5);
+    setValue('shardwright-rag-query-count', draft.queryCount ?? 2);
+    setValue('shardwright-rag-protect-count', draft.protectCount ?? 5);
+    setValue('shardwright-rag-max-items', draft.maxItemsPerCompactedSection ?? 5);
+    setRangePairValue('shardwright-rag-threshold', draft.scoreThreshold ?? 0.25);
+    setRangePairValue('shardwright-rag-freshness', draft.recencyFreshnessWeight ?? 0.1);
+    setValue('shardwright-rag-position', draft.position ?? 0);
+    setValue('shardwright-rag-depth', draft.depth ?? 2);
+    setValue('shardwright-rag-template', draft.template || 'Recalled memories:\n{{text}}');
+    setValue('shardwright-rag-injection-mode', draft.injectionMode || 'extension_prompt');
+    setValue('shardwright-rag-var-name', draft.injectionVariableName || 'shardwright_rag_memory');
 
-    setChecked('ss-rag-reranker-enabled', draft.reranker?.enabled);
-    setValue('ss-rag-reranker-provider', draft.reranker?.provider || 'similharity');
-    setValue('ss-rag-reranker-url', draft.reranker?.apiUrl || '');
-    setValue('ss-rag-reranker-model', draft.reranker?.model || '');
+    setChecked('shardwright-rag-reranker-enabled', draft.reranker?.enabled);
+    setValue('shardwright-rag-reranker-provider', draft.reranker?.provider || 'similharity');
+    setValue('shardwright-rag-reranker-url', draft.reranker?.apiUrl || '');
+    setValue('shardwright-rag-reranker-model', draft.reranker?.model || '');
 }
 
 /**
@@ -1082,10 +1089,10 @@ function applyRagSettings(settings, saved, ragBlockKey) {
  * @param {Object} ragDraft
  */
 async function runStatusChecks(ragDraft) {
-    const rerankerEl = document.getElementById('ss-rag-reranker-status');
-    const embedEl = document.getElementById('ss-rag-embedding-status');
-    const backendEl = document.getElementById('ss-rag-backend-health');
-    const warningEl = document.getElementById('ss-rag-warning');
+    const rerankerEl = document.getElementById('shardwright-rag-reranker-status');
+    const embedEl = document.getElementById('shardwright-rag-embedding-status');
+    const backendEl = document.getElementById('shardwright-rag-backend-health');
+    const warningEl = document.getElementById('shardwright-rag-warning');
     const summarize = (value, max = 90) => {
         const text = String(value || '').replace(/\s+/g, ' ').trim();
         if (!text) return '';
@@ -1097,7 +1104,7 @@ async function runStatusChecks(ragDraft) {
             checkPluginAvailability(),
             Promise.resolve(checkEmbeddingAvailability()),
             checkBackendHealth(ragDraft.backend || 'vectra'),
-            testEmbeddingConnection(ragDraft, 'Summary Sharder settings health check')
+            testEmbeddingConnection(ragDraft, 'Shardwright settings health check')
                 .then(result => ({
                     success: !!result?.success,
                     dimensions: Number(result?.dimensions) || 0,
@@ -1163,10 +1170,10 @@ async function runStatusChecks(ragDraft) {
 
         if (warningEl) {
             if (warnings.length > 0) {
-                warningEl.classList.remove('ss-hidden');
+                warningEl.classList.remove('shardwright-hidden');
                 warningEl.textContent = warnings.join(' ');
             } else {
-                warningEl.classList.add('ss-hidden');
+                warningEl.classList.add('shardwright-hidden');
                 warningEl.textContent = '';
             }
         }
@@ -1175,7 +1182,7 @@ async function runStatusChecks(ragDraft) {
     } catch (error) {
         ragLog.warn('Status check failed:', error?.message || error);
         if (warningEl) {
-            warningEl.classList.remove('ss-hidden');
+            warningEl.classList.remove('shardwright-hidden');
             warningEl.textContent = `Status check failed: ${error?.message || error}`;
         }
     }
@@ -1230,7 +1237,7 @@ function buildRagDraftFromSource(src, isSharder) {
         depth: source.depth ?? 2,
         template: source.template || 'Recalled memories:\n{{text}}',
         injectionMode: source.injectionMode || 'extension_prompt',
-        injectionVariableName: source.injectionVariableName || 'ss_rag_memory',
+        injectionVariableName: source.injectionVariableName || 'shardwright_rag_memory',
         reranker: {
             enabled: source.reranker?.enabled ?? false,
             provider: source.reranker?.provider || source.reranker?.mode || 'similharity',
@@ -1299,7 +1306,7 @@ export async function openRagSettingsModal(settings) {
     }
 
     const popup = new Popup(
-        renderModalHtml(rag, isSharder),
+        renderModalHtml(rag, isSharder, getArchitecturalRagUiPosture(settings)),
         POPUP_TYPE.TEXT,
         null,
         {
@@ -1384,12 +1391,12 @@ export async function openRagSettingsModal(settings) {
 
     requestAnimationFrame(async () => {
         let vectorizationLorebookDropdown = null;
-        mountInfoHints(document.querySelector('.ss-rag-modal'));
+        mountInfoHints(document.querySelector('.shardwright-rag-modal'));
 
         const syncDraftFromDom = () => {
             liveDraft = readRagDraft(liveDraft, isSharder);
         };
-        const autosaveStatusEl = document.getElementById('ss-rag-autosave-status');
+        const autosaveStatusEl = document.getElementById('shardwright-rag-autosave-status');
         const setAutosaveStatus = (message) => {
             if (!autosaveStatusEl) return;
             autosaveStatusEl.textContent = message;
@@ -1414,16 +1421,16 @@ export async function openRagSettingsModal(settings) {
         }, 400);
 
         const updateVectorizationLorebookUi = () => {
-            const enabled = !!document.getElementById('ss-rag-use-lorebooks-vectorization')?.checked;
-            const optionsDiv = document.getElementById('ss-rag-vectorization-lorebook-options');
-            optionsDiv?.classList.toggle('ss-hidden', !enabled);
+            const enabled = !!document.getElementById('shardwright-rag-use-lorebooks-vectorization')?.checked;
+            const optionsDiv = document.getElementById('shardwright-rag-vectorization-lorebook-options');
+            optionsDiv?.classList.toggle('shardwright-hidden', !enabled);
 
             if (!enabled) {
                 return;
             }
 
             if (!vectorizationLorebookDropdown) {
-                vectorizationLorebookDropdown = new LorebookDropdown('ss-rag-vectorization-lorebook-dropdown', {
+                vectorizationLorebookDropdown = new LorebookDropdown('shardwright-rag-vectorization-lorebook-dropdown', {
                     initialSelection: Array.isArray(liveDraft.vectorizationLorebookNames)
                         ? [...liveDraft.vectorizationLorebookNames]
                         : [],
@@ -1524,7 +1531,7 @@ export async function openRagSettingsModal(settings) {
             const segmented = createSegmentedToggle({
                 options,
                 value,
-                className: 'ss-rag-control',
+                className: 'shardwright-rag-control',
             });
             segmented.id = controlId;
             host.replaceChildren(segmented);
@@ -1542,7 +1549,7 @@ export async function openRagSettingsModal(settings) {
                 max,
                 step,
                 value,
-                className: 'ss-rag-control',
+                className: 'shardwright-rag-control',
             });
             host.replaceChildren(pair);
         };
@@ -1559,7 +1566,7 @@ export async function openRagSettingsModal(settings) {
                 max: 1,
                 step: HYBRID_WEIGHT_STEP,
                 value,
-                className: 'ss-rag-control',
+                className: 'shardwright-rag-control',
             });
 
             const sync = () => {
@@ -1572,15 +1579,15 @@ export async function openRagSettingsModal(settings) {
             syncWeightedSliderFromInputs();
         };
 
-        mountRangePair('ss-rag-threshold-host', 'ss-rag-threshold', 0, 1, 0.01, rag.scoreThreshold ?? 0.25);
-        mountRangePair('ss-rag-freshness-host', 'ss-rag-freshness', 0, 1, 0.01, rag.recencyFreshnessWeight ?? 0.1);
-        mountRangePair('ss-rag-scene-max-host', 'ss-rag-scene-max', 1, 25, 1, rag.maxSceneExpansionChunks ?? 10);
+        mountRangePair('shardwright-rag-threshold-host', 'shardwright-rag-threshold', 0, 1, 0.01, rag.scoreThreshold ?? 0.25);
+        mountRangePair('shardwright-rag-freshness-host', 'shardwright-rag-freshness', 0, 1, 0.01, rag.recencyFreshnessWeight ?? 0.1);
+        mountRangePair('shardwright-rag-scene-max-host', 'shardwright-rag-scene-max', 1, 25, 1, rag.maxSceneExpansionChunks ?? 10);
         const normalizedWeights = normalizeHybridWeights(rag.hybridAlpha ?? HYBRID_WEIGHT_DEFAULT_ALPHA, rag.hybridBeta ?? HYBRID_WEIGHT_DEFAULT_BETA);
-        mountHybridWeightSlider('ss-rag-hybrid-weight-host', 'ss-rag-hybrid-weight', normalizedWeights.beta);
+        mountHybridWeightSlider('shardwright-rag-hybrid-weight-host', 'shardwright-rag-hybrid-weight', normalizedWeights.beta);
 
         mountSegmentedToggle(
-            'ss-rag-chunking-mode-host',
-            'ss-rag-chunking-mode',
+            'shardwright-rag-chunking-mode-host',
+            'shardwright-rag-chunking-mode',
             [
                 { value: 'standard', label: 'Standard' },
                 { value: 'section', label: 'Section-Aware' },
@@ -1589,8 +1596,8 @@ export async function openRagSettingsModal(settings) {
         );
 
         mountSegmentedToggle(
-            'ss-rag-prose-chunking-mode-host',
-            'ss-rag-prose-chunking-mode',
+            'shardwright-rag-prose-chunking-mode-host',
+            'shardwright-rag-prose-chunking-mode',
             [
                 { value: 'paragraph', label: 'Paragraph' },
                 { value: 'full_summary', label: 'Full Summary' },
@@ -1599,8 +1606,8 @@ export async function openRagSettingsModal(settings) {
         );
 
         mountSegmentedToggle(
-            'ss-rag-hybrid-fusion-host',
-            'ss-rag-hybrid-fusion',
+            'shardwright-rag-hybrid-fusion-host',
+            'shardwright-rag-hybrid-fusion',
             [
                 { value: 'rrf', label: 'RRF' },
                 { value: 'weighted', label: 'Weighted' },
@@ -1608,8 +1615,8 @@ export async function openRagSettingsModal(settings) {
             rag.hybridFusionMethod || 'rrf',
         );
 
-        const embeddingKeyInput = document.getElementById('ss-rag-embedding-key');
-        const rerankerKeyInput = document.getElementById('ss-rag-reranker-key');
+        const embeddingKeyInput = document.getElementById('shardwright-rag-embedding-key');
+        const rerankerKeyInput = document.getElementById('shardwright-rag-reranker-key');
 
         // Track the active source/provider independently so swap logic works
         // even after syncDraftFromDom has already updated liveDraft.
@@ -1618,9 +1625,9 @@ export async function openRagSettingsModal(settings) {
 
         // Per-provider config swap: saves old provider's fields, loads new provider's fields.
         // Uses `input` event (fires before `change` on <select>) and is registered before
-        // the .ss-rag-control handlers so the DOM is swapped before syncDraftFromDom reads it.
-        const sourceSelect = document.getElementById('ss-rag-source');
-        const providerSelect = document.getElementById('ss-rag-reranker-provider');
+        // the .shardwright-rag-control handlers so the DOM is swapped before syncDraftFromDom reads it.
+        const sourceSelect = document.getElementById('shardwright-rag-source');
+        const providerSelect = document.getElementById('shardwright-rag-reranker-provider');
 
         sourceSelect?.addEventListener('input', () => {
             const newSource = sourceSelect.value || 'transformers';
@@ -1629,15 +1636,15 @@ export async function openRagSettingsModal(settings) {
             // Save current DOM values for the old source
             if (!liveDraft.sourceConfigs) liveDraft.sourceConfigs = {};
             liveDraft.sourceConfigs[activeEmbeddingSource] = {
-                apiUrl: document.getElementById('ss-rag-api-url')?.value?.trim() || '',
-                model: document.getElementById('ss-rag-model')?.value?.trim() || '',
+                apiUrl: document.getElementById('shardwright-rag-api-url')?.value?.trim() || '',
+                model: document.getElementById('shardwright-rag-model')?.value?.trim() || '',
                 embeddingSecretId: liveDraft.embeddingSecretId || null,
             };
 
             // Load the new source's config (or blank)
             const newConfig = liveDraft.sourceConfigs[newSource] || {};
-            const urlInput = document.getElementById('ss-rag-api-url');
-            const modelInput = document.getElementById('ss-rag-model');
+            const urlInput = document.getElementById('shardwright-rag-api-url');
+            const modelInput = document.getElementById('shardwright-rag-model');
             if (urlInput) urlInput.value = newConfig.apiUrl || '';
             if (modelInput) modelInput.value = newConfig.model || '';
             liveDraft.embeddingSecretId = newConfig.embeddingSecretId || null;
@@ -1657,15 +1664,15 @@ export async function openRagSettingsModal(settings) {
             if (!liveDraft.reranker) liveDraft.reranker = {};
             if (!liveDraft.reranker.providerConfigs) liveDraft.reranker.providerConfigs = {};
             liveDraft.reranker.providerConfigs[activeRerankerProvider] = {
-                apiUrl: document.getElementById('ss-rag-reranker-url')?.value?.trim() || '',
-                model: document.getElementById('ss-rag-reranker-model')?.value?.trim() || '',
+                apiUrl: document.getElementById('shardwright-rag-reranker-url')?.value?.trim() || '',
+                model: document.getElementById('shardwright-rag-reranker-model')?.value?.trim() || '',
                 secretId: liveDraft.reranker.secretId || null,
             };
 
             // Load the new provider's config (or blank)
             const newConfig = liveDraft.reranker.providerConfigs[newProvider] || {};
-            const urlInput = document.getElementById('ss-rag-reranker-url');
-            const modelInput = document.getElementById('ss-rag-reranker-model');
+            const urlInput = document.getElementById('shardwright-rag-reranker-url');
+            const modelInput = document.getElementById('shardwright-rag-reranker-model');
             if (urlInput) urlInput.value = newConfig.apiUrl || '';
             if (modelInput) modelInput.value = newConfig.model || '';
             liveDraft.reranker.secretId = newConfig.secretId || null;
@@ -1677,7 +1684,7 @@ export async function openRagSettingsModal(settings) {
             activeRerankerProvider = newProvider;
         });
 
-        for (const control of document.querySelectorAll('.ss-rag-control')) {
+        for (const control of document.querySelectorAll('.shardwright-rag-control')) {
             const isTextLikeControl = control.matches('input[type="text"], input[type="password"], input[type="number"], textarea');
             control.addEventListener('input', () => {
                 syncDraftFromDom();
@@ -1719,7 +1726,7 @@ export async function openRagSettingsModal(settings) {
         updateVectorizationLorebookUi();
         setupRagAccordionHandlers();
 
-        const embeddingKeyStatusEl = document.getElementById('ss-rag-embedding-key-status');
+        const embeddingKeyStatusEl = document.getElementById('shardwright-rag-embedding-key-status');
         const refreshEmbeddingKeyStatus = async () => {
             const hasKey = await hasRagEmbeddingApiKey(buildSecretSettingsView());
             if (embeddingKeyStatusEl) {
@@ -1730,7 +1737,7 @@ export async function openRagSettingsModal(settings) {
         };
         await refreshEmbeddingKeyStatus();
 
-        const rerankerKeyStatusEl = document.getElementById('ss-rag-reranker-key-status');
+        const rerankerKeyStatusEl = document.getElementById('shardwright-rag-reranker-key-status');
         const refreshRerankerKeyStatus = async () => {
             const hasKey = await hasRagRerankerApiKey(buildSecretSettingsView());
             if (rerankerKeyStatusEl) {
@@ -1746,31 +1753,31 @@ export async function openRagSettingsModal(settings) {
         if (collectionId) {
             await updateStats(initialDraft, collectionId);
         } else {
-            const statsEl = document.getElementById('ss-rag-stats');
+            const statsEl = document.getElementById('shardwright-rag-stats');
             if (statsEl) statsEl.textContent = 'Collection stats: no chat open';
         }
 
-        document.getElementById('ss-rag-backend')?.addEventListener('change', async () => {
+        document.getElementById('shardwright-rag-backend')?.addEventListener('change', async () => {
             updateBackendConditionalUi();
             const draft = readRagDraft(liveDraft, isSharder);
             await runStatusChecks(draft);
             if (collectionId) await updateStats(draft, collectionId);
         });
-        document.getElementById('ss-rag-enabled')?.addEventListener('change', () => {
+        document.getElementById('shardwright-rag-enabled')?.addEventListener('change', () => {
             updateMasterToggleUi();
         });
-        document.getElementById('ss-rag-qdrant-use-cloud')?.addEventListener('change', () => {
+        document.getElementById('shardwright-rag-qdrant-use-cloud')?.addEventListener('change', () => {
             updateQdrantCloudUi();
         });
 
         for (const id of [
-            'ss-rag-source',
-            'ss-rag-model',
-            'ss-rag-api-url',
-            'ss-rag-reranker-enabled',
-            'ss-rag-reranker-provider',
-            'ss-rag-reranker-url',
-            'ss-rag-reranker-model',
+            'shardwright-rag-source',
+            'shardwright-rag-model',
+            'shardwright-rag-api-url',
+            'shardwright-rag-reranker-enabled',
+            'shardwright-rag-reranker-provider',
+            'shardwright-rag-reranker-url',
+            'shardwright-rag-reranker-model',
         ]) {
             document.getElementById(id)?.addEventListener('change', async () => {
                 const draft = readRagDraft(liveDraft, isSharder);
@@ -1778,39 +1785,39 @@ export async function openRagSettingsModal(settings) {
             });
         }
 
-        document.getElementById('ss-rag-scoring')?.addEventListener('change', () => {
+        document.getElementById('shardwright-rag-scoring')?.addEventListener('change', () => {
             updateHybridUi();
         });
-        document.getElementById('ss-rag-hybrid-fusion')?.addEventListener('change', () => {
+        document.getElementById('shardwright-rag-hybrid-fusion')?.addEventListener('change', () => {
             updateHybridUi();
         });
-        document.getElementById('ss-rag-injection-mode')?.addEventListener('change', () => {
+        document.getElementById('shardwright-rag-injection-mode')?.addEventListener('change', () => {
             updateInjectionModeUi();
         });
 
         // Scene expansion toggle only exists in Sharder Mode
         if (isSharder) {
-            document.getElementById('ss-rag-scene-expand')?.addEventListener('change', () => {
+            document.getElementById('shardwright-rag-scene-expand')?.addEventListener('change', () => {
                 updateExpansionUi();
             });
         }
 
-        document.getElementById('ss-rag-source')?.addEventListener('change', () => {
+        document.getElementById('shardwright-rag-source')?.addEventListener('change', () => {
             updateEmbeddingModeUi();
             refreshEmbeddingKeyStatus();
         });
-        document.getElementById('ss-rag-reranker-enabled')?.addEventListener('change', () => {
+        document.getElementById('shardwright-rag-reranker-enabled')?.addEventListener('change', () => {
             updateRerankerUi();
         });
-        document.getElementById('ss-rag-reranker-provider')?.addEventListener('change', () => {
+        document.getElementById('shardwright-rag-reranker-provider')?.addEventListener('change', () => {
             updateRerankerUi();
             refreshRerankerKeyStatus();
         });
-        document.getElementById('ss-rag-use-lorebooks-vectorization')?.addEventListener('change', () => {
+        document.getElementById('shardwright-rag-use-lorebooks-vectorization')?.addEventListener('change', () => {
             updateVectorizationLorebookUi();
         });
 
-        document.getElementById('ss-rag-store-reranker-key')?.addEventListener('click', async () => {
+        document.getElementById('shardwright-rag-store-reranker-key')?.addEventListener('click', async () => {
             const newRerankerKey = String(pendingRerankerKey || '').trim();
             if (!newRerankerKey) {
                 toastr.warning('Enter a re-ranker key first');
@@ -1834,7 +1841,7 @@ export async function openRagSettingsModal(settings) {
             toastr.success('Re-ranker API key stored securely');
         });
 
-        document.getElementById('ss-rag-clear-reranker-key')?.addEventListener('click', async () => {
+        document.getElementById('shardwright-rag-clear-reranker-key')?.addEventListener('click', async () => {
             const confirm = await showSsConfirm(
                 'Clear Re-ranker API Key',
                 'Remove the stored re-ranker API key from secure storage?',
@@ -1859,14 +1866,14 @@ export async function openRagSettingsModal(settings) {
             }
         });
 
-        document.getElementById('ss-rag-refresh-health')?.addEventListener('click', async () => {
+        document.getElementById('shardwright-rag-refresh-health')?.addEventListener('click', async () => {
             const draft = readRagDraft(liveDraft, isSharder);
             await runStatusChecks(draft);
         });
 
-        document.getElementById('ss-rag-test-embedding')?.addEventListener('click', async () => {
-            const btn = document.getElementById('ss-rag-test-embedding');
-            const statusEl = document.getElementById('ss-rag-embedding-test-status');
+        document.getElementById('shardwright-rag-test-embedding')?.addEventListener('click', async () => {
+            const btn = document.getElementById('shardwright-rag-test-embedding');
+            const statusEl = document.getElementById('shardwright-rag-embedding-test-status');
             if (btn) btn.disabled = true;
             if (statusEl) {
                 statusEl.textContent = 'Embedding source test: running...';
@@ -1898,9 +1905,9 @@ export async function openRagSettingsModal(settings) {
             }
         });
 
-        document.getElementById('ss-rag-test-reranker')?.addEventListener('click', async () => {
-            const btn = document.getElementById('ss-rag-test-reranker');
-            const statusEl = document.getElementById('ss-rag-reranker-test-status');
+        document.getElementById('shardwright-rag-test-reranker')?.addEventListener('click', async () => {
+            const btn = document.getElementById('shardwright-rag-test-reranker');
+            const statusEl = document.getElementById('shardwright-rag-reranker-test-status');
             if (btn) btn.disabled = true;
             if (statusEl) {
                 statusEl.textContent = 'Re-ranker test: running...';
@@ -1935,7 +1942,7 @@ export async function openRagSettingsModal(settings) {
             }
         });
 
-        document.getElementById('ss-rag-store-embedding-key')?.addEventListener('click', async () => {
+        document.getElementById('shardwright-rag-store-embedding-key')?.addEventListener('click', async () => {
             const newEmbeddingKey = String(pendingEmbeddingKey || '').trim();
             if (!newEmbeddingKey) {
                 toastr.warning('Enter an embedding key first');
@@ -1959,7 +1966,7 @@ export async function openRagSettingsModal(settings) {
             toastr.success('Embedding API key stored securely');
         });
 
-        document.getElementById('ss-rag-clear-embedding-key')?.addEventListener('click', async () => {
+        document.getElementById('shardwright-rag-clear-embedding-key')?.addEventListener('click', async () => {
             const confirm = await showSsConfirm(
                 'Clear Embedding API Key',
                 'Remove the stored embedding API key from secure storage?'
@@ -1984,7 +1991,7 @@ export async function openRagSettingsModal(settings) {
             }
         });
 
-        document.getElementById('ss-rag-init-backend')?.addEventListener('click', async () => {
+        document.getElementById('shardwright-rag-init-backend')?.addEventListener('click', async () => {
             const draft = readRagDraft(liveDraft, isSharder);
             const backend = draft.backend;
             const useQdrantCloud = draft.backendConfig.qdrantUseCloud === true;
@@ -2023,7 +2030,7 @@ export async function openRagSettingsModal(settings) {
             await runStatusChecks(draft);
         });
 
-        document.getElementById('ss-rag-vectorize-all')?.addEventListener('click', async () => {
+        document.getElementById('shardwright-rag-vectorize-all')?.addEventListener('click', async () => {
             if (!collectionId) {
                 toastr.warning('Open a chat first to vectorize');
                 return;
@@ -2055,14 +2062,14 @@ export async function openRagSettingsModal(settings) {
             await updateStats(draft, collectionId);
         });
 
-        document.getElementById('ss-rag-purge-all')?.addEventListener('click', async () => {
+        document.getElementById('shardwright-rag-purge-all')?.addEventListener('click', async () => {
             if (!collectionId) {
                 toastr.warning('Open a chat first to purge vectors');
                 return;
             }
             const confirm = await showSsConfirm(
                 'Purge All Vectors',
-                'Delete all Summary Sharder vectors for this chat? This cannot be undone.'
+                'Delete all Shardwright vectors for this chat? This cannot be undone.'
             );
 
             if (confirm !== POPUP_RESULT.AFFIRMATIVE) {
@@ -2081,7 +2088,7 @@ export async function openRagSettingsModal(settings) {
             await updateStats(draft, collectionId);
         });
 
-        document.getElementById('ss-rag-open-browser')?.addEventListener('click', async () => {
+        document.getElementById('shardwright-rag-open-browser')?.addEventListener('click', async () => {
             const browserSettings = {
                 ...settings,
                 rag: { ...(settings.rag || {}) },
@@ -2092,7 +2099,7 @@ export async function openRagSettingsModal(settings) {
             if (collectionId) await updateStats(readRagDraft(liveDraft, isSharder), collectionId);
         });
 
-        document.getElementById('ss-rag-open-debug')?.addEventListener('click', async () => {
+        document.getElementById('shardwright-rag-open-debug')?.addEventListener('click', async () => {
             const browserSettings = {
                 ...settings,
                 rag: { ...(settings.rag || {}) },
@@ -2103,12 +2110,12 @@ export async function openRagSettingsModal(settings) {
             if (collectionId) await updateStats(readRagDraft(liveDraft, isSharder), collectionId);
         });
 
-        document.getElementById('ss-rag-open-history')?.addEventListener('click', async () => {
+        document.getElementById('shardwright-rag-open-history')?.addEventListener('click', async () => {
             const { openRagHistoryModal } = await import('../management/rag-history-modal.js');
             await openRagHistoryModal();
         });
 
-        document.getElementById('ss-rag-reset-defaults')?.addEventListener('click', async () => {
+        document.getElementById('shardwright-rag-reset-defaults')?.addEventListener('click', async () => {
             await resetToDefaults();
         });
     });

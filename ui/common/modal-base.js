@@ -6,8 +6,8 @@
 import { Popup, POPUP_RESULT, POPUP_TYPE } from '../../../../../popup.js';
 import { escapeHtml } from './ui-utils.js';
 
-const SS_OWNED_POPUP_CLASS = 'ss-owned-popup';
-const SS_OWNED_POPUP_ATTR = 'data-ss-popup';
+const SS_OWNED_POPUP_CLASS = 'shardwright-owned-popup';
+const SS_OWNED_POPUP_ATTR = 'data-shardwright-popup';
 
 function formatPopupMessage(message) {
     return escapeHtml(String(message ?? '')).replace(/\n/g, '<br>');
@@ -66,7 +66,7 @@ export async function showSsConfirm(title, message, options = {}) {
     } = options;
 
     const modalHtml = `
-        <div class="ss-owned-popup-content ss-popup-confirm">
+        <div class="shardwright-owned-popup-content shardwright-popup-confirm">
             <h3>${escapeHtml(title)}</h3>
             <p>${formatPopupMessage(message)}</p>
         </div>
@@ -96,7 +96,7 @@ export async function showSsText(title, message, options = {}) {
     } = options;
 
     const modalHtml = `
-        <div class="ss-owned-popup-content ss-popup-text">
+        <div class="shardwright-owned-popup-content shardwright-popup-text">
             <h3>${escapeHtml(title)}</h3>
             <p>${formatPopupMessage(message)}</p>
         </div>
@@ -117,7 +117,7 @@ export async function showSsText(title, message, options = {}) {
  */
 export async function showError(title, message) {
     const modalHtml = `
-        <div class="ss-owned-popup-content ss-popup-error">
+        <div class="shardwright-owned-popup-content shardwright-popup-error">
             <h3><i class="fa-solid fa-exclamation-triangle"></i> ${escapeHtml(title)}</h3>
             <p>${formatPopupMessage(message)}</p>
         </div>
@@ -145,7 +145,7 @@ export async function showSsInput(title, message, defaultValue = '', options = {
     void inputType;
 
     const modalHtml = `
-        <div class="ss-owned-popup-content ss-popup-input">
+        <div class="shardwright-owned-popup-content shardwright-popup-input">
             <h3>${escapeHtml(title)}</h3>
             <p>${formatPopupMessage(message)}</p>
         </div>
@@ -178,9 +178,9 @@ export async function showInfo(title, message, okButton = 'OK') {
  * @returns {string} HTML string for modal header
  */
 export function createModalHeader(title, subtitle = null) {
-    let html = `<div class="ss-modal-header"><h3>${escapeHtml(title)}</h3>`;
+    let html = `<div class="shardwright-modal-header"><h3>${escapeHtml(title)}</h3>`;
     if (subtitle) {
-        html += `<p class="ss-modal-subtitle">${escapeHtml(subtitle)}</p>`;
+        html += `<p class="shardwright-modal-subtitle">${escapeHtml(subtitle)}</p>`;
     }
     html += `</div>`;
     return html;
@@ -195,9 +195,9 @@ export function createModalHeader(title, subtitle = null) {
  */
 export function createModalSection(title, content, className = '') {
     return `
-        <div class="ss-modal-section ${className}">
+        <div class="shardwright-modal-section ${className}">
             <h4>${escapeHtml(title)}</h4>
-            <div class="ss-modal-section-content">
+            <div class="shardwright-modal-section-content">
                 ${content}
             </div>
         </div>
@@ -216,7 +216,7 @@ export function createModalFooter(buttons) {
         return `<button ${id} class="${className}">${escapeHtml(btn.label)}</button>`;
     }).join('');
 
-    return `<div class="ss-modal-footer">${buttonHtml}</div>`;
+    return `<div class="shardwright-modal-footer">${buttonHtml}</div>`;
 }
 
 /**

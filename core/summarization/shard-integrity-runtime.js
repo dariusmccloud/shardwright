@@ -23,11 +23,11 @@ let lastRuntimeState = {
     validatedAt: 0,
 };
 
-function ensureSummarySharderChatRoot(chatMetadataValue) {
-    if (!chatMetadataValue.summary_sharder || typeof chatMetadataValue.summary_sharder !== 'object') {
-        chatMetadataValue.summary_sharder = {};
+function ensureShardwrightChatRoot(chatMetadataValue) {
+    if (!chatMetadataValue.shardwright || typeof chatMetadataValue.shardwright !== 'object') {
+        chatMetadataValue.shardwright = {};
     }
-    return chatMetadataValue.summary_sharder;
+    return chatMetadataValue.shardwright;
 }
 
 function getLiveContext(context = null) {
@@ -40,7 +40,7 @@ function getNormalizedChatId(context = null) {
 }
 
 function getStoredManifests() {
-    const ss = ensureSummarySharderChatRoot(chat_metadata);
+    const ss = ensureShardwrightChatRoot(chat_metadata);
     const manifests = Array.isArray(ss.shardManifests) ? ss.shardManifests : [];
     return manifests
         .map((manifest) => normalizeShardManifest(manifest))
@@ -123,7 +123,7 @@ export async function syncCurrentChatShardIntegrity(options = {}) {
     }
 
     const now = Number.isFinite(options.now) ? options.now : Date.now();
-    const ss = ensureSummarySharderChatRoot(chat_metadata);
+    const ss = ensureShardwrightChatRoot(chat_metadata);
     const existingManifests = getStoredManifests();
     const additions = [];
 

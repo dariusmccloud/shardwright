@@ -65,36 +65,36 @@ function parseBatchConfig(captured, messages, maxIndex) {
 
 function buildModalHtml(initial, maxIndex) {
     return `
-        <div class="ss-batch-config-modal">
+        <div class="shardwright-batch-config-modal">
             <h3>Batch Sharder</h3>
-            <p class="ss-text-hint">Configure range splitting and review behavior for queued sharder processing.</p>
+            <p class="shardwright-text-hint">Configure range splitting and review behavior for queued sharder processing.</p>
 
-            <div class="ss-block">
+            <div class="shardwright-block">
                 <label>Range Mode:</label>
-                <div id="ss-batch-range-mode-host">
-                    <div id="ss-batch-range-mode"></div>
+                <div id="shardwright-batch-range-mode-host">
+                    <div id="shardwright-batch-range-mode"></div>
                 </div>
             </div>
 
-            <div class="ss-block ss-batch-auto-fields ${initial.rangeMode === 'auto' ? '' : 'ss-hidden'}">
-                <label for="ss-batch-auto-range">Total Range (0 to ${maxIndex}):</label>
-                <input id="ss-batch-auto-range" type="text" class="text_pole" value="${initial.autoRange}" placeholder="0-500" />
+            <div class="shardwright-block shardwright-batch-auto-fields ${initial.rangeMode === 'auto' ? '' : 'shardwright-hidden'}">
+                <label for="shardwright-batch-auto-range">Total Range (0 to ${maxIndex}):</label>
+                <input id="shardwright-batch-auto-range" type="text" class="text_pole" value="${initial.autoRange}" placeholder="0-500" />
 
-                <label for="ss-batch-chunk-size" class="ss-batch-spaced-label">Chunk Size (messages):</label>
-                <input id="ss-batch-chunk-size" type="number" class="text_pole" min="1" value="${initial.chunkSize}" />
+                <label for="shardwright-batch-chunk-size" class="shardwright-batch-spaced-label">Chunk Size (messages):</label>
+                <input id="shardwright-batch-chunk-size" type="number" class="text_pole" min="1" value="${initial.chunkSize}" />
 
-                <label for="ss-batch-token-budget" class="ss-batch-spaced-label">Token Budget (optional, 0 = off):</label>
-                <input id="ss-batch-token-budget" type="number" class="text_pole" min="0" value="${initial.tokenBudget}" />
+                <label for="shardwright-batch-token-budget" class="shardwright-batch-spaced-label">Token Budget (optional, 0 = off):</label>
+                <input id="shardwright-batch-token-budget" type="number" class="text_pole" min="0" value="${initial.tokenBudget}" />
             </div>
 
-            <div class="ss-block ss-batch-manual-fields ${initial.rangeMode === 'manual' ? '' : 'ss-hidden'}">
-                <label for="ss-batch-manual-ranges">Ranges:</label>
-                <textarea id="ss-batch-manual-ranges" class="text_pole" rows="3" placeholder="0-50, 51-120, 121-200">${initial.manualRanges}</textarea>
+            <div class="shardwright-block shardwright-batch-manual-fields ${initial.rangeMode === 'manual' ? '' : 'shardwright-hidden'}">
+                <label for="shardwright-batch-manual-ranges">Ranges:</label>
+                <textarea id="shardwright-batch-manual-ranges" class="text_pole" rows="3" placeholder="0-50, 51-120, 121-200">${initial.manualRanges}</textarea>
             </div>
 
-            <div class="ss-block">
-                <label for="ss-batch-review-mode">Review Mode:</label>
-                <select id="ss-batch-review-mode" class="text_pole">
+            <div class="shardwright-block">
+                <label for="shardwright-batch-review-mode">Review Mode:</label>
+                <select id="shardwright-batch-review-mode" class="text_pole">
                     <option value="never" ${initial.reviewMode === 'never' ? 'selected' : ''}>Never</option>
                     <option value="errors" ${initial.reviewMode === 'errors' ? 'selected' : ''}>On Errors</option>
                     <option value="warnings" ${initial.reviewMode === 'warnings' ? 'selected' : ''}>On Warnings</option>
@@ -136,16 +136,16 @@ export async function openBatchConfigModal(messages, maxIndex, initialOverrides 
             cancelButton: 'Cancel',
             wide: true,
             onClosing: () => {
-                const rangeModeControl = document.getElementById('ss-batch-range-mode');
+                const rangeModeControl = document.getElementById('shardwright-batch-range-mode');
                 captured = {
                     rangeMode: rangeModeControl?.getValue?.()
                         || rangeModeControl?.dataset?.value
                         || 'auto',
-                    autoRange: document.getElementById('ss-batch-auto-range')?.value || '',
-                    chunkSize: document.getElementById('ss-batch-chunk-size')?.value || '25',
-                    tokenBudget: document.getElementById('ss-batch-token-budget')?.value || '0',
-                    manualRanges: document.getElementById('ss-batch-manual-ranges')?.value || '',
-                    reviewMode: document.getElementById('ss-batch-review-mode')?.value || 'always',
+                    autoRange: document.getElementById('shardwright-batch-auto-range')?.value || '',
+                    chunkSize: document.getElementById('shardwright-batch-chunk-size')?.value || '25',
+                    tokenBudget: document.getElementById('shardwright-batch-token-budget')?.value || '0',
+                    manualRanges: document.getElementById('shardwright-batch-manual-ranges')?.value || '',
+                    reviewMode: document.getElementById('shardwright-batch-review-mode')?.value || 'always',
                 };
                 return true;
             },
@@ -155,14 +155,14 @@ export async function openBatchConfigModal(messages, maxIndex, initialOverrides 
     const showPromise = popup.show();
 
     requestAnimationFrame(() => {
-        const autoFields = document.querySelector('.ss-batch-auto-fields');
-        const manualFields = document.querySelector('.ss-batch-manual-fields');
-        const rangeModeHost = document.getElementById('ss-batch-range-mode-host');
+        const autoFields = document.querySelector('.shardwright-batch-auto-fields');
+        const manualFields = document.querySelector('.shardwright-batch-manual-fields');
+        const rangeModeHost = document.getElementById('shardwright-batch-range-mode-host');
 
         const applyRangeMode = (mode) => {
             captured.rangeMode = mode === 'manual' ? 'manual' : 'auto';
-            autoFields?.classList.toggle('ss-hidden', captured.rangeMode !== 'auto');
-            manualFields?.classList.toggle('ss-hidden', captured.rangeMode !== 'manual');
+            autoFields?.classList.toggle('shardwright-hidden', captured.rangeMode !== 'auto');
+            manualFields?.classList.toggle('shardwright-hidden', captured.rangeMode !== 'manual');
         };
 
         if (rangeModeHost) {
@@ -174,7 +174,7 @@ export async function openBatchConfigModal(messages, maxIndex, initialOverrides 
                 value: captured.rangeMode,
                 onChange: (value) => applyRangeMode(value)
             });
-            segmentedToggle.id = 'ss-batch-range-mode';
+            segmentedToggle.id = 'shardwright-batch-range-mode';
             rangeModeHost.replaceChildren(segmentedToggle);
         }
 

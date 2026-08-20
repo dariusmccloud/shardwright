@@ -1,5 +1,5 @@
 /**
- * Themes modal composition for Summary Sharder
+ * Themes modal composition for Shardwright
  */
 
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../../../../popup.js';
@@ -33,7 +33,7 @@ const customThemes = new Proxy({}, {
  * Build theme card HTML
  */
 function buildThemeCard(themeId, theme, isActive) {
-    const activeClass = isActive ? 'ss-theme-card-active' : '';
+    const activeClass = isActive ? 'shardwright-theme-card-active' : '';
     const isBuiltin = theme.builtin || BUILTIN_THEMES[themeId];
     const fallbackColors = BUILTIN_THEMES.default?.colors || {};
     const previewColors = {
@@ -45,49 +45,49 @@ function buildThemeCard(themeId, theme, isActive) {
         .join(' ');
 
     return `
-        <div class="ss-theme-card ${activeClass}" data-theme="${escapeHtml(themeId)}">
-            <div class="ss-theme-preview" style="
+        <div class="shardwright-theme-card ${activeClass}" data-theme="${escapeHtml(themeId)}">
+            <div class="shardwright-theme-preview" style="
                 ${previewCssVars}
-                background: ${previewColors['--ss-bg-primary']};
-                border: 2px solid ${previewColors['--ss-primary']};
-                --ss-card-font-primary: ${previewColors['--ss-font-primary'] || 'inherit'};
-                --ss-card-font-secondary: ${previewColors['--ss-font-secondary'] || previewColors['--ss-font-primary'] || 'inherit'};
-                --ss-card-font-muted: ${previewColors['--ss-font-muted'] || previewColors['--ss-font-secondary'] || previewColors['--ss-font-primary'] || 'inherit'};
-                --ss-card-size-primary: ${previewColors['--ss-font-size-primary'] || '1em'};
-                --ss-card-size-secondary: ${previewColors['--ss-font-size-secondary'] || '0.85em'};
-                --ss-card-size-muted: ${previewColors['--ss-font-size-muted'] || '0.8em'};
-                --ss-card-text-primary: ${previewColors['--ss-text-primary'] || 'inherit'};
-                --ss-card-text-muted: ${previewColors['--ss-text-muted'] || previewColors['--ss-text-secondary'] || 'inherit'};
+                background: ${previewColors['--shardwright-bg-primary']};
+                border: 2px solid ${previewColors['--shardwright-primary']};
+                --shardwright-card-font-primary: ${previewColors['--shardwright-font-primary'] || 'inherit'};
+                --shardwright-card-font-secondary: ${previewColors['--shardwright-font-secondary'] || previewColors['--shardwright-font-primary'] || 'inherit'};
+                --shardwright-card-font-muted: ${previewColors['--shardwright-font-muted'] || previewColors['--shardwright-font-secondary'] || previewColors['--shardwright-font-primary'] || 'inherit'};
+                --shardwright-card-size-primary: ${previewColors['--shardwright-font-size-primary'] || '1em'};
+                --shardwright-card-size-secondary: ${previewColors['--shardwright-font-size-secondary'] || '0.85em'};
+                --shardwright-card-size-muted: ${previewColors['--shardwright-font-size-muted'] || '0.8em'};
+                --shardwright-card-text-primary: ${previewColors['--shardwright-text-primary'] || 'inherit'};
+                --shardwright-card-text-muted: ${previewColors['--shardwright-text-muted'] || previewColors['--shardwright-text-secondary'] || 'inherit'};
             ">
-                <div class="ss-theme-preview-header" style="
-                    background: ${previewColors['--ss-bg-secondary']};
-                    color: ${previewColors['--ss-text-primary']};
-                    border-bottom: 1px solid ${previewColors['--ss-border']};
+                <div class="shardwright-theme-preview-header" style="
+                    background: ${previewColors['--shardwright-bg-secondary']};
+                    color: ${previewColors['--shardwright-text-primary']};
+                    border-bottom: 1px solid ${previewColors['--shardwright-border']};
                 ">
-                    <span style="color: ${previewColors['--ss-primary']}">&bull;</span>
+                    <span style="color: ${previewColors['--shardwright-primary']}">&bull;</span>
                     ${escapeHtml(theme.preview)} ${escapeHtml(theme.name)}
-                    ${isBuiltin ? '<span class="ss-builtin-badge">Built-in</span>' : '<span class="ss-custom-badge">Custom</span>'}
+                    ${isBuiltin ? '<span class="shardwright-builtin-badge">Built-in</span>' : '<span class="shardwright-custom-badge">Custom</span>'}
                 </div>
-                <div class="ss-theme-preview-body">
-                    <div class="ss-preview-button" style="
-                        background: ${previewColors['--ss-primary']};
-                        color: ${previewColors['--ss-bg-primary']};
+                <div class="shardwright-theme-preview-body">
+                    <div class="shardwright-preview-button" style="
+                        background: ${previewColors['--shardwright-primary']};
+                        color: ${previewColors['--shardwright-bg-primary']};
                     ">
                         Button
                     </div>
-                    <div class="ss-theme-info">
+                    <div class="shardwright-theme-info">
                         <h4>${escapeHtml(theme.name)}</h4>
                         <p>${escapeHtml(theme.description || '')}</p>
                     </div>
-                    <div class="ss-theme-actions">
+                    <div class="shardwright-theme-actions">
                         ${isActive
-                            ? '<span class="ss-theme-active-badge">&#10003; Active</span>'
-                            : `<button class="menu_button ss-apply-theme-btn" data-theme="${escapeHtml(themeId)}">Apply</button>`
+                            ? '<span class="shardwright-theme-active-badge">&#10003; Active</span>'
+                            : `<button class="menu_button shardwright-apply-theme-btn" data-theme="${escapeHtml(themeId)}">Apply</button>`
                         }
-                        <button class="menu_button ss-export-theme-btn" data-theme="${escapeHtml(themeId)}" title="Export">&#128228;</button>
-                        <button class="menu_button ss-duplicate-theme-btn" data-theme="${escapeHtml(themeId)}" title="Duplicate">&#128203;</button>
-                        ${!isBuiltin ? `<button class="menu_button ss-delete-theme-btn" data-theme="${escapeHtml(themeId)}" title="Delete">&#128465;</button>` : ''}
-                        ${!isBuiltin ? `<button class="menu_button ss-edit-theme-btn" data-theme="${escapeHtml(themeId)}" title="Edit Colors">&#127912;</button>` : ''}
+                        <button class="menu_button shardwright-export-theme-btn" data-theme="${escapeHtml(themeId)}" title="Export">&#128228;</button>
+                        <button class="menu_button shardwright-duplicate-theme-btn" data-theme="${escapeHtml(themeId)}" title="Duplicate">&#128203;</button>
+                        ${!isBuiltin ? `<button class="menu_button shardwright-delete-theme-btn" data-theme="${escapeHtml(themeId)}" title="Delete">&#128465;</button>` : ''}
+                        ${!isBuiltin ? `<button class="menu_button shardwright-edit-theme-btn" data-theme="${escapeHtml(themeId)}" title="Edit Colors">&#127912;</button>` : ''}
                     </div>
                 </div>
             </div>
@@ -110,44 +110,44 @@ function buildModalHTML(currentThemeId) {
         .join('');
     
     return `
-        <div class="ss-themes-modal ss-modal">
-            <div class="ss-themes-header">
+        <div class="shardwright-themes-modal shardwright-modal">
+            <div class="shardwright-themes-header">
                 <h3>🎨 Extension Themes</h3>
-                <p>Customize the look and feel of Summary Sharder</p>
+                <p>Customize the look and feel of Shardwright</p>
             </div>
             
             <!-- Import/Export Controls -->
-            <div class="ss-themes-controls">
-                <button class="menu_button ss-import-theme-btn">
+            <div class="shardwright-themes-controls">
+                <button class="menu_button shardwright-import-theme-btn">
                     <i class="fa fa-upload"></i> Import Theme
                 </button>
-                <button class="menu_button ss-export-all-btn" ${Object.keys(customThemes).length === 0 ? 'disabled' : ''}>
+                <button class="menu_button shardwright-export-all-btn" ${Object.keys(customThemes).length === 0 ? 'disabled' : ''}>
                     <i class="fa fa-download"></i> Export All Custom
                 </button>
-                <button class="menu_button ss-create-theme-btn">
+                <button class="menu_button shardwright-create-theme-btn">
                     <i class="fa fa-plus"></i> Create New
                 </button>
             </div>
             
             <!-- Built-in Themes -->
-            <div class="ss-themes-section">
+            <div class="shardwright-themes-section">
                 <h4>📦 Built-in Themes</h4>
-                <div class="ss-themes-grid">
+                <div class="shardwright-themes-grid">
                     ${builtinCards}
                 </div>
             </div>
             
             <!-- Custom Themes -->
-            <div class="ss-themes-section">
+            <div class="shardwright-themes-section">
                 <h4>🎨 Custom Themes ${Object.keys(customThemes).length > 0 ? `(${Object.keys(customThemes).length})` : ''}</h4>
-                <div class="ss-themes-grid">
-                    ${customCards || '<p class="ss-no-custom-themes">No custom themes yet. Import one or create your own!</p>'}
+                <div class="shardwright-themes-grid">
+                    ${customCards || '<p class="shardwright-no-custom-themes">No custom themes yet. Import one or create your own!</p>'}
                 </div>
             </div>
             
-            <div class="ss-themes-footer">
-                <p class="ss-themes-hint">
-                    <span class="ss-info-icon">ℹ️</span>
+            <div class="shardwright-themes-footer">
+                <p class="shardwright-themes-hint">
+                    <span class="shardwright-info-icon">ℹ️</span>
                     Your theme preference and custom themes are saved automatically.
                 </p>
             </div>
@@ -160,34 +160,34 @@ function buildModalHTML(currentThemeId) {
  */
 async function showImportDialog(settings, saveSettingsFn, refreshModalFn) {
     const importHtml = `
-        <div class="ss-import-modal ss-modal">
+        <div class="shardwright-import-modal shardwright-modal">
             <h3>📥 Import Theme</h3>
             <p>Paste theme JSON below or upload a file:</p>
             
-            <div class="ss-import-file-section">
-                <input type="file" id="ss-theme-file-input" accept=".json" style="display: none;">
-                <button class="menu_button ss-upload-file-btn">
+            <div class="shardwright-import-file-section">
+                <input type="file" id="shardwright-theme-file-input" accept=".json" style="display: none;">
+                <button class="menu_button shardwright-upload-file-btn">
                     <i class="fa fa-folder-open"></i> Choose File
                 </button>
-                <span class="ss-file-name">No file selected</span>
+                <span class="shardwright-file-name">No file selected</span>
             </div>
             
-            <div class="ss-import-text-section">
+            <div class="shardwright-import-text-section">
                 <label>Or paste JSON:</label>
-                <textarea id="ss-theme-json-input" rows="12" placeholder='{
+                <textarea id="shardwright-theme-json-input" rows="12" placeholder='{
   "id": "my-theme",
   "name": "My Theme",
   "description": "A custom theme",
   "preview": "🎨",
   "colors": {
-    "--ss-primary": "#ff6600",
+    "--shardwright-primary": "#ff6600",
     ...
   }
 }'></textarea>
             </div>
             
-            <div class="ss-import-actions">
-                <button class="menu_button ss-do-import-btn">Import</button>
+            <div class="shardwright-import-actions">
+                <button class="menu_button shardwright-do-import-btn">Import</button>
             </div>
         </div>
     `;
@@ -201,13 +201,13 @@ async function showImportDialog(settings, saveSettingsFn, refreshModalFn) {
     const showPromise = popup.show();
     
     // Wait for DOM to be ready
-    await waitForElement('.ss-import-modal');
+    await waitForElement('.shardwright-import-modal');
     
     // File upload handler
-    const fileInput = document.getElementById('ss-theme-file-input');
-    const uploadBtn = document.querySelector('.ss-upload-file-btn');
-    const fileNameSpan = document.querySelector('.ss-file-name');
-    const jsonInput = document.getElementById('ss-theme-json-input');
+    const fileInput = document.getElementById('shardwright-theme-file-input');
+    const uploadBtn = document.querySelector('.shardwright-upload-file-btn');
+    const fileNameSpan = document.querySelector('.shardwright-file-name');
+    const jsonInput = document.getElementById('shardwright-theme-json-input');
     
     uploadBtn?.addEventListener('click', () => fileInput?.click());
     
@@ -224,7 +224,7 @@ async function showImportDialog(settings, saveSettingsFn, refreshModalFn) {
     });
     
     // Import button handler
-    document.querySelector('.ss-do-import-btn')?.addEventListener('click', async () => {
+    document.querySelector('.shardwright-do-import-btn')?.addEventListener('click', async () => {
         const json = jsonInput?.value?.trim();
         if (!json) {
             toastr.warning('Please enter theme JSON or upload a file');
@@ -251,34 +251,34 @@ async function showImportDialog(settings, saveSettingsFn, refreshModalFn) {
  */
 async function showCreateDialog(settings, saveSettingsFn, refreshModalFn) {
     const createHtml = `
-        <div class="ss-create-theme-modal ss-modal">
+        <div class="shardwright-create-theme-modal shardwright-modal">
             <h3>✨ Create New Theme</h3>
             <p>Create a new theme based on an existing one, then customize it.</p>
             
-            <div class="ss-create-form">
-                <div class="ss-form-group">
+            <div class="shardwright-create-form">
+                <div class="shardwright-form-group">
                     <label>Theme ID (lowercase, no spaces):</label>
-                    <input type="text" id="ss-new-theme-id" placeholder="my-custom-theme">                    
+                    <input type="text" id="shardwright-new-theme-id" placeholder="my-custom-theme">
                 </div>
                 
-                <div class="ss-form-group">
+                <div class="shardwright-form-group">
                     <label>Theme Name:</label>
-                    <input type="text" id="ss-new-theme-name" placeholder="My Custom Theme">
+                    <input type="text" id="shardwright-new-theme-name" placeholder="My Custom Theme">
                 </div>
                 
-                <div class="ss-form-group">
+                <div class="shardwright-form-group">
                     <label>Description:</label>
-                    <input type="text" id="ss-new-theme-desc" placeholder="A brief description of your theme">
+                    <input type="text" id="shardwright-new-theme-desc" placeholder="A brief description of your theme">
                 </div>
                 
-                <div class="ss-form-group">
+                <div class="shardwright-form-group">
                     <label>Preview Emoji:</label>
-                    <input type="text" id="ss-new-theme-emoji" value="🎨" maxlength="2">
+                    <input type="text" id="shardwright-new-theme-emoji" value="🎨" maxlength="2">
                 </div>
                 
-                <div class="ss-form-group">
+                <div class="shardwright-form-group">
                     <label>Base Theme (copy colors from):</label>
-                    <select id="ss-base-theme">
+                    <select id="shardwright-base-theme">
                         ${Object.entries(getThemes()).map(([id, t]) => 
                             `<option value="${id}">${t.name}</option>`
                         ).join('')}
@@ -286,8 +286,8 @@ async function showCreateDialog(settings, saveSettingsFn, refreshModalFn) {
                 </div>
             </div>
             
-            <div class="ss-create-actions">
-                <button class="menu_button ss-do-create-btn">Create Theme</button>
+            <div class="shardwright-create-actions">
+                <button class="menu_button shardwright-do-create-btn">Create Theme</button>
             </div>
         </div>
     `;
@@ -304,20 +304,20 @@ async function showCreateDialog(settings, saveSettingsFn, refreshModalFn) {
     
     // Wait for DOM to be ready
     try {
-        await waitForElement('.ss-create-theme-modal');
+        await waitForElement('.shardwright-create-theme-modal');
     } catch (e) {
         log.warn('Create modal element not found:', e);
         return showPromise;
     }
     
-    const createBtn = document.querySelector('.ss-do-create-btn');
+    const createBtn = document.querySelector('.shardwright-do-create-btn');
     if (createBtn) {
         createBtn.addEventListener('click', async () => {
-            const id = document.getElementById('ss-new-theme-id')?.value?.trim();
-            const name = document.getElementById('ss-new-theme-name')?.value?.trim();
-            const desc = document.getElementById('ss-new-theme-desc')?.value?.trim();
-            const emoji = document.getElementById('ss-new-theme-emoji')?.value?.trim() || '🎨';
-            const baseId = document.getElementById('ss-base-theme')?.value;
+            const id = document.getElementById('shardwright-new-theme-id')?.value?.trim();
+            const name = document.getElementById('shardwright-new-theme-name')?.value?.trim();
+            const desc = document.getElementById('shardwright-new-theme-desc')?.value?.trim();
+            const emoji = document.getElementById('shardwright-new-theme-emoji')?.value?.trim() || '🎨';
+            const baseId = document.getElementById('shardwright-base-theme')?.value;
             
             if (!id || !name) {
                 toastr.warning('Please enter a theme ID and name');
@@ -372,7 +372,7 @@ function downloadTheme(themeId, filename) {
         
         const a = document.createElement('a');
         a.href = url;
-        a.download = filename || `ss-theme-${themeId}.json`;
+        a.download = filename || `shardwright-theme-${themeId}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -399,7 +399,7 @@ function downloadAllCustomThemes() {
     
     const a = document.createElement('a');
     a.href = url;
-    a.download = `ss-custom-themes-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `shardwright-custom-themes-${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -415,26 +415,26 @@ function downloadAllCustomThemes() {
  * Update modal UI without rebuilding (fixes button listener issue)
  */
 function updateModalUI(currentThemeId) {
-    document.querySelectorAll('.ss-theme-card').forEach(card => {
+    document.querySelectorAll('.shardwright-theme-card').forEach(card => {
         const themeId = card.dataset.theme;
         const isActive = themeId === currentThemeId;
         const isBuiltin = BUILTIN_THEMES[themeId];
         
         // Update active class
-        card.classList.toggle('ss-theme-card-active', isActive);
+        card.classList.toggle('shardwright-theme-card-active', isActive);
         
         // Update actions section
-        const actionsDiv = card.querySelector('.ss-theme-actions');
+        const actionsDiv = card.querySelector('.shardwright-theme-actions');
         if (actionsDiv) {
             actionsDiv.innerHTML = `
                 ${isActive
-                    ? '<span class="ss-theme-active-badge">&#10003; Active</span>'
-                    : `<button class="menu_button ss-apply-theme-btn" data-theme="${escapeHtml(themeId)}">Apply</button>`
+                    ? '<span class="shardwright-theme-active-badge">&#10003; Active</span>'
+                    : `<button class="menu_button shardwright-apply-theme-btn" data-theme="${escapeHtml(themeId)}">Apply</button>`
                 }
-                <button class="menu_button ss-export-theme-btn" data-theme="${escapeHtml(themeId)}" title="Export">&#128228;</button>
-                <button class="menu_button ss-duplicate-theme-btn" data-theme="${escapeHtml(themeId)}" title="Duplicate">&#128203;</button>
-                ${!isBuiltin ? `<button class="menu_button ss-delete-theme-btn" data-theme="${escapeHtml(themeId)}" title="Delete">&#128465;</button>` : ''}
-                ${!isBuiltin ? `<button class="menu_button ss-edit-theme-btn" data-theme="${escapeHtml(themeId)}" title="Edit Colors">&#127912;</button>` : ''}
+                <button class="menu_button shardwright-export-theme-btn" data-theme="${escapeHtml(themeId)}" title="Export">&#128228;</button>
+                <button class="menu_button shardwright-duplicate-theme-btn" data-theme="${escapeHtml(themeId)}" title="Duplicate">&#128203;</button>
+                ${!isBuiltin ? `<button class="menu_button shardwright-delete-theme-btn" data-theme="${escapeHtml(themeId)}" title="Delete">&#128465;</button>` : ''}
+                ${!isBuiltin ? `<button class="menu_button shardwright-edit-theme-btn" data-theme="${escapeHtml(themeId)}" title="Edit Colors">&#127912;</button>` : ''}
             `;
         }
     });
@@ -444,7 +444,7 @@ function updateModalUI(currentThemeId) {
  * Attach event listeners using event delegation (fixes listener issue)
  */
 function attachThemeListeners(settings, saveSettingsFn, refreshModalFn) {
-    const modal = document.querySelector('.ss-themes-modal');
+    const modal = document.querySelector('.shardwright-themes-modal');
     if (!modal) return;
     
     // Use event delegation - attach to modal container, not individual buttons
@@ -455,7 +455,7 @@ function attachThemeListeners(settings, saveSettingsFn, refreshModalFn) {
         const themeId = target.dataset.theme;
         
         // Apply theme
-        if (target.classList.contains('ss-apply-theme-btn') && themeId) {
+        if (target.classList.contains('shardwright-apply-theme-btn') && themeId) {
             e.stopPropagation();
             applyTheme(themeId);
             settings.theme = themeId;
@@ -465,13 +465,13 @@ function attachThemeListeners(settings, saveSettingsFn, refreshModalFn) {
         }
         
         // Export single theme
-        if (target.classList.contains('ss-export-theme-btn') && themeId) {
+        if (target.classList.contains('shardwright-export-theme-btn') && themeId) {
             e.stopPropagation();
             downloadTheme(themeId);
         }
         
         // Duplicate theme
-        if (target.classList.contains('ss-duplicate-theme-btn') && themeId) {
+        if (target.classList.contains('shardwright-duplicate-theme-btn') && themeId) {
             e.stopPropagation();
             const themes = getThemes();
             const source = themes[themeId];
@@ -488,16 +488,16 @@ function attachThemeListeners(settings, saveSettingsFn, refreshModalFn) {
         }
         
         // Delete theme
-        if (target.classList.contains('ss-delete-theme-btn') && themeId) {
+        if (target.classList.contains('shardwright-delete-theme-btn') && themeId) {
             e.stopPropagation();
             const themes = getThemes();
             const theme = themes[themeId];
             
             const confirmPopup = new Popup(
-                `<div class="ss-confirm-delete ss-modal">
+                `<div class="shardwright-confirm-delete shardwright-modal">
                     <h3>🗑️ Delete Theme</h3>
                     <p>Are you sure you want to delete "<strong>${escapeHtml(theme.name)}</strong>"?</p>
-                    <p class="ss-warning-text">This action cannot be undone.</p>
+                    <p class="shardwright-warning-text">This action cannot be undone.</p>
                 </div>`,
                 POPUP_TYPE.CONFIRM,
                 null,
@@ -518,27 +518,27 @@ function attachThemeListeners(settings, saveSettingsFn, refreshModalFn) {
         }
         
         // Edit theme
-        if (target.classList.contains('ss-edit-theme-btn') && themeId) {
+        if (target.classList.contains('shardwright-edit-theme-btn') && themeId) {
             e.stopPropagation();
             await showColorEditorModal(themeId, settings, saveSettingsFn);
         }
         
             // Import button - AWAIT the dialog
-            if (target.classList.contains('ss-import-theme-btn')) {
+            if (target.classList.contains('shardwright-import-theme-btn')) {
                 e.stopPropagation();
                 await showImportDialog(settings, saveSettingsFn, refreshModalFn);
                 return;  // Prevent further processing
             }
                 
             // Export all button
-            if (target.classList.contains('ss-export-all-btn')) {
+            if (target.classList.contains('shardwright-export-all-btn')) {
                 e.stopPropagation();
                 downloadAllCustomThemes();
                 return;
             }
                 
             // Create new button - AWAIT the dialog
-            if (target.classList.contains('ss-create-theme-btn')) {
+            if (target.classList.contains('shardwright-create-theme-btn')) {
                 e.stopPropagation();
                 await showCreateDialog(settings, saveSettingsFn, refreshModalFn);
                 return;
@@ -576,7 +576,7 @@ export async function openThemesModal(settings, saveSettingsFn) {
             // Wait for old modal to be fully removed from DOM
             await new Promise(resolve => {
                 const checkRemoval = () => {
-                    if (!document.querySelector('.ss-themes-modal')) {
+                    if (!document.querySelector('.shardwright-themes-modal')) {
                         resolve();
                     } else {
                         requestAnimationFrame(checkRemoval);
@@ -593,7 +593,7 @@ export async function openThemesModal(settings, saveSettingsFn) {
         const showPromise = popup.show();
         
         // Wait for DOM to be ready, then attach listeners
-        await waitForElement('.ss-themes-modal');
+        await waitForElement('.shardwright-themes-modal');
         attachThemeListeners(settings, saveSettingsFn, refreshModal);
         
         return showPromise;

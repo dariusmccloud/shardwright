@@ -1,5 +1,5 @@
 /**
- * Floating Action Button for Summary Sharder
+ * Floating Action Button for Shardwright
  * Crystal shard hub with animated radial quick-access panels.
  */
 
@@ -132,7 +132,7 @@ export function initFab(settings, callbacks) {
     } : null;
 
     createFabElement();
-    document.documentElement.style.setProperty('--ss-fab-mobile-scale', MOBILE_FAB_SCALE_PERCENT / 100);
+    document.documentElement.style.setProperty('--shardwright-fab-mobile-scale', MOBILE_FAB_SCALE_PERCENT / 100);
     animator = createFabAnimator(fabElement);
     bindEvents();
     restorePosition();
@@ -141,18 +141,18 @@ export function initFab(settings, callbacks) {
 
 function createFabElement() {
     fabElement = document.createElement('div');
-    fabElement.className = 'ss-fab';
-    fabElement.id = 'ss-fab';
+    fabElement.className = 'shardwright-fab';
+    fabElement.id = 'shardwright-fab';
     fabElement.innerHTML = `
-        <button type="button" class="ss-fab-trigger" title="Summary Sharder Quick Actions" aria-haspopup="dialog" aria-expanded="false">
-            <div class="ss-crystal-icon" aria-hidden="true">
+        <button type="button" class="shardwright-fab-trigger" title="Shardwright Quick Actions" aria-haspopup="dialog" aria-expanded="false">
+            <div class="shardwright-crystal-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 28" xmlns="http://www.w3.org/2000/svg">
-                    <polygon class="ss-crystal-shard ss-crystal-shard--1" points="12,0 4,8 12,10"></polygon>
-                    <polygon class="ss-crystal-shard ss-crystal-shard--2" points="12,0 20,8 12,10"></polygon>
-                    <polygon class="ss-crystal-shard ss-crystal-shard--3" points="4,8 12,10 12,18 2,14"></polygon>
-                    <polygon class="ss-crystal-shard ss-crystal-shard--4" points="20,8 12,10 12,18 22,14"></polygon>
-                    <polygon class="ss-crystal-shard ss-crystal-shard--5a" points="2,14 12,18 12,28"></polygon>
-                    <polygon class="ss-crystal-shard ss-crystal-shard--5b" points="12,18 22,14 12,28"></polygon>
+                    <polygon class="shardwright-crystal-shard shardwright-crystal-shard--1" points="12,0 4,8 12,10"></polygon>
+                    <polygon class="shardwright-crystal-shard shardwright-crystal-shard--2" points="12,0 20,8 12,10"></polygon>
+                    <polygon class="shardwright-crystal-shard shardwright-crystal-shard--3" points="4,8 12,10 12,18 2,14"></polygon>
+                    <polygon class="shardwright-crystal-shard shardwright-crystal-shard--4" points="20,8 12,10 12,18 22,14"></polygon>
+                    <polygon class="shardwright-crystal-shard shardwright-crystal-shard--5a" points="2,14 12,18 12,28"></polygon>
+                    <polygon class="shardwright-crystal-shard shardwright-crystal-shard--5b" points="12,18 22,14 12,28"></polygon>
                 </svg>
             </div>
         </button>
@@ -161,8 +161,8 @@ function createFabElement() {
 }
 
 function cleanupOrphanedPanelsDom() {
-    document.querySelectorAll('.ss-fab-panels').forEach((root) => {
-        root.classList.remove('ss-fab-sheet-active');
+    document.querySelectorAll('.shardwright-fab-panels').forEach((root) => {
+        root.classList.remove('shardwright-fab-sheet-active');
         root.setAttribute('aria-hidden', 'true');
         root.remove();
     });
@@ -207,22 +207,22 @@ function bindEvents() {
 
     onOperationStarted = () => {
         isGenerating = true;
-        fabElement.classList.add('ss-fab-generating');
+        fabElement.classList.add('shardwright-fab-generating');
         refreshOpenPanels(['actions', 'config', 'advanced']);
     };
     onOperationEnded = () => {
         isGenerating = false;
-        fabElement.classList.remove('ss-fab-generating');
+        fabElement.classList.remove('shardwright-fab-generating');
         refreshOpenPanels(['actions', 'config', 'advanced']);
     };
-    window.addEventListener('ss-operation-started', onOperationStarted);
-    window.addEventListener('ss-operation-ended', onOperationEnded);
+    window.addEventListener('shardwright-operation-started', onOperationStarted);
+    window.addEventListener('shardwright-operation-ended', onOperationEnded);
 
     onSharderModeChange = () => {
         refreshOpenPanels(['actions', 'config', 'advanced']);
     };
 
-    const sharderToggle = document.getElementById('ss-sharder-mode');
+    const sharderToggle = document.getElementById('shardwright-sharder-mode');
     if (sharderToggle) {
         sharderToggle.addEventListener('change', onSharderModeChange);
     }
@@ -283,7 +283,7 @@ function setupDrag() {
         lastDraggedPosition = null;
 
         trigger.setPointerCapture(e.pointerId);
-        fabElement.classList.add('ss-fab-dragging');
+        fabElement.classList.add('shardwright-fab-dragging');
     });
 
     trigger.addEventListener('pointermove', (e) => {
@@ -321,7 +321,7 @@ function setupDrag() {
             startX = null;
             startY = null;
             lastDraggedPosition = null;
-            fabElement.classList.remove('ss-fab-dragging');
+            fabElement.classList.remove('shardwright-fab-dragging');
             recordFabPerfSample('pointerup', performance.now() - startedAt);
         }
     });
@@ -333,7 +333,7 @@ function setupDrag() {
         startY = null;
         isDragging = false;
         lastDraggedPosition = null;
-        fabElement.classList.remove('ss-fab-dragging');
+        fabElement.classList.remove('shardwright-fab-dragging');
         if (fabState === 'dragging') {
             fabState = 'closed';
         }
@@ -436,7 +436,7 @@ async function openPanels() {
         },
     });
 
-    fabElement.classList.add('ss-fab-open');
+    fabElement.classList.add('shardwright-fab-open');
     getTrigger().setAttribute('aria-expanded', 'true');
 
     await animator.animateOpen(panelsController);
@@ -489,7 +489,7 @@ async function closePanels() {
     }
     cleanupOrphanedPanelsDom();
 
-    fabElement.classList.remove('ss-fab-open');
+    fabElement.classList.remove('shardwright-fab-open');
     getTrigger()?.setAttribute('aria-expanded', 'false');
 
     if (relocation.shouldReturn) {
@@ -522,7 +522,7 @@ function closePanelsImmediate() {
     }
     cleanupOrphanedPanelsDom();
 
-    fabElement.classList.remove('ss-fab-open');
+    fabElement.classList.remove('shardwright-fab-open');
     getTrigger().setAttribute('aria-expanded', 'false');
 
     if (fabState !== 'dragging') {
@@ -638,7 +638,7 @@ async function openInterpretiveReviewFromFab() {
     await closePanels();
     await waitForFabActionHandoff();
 
-    const launcher = document.getElementById('ss-interpretive-reviews-btn');
+    const launcher = document.getElementById('shardwright-interpretive-reviews-btn');
     if (launcher instanceof HTMLElement) {
         launcher.click();
         if (await waitForInterpretiveReviewModal(INTERPRETIVE_REVIEW_MODAL_TIMEOUT_MS)) {
@@ -676,7 +676,7 @@ async function waitForNextFrame() {
 }
 
 function hasInterpretiveReviewModal() {
-    return !!document.querySelector('.ss-interpretive-review-modal');
+    return !!document.querySelector('.shardwright-interpretive-review-modal');
 }
 
 async function waitForInterpretiveReviewModal(timeoutMs = INTERPRETIVE_REVIEW_MODAL_TIMEOUT_MS) {
@@ -693,7 +693,7 @@ async function waitForInterpretiveReviewModal(timeoutMs = INTERPRETIVE_REVIEW_MO
 function withActionLock(button, isLocked) {
     if (!button) return;
     button.disabled = isLocked;
-    button.classList.toggle('ss-fab-action-busy', isLocked);
+    button.classList.toggle('shardwright-fab-action-busy', isLocked);
 }
 
 async function handleSinglePass() {
@@ -1045,7 +1045,7 @@ function getFabRect() {
 }
 
 function getTrigger() {
-    return fabElement.querySelector('.ss-fab-trigger');
+    return fabElement.querySelector('.shardwright-fab-trigger');
 }
 
 function isOpenState() {
@@ -1110,13 +1110,13 @@ export function destroyFab() {
         window.visualViewport.removeEventListener('resize', onVisualViewportChange);
         window.visualViewport.removeEventListener('scroll', onVisualViewportChange);
     }
-    if (onOperationStarted) window.removeEventListener('ss-operation-started', onOperationStarted);
-    if (onOperationEnded) window.removeEventListener('ss-operation-ended', onOperationEnded);
+    if (onOperationStarted) window.removeEventListener('shardwright-operation-started', onOperationStarted);
+    if (onOperationEnded) window.removeEventListener('shardwright-operation-ended', onOperationEnded);
     if (onKeyDown) document.removeEventListener('keydown', onKeyDown);
     if (onPageHide) window.removeEventListener('pagehide', onPageHide);
     if (onBeforeUnload) window.removeEventListener('beforeunload', onBeforeUnload);
 
-    const sharderToggle = document.getElementById('ss-sharder-mode');
+    const sharderToggle = document.getElementById('shardwright-sharder-mode');
     if (sharderToggle && onSharderModeChange) {
         sharderToggle.removeEventListener('change', onSharderModeChange);
     }

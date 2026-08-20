@@ -1,4 +1,4 @@
-const BASE = '/api/plugins/summary-sharder-memory';
+const BASE = '/api/plugins/shardwright-memory';
 
 let csrfTokenPromise = null;
 let initPromise = null;
@@ -229,6 +229,22 @@ export async function createInterpretiveProposalFromArchitecturalShard(payload =
         method: 'POST',
         body: payload || {},
     });
+}
+
+export async function getSubjectScopedSynthesisOperatorStatus(synthesisRunId) {
+    const normalizedId = String(synthesisRunId || '').trim();
+    if (!normalizedId) throw new Error('synthesisRunId is required');
+    return await fetchJson(`/interpretive/subject-policy/synthesis/${encodeURIComponent(normalizedId)}/status`);
+}
+
+export async function performSubjectScopedSynthesisAction(synthesisRunId, action) {
+    const normalizedId = String(synthesisRunId || '').trim();
+    const normalizedAction = String(action || '').trim();
+    if (!normalizedId || !normalizedAction) throw new Error('synthesisRunId and action are required');
+    return await fetchJson(
+        `/interpretive/subject-policy/synthesis/${encodeURIComponent(normalizedId)}/actions/${encodeURIComponent(normalizedAction)}`,
+        { method: 'POST', body: {} },
+    );
 }
 
 export async function persistArchitecturalReplayAuthorityArtifact(artifact) {

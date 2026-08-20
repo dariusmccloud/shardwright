@@ -12,7 +12,7 @@ function makeMessage(index, name, text) {
         send_date: `2026-06-25T00:00:${suffix}.000Z`,
         mes: text,
         extra: {
-            summary_sharder: {
+            shardwright: {
                 speakerIdentity: {
                     speakerEntityId: name === 'Chris' ? 'user:Chris' : 'character:jeep.png',
                     speakerPathAtInit: name === 'Chris' ? 'Chris' : 'jeep.png',
@@ -35,7 +35,7 @@ function makeChatRecords() {
     return [
         {
             chat_metadata: {
-                summary_sharder: {
+                shardwright: {
                     chatId: 'Session A',
                     summarizedRanges: [
                         { start: 0, end: 0, hidden: true, ignoreCollapse: false, ignoreNames: '' },
@@ -73,8 +73,8 @@ test('applyManagedShardInsertion inserts a wrapped shard, range, manifest, and r
     const result = await applyManagedShardInsertion(records, {
         startIndex: 1,
         endIndex: 2,
-        expectedStartMessageId: records[2].extra.summary_sharder.messageIdentity.messageId,
-        expectedEndMessageId: records[3].extra.summary_sharder.messageIdentity.messageId,
+        expectedStartMessageId: records[2].extra.shardwright.messageIdentity.messageId,
+        expectedEndMessageId: records[3].extra.shardwright.messageIdentity.messageId,
         shardBody: SHARD_BODY,
         outputUID: '2026-06-25T01:23:45.000Z',
         nowMs: Date.parse('2026-06-25T01:23:45.000Z'),
@@ -88,7 +88,7 @@ test('applyManagedShardInsertion inserts a wrapped shard, range, manifest, and r
     assert.equal(result.insertedMessage.name, 'SillyTavern System');
     assert.match(result.insertedMessage.mes, /^\[MEMORY SHARD: Messages 1-2\]\n\n## DECISIONS/u);
 
-    const nextHeader = result.nextRecords[0].chat_metadata.summary_sharder;
+    const nextHeader = result.nextRecords[0].chat_metadata.shardwright;
     assert.deepEqual(nextHeader.summarizedRanges, [
         { start: 0, end: 2, hidden: true, ignoreCollapse: false, ignoreNames: '' },
     ]);

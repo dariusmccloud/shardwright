@@ -3,26 +3,26 @@ export const DROPDOWNS_CSS = `
    SECTION 7: DROPDOWN COMPONENTS
    ========================================================================== */
 
-.ss-character-dropdown-container,
-.ss-chat-dropdown-container,
-.ss-lorebook-dropdown-container,
-[class*="ss-"][class*="-dropdown-container"] {
+.shardwright-character-dropdown-container,
+.shardwright-chat-dropdown-container,
+.shardwright-lorebook-dropdown-container,
+[class*="shardwright-"][class*="-dropdown-container"] {
     position: relative;
     width: 100%;
     z-index: 1001;
     isolation: isolate;
 }
 
-.ss-block [class*="-dropdown-container"],
-.ss-block [class*="-dropdown-options"] {
+.shardwright-block [class*="-dropdown-container"],
+.shardwright-block [class*="-dropdown-options"] {
     z-index: 1001 !important;
     position: relative !important;
 }
 
-.ss-dropdown-trigger {
-    background: var(--ss-bg-input) !important;
-    color: var(--ss-text-primary) !important;
-    border: 1px solid var(--ss-border) !important;
+.shardwright-dropdown-trigger {
+    background: var(--shardwright-bg-input) !important;
+    color: var(--shardwright-text-primary) !important;
+    border: 1px solid var(--shardwright-border) !important;
     border-radius: 4px !important;
     padding: 8px 12px !important;
     cursor: pointer;
@@ -34,24 +34,24 @@ export const DROPDOWNS_CSS = `
     box-sizing: border-box;
 }
 
-.ss-dropdown-trigger:hover:not(.disabled) {
-    border-color: var(--ss-border-focus) !important;
+.shardwright-dropdown-trigger:hover:not(.disabled) {
+    border-color: var(--shardwright-border-focus) !important;
 }
 
-.ss-dropdown-trigger.disabled {
+.shardwright-dropdown-trigger.disabled {
     opacity: 0.6;
     cursor: not-allowed;
-    background: var(--ss-bg-tertiary) !important;
+    background: var(--shardwright-bg-tertiary) !important;
 }
 
-.ss-dropdown-selected-text {
+.shardwright-dropdown-selected-text {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     flex: 1;
 }
 
-.ss-dropdown-menu {
+.shardwright-dropdown-menu {
     display: none;
     position: absolute;
     top: 100%;

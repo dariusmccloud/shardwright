@@ -1,5 +1,5 @@
 /**
- * Queue orchestration for Summary Sharder
+ * Queue orchestration for Shardwright
  */
 
 import { captureRangeInsertionPoints } from '../processing/utils.js';
@@ -30,7 +30,7 @@ export async function runSummarizationQueue(ranges, settings) {
     const originalText = 'Summarize Now';
     const opId = startUiOperation({
         feature: 'summary',
-        primaryButton: 'ss-run-summarize',
+        primaryButton: 'shardwright-run-summarize',
         disabled: true,
         label: null,
         lockButtons: [],
@@ -63,7 +63,7 @@ export async function runSummarizationQueue(ranges, settings) {
             // Update button with progress
             updateUiOperation({
                 feature: 'summary',
-                primaryButton: 'ss-run-summarize',
+                primaryButton: 'shardwright-run-summarize',
                 disabled: true,
                 label: `Summarizing ${current}/${total} (Messages ${range.start}-${range.end})...`,
                 lockButtons: [],
@@ -144,7 +144,7 @@ export async function runSummarizationQueue(ranges, settings) {
         clearAbortController();
         endUiOperation({
             feature: 'summary',
-            primaryButton: 'ss-run-summarize',
+            primaryButton: 'shardwright-run-summarize',
             disabled: false,
             label: originalText,
             lockButtons: [],

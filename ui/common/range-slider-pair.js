@@ -31,14 +31,14 @@ export function createRangeSliderPair({
     const stepValue = Math.max(0.000001, toNumber(step, 1));
 
     const root = document.createElement('div');
-    root.className = `ss-range-pair ${className}`.trim();
+    root.className = `shardwright-range-pair ${className}`.trim();
 
     const rangeInput = document.createElement('input');
     rangeInput.type = 'range';
     rangeInput.min = String(minValue);
     rangeInput.max = String(maxValue);
     rangeInput.step = String(stepValue);
-    rangeInput.className = 'ss-range-slider';
+    rangeInput.className = 'shardwright-range-slider';
     if (id) {
         rangeInput.id = id;
     }
@@ -48,13 +48,13 @@ export function createRangeSliderPair({
     numberInput.min = String(minValue);
     numberInput.max = String(maxValue);
     numberInput.step = String(stepValue);
-    numberInput.className = 'text_pole ss-range-number';
+    numberInput.className = 'text_pole shardwright-range-number';
     if (id) {
         numberInput.id = `${id}-input`;
     }
 
     const unitLabel = document.createElement('span');
-    unitLabel.className = 'ss-range-unit';
+    unitLabel.className = 'shardwright-range-unit';
     unitLabel.textContent = String(unit || '');
 
     let currentValue = clamp(toNumber(value, minValue), minValue, maxValue);

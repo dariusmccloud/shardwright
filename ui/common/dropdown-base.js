@@ -16,7 +16,7 @@ export class BaseDropdown {
             onSelectionChange: () => {},
             placeholder: 'Select...',
             searchPlaceholder: 'Search...',
-            containerClass: 'ss-dropdown-container',
+            containerClass: 'shardwright-dropdown-container',
             initialSelection: null,
             ...options
         };
@@ -50,16 +50,16 @@ export class BaseDropdown {
 
         return `
             <div class="${this.options.containerClass}">
-                <div class="ss-dropdown-trigger" id="${this.containerId}-trigger">
-                    <span class="ss-dropdown-selected-text">${escapeHtml(displayText)}</span>
+                <div class="shardwright-dropdown-trigger" id="${this.containerId}-trigger">
+                    <span class="shardwright-dropdown-selected-text">${escapeHtml(displayText)}</span>
                     <span class="fa-solid fa-chevron-down"></span>
                 </div>
-                <div class="ss-dropdown-menu" id="${this.containerId}-menu">
-                    <div class="ss-dropdown-search">
+                <div class="shardwright-dropdown-menu" id="${this.containerId}-menu">
+                    <div class="shardwright-dropdown-search">
                         <input type="text" placeholder="${this.options.searchPlaceholder}"
                                id="${this.containerId}-search" />
                     </div>
-                    <div class="ss-dropdown-options" id="${this.containerId}-options">
+                    <div class="shardwright-dropdown-options" id="${this.containerId}-options">
                         ${this.buildOptions()}
                     </div>
                 </div>
@@ -80,7 +80,7 @@ export class BaseDropdown {
      * Override in subclass
      */
     buildOptions() {
-        return '<div class="ss-dropdown-empty">No options available</div>';
+        return '<div class="shardwright-dropdown-empty">No options available</div>';
     }
 
     /**
@@ -112,8 +112,8 @@ export class BaseDropdown {
         document.addEventListener('click', this.boundHandleOutsideClick);
 
         // Close when another dropdown opens
-        document.removeEventListener('ss-dropdown-opening', this.boundCloseOnOtherOpen);
-        document.addEventListener('ss-dropdown-opening', this.boundCloseOnOtherOpen);
+        document.removeEventListener('shardwright-dropdown-opening', this.boundCloseOnOtherOpen);
+        document.addEventListener('shardwright-dropdown-opening', this.boundCloseOnOtherOpen);
     }
 
     /**
@@ -166,7 +166,7 @@ export class BaseDropdown {
         menu?.classList.add('open');
 
         // Notify other dropdowns to close
-        document.dispatchEvent(new CustomEvent('ss-dropdown-opening', {
+        document.dispatchEvent(new CustomEvent('shardwright-dropdown-opening', {
             detail: { containerId: this.containerId }
         }));
 
@@ -190,7 +190,7 @@ export class BaseDropdown {
      */
     updateTriggerText() {
         const trigger = document.getElementById(`${this.containerId}-trigger`);
-        const textSpan = trigger?.querySelector('.ss-dropdown-selected-text');
+        const textSpan = trigger?.querySelector('.shardwright-dropdown-selected-text');
         if (textSpan) {
             textSpan.textContent = this.getDisplayText();
         }
@@ -240,6 +240,6 @@ export class BaseDropdown {
      */
     destroy() {
         document.removeEventListener('click', this.boundHandleOutsideClick);
-        document.removeEventListener('ss-dropdown-opening', this.boundCloseOnOtherOpen);
+        document.removeEventListener('shardwright-dropdown-opening', this.boundCloseOnOtherOpen);
     }
 }

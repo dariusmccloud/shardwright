@@ -1,5 +1,5 @@
 /**
- * Utility functions for Summary Sharder
+ * Utility functions for Shardwright
  */
 
 /**

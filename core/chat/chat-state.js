@@ -1,5 +1,5 @@
 /**
- * Chat State Tracking for Summary Sharder
+ * Chat State Tracking for Shardwright
  * Tracks message state to detect which message index was deleted
  */
 

@@ -62,7 +62,7 @@ function Wait-ForHealth([hashtable]$HostSpec, [int]$Attempts = 60) {
     for ($i = 0; $i -lt $Attempts; $i++) {
         Start-Sleep -Seconds 1
         try {
-            Invoke-WebRequest -Uri "http://127.0.0.1:$($HostSpec.Port)/api/plugins/summary-sharder-memory/health" -UseBasicParsing -TimeoutSec 2 | Out-Null
+            Invoke-WebRequest -Uri "http://127.0.0.1:$($HostSpec.Port)/api/plugins/shardwright-memory/health" -UseBasicParsing -TimeoutSec 2 | Out-Null
             return
         } catch {}
     }
@@ -212,7 +212,7 @@ function Invoke-JsonRequestAllowError {
 }
 
 function Get-NoTokenPolicyCreateStatus([hashtable]$HostSpec) {
-    return Invoke-JsonRequestAllowError -Method 'POST' -Uri "http://127.0.0.1:$($HostSpec.Port)/api/plugins/summary-sharder-memory/interpretive/synthesis/policies" -Body @{
+    return Invoke-JsonRequestAllowError -Method 'POST' -Uri "http://127.0.0.1:$($HostSpec.Port)/api/plugins/shardwright-memory/interpretive/synthesis/policies" -Body @{
         synthesisPolicyId = $ids.activePolicyId
         policyVersion = 1
         memorySubjectId = $ids.memorySubjectId
@@ -342,7 +342,7 @@ function Get-InterpretiveDbState {
     )
 
     $script = @'
-import { createAdapter, getStoragePaths } from "__ROOT_URL__/tools/server-plugin/summary-sharder-memory/core.js";
+import { createAdapter, getStoragePaths } from "__ROOT_URL__/tools/server-plugin/shardwright-memory/core.js";
 
 const userRoot = process.env.SUMMARY_SHARDER_USER_ROOT;
 const ids = JSON.parse(process.env.SUMMARY_SHARDER_IDS || "{}");
@@ -646,7 +646,7 @@ function Get-ReviewsFingerprint($Reviews) {
 }
 
 if ($InstallPayload) {
-    & powershell -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'install-summary-sharder-memory.ps1') | Out-Null
+    & powershell -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'install-shardwright-memory.ps1') | Out-Null
 }
 
 if ($RestartHosts) {
@@ -660,7 +660,7 @@ $results = @()
 foreach ($hostSpec in $hosts) {
     Reset-AuthorityStorage -HostSpec $hostSpec
 
-    $base = "http://127.0.0.1:$($hostSpec.Port)/api/plugins/summary-sharder-memory"
+    $base = "http://127.0.0.1:$($hostSpec.Port)/api/plugins/shardwright-memory"
     $health = Invoke-JsonRequest -Method 'GET' -Uri "$base/health" -TimeoutSec 15
     $capabilities = Invoke-JsonRequest -Method 'GET' -Uri "$base/capabilities" -TimeoutSec 15
     $policyDefinitions = Invoke-JsonRequest -Method 'GET' -Uri "$base/interpretive/policies" -TimeoutSec 15

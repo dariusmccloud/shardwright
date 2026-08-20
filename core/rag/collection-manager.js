@@ -9,12 +9,17 @@ import { purgeCollection } from './vector-client.js';
 import { ragLog } from '../logger.js';
 import {
     hasAnyBinding,
-    resolveCollectionIds,
+    resolveEffectiveBindingState,
     resolveWriteTargetId,
 } from './collection-bindings.js';
+import {
+    SHARDWRIGHT_SHARD_COLLECTION_PREFIX,
+    SHARDWRIGHT_STANDARD_COLLECTION_PREFIX,
+    filterShardwrightCollectionIds,
+} from './collection-identity.js';
 
-const SHARD_PREFIX = 'ss_shards_';
-const STANDARD_PREFIX = 'ss_standard_';
+const SHARD_PREFIX = SHARDWRIGHT_SHARD_COLLECTION_PREFIX;
+const STANDARD_PREFIX = SHARDWRIGHT_STANDARD_COLLECTION_PREFIX;
 
 function normalizeChatId(chatId) {
     const raw = String(chatId || '').trim();
@@ -57,7 +62,7 @@ function getCurrentCharacterAvatar() {
 export function getCollectionAlias(chatId) {
     const id = normalizeChatId(chatId || getCurrentChatId());
     if (!id) return null;
-    const aliases = extension_settings?.summary_sharder?.collectionAliases;
+    const aliases = extension_settings?.shardwright?.collectionAliases;
     const alias = aliases && typeof aliases === 'object' ? aliases[id] : null;
     return alias ? String(alias) : null;
 }
@@ -66,7 +71,7 @@ export function setCollectionAlias(chatId, sourceChatId) {
     const id = normalizeChatId(chatId || getCurrentChatId());
     if (!id) return;
 
-    const ss = extension_settings.summary_sharder;
+    const ss = extension_settings.shardwright;
     if (!ss.collectionAliases || typeof ss.collectionAliases !== 'object') {
         ss.collectionAliases = {};
     }
@@ -98,7 +103,7 @@ export function getStandardCollectionId(chatId) {
 export function getCollectionIdOverride(chatId) {
     const id = normalizeChatId(chatId || getCurrentChatId());
     if (!id) return null;
-    const overrides = extension_settings?.summary_sharder?.collectionIdOverrides;
+    const overrides = extension_settings?.shardwright?.collectionIdOverrides;
     const override = overrides && typeof overrides === 'object' ? overrides[id] : null;
     return override ? String(override) : null;
 }
@@ -107,7 +112,7 @@ export function setCollectionIdOverride(chatId, collectionId) {
     const id = normalizeChatId(chatId || getCurrentChatId());
     if (!id) return;
 
-    const ss = extension_settings.summary_sharder;
+    const ss = extension_settings.shardwright;
     if (!ss.collectionIdOverrides || typeof ss.collectionIdOverrides !== 'object') {
         ss.collectionIdOverrides = {};
     }
@@ -140,7 +145,10 @@ export function getWriteTargetCollectionId(chatId, settings) {
     if (writeTarget && writeTarget !== ownId) return writeTarget;
 
     const override = settings?.collectionIdOverrides?.[resolvedChatId];
-    if (override) return String(override);
+    if (override) {
+        const admitted = filterShardwrightCollectionIds([override]).canonicalIds[0];
+        if (admitted) return admitted;
+    }
 
     const alias = settings?.collectionAliases?.[resolvedChatId];
     const targetChatId = normalizeChatId(alias ? String(alias) : resolvedChatId);
@@ -160,6 +168,10 @@ export function getPrimaryCollectionId(chatId, settings) {
 }
 
 export function getActiveCollectionIds(chatId, settings) {
+    return getActiveCollectionIdentityState(chatId, settings).canonicalIds;
+}
+
+export function getActiveCollectionIdentityState(chatId, settings) {
     const resolvedChatId = normalizeChatId(chatId || getCurrentChatId());
     const isSharder = settings?.sharderMode === true;
 
@@ -176,10 +188,15 @@ export function getActiveCollectionIds(chatId, settings) {
 
     const avatar = getCurrentCharacterAvatar();
     if (hasAnyBinding(resolvedChatId, avatar, settings)) {
-        return resolveCollectionIds(resolvedChatId, avatar, settings, ownId);
+        const bindingState = resolveEffectiveBindingState(resolvedChatId, avatar, settings, ownId);
+        return {
+            canonicalIds: bindingState.effectiveReadIds,
+            quarantined: bindingState.quarantinedCollectionIds,
+            mixedIdentityInput: bindingState.mixedCollectionIdentityInput,
+        };
     }
 
-    return ownId ? [ownId] : [];
+    return filterShardwrightCollectionIds(ownId ? [ownId] : []);
 }
 
 export async function purgeAllCollections(chatId, ragSettings) {
@@ -199,7 +216,7 @@ export async function purgeAllCollections(chatId, ragSettings) {
 
 export function initCollectionLifecycle() {
     eventSource.on(event_types.CHAT_DELETED, async (chatId) => {
-        const ss = extension_settings.summary_sharder;
+        const ss = extension_settings.shardwright;
         const ragSettings = ss?.rag;
         const ragStdSettings = ss?.ragStandard;
 

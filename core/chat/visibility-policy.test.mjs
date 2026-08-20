@@ -10,7 +10,7 @@ test('buildDesiredVisibilityState preserves archive-owned prompt exclusion outsi
             name: 'B',
             is_system: true,
             extra: {
-                summary_sharder: {
+                shardwright: {
                     archive: {
                         isArchived: true,
                         archivedAt: '2026-06-23T00:00:00.000Z',
@@ -43,7 +43,7 @@ test('detectHiddenRangesFromMessages ignores archived messages', () => {
         {
             is_system: true,
             extra: {
-                summary_sharder: {
+                shardwright: {
                     archive: {
                         isArchived: true,
                         archivedAt: '2026-06-23T00:00:00.000Z',

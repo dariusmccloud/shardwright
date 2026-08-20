@@ -40,22 +40,22 @@ function buildCollectionRow(option) {
     const badges = Array.isArray(option?.badges) ? [...option.badges] : [];
     const chunkCount = Number.isFinite(option?.chunkCount) ? Number(option.chunkCount) : null;
     if (chunkCount === 0) {
-        badges.push('<span class="ss-bp-badge ss-bp-badge-warning">0 chunks</span>');
+        badges.push('<span class="shardwright-bp-badge shardwright-bp-badge-warning">0 chunks</span>');
     }
 
     const chunkLabel = chunkCount === null
         ? 'Chunk count unavailable'
         : `${chunkCount} chunk${chunkCount === 1 ? '' : 's'}`;
     return `
-        <label class="ss-bp-collection-row">
-            <input type="checkbox" class="ss-bp-link-check" data-collection-id="${escapeHtml(collectionId)}" checked />
-            <div class="ss-bp-row-content">
-                <div class="ss-bp-row-header">
-                    <span class="ss-bp-row-id" title="${escapeHtml(collectionId)}">${escapeHtml(truncate(collectionId, 56))}</span>
+        <label class="shardwright-bp-collection-row">
+            <input type="checkbox" class="shardwright-bp-link-check" data-collection-id="${escapeHtml(collectionId)}" checked />
+            <div class="shardwright-bp-row-content">
+                <div class="shardwright-bp-row-header">
+                    <span class="shardwright-bp-row-id" title="${escapeHtml(collectionId)}">${escapeHtml(truncate(collectionId, 56))}</span>
                     ${badges.join('')}
                 </div>
-                <div class="ss-bp-row-meta">${escapeHtml(chunkLabel)}</div>
-                <div class="ss-bp-action-hint">Add to branch reads.</div>
+                <div class="shardwright-bp-row-meta">${escapeHtml(chunkLabel)}</div>
+                <div class="shardwright-bp-action-hint">Add to branch reads.</div>
             </div>
         </label>
     `;
@@ -64,41 +64,41 @@ function buildCollectionRow(option) {
 function buildModalHtml(parentChatId, options) {
     const rows = options.map(option => buildCollectionRow(option)).join('');
     return `
-        <div class="ss-branch-picker-modal">
-            <h3 class="ss-rag-title">
+        <div class="shardwright-branch-picker-modal">
+            <h3 class="shardwright-rag-title">
                 <i class="fa-solid fa-code-branch"></i>
                 Branch Collections
             </h3>
 
-            <p class="ss-hint ss-rag-inline-hint ss-bp-parent-hint">
+            <p class="shardwright-hint shardwright-rag-inline-hint shardwright-bp-parent-hint">
                 Parent chat:
-                <strong class="ss-bp-parent-name" title="${escapeHtml(parentChatId)}">${escapeHtml(truncate(parentChatId, 48))}</strong>.
+                <strong class="shardwright-bp-parent-name" title="${escapeHtml(parentChatId)}">${escapeHtml(truncate(parentChatId, 48))}</strong>.
                 Character collections are inherited automatically.
             </p>
 
-            <div class="ss-bp-migration-note ss-hint ss-rag-inline-hint">
+            <div class="shardwright-bp-migration-note shardwright-hint shardwright-rag-inline-hint">
                 <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
                 <span>Select any parent-chat collections to add to this branch.</span>
             </div>
 
-            <div class="ss-bp-section-title">Collections</div>
-            <div id="ss-bp-selection-summary" class="ss-bp-selection-summary"></div>
-            <div class="ss-bp-collections-list">
+            <div class="shardwright-bp-section-title">Collections</div>
+            <div id="shardwright-bp-selection-summary" class="shardwright-bp-selection-summary"></div>
+            <div class="shardwright-bp-collections-list">
                 ${rows}
             </div>
 
-            <div class="ss-bp-primary-row">
-                <label class="ss-bp-primary-label" for="ss-bp-write-target">
+            <div class="shardwright-bp-primary-row">
+                <label class="shardwright-bp-primary-label" for="shardwright-bp-write-target">
                     Write Target
                 </label>
-                <select id="ss-bp-write-target" class="text_pole ss-bp-primary-select"></select>
+                <select id="shardwright-bp-write-target" class="text_pole shardwright-bp-primary-select"></select>
             </div>
 
-            <div class="ss-bp-footer">
-                <button id="ss-bp-apply" class="menu_button" type="button">
+            <div class="shardwright-bp-footer">
+                <button id="shardwright-bp-apply" class="menu_button" type="button">
                     <i class="fa-solid fa-check"></i> Apply
                 </button>
-                <button id="ss-bp-skip-all" class="menu_button ss-bp-skip-btn" type="button">
+                <button id="shardwright-bp-skip-all" class="menu_button shardwright-bp-skip-btn" type="button">
                     Keep Defaults
                 </button>
             </div>
@@ -108,7 +108,7 @@ function buildModalHtml(parentChatId, options) {
 
 export async function showBranchCollectionPicker(branchChatId, parentChatId, characterAvatar, settings) {
     void characterAvatar;
-    const ss = extension_settings?.summary_sharder;
+    const ss = extension_settings?.shardwright;
     const isSharder = settings?.sharderMode === true;
     const ragSettings = isSharder ? settings?.rag : settings?.ragStandard;
 
@@ -166,13 +166,13 @@ export async function showBranchCollectionPicker(branchChatId, parentChatId, cha
     };
 
     for (const id of (parentChatBinding?.collections || [])) {
-        upsertOption(id, '<span class="ss-bp-badge ss-bp-badge-chat">parent chat</span>');
+        upsertOption(id, '<span class="shardwright-bp-badge shardwright-bp-badge-chat">parent chat</span>');
     }
     if (parentChatBinding?.writeTarget && parentChatBinding.writeTarget !== parentOwnId) {
-        upsertOption(parentChatBinding.writeTarget, '<span class="ss-bp-badge ss-bp-badge-chat">parent write target</span>');
+        upsertOption(parentChatBinding.writeTarget, '<span class="shardwright-bp-badge shardwright-bp-badge-chat">parent write target</span>');
     }
     if (parentOwnCount > 0) {
-        upsertOption(parentOwnId, '<span class="ss-bp-badge ss-bp-badge-own">parent own</span>');
+        upsertOption(parentOwnId, '<span class="shardwright-bp-badge shardwright-bp-badge-own">parent own</span>');
     }
 
     const uniqueOptions = [...optionMap.values()];
@@ -188,18 +188,18 @@ export async function showBranchCollectionPicker(branchChatId, parentChatId, cha
     const showPromise = popup.show();
 
     requestAnimationFrame(() => {
-        const root = document.querySelector('.ss-branch-picker-modal');
+        const root = document.querySelector('.shardwright-branch-picker-modal');
         if (!root) return;
 
-        const selectionSummary = root.querySelector('#ss-bp-selection-summary');
-        const writeTargetSelect = root.querySelector('#ss-bp-write-target');
-        const applyBtn = root.querySelector('#ss-bp-apply');
-        const skipBtn = root.querySelector('#ss-bp-skip-all');
+        const selectionSummary = root.querySelector('#shardwright-bp-selection-summary');
+        const writeTargetSelect = root.querySelector('#shardwright-bp-write-target');
+        const applyBtn = root.querySelector('#shardwright-bp-apply');
+        const skipBtn = root.querySelector('#shardwright-bp-skip-all');
         const optionsById = new Map(uniqueOptions.map(option => [option.id, option]));
 
         const getLinkedIds = () => {
             const out = [];
-            for (const input of root.querySelectorAll('.ss-bp-link-check')) {
+            for (const input of root.querySelectorAll('.shardwright-bp-link-check')) {
                 if (input instanceof HTMLInputElement && input.checked) {
                     out.push(String(input.getAttribute('data-collection-id') || '').trim());
                 }
@@ -212,7 +212,7 @@ export async function showBranchCollectionPicker(branchChatId, parentChatId, cha
 
             const linkedIds = getLinkedIds();
             if (linkedIds.length === 0) {
-                selectionSummary.innerHTML = '<div class="ss-cm-empty">No collections selected.</div>';
+                selectionSummary.innerHTML = '<div class="shardwright-cm-empty">No collections selected.</div>';
                 return;
             }
 
@@ -221,9 +221,9 @@ export async function showBranchCollectionPicker(branchChatId, parentChatId, cha
                 const option = optionsById.get(id);
                 const chunkCount = Number.isFinite(option?.chunkCount) ? Number(option.chunkCount) : null;
                 return `
-                    <div class="ss-bp-summary-row">
-                        <span class="ss-bp-summary-id" title="${escapeHtml(id)}">${escapeHtml(truncate(id, 62))}</span>
-                        <span class="ss-bp-summary-meta">${escapeHtml(
+                    <div class="shardwright-bp-summary-row">
+                        <span class="shardwright-bp-summary-id" title="${escapeHtml(id)}">${escapeHtml(truncate(id, 62))}</span>
+                        <span class="shardwright-bp-summary-meta">${escapeHtml(
                             chunkCount === null
                                 ? 'Chunk count unavailable'
                                 : `${chunkCount} chunk${chunkCount === 1 ? '' : 's'}`,
@@ -233,12 +233,12 @@ export async function showBranchCollectionPicker(branchChatId, parentChatId, cha
             }).join('');
 
             selectionSummary.innerHTML = `
-                <div class="ss-bp-summary-card">
-                    <div class="ss-bp-summary-title">Selected Collections</div>
-                    <div class="ss-bp-summary-list">${rows}</div>
+                <div class="shardwright-bp-summary-card">
+                    <div class="shardwright-bp-summary-title">Selected Collections</div>
+                    <div class="shardwright-bp-summary-list">${rows}</div>
                     ${zeroChunkIds.length > 0
                         ? `
-                            <div class="ss-bp-summary-warning">
+                            <div class="shardwright-bp-summary-warning">
                                 <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
                                 <span>${escapeHtml(`${zeroChunkIds.length} selected collection${zeroChunkIds.length === 1 ? '' : 's'} have zero chunks.`)}</span>
                             </div>
@@ -264,7 +264,7 @@ export async function showBranchCollectionPicker(branchChatId, parentChatId, cha
             }
         };
 
-        for (const input of root.querySelectorAll('.ss-bp-link-check')) {
+        for (const input of root.querySelectorAll('.shardwright-bp-link-check')) {
             input.addEventListener('change', () => {
                 renderSelectionSummary();
                 renderWriteTargetOptions();

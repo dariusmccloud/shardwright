@@ -1,7 +1,7 @@
 // Prototype-only client for the 1B0 negative race and receipt-writing experiments.
 // This file must not be imported by the production extension runtime.
 
-const BASE = '/api/plugins/summary-sharder-memory';
+const BASE = '/api/plugins/shardwright-memory';
 
 async function request(path, options = {}) {
     const response = await fetch(`${BASE}${path}`, {

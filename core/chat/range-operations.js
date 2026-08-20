@@ -1,5 +1,5 @@
 /**
- * Consolidated Range Operations for Summary Sharder
+ * Consolidated Range Operations for Shardwright
  * All core range manipulation functions in one place.
  *
  * Design principles:

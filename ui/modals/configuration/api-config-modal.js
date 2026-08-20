@@ -55,40 +55,40 @@ function renderFeatureTab(settings, feature, container) {
         ? `<option value="${selectedProfileId}" selected>Unknown Profile (${selectedProfileId})</option>`
         : '';
     const profileWarningHtml = !connectionManagerAvailable && usingProfile
-        ? `<p class="ss-api-profile-warning ss-text-hint">
+        ? `<p class="shardwright-api-profile-warning shardwright-text-hint">
             Profile mode is active but Connection Manager is unavailable. Enable Connection Manager or switch this feature API mode.
         </p>`
         : '';
 
     const html = `
-        <div class="ss-api-feature-config">
+        <div class="shardwright-api-feature-config">
             <h3>${featureName} API Configuration</h3>
-            <p class="ss-api-feature-description">
+            <p class="shardwright-api-feature-description">
                 Choose which API this feature should use for generating content.
             </p>
-            <p class="ss-api-autosave-hint ss-text-hint">
+            <p class="shardwright-api-autosave-hint shardwright-text-hint">
                 Changes are saved immediately.
             </p>
 
-            <div class="ss-api-mode-selector">
-                <label class="ss-api-radio-label">
+            <div class="shardwright-api-mode-selector">
+                <label class="shardwright-api-radio-label">
                     <input type="radio" name="${feature}-api-mode" value="st" ${currentMode === 'st' ? 'checked' : ''} />
                     <strong>Use SillyTavern's Current API</strong>
-                    <p class="ss-api-radio-hint">
+                    <p class="shardwright-api-radio-hint">
                         Uses whichever API is currently active in SillyTavern's main settings.
                     </p>
                 </label>
 
-                <label class="ss-api-radio-label">
+                <label class="shardwright-api-radio-label">
                     <input type="radio" name="${feature}-api-mode" value="external" ${currentMode === 'external' ? 'checked' : ''} />
                     <strong>Use External API</strong>
-                    <p class="ss-api-radio-hint">
+                    <p class="shardwright-api-radio-hint">
                         Choose a saved API configuration from the list below.
                     </p>
                 </label>
 
-                <div class="ss-external-api-selection ${currentMode === 'external' ? '' : 'ss-disabled-section'}">
-                    <select id="${feature}-api-select" class="text_pole ss-api-select">
+                <div class="shardwright-external-api-selection ${currentMode === 'external' ? '' : 'shardwright-disabled-section'}">
+                    <select id="${feature}-api-select" class="text_pole shardwright-api-select">
                         <option value="">-- Select API Configuration --</option>
                         ${savedConfigs.map(config => `
                             <option value="${config.id}" ${selectedConfigId === config.id ? 'selected' : ''}>
@@ -97,12 +97,12 @@ function renderFeatureTab(settings, feature, container) {
                         `).join('')}
                     </select>
 
-                    <button id="${feature}-manage-apis" class="menu_button ss-api-manage-apis-btn">
+                    <button id="${feature}-manage-apis" class="menu_button shardwright-api-manage-apis-btn">
                         Manage Saved APIs...
                     </button>
                 </div>
 
-                <label class="ss-api-radio-label"
+                <label class="shardwright-api-radio-label"
                     ${connectionManagerAvailable ? '' : `title="${profileUnavailableTitle}"`}>
                     <input type="radio"
                         name="${feature}-api-mode"
@@ -111,15 +111,15 @@ function renderFeatureTab(settings, feature, container) {
                         ${connectionManagerAvailable ? '' : 'disabled'}
                         ${connectionManagerAvailable ? '' : `title="${profileUnavailableTitle}"`} />
                     <strong>Use Connection Profile</strong>
-                    <p class="ss-api-radio-hint">
+                    <p class="shardwright-api-radio-hint">
                         Use a specific Connection Manager profile without changing SillyTavern's global active connection.
                     </p>
                 </label>
 
-                <div class="ss-profile-api-selection ${currentMode === 'profile' ? '' : 'ss-disabled-section'}"
+                <div class="shardwright-profile-api-selection ${currentMode === 'profile' ? '' : 'shardwright-disabled-section'}"
                     ${connectionManagerAvailable ? '' : `title="${profileUnavailableTitle}"`}>
                     <select id="${feature}-profile-select"
-                        class="text_pole ss-api-select"
+                        class="text_pole shardwright-api-select"
                         ${connectionManagerAvailable && currentMode === 'profile' ? '' : 'disabled'}
                         ${connectionManagerAvailable ? '' : `title="${profileUnavailableTitle}"`}>
                         <option value="">-- Select Connection Profile --</option>
@@ -132,32 +132,32 @@ function renderFeatureTab(settings, feature, container) {
             </div>
 
             <!-- Generation Settings Section -->
-            <hr class="sysHR ss-api-config-divider" />
-            <div class="ss-generation-settings">
+            <hr class="sysHR shardwright-api-config-divider" />
+            <div class="shardwright-generation-settings">
                 <h4>Generation Settings</h4>
-                <p class="ss-api-generation-settings-hint">
+                <p class="shardwright-api-generation-settings-hint">
                     Configure API call parameters for ${featureName}.
                 </p>
-                <div class="ss-setting-row ss-api-setting-row">
-                    <div class="ss-api-setting-col">
+                <div class="shardwright-setting-row shardwright-api-setting-row">
+                    <div class="shardwright-api-setting-col">
                         <label for="${feature}-queue-delay">Queue Delay (ms):</label>
                         <input type="number" id="${feature}-queue-delay" class="text_pole"
                                value="${featureConfig.queueDelayMs || 0}" min="0" step="100"
                                title="Delay between API calls when processing multiple items" />
                     </div>
-                    <div class="ss-api-setting-col">
+                    <div class="shardwright-api-setting-col">
                         <label for="${feature}-temperature">Temperature:</label>
                         <input type="number" id="${feature}-temperature" class="text_pole"
                                value="${featureConfig.temperature ?? 0.4}" min="0" max="2" step="0.1"
                                title="Controls randomness in generation (0-2)" />
                     </div>
-                    <div class="ss-api-setting-col">
+                    <div class="shardwright-api-setting-col">
                         <label for="${feature}-top-p">Top P:</label>
                         <input type="number" id="${feature}-top-p" class="text_pole"
                                value="${featureConfig.topP ?? 1}" min="0" max="1" step="0.05"
                                title="Nucleus sampling threshold (0-1)" />
                     </div>
-                    <div class="ss-api-setting-col">
+                    <div class="shardwright-api-setting-col">
                         <label for="${feature}-max-tokens">Max Tokens:</label>
                         <input type="number" id="${feature}-max-tokens" class="text_pole"
                                value="${featureConfig.maxTokens ?? 8096}" min="100" max="128000" step="100"
@@ -165,8 +165,8 @@ function renderFeatureTab(settings, feature, container) {
                     </div>
                 </div>
 
-                <div class="ss-setting-row ss-api-secondary-setting-row">
-                    <div class="ss-api-option-column ${currentMode === 'external' ? '' : 'ss-disabled-section'}">
+                <div class="shardwright-setting-row shardwright-api-secondary-setting-row">
+                    <div class="shardwright-api-option-column ${currentMode === 'external' ? '' : 'shardwright-disabled-section'}">
                         <label for="${feature}-post-processing">Prompt Post-Processing: ${infoHintHtml(`${feature}-post-processing-hint`, "Transforms message roles. Use 'Strict' for APIs requiring alternating user/assistant turns (External API only).")}</label>
                         <select id="${feature}-post-processing" class="text_pole"
                                 title="Transform messages before sending to API. Only applies to External API mode."
@@ -179,12 +179,12 @@ function renderFeatureTab(settings, feature, container) {
                         </select>
                     </div>
 
-                    <div class="ss-api-option-column ss-api-message-format-column">
+                    <div class="shardwright-api-option-column shardwright-api-message-format-column">
                         <label for="${feature}-message-format">Message Format: ${infoHintHtml(`${feature}-message-format-hint`, "Wraps messages in roles. 'Alternating' adds assistant turns between messages; recommended for most proxy APIs.")}</label>
                         <div id="${feature}-message-format-host"></div>
                     </div>
 
-                    <div class="ss-api-option-column">
+                    <div class="shardwright-api-option-column">
                         <label class="checkbox_label" for="${feature}-remove-stop-strings">
                             <input type="checkbox"
                                 id="${feature}-remove-stop-strings"
@@ -204,8 +204,8 @@ function renderFeatureTab(settings, feature, container) {
     const stRadio = container.querySelector(`input[name="${feature}-api-mode"][value="st"]`);
     const externalRadio = container.querySelector(`input[name="${feature}-api-mode"][value="external"]`);
     const profileRadio = container.querySelector(`input[name="${feature}-api-mode"][value="profile"]`);
-    const externalSelection = container.querySelector('.ss-external-api-selection');
-    const profileSelection = container.querySelector('.ss-profile-api-selection');
+    const externalSelection = container.querySelector('.shardwright-external-api-selection');
+    const profileSelection = container.querySelector('.shardwright-profile-api-selection');
     const apiSelect = container.querySelector(`#${feature}-api-select`);
     const profileSelect = container.querySelector(`#${feature}-profile-select`);
     const manageButton = container.querySelector(`#${feature}-manage-apis`);
@@ -222,21 +222,21 @@ function renderFeatureTab(settings, feature, container) {
         const isExternal = mode === 'external';
         const isProfile = mode === 'profile';
 
-        externalSelection?.classList.toggle('ss-disabled-section', !isExternal);
+        externalSelection?.classList.toggle('shardwright-disabled-section', !isExternal);
         if (apiSelect) apiSelect.disabled = !isExternal;
         if (manageButton) manageButton.disabled = !isExternal;
 
-        profileSelection?.classList.toggle('ss-disabled-section', !isProfile);
+        profileSelection?.classList.toggle('shardwright-disabled-section', !isProfile);
         if (profileSelect) {
             profileSelect.disabled = !isProfile || !connectionManagerAvailable;
         }
 
         // Post-processing only applies to external API
         const ppSelect = container.querySelector(`#${feature}-post-processing`);
-        const ppSection = ppSelect?.closest('.ss-api-option-column');
+        const ppSection = ppSelect?.closest('.shardwright-api-option-column');
         if (ppSelect) {
             ppSelect.disabled = !isExternal;
-            ppSection?.classList.toggle('ss-disabled-section', !isExternal);
+            ppSection?.classList.toggle('shardwright-disabled-section', !isExternal);
         }
     };
 
@@ -369,13 +369,13 @@ function renderFeatureTab(settings, feature, container) {
  */
 function switchTab(tabId, container) {
     // Update tab buttons
-    container.querySelectorAll('.ss-tab-button').forEach(btn => {
+    container.querySelectorAll('.shardwright-tab-button').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.tab === tabId);
     });
 
     // Update tab panels
-    container.querySelectorAll('.ss-tab-panel').forEach(panel => {
-        panel.classList.toggle('active', panel.id === `ss-api-tab-${tabId}`);
+    container.querySelectorAll('.shardwright-tab-panel').forEach(panel => {
+        panel.classList.toggle('active', panel.id === `shardwright-api-tab-${tabId}`);
     });
 }
 
@@ -386,17 +386,17 @@ function switchTab(tabId, container) {
  */
 export async function openApiConfigModal(settings) {
     const modalHtml = `
-        <div class="ss-api-config-modal">
-            <div class="ss-tab-header">
-                <button class="ss-tab-button active" data-tab="summary">Summary API</button>
-                <button class="ss-tab-button" data-tab="sharder">Sharder API</button>
-                <button class="ss-tab-button" data-tab="casing">Casing API</button>
+        <div class="shardwright-api-config-modal">
+            <div class="shardwright-tab-header">
+                <button class="shardwright-tab-button active" data-tab="summary">Summary API</button>
+                <button class="shardwright-tab-button" data-tab="sharder">Sharder API</button>
+                <button class="shardwright-tab-button" data-tab="casing">Casing API</button>
             </div>
 
-            <div class="ss-tab-content">
-                <div id="ss-api-tab-summary" class="ss-tab-panel active"></div>
-                <div id="ss-api-tab-sharder" class="ss-tab-panel"></div>
-                <div id="ss-api-tab-casing" class="ss-tab-panel"></div>
+            <div class="shardwright-tab-content">
+                <div id="shardwright-api-tab-summary" class="shardwright-tab-panel active"></div>
+                <div id="shardwright-api-tab-sharder" class="shardwright-tab-panel"></div>
+                <div id="shardwright-api-tab-casing" class="shardwright-tab-panel"></div>
             </div>
         </div>
     `;
@@ -417,12 +417,12 @@ export async function openApiConfigModal(settings) {
 
     // Set up content after popup shows
     requestAnimationFrame(() => {
-        const modalContainer = document.querySelector('.ss-api-config-modal');
+        const modalContainer = document.querySelector('.shardwright-api-config-modal');
         if (!modalContainer) return;
 
-        const summaryPanel = modalContainer.querySelector('#ss-api-tab-summary');
-        const sharderPanel = modalContainer.querySelector('#ss-api-tab-sharder');
-        const casingPanel = modalContainer.querySelector('#ss-api-tab-casing');
+        const summaryPanel = modalContainer.querySelector('#shardwright-api-tab-summary');
+        const sharderPanel = modalContainer.querySelector('#shardwright-api-tab-sharder');
+        const casingPanel = modalContainer.querySelector('#shardwright-api-tab-casing');
 
         // Render initial tab content
         renderFeatureTab(settings, 'summary', summaryPanel);
@@ -430,7 +430,7 @@ export async function openApiConfigModal(settings) {
         renderFeatureTab(settings, 'casing', casingPanel);
 
         // Tab switching
-        modalContainer.querySelectorAll('.ss-tab-button').forEach(btn => {
+        modalContainer.querySelectorAll('.shardwright-tab-button').forEach(btn => {
             btn.addEventListener('click', () => {
                 switchTab(btn.dataset.tab, modalContainer);
             });

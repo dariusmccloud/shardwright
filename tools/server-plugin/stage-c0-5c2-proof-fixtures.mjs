@@ -24,7 +24,7 @@ function userMessage(idSuffix, mes, overrides = {}) {
         send_date: overrides.send_date || `2026-06-24T20:00:${String(idSuffix).slice(0, 2)}.000Z`,
         mes,
         extra: {
-            summary_sharder: {
+            shardwright: {
                 messageIdentity: {
                     schemaVersion: 1,
                     messageId: makeMessageId(idSuffix),
@@ -49,7 +49,7 @@ function shardMessage(idSuffix, mes, overrides = {}) {
         send_date: overrides.send_date || `2026-06-24T20:10:${String(idSuffix).slice(0, 2)}.000Z`,
         mes,
         extra: {
-            summary_sharder: {
+            shardwright: {
                 messageIdentity: {
                     schemaVersion: 1,
                     messageId: makeMessageId(idSuffix),
@@ -93,7 +93,7 @@ async function writeChat(userRoot, options) {
 
     const header = {
         chat_metadata: {
-            summary_sharder: {
+            shardwright: {
                 messageIdentity: {
                     schemaVersion: 1,
                     status: 'IDENTITY_COMPLETE',

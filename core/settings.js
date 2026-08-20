@@ -14,6 +14,8 @@ import {
 
 import { isDebugEnabled, log } from './logger.js';
 import { migrateToCollectionBindings } from './rag/collection-bindings.js';
+import { migrateRecognizedRagInjectionSettings } from './rag/collection-identity.js';
+import { migrateShardwrightThemeVariables } from './shardwright-settings-migration.js';
 import { getShardCollectionId, getStandardCollectionId } from './rag/collection-manager.js';
 import { NARRATIVE_PROFILE, normalizeSharderProfile } from './summarization/sharder-section-registry.js';
 
@@ -58,7 +60,7 @@ export function getDefaultSettings() {
             chats: {},          // { [chatId]: { collections, primaryCollection, includeOwn } }
         },
         queueDelay: 0,          // Delay in seconds between API calls in queue mode
-        // summarizedRanges moved to per-chat metadata (chat_metadata.summary_sharder.summarizedRanges)
+        // summarizedRanges moved to per-chat metadata (chat_metadata.shardwright.summarizedRanges)
 
         // Lorebook selection settings
         lorebookSelection: {
@@ -173,6 +175,9 @@ export function getDefaultSettings() {
             position: { x: null, y: null },
         },
 
+        theme: 'default',
+        customThemes: {},
+
         debugLogging: false,
 
         // RAG (Retrieval-Augmented Generation) settings
@@ -218,7 +223,7 @@ export function getDefaultSettings() {
             depth: 2,
             template: 'Recalled memories:\n{{text}}',
             injectionMode: 'extension_prompt', // 'extension_prompt' | 'variable'
-            injectionVariableName: 'ss_rag_memory',
+            injectionVariableName: 'shardwright_rag_memory',
             recencyFreshnessWeight: 0.1,
             recentSummaryCount: 1,
             maxChunksPerShard: 2,
@@ -237,7 +242,7 @@ export function getDefaultSettings() {
         },
 
         // Standard Mode RAG settings — active when sharderMode is false.
-        // No scene codes, no section-aware chunking; prose-only chunking; separate ss_standard_* collections.
+        // No scene codes, no section-aware chunking; prose-only chunking; separate shardwright_standard_* collections.
         ragStandard: {
             enabled: false,
             // Backend
@@ -277,7 +282,7 @@ export function getDefaultSettings() {
             depth: 2,
             template: 'Recalled memories:\n{{text}}',
             injectionMode: 'extension_prompt', // 'extension_prompt' | 'variable'
-            injectionVariableName: 'ss_rag_memory',
+            injectionVariableName: 'shardwright_rag_memory',
             recencyFreshnessWeight: 0.1,
             recentSummaryCount: 1,
             maxChunksPerShard: 2,
@@ -298,7 +303,7 @@ export function getDefaultSettings() {
  * Get current settings (reference to extension_settings)
  */
 export function getSettings() {
-    return extension_settings.summary_sharder || getDefaultSettings();
+    return extension_settings.shardwright || getDefaultSettings();
 }
 
 /**
@@ -318,7 +323,7 @@ export function saveSettings(settings) {
     const debugEnabled = isDebugEnabled();
     const startedAt = debugEnabled ? performance.now() : 0;
     const traceStack = debugEnabled ? new Error().stack : '';
-    Object.assign(extension_settings.summary_sharder, settings);
+    Object.assign(extension_settings.shardwright, settings);
     saveSettingsDebounced();
 
     if (!debugEnabled) return;
@@ -343,20 +348,20 @@ export function getChatRanges() {
     const context = SillyTavern.getContext();
     const currentChatId = context?.chatId;
 
-    if (!chat_metadata.summary_sharder) {
-        chat_metadata.summary_sharder = {};
+    if (!chat_metadata.shardwright) {
+        chat_metadata.shardwright = {};
     }
 
-    const storedChatId = chat_metadata.summary_sharder.chatId;
+    const storedChatId = chat_metadata.shardwright.chatId;
 
     // Validate chatId - if mismatch, this is stale data from a different chat
     if (storedChatId && currentChatId && storedChatId !== currentChatId) {
         log.warn(`Chat ID mismatch: stored=${storedChatId}, current=${currentChatId}. Clearing stale ranges.`);
-        chat_metadata.summary_sharder = { chatId: currentChatId, summarizedRanges: [] };
+        chat_metadata.shardwright = { chatId: currentChatId, summarizedRanges: [] };
         return [];
     }
 
-    const ranges = chat_metadata.summary_sharder.summarizedRanges || [];
+    const ranges = chat_metadata.shardwright.summarizedRanges || [];
 
     // Add default fields to ranges that don't have them (backward compatibility)
     return ranges.map(range => ({
@@ -376,13 +381,13 @@ export function saveChatRanges(ranges) {
     const context = SillyTavern.getContext();
     const currentChatId = context?.chatId;
 
-    if (!chat_metadata.summary_sharder) {
-        chat_metadata.summary_sharder = {};
+    if (!chat_metadata.shardwright) {
+        chat_metadata.shardwright = {};
     }
 
     // Always store chatId for validation on load
-    chat_metadata.summary_sharder.chatId = currentChatId;
-    chat_metadata.summary_sharder.summarizedRanges = ranges;
+    chat_metadata.shardwright.chatId = currentChatId;
+    chat_metadata.shardwright.summarizedRanges = ranges;
     saveMetadata();
 }
 
@@ -392,6 +397,18 @@ export function saveChatRanges(ranges) {
  */
 export function migrateSettings(settings) {
     let migrated = false;
+
+    const themeVariableMigration = migrateShardwrightThemeVariables(settings);
+    if (themeVariableMigration.changed) {
+        log.log(`Migrated legacy theme variables for: ${themeVariableMigration.migratedThemes.join(', ')}`);
+        migrated = true;
+    }
+
+    const ragIdentityMigration = migrateRecognizedRagInjectionSettings(settings);
+    if (ragIdentityMigration.changed) {
+        log.log(`Migrated legacy RAG injection identity for: ${ragIdentityMigration.profiles.join(', ')}`);
+        migrated = true;
+    }
 
     // Migrate customRegex string to customRegexes array
     if (settings.contextCleanup) {
@@ -646,7 +663,7 @@ export function migrateSettings(settings) {
         migrated = true;
     }
 
-    if (!Object.prototype.hasOwnProperty.call(extension_settings.summary_sharder || {}, 'debugLogging')) {
+    if (!Object.prototype.hasOwnProperty.call(settings, 'debugLogging')) {
         settings.debugLogging = isDebugEnabled();
         migrated = true;
     }
@@ -1000,7 +1017,6 @@ export function migrateSettings(settings) {
 
     if (migrated) {
         log.log('Settings migrated');
-        saveSettings(settings);
     }
 
     return settings;

@@ -28,12 +28,12 @@ function renderSavedApisInterface(settings, container, selectedConfigId = null) 
     const selectedConfig = selectedConfigId ? getConfigById(settings, selectedConfigId) : null;
 
     const html = `
-        <div class="ss-saved-apis-interface">
-            <div class="ss-saved-api-selector-section">
-                <label class="ss-saved-api-selector-label">
+        <div class="shardwright-saved-apis-interface">
+            <div class="shardwright-saved-api-selector-section">
+                <label class="shardwright-saved-api-selector-label">
                     Saved API Configurations
                 </label>
-                <select id="ss-saved-api-select" class="text_pole ss-saved-api-selector">
+                <select id="shardwright-saved-api-select" class="text_pole shardwright-saved-api-selector">
                     <option value="">-- Select Configuration --</option>
                     ${savedConfigs.map(config => `
                         <option value="${config.id}" ${selectedConfigId === config.id ? 'selected' : ''}>
@@ -42,58 +42,58 @@ function renderSavedApisInterface(settings, container, selectedConfigId = null) 
                     `).join('')}
                 </select>
 
-                <div class="ss-saved-api-actions">
-                    <button id="ss-new-api-btn" class="menu_button">New</button>
-                    <button id="ss-delete-api-btn" class="menu_button" ${!selectedConfigId ? 'disabled' : ''}>Delete</button>
+                <div class="shardwright-saved-api-actions">
+                    <button id="shardwright-new-api-btn" class="menu_button">New</button>
+                    <button id="shardwright-delete-api-btn" class="menu_button" ${!selectedConfigId ? 'disabled' : ''}>Delete</button>
                 </div>
             </div>
 
-            <hr class="sysHR ss-saved-api-divider" />
+            <hr class="sysHR shardwright-saved-api-divider" />
 
-            <div id="ss-api-form" class="ss-saved-api-form ${!selectedConfigId ? 'ss-disabled-section' : ''}">
-                <div class="ss-saved-api-field">
-                    <label class="ss-saved-api-field-label">
+            <div id="shardwright-api-form" class="shardwright-saved-api-form ${!selectedConfigId ? 'shardwright-disabled-section' : ''}">
+                <div class="shardwright-saved-api-field">
+                    <label class="shardwright-saved-api-field-label">
                         Configuration Name
                     </label>
-                    <input type="text" id="ss-config-name" class="text_pole ss-saved-api-input"
+                    <input type="text" id="shardwright-config-name" class="text_pole shardwright-saved-api-input"
                            value="${selectedConfig ? selectedConfig.name : ''}" placeholder="My API Config" />
                 </div>
 
-                <div class="ss-saved-api-field">
-                    <label class="ss-saved-api-field-label">
+                <div class="shardwright-saved-api-field">
+                    <label class="shardwright-saved-api-field-label">
                         API URL
                     </label>
-                    <input type="text" id="ss-config-url" class="text_pole ss-saved-api-input"
+                    <input type="text" id="shardwright-config-url" class="text_pole shardwright-saved-api-input"
                            value="${selectedConfig ? selectedConfig.url : ''}"
                            placeholder="https://api.example.com/v1" />
-                    <small class="ss-saved-api-help">Base URL (with or without /chat/completions or /models)</small>
+                    <small class="shardwright-saved-api-help">Base URL (with or without /chat/completions or /models)</small>
                 </div>
 
-                <div class="ss-saved-api-field">
-                    <label class="ss-saved-api-field-label">
+                <div class="shardwright-saved-api-field">
+                    <label class="shardwright-saved-api-field-label">
                         API Key
                     </label>
-                    <input type="password" id="ss-config-key" class="text_pole ss-saved-api-input"
+                    <input type="password" id="shardwright-config-key" class="text_pole shardwright-saved-api-input"
                            placeholder="Enter API key..." />
-                    <small class="ss-saved-api-help">Leave blank to keep existing key</small>
+                    <small class="shardwright-saved-api-help">Leave blank to keep existing key</small>
                 </div>
 
-                <div class="ss-saved-api-field">
-                    <label class="ss-saved-api-field-label">
+                <div class="shardwright-saved-api-field">
+                    <label class="shardwright-saved-api-field-label">
                         Model
                     </label>
-                    <div class="ss-saved-api-model-row">
-                        <select id="ss-config-model" class="text_pole ss-saved-api-model-select">
+                    <div class="shardwright-saved-api-model-row">
+                        <select id="shardwright-config-model" class="text_pole shardwright-saved-api-model-select">
                             <option value="">-- Click Fetch Models --</option>
                             ${selectedConfig && selectedConfig.model ? `<option value="${selectedConfig.model}" selected>${selectedConfig.model}</option>` : ''}
                         </select>
-                        <button id="ss-fetch-models-btn" class="menu_button">Fetch Models</button>
+                        <button id="shardwright-fetch-models-btn" class="menu_button">Fetch Models</button>
                     </div>
-                    <small class="ss-saved-api-help">Model to use with this API</small>
+                    <small class="shardwright-saved-api-help">Model to use with this API</small>
                 </div>
 
-                <div class="ss-saved-api-footer-actions">
-                    <button id="ss-save-changes-btn" class="menu_button ss-saved-api-save-btn">
+                <div class="shardwright-saved-api-footer-actions">
+                    <button id="shardwright-save-changes-btn" class="menu_button shardwright-saved-api-save-btn">
                         Save Changes
                     </button>
                 </div>
@@ -104,16 +104,16 @@ function renderSavedApisInterface(settings, container, selectedConfigId = null) 
     container.innerHTML = html;
 
     // Get DOM elements
-    const apiSelect = container.querySelector('#ss-saved-api-select');
-    const newBtn = container.querySelector('#ss-new-api-btn');
-    const deleteBtn = container.querySelector('#ss-delete-api-btn');
-    const apiForm = container.querySelector('#ss-api-form');
-    const configName = container.querySelector('#ss-config-name');
-    const configUrl = container.querySelector('#ss-config-url');
-    const configKey = container.querySelector('#ss-config-key');
-    const configModel = container.querySelector('#ss-config-model');
-    const fetchModelsBtn = container.querySelector('#ss-fetch-models-btn');
-    const saveBtn = container.querySelector('#ss-save-changes-btn');
+    const apiSelect = container.querySelector('#shardwright-saved-api-select');
+    const newBtn = container.querySelector('#shardwright-new-api-btn');
+    const deleteBtn = container.querySelector('#shardwright-delete-api-btn');
+    const apiForm = container.querySelector('#shardwright-api-form');
+    const configName = container.querySelector('#shardwright-config-name');
+    const configUrl = container.querySelector('#shardwright-config-url');
+    const configKey = container.querySelector('#shardwright-config-key');
+    const configModel = container.querySelector('#shardwright-config-model');
+    const fetchModelsBtn = container.querySelector('#shardwright-fetch-models-btn');
+    const saveBtn = container.querySelector('#shardwright-save-changes-btn');
 
     // Load API key for selected config
     if (selectedConfigId) {
@@ -304,11 +304,11 @@ function renderSavedApisInterface(settings, container, selectedConfigId = null) 
  */
 export async function openSavedApisModal(settings) {
     const modalHtml = `
-        <div class="ss-saved-apis-modal">
-            <p class="ss-saved-api-intro">
+        <div class="shardwright-saved-apis-modal">
+            <p class="shardwright-saved-api-intro">
                 Manage your saved API configurations. These can be used by any feature (Summary, Sharder, or Events).
             </p>
-            <div id="ss-saved-apis-content"></div>
+            <div id="shardwright-saved-apis-content"></div>
         </div>
     `;
 
@@ -328,10 +328,10 @@ export async function openSavedApisModal(settings) {
 
     // Set up content after popup shows
     requestAnimationFrame(() => {
-        const modalContainer = document.querySelector('.ss-saved-apis-modal');
+        const modalContainer = document.querySelector('.shardwright-saved-apis-modal');
         if (!modalContainer) return;
 
-        const contentDiv = modalContainer.querySelector('#ss-saved-apis-content');
+        const contentDiv = modalContainer.querySelector('#shardwright-saved-apis-content');
         renderSavedApisInterface(settings, contentDiv, null);
     });
 

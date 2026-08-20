@@ -15,7 +15,7 @@ export class CharacterDropdown extends BaseDropdown {
         super(containerId, {
             placeholder: 'Select character...',
             searchPlaceholder: 'Search characters...',
-            containerClass: 'ss-character-dropdown-container',
+            containerClass: 'shardwright-character-dropdown-container',
             ...options
         });
         this.selectedCharacterId = this.options.initialSelection;
@@ -36,16 +36,16 @@ export class CharacterDropdown extends BaseDropdown {
         const filteredChars = this.getFilteredCharacters();
 
         if (filteredChars.length === 0) {
-            return '<div class="ss-dropdown-empty">No characters found</div>';
+            return '<div class="shardwright-dropdown-empty">No characters found</div>';
         }
 
         return filteredChars.map(({ index, char }) => {
             const avatarUrl = getThumbnailUrl('avatar', char.avatar);
             const isSelected = index === this.selectedCharacterId;
             return `
-                <div class="ss-dropdown-option ${isSelected ? 'selected' : ''}" data-character-id="${index}">
-                    <img class="ss-dropdown-option-avatar" src="${avatarUrl}" alt="" />
-                    <span class="ss-dropdown-option-name">${escapeHtml(char.name)}</span>
+                <div class="shardwright-dropdown-option ${isSelected ? 'selected' : ''}" data-character-id="${index}">
+                    <img class="shardwright-dropdown-option-avatar" src="${avatarUrl}" alt="" />
+                    <span class="shardwright-dropdown-option-name">${escapeHtml(char.name)}</span>
                 </div>
             `;
         }).join('');
@@ -79,7 +79,7 @@ export class CharacterDropdown extends BaseDropdown {
         const optionsContainer = document.getElementById(`${this.containerId}-options`);
 
         optionsContainer?.addEventListener('click', (e) => {
-            const option = e.target.closest('.ss-dropdown-option');
+            const option = e.target.closest('.shardwright-dropdown-option');
             if (!option) return;
 
             const characterId = parseInt(option.dataset.characterId, 10);

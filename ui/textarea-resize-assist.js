@@ -1,13 +1,13 @@
 const TEXTAREA_SELECTOR = [
-    '#summary-sharder-settings textarea',
-    '#summary-sharder-panel textarea',
-    '.ss-modal textarea',
-    '[class*="ss-"][class*="-modal"] textarea',
-    '.popup:has([class*="ss-"][class*="-modal"]) textarea',
-    '.popup.ss-owned-popup textarea',
-    '.ss-fab textarea',
-    '.ss-fab-panels textarea',
-    '.ss-fab-generating textarea',
+    '#shardwright-settings textarea',
+    '#shardwright-panel textarea',
+    '.shardwright-modal textarea',
+    '[class*="shardwright-"][class*="-modal"] textarea',
+    '.popup:has([class*="shardwright-"][class*="-modal"]) textarea',
+    '.popup.shardwright-owned-popup textarea',
+    '.shardwright-fab textarea',
+    '.shardwright-fab-panels textarea',
+    '.shardwright-fab-generating textarea',
 ].join(', ');
 
 const MOBILE_QUERY = '(max-width: 768px)';
@@ -37,8 +37,8 @@ function isPrimaryPointer(event) {
 
 function getHitSize(textarea) {
     const computed = window.getComputedStyle(textarea);
-    const cornerSize = parseFloat(computed.getPropertyValue('--ss-resize-corner-size') || '');
-    const configuredScale = parseFloat(computed.getPropertyValue('--ss-resize-corner-hit-scale') || '');
+    const cornerSize = parseFloat(computed.getPropertyValue('--shardwright-resize-corner-size') || '');
+    const configuredScale = parseFloat(computed.getPropertyValue('--shardwright-resize-corner-hit-scale') || '');
     const fallbackScale = window.matchMedia(MOBILE_QUERY).matches ? DEFAULT_MOBILE_HIT_SCALE : DEFAULT_HIT_SCALE;
     const hitScale = Number.isFinite(configuredScale) && configuredScale > 0
         ? configuredScale
@@ -111,7 +111,7 @@ function beginResize(event, textarea, source = 'pointer') {
     };
 
     textarea.dataset.ssManualResized = '1';
-    textarea.classList.add('ss-resize-active');
+    textarea.classList.add('shardwright-resize-active');
     textarea.style.touchAction = 'none';
     textarea.style.overscrollBehavior = 'none';
     textarea.style.overflowY = 'hidden';
@@ -177,7 +177,7 @@ function endResize(event, options = {}) {
     const isCancelLikeEvent = eventType === 'pointercancel' || eventType === 'lostpointercapture';
     if (!options.force && !pointerMatches && !isCancelLikeEvent) return;
 
-    state.textarea.classList.remove('ss-resize-active');
+    state.textarea.classList.remove('shardwright-resize-active');
     if (typeof state.textarea.releasePointerCapture === 'function' && Number.isFinite(state.pointerId)) {
         try {
             if (!state.textarea.hasPointerCapture || state.textarea.hasPointerCapture(state.pointerId)) {
@@ -285,11 +285,11 @@ function lockPageScroll() {
     const bodyEl = document.body;
     if (!htmlEl || !bodyEl) return;
 
-    const hadHtmlClass = htmlEl.classList.contains('ss-resize-lock');
-    const hadBodyClass = bodyEl.classList.contains('ss-resize-lock');
+    const hadHtmlClass = htmlEl.classList.contains('shardwright-resize-lock');
+    const hadBodyClass = bodyEl.classList.contains('shardwright-resize-lock');
 
-    if (!hadHtmlClass) htmlEl.classList.add('ss-resize-lock');
-    if (!hadBodyClass) bodyEl.classList.add('ss-resize-lock');
+    if (!hadHtmlClass) htmlEl.classList.add('shardwright-resize-lock');
+    if (!hadBodyClass) bodyEl.classList.add('shardwright-resize-lock');
 
     scrollLockState = {
         removeHtmlClass: !hadHtmlClass,
@@ -304,10 +304,10 @@ function unlockPageScroll() {
     const htmlEl = document.documentElement;
     const bodyEl = document.body;
     if (htmlEl && scrollLockState.removeHtmlClass) {
-        htmlEl.classList.remove('ss-resize-lock');
+        htmlEl.classList.remove('shardwright-resize-lock');
     }
     if (bodyEl && scrollLockState.removeBodyClass) {
-        bodyEl.classList.remove('ss-resize-lock');
+        bodyEl.classList.remove('shardwright-resize-lock');
     }
     scrollLockState = null;
 }
