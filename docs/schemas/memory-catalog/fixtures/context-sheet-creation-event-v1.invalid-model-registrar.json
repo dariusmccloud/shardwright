@@ -1,0 +1,41 @@
+{
+  "envelope": {
+    "schemaId": "context-sheet-creation-event-v1",
+    "schemaVersion": 1,
+    "artifactClass": "EVENT",
+    "artifactId": "artifact:context-sheet-creation-event:01JZ9E00000000000000000003",
+    "memoryScopeId": "scope:jeep-primary",
+    "createdAt": "2026-07-25T10:00:00.000Z",
+    "producer": { "componentId": "capture-model", "componentVersion": "model-output" },
+    "contractBindings": [{ "id": "phase-x-context-sheet-anchor", "version": "0.1.0" }],
+    "policyBindings": [],
+    "payloadHash": "sha256:8585858585858585858585858585858585858585858585858585858585858585",
+    "idempotencyKey": "idempotency:context-sheet-create-jeep",
+    "authorityBasisRefs": [
+      {
+        "artifactType": "context-sheet-creation-nomination-v1",
+        "artifactId": "artifact:context-sheet-creation-nomination:01JZ9E00000000000000000006",
+        "memoryScopeId": "scope:jeep-primary",
+        "expectedArtifactClass": "NOMINATION",
+        "resolutionRequirement": "EXACT_HASH",
+        "immutableHash": "sha256:8888888888888888888888888888888888888888888888888888888888888888"
+      }
+    ]
+  },
+  "eventType": "CONTEXT_SHEET_CREATED",
+  "registrarClass": "MODEL",
+  "contextSheetRef": {
+    "artifactType": "context-sheet-record-v1",
+    "artifactId": "artifact:context-sheet-record:01JZ9E00000000000000000001",
+    "memoryScopeId": "scope:jeep-primary",
+    "expectedArtifactClass": "IMMUTABLE_RECORD",
+    "resolutionRequirement": "EXACT_HASH",
+    "immutableHash": "sha256:8181818181818181818181818181818181818181818181818181818181818181"
+  },
+  "sheetType": "ENTITY",
+  "anchorStateAtCreation": "RESOLVED",
+  "identityKeyHash": "sha256:9191919191919191919191919191919191919191919191919191919191919191",
+  "creationPath": "AUTOMATIC_NOMINATION",
+  "creationDecision": "ACCEPTED",
+  "occurredAt": "2026-07-25T10:00:00.000Z"
+}

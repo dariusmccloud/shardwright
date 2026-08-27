@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:context-sheet-anchor-resolution-event-v1",
+  "title": "ContextSheetAnchorResolutionEventV1",
+  "description": "Governed resolution of one exact unresolved sheet to a canonical anchor, or explicit routing to merge review on identity collision.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "envelope",
+    "eventType",
+    "unresolvedSheetRef",
+    "sourceAnchorState",
+    "resolvedCanonicalAnchorId",
+    "governedIdentityBasisRef",
+    "anchorJurisdiction",
+    "aliasDecisionRefs",
+    "catalogLinkImpact",
+    "identityCollisionState",
+    "mergeReviewRef",
+    "resolutionEffect",
+    "decidedBy",
+    "identityPolicyVersion",
+    "occurredAt"
+  ],
+  "properties": {
+    "envelope": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-envelope-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "artifactClass": { "const": "EVENT" },
+            "schemaId": { "const": "context-sheet-anchor-resolution-event-v1" },
+            "idempotencyKey": { "type": "string" },
+            "authorityBasisRefs": { "type": "array", "minItems": 1 }
+          },
+          "required": ["artifactClass", "schemaId", "idempotencyKey", "authorityBasisRefs"]
+        }
+      ]
+    },
+    "eventType": { "const": "CONTEXT_SHEET_ANCHOR_RESOLVED" },
+    "unresolvedSheetRef": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "artifactType": { "const": "context-sheet-record-v1" },
+            "expectedArtifactClass": { "const": "IMMUTABLE_RECORD" },
+            "resolutionRequirement": { "const": "EXACT_HASH" }
+          }
+        }
+      ]
+    },
+    "sourceAnchorState": { "const": "UNRESOLVED" },
+    "resolvedCanonicalAnchorId": {
+      "type": "string",
+      "pattern": "^canonical-anchor:[A-Za-z0-9._~-]+$"
+    },
+    "governedIdentityBasisRef": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "expectedArtifactClass": {
+              "enum": ["EVENT", "IMMUTABLE_RECORD", "AUTHORITY_REGISTRATION"]
+            },
+            "resolutionRequirement": { "const": "EXACT_HASH" }
+          }
+        }
+      ]
+    },
+    "anchorJurisdiction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["memoryScopeId", "jurisdictionId"],
+      "properties": {
+        "memoryScopeId": {
+          "type": "string",
+          "pattern": "^scope:[A-Za-z0-9._~-]+$"
+        },
+        "jurisdictionId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "aliasDecisionRefs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "allOf": [
+          {
+            "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "artifactType": { "const": "context-sheet-alias-event-v1" },
+              "expectedArtifactClass": { "const": "EVENT" },
+              "resolutionRequirement": { "const": "EXACT_HASH" }
+            }
+          }
+        ]
+      }
+    },
+    "catalogLinkImpact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evaluated", "decision", "impactManifestHash"],
+      "properties": {
+        "evaluated": { "const": true },
+        "decision": {
+          "enum": ["NO_LINKS", "NO_CHANGE", "SUCCESSOR_REQUIRED", "REVIEW_REQUIRED"]
+        },
+        "impactManifestHash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    },
+    "identityCollisionState": {
+      "enum": ["NONE", "EXISTING_SHEET_FOUND"]
+    },
+    "mergeReviewRef": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "allOf": [
+            {
+              "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "expectedArtifactClass": { "const": "NOMINATION" },
+                "resolutionRequirement": { "const": "EXACT_HASH" }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "resolutionEffect": {
+      "enum": ["RESOLVED", "MERGE_REVIEW_REQUIRED"]
+    },
+    "decidedBy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decisionClass", "actorId"],
+      "properties": {
+        "decisionClass": { "enum": ["GOVERNED_ACTOR", "CODE_OWNED_POLICY"] },
+        "actorId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "identityPolicyVersion": { "type": "string", "minLength": 1 },
+    "occurredAt": { "type": "string", "format": "date-time" }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "identityCollisionState": { "const": "NONE" } },
+        "required": ["identityCollisionState"]
+      },
+      "then": {
+        "properties": {
+          "mergeReviewRef": { "type": "null" },
+          "resolutionEffect": { "const": "RESOLVED" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "identityCollisionState": { "const": "EXISTING_SHEET_FOUND" } },
+        "required": ["identityCollisionState"]
+      },
+      "then": {
+        "properties": {
+          "mergeReviewRef": { "type": "object" },
+          "resolutionEffect": { "const": "MERGE_REVIEW_REQUIRED" }
+        }
+      }
+    }
+  ]
+}

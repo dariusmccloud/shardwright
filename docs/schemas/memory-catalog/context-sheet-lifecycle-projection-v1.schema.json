@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:context-sheet-lifecycle-projection-v1",
+  "title": "ContextSheetLifecycleProjectionV1",
+  "description": "Disposable replay-derived view of one Context Sheet anchor and lifecycle. Structural validity creates no identity or lifecycle authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "envelope", "contextSheetRef", "contextSheetId", "sheetType", "preferredTitle",
+    "anchorState", "canonicalAnchorId", "lifecycleState", "appearsInOrdinaryOrganization",
+    "currentRedirectRef", "currentSplitEventRef", "currentRetirementEventRef",
+    "latestRestorationEventRef", "quarantineReasons", "replayBasisRefs",
+    "replayThroughEventRef", "projectionRevision", "projectedAt"
+  ],
+  "properties": {
+    "envelope": {
+      "allOf": [
+        { "$ref": "urn:shardwright:schema:v1:memory-artifact-envelope-v1" },
+        {
+          "type": "object",
+          "properties": {
+            "artifactClass": { "const": "PROJECTION" },
+            "schemaId": { "const": "context-sheet-lifecycle-projection-v1" }
+          },
+          "required": ["artifactClass", "schemaId"]
+        }
+      ]
+    },
+    "contextSheetRef": {
+      "allOf": [
+        { "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1" },
+        {
+          "type": "object",
+          "properties": {
+            "artifactType": { "const": "context-sheet-record-v1" },
+            "expectedArtifactClass": { "const": "IMMUTABLE_RECORD" },
+            "resolutionRequirement": { "const": "EXACT_HASH" }
+          }
+        }
+      ]
+    },
+    "contextSheetId": { "type": "string", "pattern": "^context-sheet:[A-Za-z0-9._~-]+$" },
+    "sheetType": {
+      "enum": [
+        "ENTITY", "RELATIONSHIP", "GROUP", "PLACE", "OBJECT", "TOPIC",
+        "GOAL", "PROJECT", "MOTIF", "RITUAL", "ERA"
+      ]
+    },
+    "preferredTitle": { "type": "string", "minLength": 1 },
+    "anchorState": { "enum": ["UNRESOLVED", "RESOLVED", "DISPUTED", "QUARANTINED"] },
+    "canonicalAnchorId": { "type": ["string", "null"], "pattern": "^canonical-anchor:[A-Za-z0-9._~-]+$" },
+    "lifecycleState": { "enum": ["ACTIVE", "REDIRECTED", "SPLIT", "RETIRED", "QUARANTINED"] },
+    "appearsInOrdinaryOrganization": { "type": "boolean" },
+    "currentRedirectRef": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "allOf": [
+            { "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1" },
+            {
+              "type": "object",
+              "properties": {
+                "artifactType": { "const": "context-sheet-redirect-v1" },
+                "expectedArtifactClass": { "const": "IMMUTABLE_RECORD" },
+                "resolutionRequirement": { "const": "EXACT_HASH" }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "currentSplitEventRef": { "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/exactSplitEventRef" }] },
+    "currentRetirementEventRef": { "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/exactRetirementEventRef" }] },
+    "latestRestorationEventRef": { "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/exactRestorationEventRef" }] },
+    "quarantineReasons": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "replayBasisRefs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1" }
+    },
+    "replayThroughEventRef": {
+      "allOf": [
+        { "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1" },
+        {
+          "type": "object",
+          "properties": {
+            "expectedArtifactClass": { "const": "EVENT" },
+            "resolutionRequirement": { "const": "EXACT_HASH" }
+          }
+        }
+      ]
+    },
+    "projectionRevision": { "type": "integer", "minimum": 1 },
+    "projectedAt": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "exactSplitEventRef": {
+      "allOf": [
+        { "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1" },
+        { "type": "object", "properties": { "artifactType": { "const": "context-sheet-split-event-v1" }, "expectedArtifactClass": { "const": "EVENT" }, "resolutionRequirement": { "const": "EXACT_HASH" } } }
+      ]
+    },
+    "exactRetirementEventRef": {
+      "allOf": [
+        { "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1" },
+        { "type": "object", "properties": { "artifactType": { "const": "context-sheet-retirement-event-v1" }, "expectedArtifactClass": { "const": "EVENT" }, "resolutionRequirement": { "const": "EXACT_HASH" } } }
+      ]
+    },
+    "exactRestorationEventRef": {
+      "allOf": [
+        { "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1" },
+        { "type": "object", "properties": { "artifactType": { "const": "context-sheet-restoration-event-v1" }, "expectedArtifactClass": { "const": "EVENT" }, "resolutionRequirement": { "const": "EXACT_HASH" } } }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "anchorState": { "const": "RESOLVED" } }, "required": ["anchorState"] },
+      "then": { "properties": { "canonicalAnchorId": { "type": "string" } } },
+      "else": { "properties": { "canonicalAnchorId": { "type": "null" } } }
+    },
+    {
+      "if": { "properties": { "lifecycleState": { "const": "ACTIVE" } }, "required": ["lifecycleState"] },
+      "then": { "properties": { "appearsInOrdinaryOrganization": { "const": true }, "currentRedirectRef": { "type": "null" }, "currentSplitEventRef": { "type": "null" }, "currentRetirementEventRef": { "type": "null" }, "quarantineReasons": { "type": "array", "maxItems": 0 } } }
+    },
+    {
+      "if": { "properties": { "lifecycleState": { "const": "REDIRECTED" } }, "required": ["lifecycleState"] },
+      "then": { "properties": { "appearsInOrdinaryOrganization": { "const": false }, "currentRedirectRef": { "type": "object" }, "currentSplitEventRef": { "type": "null" }, "currentRetirementEventRef": { "type": "null" }, "quarantineReasons": { "type": "array", "maxItems": 0 } } }
+    },
+    {
+      "if": { "properties": { "lifecycleState": { "const": "SPLIT" } }, "required": ["lifecycleState"] },
+      "then": { "properties": { "appearsInOrdinaryOrganization": { "const": false }, "currentSplitEventRef": { "type": "object" }, "currentRetirementEventRef": { "type": "null" }, "quarantineReasons": { "type": "array", "maxItems": 0 } } }
+    },
+    {
+      "if": { "properties": { "lifecycleState": { "const": "RETIRED" } }, "required": ["lifecycleState"] },
+      "then": { "properties": { "appearsInOrdinaryOrganization": { "const": false }, "currentRedirectRef": { "type": "null" }, "currentSplitEventRef": { "type": "null" }, "currentRetirementEventRef": { "type": "object" }, "quarantineReasons": { "type": "array", "maxItems": 0 } } }
+    },
+    {
+      "if": {
+        "anyOf": [
+          { "properties": { "anchorState": { "const": "QUARANTINED" } }, "required": ["anchorState"] },
+          { "properties": { "lifecycleState": { "const": "QUARANTINED" } }, "required": ["lifecycleState"] }
+        ]
+      },
+      "then": { "properties": { "appearsInOrdinaryOrganization": { "const": false }, "quarantineReasons": { "type": "array", "minItems": 1 } } }
+    }
+  ]
+}

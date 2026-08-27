@@ -1,0 +1,240 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:capture-model-result-v1",
+  "title": "CaptureModelResultV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["resultDisposition", "observations"],
+  "properties": {
+    "resultDisposition": {
+      "enum": ["OBSERVATIONS_NOMINATED", "NO_OBSERVATIONS"]
+    },
+    "observations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/observation" }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "resultDisposition": { "const": "NO_OBSERVATIONS" } }
+      },
+      "then": {
+        "properties": { "observations": { "maxItems": 0 } }
+      }
+    },
+    {
+      "if": {
+        "properties": { "resultDisposition": { "const": "OBSERVATIONS_NOMINATED" } }
+      },
+      "then": {
+        "properties": { "observations": { "minItems": 1 } }
+      }
+    }
+  ],
+  "$defs": {
+    "span": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["spanHandle", "sourceHandle", "startCodePoint", "endCodePoint"],
+      "properties": {
+        "spanHandle": { "type": "string", "pattern": "^span-[A-Za-z0-9._-]+$" },
+        "sourceHandle": { "type": "string", "pattern": "^src-[A-Za-z0-9._-]+$" },
+        "startCodePoint": { "type": "integer", "minimum": 0 },
+        "endCodePoint": { "type": "integer", "minimum": 1 },
+        "expectedText": { "type": "string" }
+      }
+    },
+    "entityNomination": {
+      "anyOf": [
+        { "type": "string", "minLength": 1 },
+        { "const": "UNKNOWN" }
+      ]
+    },
+    "claimSupport": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "claimedActorEntityHandles": { "$ref": "#/$defs/spanHandleList" },
+        "affectedSubjectEntityHandles": { "$ref": "#/$defs/spanHandleList" },
+        "localEvidencedAction": { "$ref": "#/$defs/spanHandleList" },
+        "actionObject": { "$ref": "#/$defs/spanHandleList" },
+        "speechRelationship": { "$ref": "#/$defs/spanHandleList" },
+        "attributedActorEntityHandles": { "$ref": "#/$defs/spanHandleList" },
+        "durabilitySignal": { "$ref": "#/$defs/spanHandleList" }
+      }
+    },
+    "spanHandleList": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^span-[A-Za-z0-9._-]+$" }
+    },
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "primarySourceHandle",
+        "claimedActorEntityHandles",
+        "affectedSubjectEntityHandles",
+        "unresolvedEntityLeads",
+        "entityResolutionState",
+        "signalType",
+        "localEvidencedAction",
+        "actionObject",
+        "trackHints",
+        "conceptKeys",
+        "durabilitySignal",
+        "speechRelationship",
+        "antecedentResolution",
+        "supportingSpans",
+        "claimSupport",
+        "uncertainties"
+      ],
+      "properties": {
+        "primarySourceHandle": { "type": "string", "pattern": "^src-[A-Za-z0-9._-]+$" },
+        "claimedActorEntityHandles": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/entityNomination" }
+        },
+        "affectedSubjectEntityHandles": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/entityNomination" }
+        },
+        "attributedActorEntityHandles": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/entityNomination" }
+        },
+        "unresolvedEntityLeads": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/unresolvedEntityLead" }
+        },
+        "entityResolutionState": { "enum": ["RESOLVED", "PARTIAL", "UNKNOWN"] },
+        "signalType": {
+          "enum": [
+            "SELF_EVENT",
+            "RELATIONAL_EVENT",
+            "ARCHITECTURAL_EVENT",
+            "GOVERNANCE_EVENT",
+            "PROJECT_CONTINUITY_EVENT",
+            "OPERATOR_CONTEXT_EVENT",
+            "UNKNOWN"
+          ]
+        },
+        "localEvidencedAction": {
+          "enum": [
+            "STATED",
+            "DISCOVERED",
+            "INTRODUCED",
+            "PROPOSED",
+            "ADOPTED",
+            "ACKNOWLEDGED",
+            "REJECTED",
+            "CHALLENGED",
+            "REVISED",
+            "CORRECTED",
+            "FORMALIZED",
+            "COMMITTED",
+            "PROMISED",
+            "ESTABLISHED_BOUNDARY",
+            "REQUESTED_MEMORY_CONSIDERATION",
+            "REQUESTED_PRESERVATION",
+            "PRESERVED_AS_HISTORICAL",
+            "WITHDREW",
+            "SUPERSEDED",
+            "EXPRESSED_DURABLE_PREFERENCE",
+            "EXPRESSED_DURABLE_NEED",
+            "REFERENCED_PRIOR_STATEMENT",
+            "UNKNOWN_ACTION"
+          ]
+        },
+        "actionObject": { "type": ["string", "null"] },
+        "trackHints": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "PERSONAL_IDENTITY",
+              "RELATIONAL",
+              "ARCHITECTURAL_DECISION",
+              "PROJECT_EVOLUTION_GOVERNANCE",
+              "UNKNOWN"
+            ]
+          }
+        },
+        "conceptKeys": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "durabilitySignal": {
+          "enum": [
+            "PROMISE_LANGUAGE",
+            "BOUNDARY_LANGUAGE",
+            "ADOPTION_LANGUAGE",
+            "REJECTION_LANGUAGE",
+            "SELF_DESCRIPTION",
+            "GOVERNING_DECISION_LANGUAGE",
+            "WITHDRAWAL_LANGUAGE",
+            "SUPERSESSION_LANGUAGE",
+            "UNKNOWN"
+          ]
+        },
+        "speechRelationship": {
+          "enum": [
+            "DIRECT",
+            "QUOTED",
+            "PARAPHRASED",
+            "ATTRIBUTED",
+            "REPORTED_FROM_EXTERNAL_SOURCE",
+            "UNKNOWN"
+          ]
+        },
+        "antecedentResolution": {
+          "enum": [
+            "NOT_REQUIRED",
+            "RESOLVED",
+            "PARTIAL",
+            "NOT_FOUND",
+            "SOURCE_UNAVAILABLE",
+            "SOURCE_INELIGIBLE",
+            "UNKNOWN"
+          ]
+        },
+        "supportingSpans": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/span" }
+        },
+        "claimSupport": { "$ref": "#/$defs/claimSupport" },
+        "uncertainties": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "unresolvedEntityLead": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["leadHandle", "semanticRole", "supportingSpanHandles", "resolutionHint"],
+      "properties": {
+        "leadHandle": { "type": "string", "pattern": "^lead-[A-Za-z0-9._-]+$" },
+        "semanticRole": {
+          "enum": ["CLAIMED_ACTOR", "AFFECTED_SUBJECT", "ATTRIBUTED_ACTOR"]
+        },
+        "supportingSpanHandles": { "$ref": "#/$defs/spanHandleList" },
+        "resolutionHint": {
+          "anyOf": [
+            { "type": "string", "minLength": 1 },
+            { "const": "UNKNOWN" }
+          ]
+        }
+      }
+    }
+  }
+}

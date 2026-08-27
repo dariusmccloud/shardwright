@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:capture-source-policy-result-v1",
+  "title": "CaptureSourcePolicyResultV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "sourcePolicyResultHandle",
+    "sourceRecordHandle",
+    "sourceRevisionHash",
+    "sourceClass",
+    "policyId",
+    "policyVersion",
+    "policyHash",
+    "disposition",
+    "evaluatedAt"
+  ],
+  "properties": {
+    "sourcePolicyResultHandle": {
+      "type": "string",
+      "pattern": "^source-policy-result-[A-Za-z0-9._-]+$"
+    },
+    "sourceRecordHandle": {
+      "type": "string",
+      "pattern": "^record-[A-Za-z0-9._-]+$"
+    },
+    "sourceRevisionHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "sourceClass": {
+      "enum": [
+        "CANONICAL_CHAT_MESSAGE",
+        "CANONICAL_GOVERNANCE_RECORD",
+        "CANONICAL_DERIVED_RECORD",
+        "AUTHORIZED_PROJECT_RECORD",
+        "AUTHORIZED_IMPORTED_RECORD",
+        "ADMITTED_EXTERNAL_EVIDENCE"
+      ]
+    },
+    "policyId": { "type": "string", "minLength": 1 },
+    "policyVersion": { "type": "string", "minLength": 1 },
+    "policyHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "disposition": {
+      "enum": ["ELIGIBLE_EVIDENCE", "ELIGIBLE_CONTEXT_ONLY", "EXCLUDED"]
+    },
+    "reason": { "type": "string", "minLength": 1 },
+    "evaluatedAt": { "type": "string", "format": "date-time" }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "disposition": { "const": "EXCLUDED" } },
+        "required": ["disposition"]
+      },
+      "then": { "required": ["reason"] }
+    }
+  ]
+}

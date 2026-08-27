@@ -1,0 +1,65 @@
+{
+  "envelope": {
+    "schemaId": "memory-catalog-lineage-link-v1",
+    "schemaVersion": 1,
+    "artifactClass": "IMMUTABLE_RECORD",
+    "artifactId": "artifact:memory-catalog-lineage-link:01JZ9C00000000000000000005",
+    "memoryScopeId": "scope:jeep-primary",
+    "createdAt": "2026-07-24T18:05:00.000Z",
+    "producer": {
+      "componentId": "summary-sharder-memory-catalog-projector",
+      "componentVersion": "phase-x-contract"
+    },
+    "contractBindings": [
+      {
+        "id": "phase-x-correction-authority-child",
+        "version": "future-contract"
+      }
+    ],
+    "policyBindings": [],
+    "payloadHash": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+    "authorityBasisRefs": [
+      {
+        "artifactType": "governed-correction-event-v1",
+        "artifactId": "artifact:governed-correction-event:01JZ9C00000000000000000006",
+        "memoryScopeId": "scope:jeep-primary",
+        "expectedArtifactClass": "EVENT",
+        "resolutionRequirement": "EXACT_HASH",
+        "immutableHash": "sha256:5656565656565656565656565656565656565656565656565656565656565656"
+      }
+    ]
+  },
+  "relationshipType": "CORRECTS",
+  "relationshipAuthorityMode": "CHILD_CONTRACT",
+  "sourceCatalogRecordRef": {
+    "artifactType": "memory-catalog-record-v1",
+    "artifactId": "artifact:memory-catalog-record:01JZ9C00000000000000000007",
+    "memoryScopeId": "scope:jeep-primary",
+    "expectedArtifactClass": "AUTHORITY_REGISTRATION",
+    "resolutionRequirement": "EXACT_HASH",
+    "immutableHash": "sha256:5757575757575757575757575757575757575757575757575757575757575757"
+  },
+  "targetCatalogRecordRef": {
+    "artifactType": "memory-catalog-record-v1",
+    "artifactId": "artifact:memory-catalog-record:01JZ9C00000000000000000008",
+    "memoryScopeId": "scope:jeep-primary",
+    "expectedArtifactClass": "AUTHORITY_REGISTRATION",
+    "resolutionRequirement": "EXACT_HASH",
+    "immutableHash": "sha256:5858585858585858585858585858585858585858585858585858585858585858"
+  },
+  "relationScope": {
+    "scopeType": "CLAIMS",
+    "affectedClaimIds": [
+      "claim:movement-was-independent"
+    ]
+  },
+  "authorityEventRef": {
+    "artifactType": "governed-correction-event-v1",
+    "artifactId": "artifact:governed-correction-event:01JZ9C00000000000000000006",
+    "memoryScopeId": "scope:jeep-primary",
+    "expectedArtifactClass": "EVENT",
+    "resolutionRequirement": "EXACT_HASH",
+    "immutableHash": "sha256:5656565656565656565656565656565656565656565656565656565656565656"
+  },
+  "effectiveAt": "2026-07-24T18:05:00.000Z"
+}

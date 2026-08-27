@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:context-sheet-retirement-event-v1",
+  "title": "ContextSheetRetirementEventV1",
+  "description": "Append-only retirement of one exact context sheet from ordinary active organization without deleting or reinterpreting its history.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "envelope",
+    "eventType",
+    "sourceSheet",
+    "retirementAuthorityRef",
+    "identityDisputeCheck",
+    "activeViewImpact",
+    "reason",
+    "retirementPolicyVersion",
+    "occurredAt"
+  ],
+  "properties": {
+    "envelope": {
+      "allOf": [
+        { "$ref": "urn:shardwright:schema:v1:memory-artifact-envelope-v1" },
+        {
+          "type": "object",
+          "properties": {
+            "artifactClass": { "const": "EVENT" },
+            "schemaId": { "const": "context-sheet-retirement-event-v1" },
+            "idempotencyKey": { "type": "string" },
+            "authorityBasisRefs": { "type": "array", "minItems": 1 }
+          },
+          "required": ["artifactClass", "schemaId", "idempotencyKey", "authorityBasisRefs"]
+        }
+      ]
+    },
+    "eventType": { "const": "CONTEXT_SHEET_RETIRED" },
+    "sourceSheet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contextSheetId", "exactStateRef", "lifecycleState"],
+      "properties": {
+        "contextSheetId": {
+          "type": "string",
+          "pattern": "^context-sheet:[A-Za-z0-9._~-]+$"
+        },
+        "exactStateRef": {
+          "allOf": [
+            { "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1" },
+            {
+              "type": "object",
+              "properties": {
+                "artifactType": { "const": "context-sheet-lifecycle-projection-v1" },
+                "expectedArtifactClass": { "const": "PROJECTION" },
+                "resolutionRequirement": { "const": "EXACT_HASH" }
+              }
+            }
+          ]
+        },
+        "lifecycleState": { "const": "ACTIVE" }
+      }
+    },
+    "retirementAuthorityRef": {
+      "allOf": [
+        { "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1" },
+        {
+          "type": "object",
+          "properties": {
+            "expectedArtifactClass": {
+              "enum": ["EVENT", "IMMUTABLE_RECORD", "AUTHORITY_REGISTRATION"]
+            },
+            "resolutionRequirement": { "const": "EXACT_HASH" }
+          }
+        }
+      ]
+    },
+    "identityDisputeCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "checkedStateHash"],
+      "properties": {
+        "state": { "const": "CLEAR" },
+        "checkedStateHash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    },
+    "activeViewImpact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ordinaryOrganization",
+        "historyAccess",
+        "citations",
+        "dossierHistory",
+        "catalogEvidence"
+      ],
+      "properties": {
+        "ordinaryOrganization": { "const": "EXCLUDE" },
+        "historyAccess": { "const": "PRESERVE" },
+        "citations": { "const": "PRESERVE" },
+        "dossierHistory": { "const": "PRESERVE" },
+        "catalogEvidence": { "const": "UNCHANGED" }
+      }
+    },
+    "reason": { "type": "string", "minLength": 1 },
+    "retirementPolicyVersion": { "type": "string", "minLength": 1 },
+    "occurredAt": { "type": "string", "format": "date-time" }
+  }
+}

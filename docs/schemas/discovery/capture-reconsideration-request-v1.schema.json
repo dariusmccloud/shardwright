@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:capture-reconsideration-request-v1",
+  "title": "CaptureReconsiderationRequestV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "reconsiderationRequestId",
+    "reconsiderationContractVersion",
+    "target",
+    "sourceRecordHandle",
+    "sourceRevisionHash",
+    "priorCaptureContractVersion",
+    "priorExecutionSpecHash",
+    "triggerType",
+    "triggerBasisRefs",
+    "requestOrigin",
+    "requestedInputs",
+    "deduplicationKey",
+    "requestedAt"
+  ],
+  "properties": {
+    "reconsiderationRequestId": {
+      "type": "string",
+      "pattern": "^reconsideration-request-[A-Za-z0-9._-]+$"
+    },
+    "reconsiderationContractVersion": { "type": "string", "minLength": 1 },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["targetKind", "targetId", "targetRevision", "targetHash"],
+      "properties": {
+        "targetKind": {
+          "enum": ["CAPTURE_RESULT", "SOURCE_DISPOSITION", "ACCEPTED_OBSERVATION"]
+        },
+        "targetId": { "type": "string", "minLength": 1 },
+        "targetRevision": { "type": "integer", "minimum": 1 },
+        "targetHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+      }
+    },
+    "sourceRecordHandle": {
+      "type": "string",
+      "pattern": "^record-[A-Za-z0-9._-]+$"
+    },
+    "sourceRevisionHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "priorCaptureContractVersion": { "type": "string", "minLength": 1 },
+    "priorExecutionSpecHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "triggerType": {
+      "enum": [
+        "CAPTURE_CONTRACT_CHANGED",
+        "CAPTURE_PROFILE_CHANGED",
+        "ENTITY_RESOLUTION_CHANGED",
+        "SOURCE_POLICY_CHANGED",
+        "SOURCE_BECAME_AVAILABLE",
+        "ANTECEDENT_RESOLVED",
+        "DISPUTE_MATERIAL_CHANGED",
+        "HUMAN_RECONSIDERATION_REQUESTED"
+      ]
+    },
+    "triggerBasisRefs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["basisRecordId", "basisHash"],
+        "properties": {
+          "basisRecordId": { "type": "string", "minLength": 1 },
+          "basisHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+          "dependencyId": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "requestOrigin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["originType"],
+      "properties": {
+        "originType": {
+          "enum": ["CODE", "AUTHENTICATED_HUMAN", "GOVERNANCE_RECONCILIATION"]
+        },
+        "actorEntityId": { "type": "string", "minLength": 1 },
+        "humanReason": { "type": "string", "minLength": 1 }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "originType": { "const": "AUTHENTICATED_HUMAN" } },
+            "required": ["originType"]
+          },
+          "then": { "required": ["actorEntityId", "humanReason"] }
+        }
+      ]
+    },
+    "requestedInputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "captureContractVersion",
+        "executionSpecHash",
+        "sourcePolicyHash"
+      ],
+      "properties": {
+        "captureContractVersion": { "type": "string", "minLength": 1 },
+        "executionSpecHash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "sourcePolicyHash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    },
+    "deduplicationKey": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "requestedAt": { "type": "string", "format": "date-time" }
+  }
+}

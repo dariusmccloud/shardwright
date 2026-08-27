@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:context-sheet-membership-impact-decision-v1",
+  "title": "ContextSheetMembershipImpactDecisionV1",
+  "description": "Append-only, per-link decision for the impact of one exact governed Context Sheet merge or split. It records one lawful disposition without rewriting, silently retargeting, or multiplying the prior membership link.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "envelope", "eventType", "impactSource", "structuralEventRef", "impactedLinkRef",
+    "impactDecision", "predecessorCurrentUseState", "successorEventRefs", "compatibilityChecks",
+    "reason", "evidenceRefs", "governingPolicyVersion", "decidedBy", "occurredAt",
+    "priorLinkMutated", "catalogAuthorityChanged", "contextSheetAuthorityChanged",
+    "createsDossierAuthority", "multipliesEvidenceAccounting", "defaultCopiedToAllTargets"
+  ],
+  "properties": {
+    "envelope": {
+      "allOf": [
+        { "$ref": "urn:shardwright:schema:v1:memory-artifact-envelope-v1" },
+        {
+          "type": "object",
+          "properties": {
+            "artifactClass": { "const": "EVENT" },
+            "schemaId": { "const": "context-sheet-membership-impact-decision-v1" },
+            "idempotencyKey": { "type": "string", "minLength": 1 },
+            "authorityBasisRefs": { "type": "array", "minItems": 1 }
+          },
+          "required": ["artifactClass", "schemaId", "idempotencyKey", "authorityBasisRefs"]
+        }
+      ]
+    },
+    "eventType": { "const": "CONTEXT_SHEET_MEMBERSHIP_IMPACT_DECIDED" },
+    "impactSource": { "enum": ["MERGE", "SPLIT"] },
+    "structuralEventRef": { "$ref": "#/$defs/exactStructuralEventRef" },
+    "impactedLinkRef": { "$ref": "#/$defs/exactMembershipLinkRef" },
+    "impactDecision": {
+      "enum": [
+        "REMAPPED_TO_SURVIVING_SHEET", "REQUIRES_REVALIDATION", "REMAINS_HISTORICAL_ONLY", "DISPUTED",
+        "ASSIGNED_TO_EXACT_SUCCESSOR", "ASSIGNED_TO_MULTIPLE_JUSTIFIED_SUCCESSORS", "UNRESOLVED_ASSIGNMENT", "DISPUTED_ASSIGNMENT", "HISTORICAL_ONLY"
+      ]
+    },
+    "predecessorCurrentUseState": { "enum": ["SUPERSEDED", "HISTORICAL_ONLY", "BLOCKED"] },
+    "successorEventRefs": {
+      "type": "array", "uniqueItems": true,
+      "items": { "$ref": "#/$defs/exactSuccessorEventRef" }
+    },
+    "compatibilityChecks": {
+      "type": "object", "additionalProperties": false,
+      "required": ["type", "anchor", "claim", "jurisdiction", "temporal"],
+      "properties": {
+        "type": { "enum": ["PASSED", "NOT_APPLICABLE", "UNRESOLVED", "DISPUTED"] },
+        "anchor": { "enum": ["PASSED", "NOT_APPLICABLE", "UNRESOLVED", "DISPUTED"] },
+        "claim": { "enum": ["PASSED", "NOT_APPLICABLE", "UNRESOLVED", "DISPUTED"] },
+        "jurisdiction": { "enum": ["PASSED", "NOT_APPLICABLE", "UNRESOLVED", "DISPUTED"] },
+        "temporal": { "enum": ["PASSED", "NOT_APPLICABLE", "UNRESOLVED", "DISPUTED"] }
+      }
+    },
+    "reason": { "type": "string", "minLength": 1 },
+    "evidenceRefs": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {
+        "allOf": [
+          { "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1" },
+          { "type": "object", "properties": { "resolutionRequirement": { "const": "EXACT_HASH" } } }
+        ]
+      }
+    },
+    "governingPolicyVersion": { "type": "string", "minLength": 1 },
+    "decidedBy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["owner", "componentId", "componentVersion"],
+      "properties": {
+        "owner": { "const": "MEMBERSHIP_LINK_SERVICE" },
+        "componentId": { "type": "string", "minLength": 1 },
+        "componentVersion": { "type": "string", "minLength": 1 }
+      }
+    },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "priorLinkMutated": { "const": false },
+    "catalogAuthorityChanged": { "const": false },
+    "contextSheetAuthorityChanged": { "const": false },
+    "createsDossierAuthority": { "const": false },
+    "multipliesEvidenceAccounting": { "const": false },
+    "defaultCopiedToAllTargets": { "const": false }
+  },
+  "$defs": {
+    "exactMembershipLinkRef": {
+      "allOf": [
+        { "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1" },
+        { "type": "object", "properties": { "artifactType": { "const": "context-sheet-membership-link-v1" }, "expectedArtifactClass": { "const": "IMMUTABLE_RECORD" }, "resolutionRequirement": { "const": "EXACT_HASH" } } }
+      ]
+    },
+    "exactStructuralEventRef": {
+      "allOf": [
+        { "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1" },
+        { "type": "object", "properties": { "artifactType": { "enum": ["context-sheet-merge-event-v1", "context-sheet-split-event-v1"] }, "expectedArtifactClass": { "const": "EVENT" }, "resolutionRequirement": { "const": "EXACT_HASH" } } }
+      ]
+    },
+    "exactSuccessorEventRef": {
+      "allOf": [
+        { "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1" },
+        { "type": "object", "properties": { "artifactType": { "const": "context-sheet-membership-successor-event-v1" }, "expectedArtifactClass": { "const": "EVENT" }, "resolutionRequirement": { "const": "EXACT_HASH" } } }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "impactSource": { "const": "MERGE" } }, "required": ["impactSource"] },
+      "then": {
+        "properties": {
+          "structuralEventRef": { "type": "object", "properties": { "artifactType": { "const": "context-sheet-merge-event-v1" } } },
+          "impactDecision": { "enum": ["REMAPPED_TO_SURVIVING_SHEET", "REQUIRES_REVALIDATION", "REMAINS_HISTORICAL_ONLY", "DISPUTED"] }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "impactSource": { "const": "SPLIT" } }, "required": ["impactSource"] },
+      "then": {
+        "properties": {
+          "structuralEventRef": { "type": "object", "properties": { "artifactType": { "const": "context-sheet-split-event-v1" } } },
+          "impactDecision": { "enum": ["ASSIGNED_TO_EXACT_SUCCESSOR", "ASSIGNED_TO_MULTIPLE_JUSTIFIED_SUCCESSORS", "UNRESOLVED_ASSIGNMENT", "DISPUTED_ASSIGNMENT", "HISTORICAL_ONLY"] }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "impactDecision": { "enum": ["REMAPPED_TO_SURVIVING_SHEET", "ASSIGNED_TO_EXACT_SUCCESSOR"] } }, "required": ["impactDecision"] },
+      "then": {
+        "properties": {
+          "predecessorCurrentUseState": { "const": "SUPERSEDED" },
+          "successorEventRefs": { "type": "array", "minItems": 1, "maxItems": 1 },
+          "compatibilityChecks": { "type": "object", "properties": { "type": { "const": "PASSED" }, "anchor": { "const": "PASSED" }, "claim": { "const": "PASSED" }, "jurisdiction": { "const": "PASSED" }, "temporal": { "const": "PASSED" } } }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "impactDecision": { "const": "ASSIGNED_TO_MULTIPLE_JUSTIFIED_SUCCESSORS" } }, "required": ["impactDecision"] },
+      "then": {
+        "properties": {
+          "predecessorCurrentUseState": { "const": "SUPERSEDED" },
+          "successorEventRefs": { "type": "array", "minItems": 2 },
+          "compatibilityChecks": { "type": "object", "properties": { "type": { "const": "PASSED" }, "anchor": { "const": "PASSED" }, "claim": { "const": "PASSED" }, "jurisdiction": { "const": "PASSED" }, "temporal": { "const": "PASSED" } } }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "impactDecision": { "enum": ["REQUIRES_REVALIDATION", "UNRESOLVED_ASSIGNMENT"] } }, "required": ["impactDecision"] },
+      "then": { "properties": { "predecessorCurrentUseState": { "const": "BLOCKED" }, "successorEventRefs": { "type": "array", "maxItems": 0 } } }
+    },
+    {
+      "if": { "properties": { "impactDecision": { "enum": ["REMAINS_HISTORICAL_ONLY", "HISTORICAL_ONLY"] } }, "required": ["impactDecision"] },
+      "then": { "properties": { "predecessorCurrentUseState": { "const": "HISTORICAL_ONLY" }, "successorEventRefs": { "type": "array", "maxItems": 0 } } }
+    },
+    {
+      "if": { "properties": { "impactDecision": { "enum": ["DISPUTED", "DISPUTED_ASSIGNMENT"] } }, "required": ["impactDecision"] },
+      "then": { "properties": { "predecessorCurrentUseState": { "const": "BLOCKED" }, "successorEventRefs": { "type": "array", "maxItems": 0 } } }
+    }
+  ]
+}

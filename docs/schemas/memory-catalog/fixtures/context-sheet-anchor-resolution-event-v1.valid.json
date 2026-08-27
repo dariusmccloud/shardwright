@@ -1,0 +1,57 @@
+{
+  "envelope": {
+    "schemaId": "context-sheet-anchor-resolution-event-v1",
+    "schemaVersion": 1,
+    "artifactClass": "EVENT",
+    "artifactId": "artifact:context-sheet-anchor-resolution-event:01JZ9F00000000000000000005",
+    "memoryScopeId": "scope:jeep-primary",
+    "createdAt": "2026-07-25T11:10:00.000Z",
+    "producer": { "componentId": "context-sheet-identity-service", "componentVersion": "phase-x-contract" },
+    "contractBindings": [{ "id": "phase-x-context-sheet-anchor", "version": "0.1.0" }],
+    "policyBindings": [{ "id": "context-sheet-identity-policy", "version": "v1" }],
+    "payloadHash": "sha256:a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5",
+    "idempotencyKey": "idempotency:resolve-archivist",
+    "authorityBasisRefs": [
+      {
+        "artifactType": "governed-identity-resolution-v1",
+        "artifactId": "artifact:governed-identity-resolution:01JZ9F00000000000000000006",
+        "memoryScopeId": "scope:jeep-primary",
+        "expectedArtifactClass": "EVENT",
+        "resolutionRequirement": "EXACT_HASH",
+        "immutableHash": "sha256:a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6"
+      }
+    ]
+  },
+  "eventType": "CONTEXT_SHEET_ANCHOR_RESOLVED",
+  "unresolvedSheetRef": {
+    "artifactType": "context-sheet-record-v1",
+    "artifactId": "artifact:context-sheet-record:01JZ9F00000000000000000007",
+    "memoryScopeId": "scope:jeep-primary",
+    "expectedArtifactClass": "IMMUTABLE_RECORD",
+    "resolutionRequirement": "EXACT_HASH",
+    "immutableHash": "sha256:a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7"
+  },
+  "sourceAnchorState": "UNRESOLVED",
+  "resolvedCanonicalAnchorId": "canonical-anchor:archivist-alpha",
+  "governedIdentityBasisRef": {
+    "artifactType": "governed-identity-resolution-v1",
+    "artifactId": "artifact:governed-identity-resolution:01JZ9F00000000000000000006",
+    "memoryScopeId": "scope:jeep-primary",
+    "expectedArtifactClass": "EVENT",
+    "resolutionRequirement": "EXACT_HASH",
+    "immutableHash": "sha256:a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6"
+  },
+  "anchorJurisdiction": { "memoryScopeId": "scope:jeep-primary", "jurisdictionId": "subject:archivist-alpha" },
+  "aliasDecisionRefs": [],
+  "catalogLinkImpact": {
+    "evaluated": true,
+    "decision": "NO_LINKS",
+    "impactManifestHash": "sha256:a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8"
+  },
+  "identityCollisionState": "NONE",
+  "mergeReviewRef": null,
+  "resolutionEffect": "RESOLVED",
+  "decidedBy": { "decisionClass": "GOVERNED_ACTOR", "actorId": "subject:chris" },
+  "identityPolicyVersion": "v1",
+  "occurredAt": "2026-07-25T11:10:00.000Z"
+}

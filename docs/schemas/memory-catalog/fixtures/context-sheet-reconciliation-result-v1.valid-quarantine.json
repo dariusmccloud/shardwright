@@ -1,0 +1,6 @@
+{
+  "envelope": { "schemaId": "context-sheet-reconciliation-result-v1", "schemaVersion": 1, "artifactClass": "RESULT", "artifactId": "artifact:context-sheet-reconciliation-result:01K1RECONCILE000000000011", "memoryScopeId": "scope:lyra-primary", "createdAt": "2026-08-03T11:05:00.000Z", "producer": { "componentId": "context-sheet-reconciler", "componentVersion": "phase-x-contract" }, "contractBindings": [{ "id": "phase-x-context-sheet-anchor", "version": "0.1.0" }], "policyBindings": [], "payloadHash": "sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1" },
+  "contextSheetId": "context-sheet:damaged-topic", "reconciliationState": "AUTHORITY_MISSING", "authoritativeInputRefs": [], "observedProjectionRef": null,
+  "discrepancies": [{ "code": "LIFECYCLE_EVENT_MISSING", "severity": "CRITICAL", "message": "The projected lifecycle state cannot be reconstructed from available authority.", "affectedRefs": [] }],
+  "permittedAction": "QUARANTINE", "authorityMutationPermitted": false, "authorityInferencePermitted": false, "unaffectedScopesRemainAvailable": true, "reconciledAt": "2026-08-03T11:05:00.000Z"
+}

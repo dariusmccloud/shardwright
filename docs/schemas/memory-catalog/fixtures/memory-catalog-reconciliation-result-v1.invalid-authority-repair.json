@@ -1,0 +1,30 @@
+{
+  "envelope": {
+    "schemaId": "memory-catalog-reconciliation-result-v1",
+    "schemaVersion": 1,
+    "artifactClass": "RESULT",
+    "artifactId": "artifact:memory-catalog-reconciliation-result:01JZ9D00000000000000000010",
+    "memoryScopeId": "scope:jeep-primary",
+    "createdAt": "2026-07-25T09:20:00.000Z",
+    "producer": { "componentId": "summary-sharder-memory-reconciler", "componentVersion": "phase-x-contract" },
+    "contractBindings": [{ "id": "phase-x-memory-catalog-record", "version": "0.1.0" }],
+    "policyBindings": [],
+    "payloadHash": "sha256:7070707070707070707070707070707070707070707070707070707070707070"
+  },
+  "targetBoundary": "CATALOG_RECORD",
+  "targetId": "artifact:memory-catalog-record:01JZ9D00000000000000000002",
+  "reconciliationState": "AUTHORITY_MISSING",
+  "authoritativeInputRefs": [],
+  "observedProjectionRef": null,
+  "discrepancies": [
+    {
+      "code": "PUBLICATION_EVENT_MISSING",
+      "severity": "CRITICAL",
+      "message": "Required publication authority is absent.",
+      "affectedRefs": []
+    }
+  ],
+  "permittedAction": "QUARANTINE",
+  "authorityMutationPermitted": true,
+  "reconciledAt": "2026-07-25T09:20:00.000Z"
+}

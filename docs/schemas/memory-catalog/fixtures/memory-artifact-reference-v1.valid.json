@@ -1,0 +1,8 @@
+{
+  "artifactType": "memory-catalog-record-v1",
+  "artifactId": "artifact:memory-catalog-record:01JZ8M7Y4SVV8J5Y30R2M2QPTA",
+  "memoryScopeId": "scope:jeep-primary",
+  "expectedArtifactClass": "AUTHORITY_REGISTRATION",
+  "resolutionRequirement": "EXACT_REVISION",
+  "revision": 1
+}

@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:capture-source-envelope-v1",
+  "title": "CaptureSourceEnvelopeV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "sourceHandle",
+    "sourceRecordHandle",
+    "sourceRevisionHash",
+    "sourceClass",
+    "sourcePolicyResultHandle",
+    "canonicalText",
+    "evidenceUse",
+    "canonicalSpeaker",
+    "eligibleEntityHandles"
+  ],
+  "properties": {
+    "sourceHandle": { "type": "string", "pattern": "^src-[A-Za-z0-9._-]+$" },
+    "sourceRecordHandle": { "type": "string", "pattern": "^record-[A-Za-z0-9._-]+$" },
+    "sourceRevisionHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "sourcePolicyResultHandle": { "type": "string", "pattern": "^source-policy-result-[A-Za-z0-9._-]+$" },
+    "canonicalText": { "type": "string" },
+    "evidenceUse": { "enum": ["EVIDENCE", "CONTEXT_ONLY"] },
+    "canonicalSpeaker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entityHandle", "displayName", "hostClassification"],
+      "properties": {
+        "entityHandle": { "type": "string", "minLength": 1 },
+        "displayName": { "type": "string", "minLength": 1 },
+        "hostClassification": { "enum": ["USER", "CHARACTER", "SYSTEM", "OTHER"] },
+        "characterCardFile": { "type": "string", "minLength": 1 }
+      }
+    },
+    "sourceClass": {
+      "enum": [
+        "CANONICAL_CHAT_MESSAGE",
+        "CANONICAL_GOVERNANCE_RECORD",
+        "CANONICAL_DERIVED_RECORD",
+        "AUTHORIZED_PROJECT_RECORD",
+        "AUTHORIZED_IMPORTED_RECORD",
+        "ADMITTED_EXTERNAL_EVIDENCE"
+      ]
+    },
+    "eligibleEntityHandles": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "humanContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "chatLabel": { "type": "string" },
+        "messageOrdinal": { "type": "integer", "minimum": 0 },
+        "sourceFileLabel": { "type": "string" }
+      }
+    }
+  }
+}

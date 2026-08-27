@@ -1,0 +1,212 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:memory-catalog-lineage-link-v1",
+  "title": "MemoryCatalogLineageLinkV1",
+  "description": "Immutable, authority-bound relationship between exact catalog record revisions. Relationship type never mutates either record.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "envelope",
+    "relationshipType",
+    "relationshipAuthorityMode",
+    "sourceCatalogRecordRef",
+    "targetCatalogRecordRef",
+    "relationScope",
+    "authorityEventRef",
+    "effectiveAt"
+  ],
+  "properties": {
+    "envelope": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-envelope-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "artifactClass": {
+              "const": "IMMUTABLE_RECORD"
+            },
+            "schemaId": {
+              "const": "memory-catalog-lineage-link-v1"
+            },
+            "authorityBasisRefs": {
+              "type": "array",
+              "minItems": 1
+            }
+          },
+          "required": [
+            "artifactClass",
+            "schemaId",
+            "authorityBasisRefs"
+          ]
+        }
+      ]
+    },
+    "relationshipType": {
+      "enum": [
+        "SUPERSEDES",
+        "CORRECTS",
+        "NARROWS",
+        "WITHDRAWS",
+        "RESTORES_FROM",
+        "CONTESTS",
+        "DELTA_FOR"
+      ]
+    },
+    "relationshipAuthorityMode": {
+      "enum": [
+        "EXISTING_LIFECYCLE",
+        "CHILD_CONTRACT"
+      ]
+    },
+    "sourceCatalogRecordRef": {
+      "$ref": "#/$defs/exactCatalogRecordRef"
+    },
+    "targetCatalogRecordRef": {
+      "$ref": "#/$defs/exactCatalogRecordRef"
+    },
+    "relationScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scopeType",
+        "affectedClaimIds"
+      ],
+      "properties": {
+        "scopeType": {
+          "enum": [
+            "WHOLE_RECORD",
+            "CLAIMS"
+          ]
+        },
+        "affectedClaimIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "scopeType": {
+                "const": "WHOLE_RECORD"
+              }
+            },
+            "required": [
+              "scopeType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "affectedClaimIds": {
+                "type": "array",
+                "maxItems": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "scopeType": {
+                "const": "CLAIMS"
+              }
+            },
+            "required": [
+              "scopeType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "affectedClaimIds": {
+                "type": "array",
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "authorityEventRef": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "expectedArtifactClass": {
+              "const": "EVENT"
+            },
+            "resolutionRequirement": {
+              "const": "EXACT_HASH"
+            }
+          }
+        }
+      ]
+    },
+    "effectiveAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "relationshipType": {
+            "enum": [
+              "SUPERSEDES",
+              "WITHDRAWS"
+            ]
+          }
+        },
+        "required": [
+          "relationshipType"
+        ]
+      },
+      "then": {
+        "properties": {
+          "relationshipAuthorityMode": {
+            "const": "EXISTING_LIFECYCLE"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "relationshipAuthorityMode": {
+            "const": "CHILD_CONTRACT"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "exactCatalogRecordRef": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "artifactType": {
+              "const": "memory-catalog-record-v1"
+            },
+            "expectedArtifactClass": {
+              "const": "AUTHORITY_REGISTRATION"
+            },
+            "resolutionRequirement": {
+              "const": "EXACT_HASH"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

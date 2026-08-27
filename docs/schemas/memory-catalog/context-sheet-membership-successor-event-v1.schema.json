@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:context-sheet-membership-successor-event-v1",
+  "title": "ContextSheetMembershipSuccessorEventV1",
+  "description": "Append-only server-owned correction of one exact accepted membership link. It changes current use or creates an exact successor without rewriting catalog, anchor, or prior-link authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "envelope", "eventType", "predecessorLinkRef", "correctionType",
+    "predecessorCurrentUseState", "successorLinkRef", "successorValidationEventRef",
+    "reason", "evidenceRefs", "governingPolicyVersion", "decidedBy", "occurredAt",
+    "priorLinkMutated", "catalogAuthorityChanged", "contextSheetAuthorityChanged",
+    "createsDossierAuthority", "multipliesEvidenceAccounting"
+  ],
+  "properties": {
+    "envelope": {
+      "allOf": [
+        { "$ref": "urn:shardwright:schema:v1:memory-artifact-envelope-v1" },
+        {
+          "type": "object",
+          "properties": {
+            "artifactClass": { "const": "EVENT" },
+            "schemaId": { "const": "context-sheet-membership-successor-event-v1" },
+            "idempotencyKey": { "type": "string", "minLength": 1 },
+            "authorityBasisRefs": { "type": "array", "minItems": 1 }
+          },
+          "required": ["artifactClass", "schemaId", "idempotencyKey", "authorityBasisRefs"]
+        }
+      ]
+    },
+    "eventType": { "const": "CONTEXT_SHEET_MEMBERSHIP_SUCCEEDED" },
+    "predecessorLinkRef": { "$ref": "#/$defs/exactMembershipLinkRef" },
+    "correctionType": {
+      "enum": [
+        "LINK_CONFIRMED", "LINK_RETYPED", "LINK_NARROWED", "LINK_EXPANDED",
+        "LINK_DISPUTED", "LINK_REMOVED_FROM_CURRENT_USE", "LINK_REMAPPED"
+      ]
+    },
+    "predecessorCurrentUseState": {
+      "enum": ["CURRENT", "SUPERSEDED", "HISTORICAL_ONLY", "REMOVED", "BLOCKED"]
+    },
+    "successorLinkRef": {
+      "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/exactMembershipLinkRef" }]
+    },
+    "successorValidationEventRef": {
+      "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/exactValidationEventRef" }]
+    },
+    "reason": { "type": "string", "minLength": 1 },
+    "evidenceRefs": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {
+        "allOf": [
+          { "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1" },
+          { "type": "object", "properties": { "resolutionRequirement": { "const": "EXACT_HASH" } } }
+        ]
+      }
+    },
+    "governingPolicyVersion": { "type": "string", "minLength": 1 },
+    "decidedBy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["owner", "componentId", "componentVersion"],
+      "properties": {
+        "owner": { "const": "MEMBERSHIP_LINK_SERVICE" },
+        "componentId": { "type": "string", "minLength": 1 },
+        "componentVersion": { "type": "string", "minLength": 1 }
+      }
+    },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "priorLinkMutated": { "const": false },
+    "catalogAuthorityChanged": { "const": false },
+    "contextSheetAuthorityChanged": { "const": false },
+    "createsDossierAuthority": { "const": false },
+    "multipliesEvidenceAccounting": { "const": false }
+  },
+  "$defs": {
+    "exactMembershipLinkRef": {
+      "allOf": [
+        { "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1" },
+        {
+          "type": "object",
+          "properties": {
+            "artifactType": { "const": "context-sheet-membership-link-v1" },
+            "expectedArtifactClass": { "const": "IMMUTABLE_RECORD" },
+            "resolutionRequirement": { "const": "EXACT_HASH" }
+          }
+        }
+      ]
+    },
+    "exactValidationEventRef": {
+      "allOf": [
+        { "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1" },
+        {
+          "type": "object",
+          "properties": {
+            "artifactType": { "const": "context-sheet-membership-validation-event-v1" },
+            "expectedArtifactClass": { "const": "EVENT" },
+            "resolutionRequirement": { "const": "EXACT_HASH" }
+          }
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "correctionType": { "enum": ["LINK_RETYPED", "LINK_NARROWED", "LINK_EXPANDED", "LINK_REMAPPED"] } }, "required": ["correctionType"] },
+      "then": {
+        "properties": {
+          "predecessorCurrentUseState": { "const": "SUPERSEDED" },
+          "successorLinkRef": { "type": "object" },
+          "successorValidationEventRef": { "type": "object" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "correctionType": { "const": "LINK_CONFIRMED" } }, "required": ["correctionType"] },
+      "then": {
+        "properties": {
+          "predecessorCurrentUseState": { "const": "CURRENT" },
+          "successorLinkRef": { "type": "null" },
+          "successorValidationEventRef": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "correctionType": { "const": "LINK_DISPUTED" } }, "required": ["correctionType"] },
+      "then": {
+        "properties": {
+          "predecessorCurrentUseState": { "const": "BLOCKED" },
+          "successorLinkRef": { "type": "null" },
+          "successorValidationEventRef": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "correctionType": { "const": "LINK_REMOVED_FROM_CURRENT_USE" } }, "required": ["correctionType"] },
+      "then": {
+        "properties": {
+          "predecessorCurrentUseState": { "const": "REMOVED" },
+          "successorLinkRef": { "type": "null" },
+          "successorValidationEventRef": { "type": "null" }
+        }
+      }
+    }
+  ]
+}

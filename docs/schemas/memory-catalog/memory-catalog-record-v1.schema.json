@@ -1,0 +1,206 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:memory-catalog-record-v1",
+  "title": "MemoryCatalogRecordV1",
+  "description": "Immutable registration of one already-governed published-continuity revision. Validation does not create upstream authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "envelope",
+    "catalogJurisdictionId",
+    "catalogRecordKind",
+    "governanceTrack",
+    "governedArtifactId",
+    "governedArtifactRevisionId",
+    "governedArtifactRevisionHash",
+    "evidenceSetId",
+    "evidenceSetHash",
+    "sourceManifestHash",
+    "governanceLedgerId",
+    "governanceEventId",
+    "publicationLedgerId",
+    "publicationEventId",
+    "publicationRecordId",
+    "continuityTargetId",
+    "memorySubjectId",
+    "materiallyAffectedSubjectIds",
+    "authorityBindingIds",
+    "governingContractVersions",
+    "registrationPolicyVersion",
+    "registeredAt",
+    "registrationEventRef"
+  ],
+  "properties": {
+    "envelope": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-envelope-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "artifactClass": {
+              "const": "AUTHORITY_REGISTRATION"
+            },
+            "schemaId": {
+              "const": "memory-catalog-record-v1"
+            },
+            "authorityBasisRefs": {
+              "type": "array",
+              "minItems": 2
+            }
+          },
+          "required": [
+            "artifactClass",
+            "schemaId",
+            "authorityBasisRefs"
+          ]
+        }
+      ]
+    },
+    "catalogJurisdictionId": {
+      "type": "string",
+      "pattern": "^catalog-jurisdiction:[A-Za-z0-9._~-]+$"
+    },
+    "catalogRecordKind": {
+      "const": "PUBLISHED_CONTINUITY"
+    },
+    "governanceTrack": {
+      "type": "string",
+      "minLength": 1
+    },
+    "governedArtifactId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "governedArtifactRevisionId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "governedArtifactRevisionHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "evidenceSetId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidenceSetHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "sourceManifestHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "governanceLedgerId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "governanceEventId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "publicationLedgerId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "publicationEventId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "publicationRecordId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "continuityTargetId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "memorySubjectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "materiallyAffectedSubjectIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "authorityBindingIds": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "governingContractVersions": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/versionBinding"
+      }
+    },
+    "registrationPolicyVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "registeredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "registrationEventRef": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "artifactType": {
+              "const": "memory-catalog-registration-event-v1"
+            },
+            "expectedArtifactClass": {
+              "const": "EVENT"
+            },
+            "resolutionRequirement": {
+              "const": "EXACT_HASH"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "versionBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contentHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    }
+  }
+}

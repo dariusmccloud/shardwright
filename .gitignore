@@ -10,7 +10,6 @@ CLAUDE.md
 FEATURES.md
 GEMINI.md
 
-docs/
 node_modules/
 
 *.code-workspace

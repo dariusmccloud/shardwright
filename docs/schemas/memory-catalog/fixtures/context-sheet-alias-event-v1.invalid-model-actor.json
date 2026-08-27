@@ -1,0 +1,42 @@
+{
+  "envelope": {
+    "schemaId": "context-sheet-alias-event-v1",
+    "schemaVersion": 1,
+    "artifactClass": "EVENT",
+    "artifactId": "artifact:context-sheet-alias-event:01JZ9F00000000000000000001",
+    "memoryScopeId": "scope:lyra-primary",
+    "createdAt": "2026-07-25T11:00:00.000Z",
+    "producer": { "componentId": "capture-model", "componentVersion": "model-output" },
+    "contractBindings": [{ "id": "phase-x-context-sheet-anchor", "version": "0.1.0" }],
+    "policyBindings": [],
+    "payloadHash": "sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+    "idempotencyKey": "idempotency:alias-model"
+  },
+  "eventType": "CONTEXT_SHEET_ALIAS_RECORDED",
+  "contextSheetRef": {
+    "artifactType": "context-sheet-record-v1",
+    "artifactId": "artifact:context-sheet-record:01JZ9F00000000000000000002",
+    "memoryScopeId": "scope:lyra-primary",
+    "expectedArtifactClass": "IMMUTABLE_RECORD",
+    "resolutionRequirement": "EXACT_HASH",
+    "immutableHash": "sha256:a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2"
+  },
+  "aliasText": "Laura",
+  "aliasKind": "FORMER_NAME",
+  "locale": null,
+  "aliasScope": { "memoryScopeId": "scope:lyra-primary", "jurisdictionId": "subject:lyra" },
+  "effectiveFrom": "2025-08-01T00:00:00.000Z",
+  "effectiveUntil": null,
+  "attributableActor": { "actorClass": "MODEL", "actorId": "capture-model" },
+  "attributableBasisRef": {
+    "artifactType": "capture-model-result-v1",
+    "artifactId": "artifact:capture-model-result:01JZ9F00000000000000000004",
+    "memoryScopeId": "scope:lyra-primary",
+    "expectedArtifactClass": "RESULT",
+    "resolutionRequirement": "EXACT_HASH",
+    "immutableHash": "sha256:a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4"
+  },
+  "reason": "Model suggested alias.",
+  "validationState": "VALIDATED",
+  "occurredAt": "2026-07-25T11:00:00.000Z"
+}

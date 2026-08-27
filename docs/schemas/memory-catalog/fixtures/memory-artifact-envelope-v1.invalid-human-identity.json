@@ -1,0 +1,20 @@
+{
+  "schemaId": "memory-catalog-record-v1",
+  "schemaVersion": 1,
+  "artifactClass": "AUTHORITY_REGISTRATION",
+  "artifactId": "Memory 42",
+  "memoryScopeId": "scope:jeep-primary",
+  "createdAt": "2026-07-24T16:30:00.000Z",
+  "producer": {
+    "componentId": "summary-sharder-memory",
+    "componentVersion": "phase-x-contract"
+  },
+  "contractBindings": [
+    {
+      "id": "phase-x-memory-catalog-record",
+      "version": "0.1.0"
+    }
+  ],
+  "policyBindings": [],
+  "payloadHash": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+}

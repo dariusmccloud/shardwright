@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:context-sheet-redirect-v1",
+  "title": "ContextSheetRedirectV1",
+  "description": "Immutable lookup consequence of a governed merge, split partition, or replacement. A redirect is not identity authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "envelope",
+    "sourceContextSheetId",
+    "destination",
+    "redirectKind",
+    "authorityEventRef",
+    "effectiveAt",
+    "reason",
+    "historicalHops",
+    "selfRedirectCheck",
+    "cycleCheck"
+  ],
+  "properties": {
+    "envelope": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-envelope-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "artifactClass": { "const": "IMMUTABLE_RECORD" },
+            "schemaId": { "const": "context-sheet-redirect-v1" }
+          },
+          "required": ["artifactClass", "schemaId"]
+        }
+      ]
+    },
+    "sourceContextSheetId": {
+      "type": "string",
+      "pattern": "^context-sheet:[A-Za-z0-9._~-]+$"
+    },
+    "destination": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["destinationKind", "targetContextSheetId", "targetStateRef"],
+          "properties": {
+            "destinationKind": { "const": "ACTIVE_SHEET" },
+            "targetContextSheetId": {
+              "type": "string",
+              "pattern": "^context-sheet:[A-Za-z0-9._~-]+$"
+            },
+            "targetStateRef": {
+              "allOf": [
+                {
+                  "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "artifactType": { "const": "context-sheet-lifecycle-projection-v1" },
+                    "expectedArtifactClass": { "const": "PROJECTION" },
+                    "resolutionRequirement": { "const": "EXACT_HASH" }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["destinationKind", "partitionRuleRef"],
+          "properties": {
+            "destinationKind": { "const": "UNRESOLVED_PARTITION" },
+            "partitionRuleRef": {
+              "allOf": [
+                {
+                  "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "expectedArtifactClass": { "const": "MANIFEST" },
+                    "resolutionRequirement": { "const": "EXACT_HASH" }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "redirectKind": {
+      "enum": ["MERGE", "SPLIT_PARTITION", "EXPLICIT_REPLACEMENT"]
+    },
+    "authorityEventRef": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "expectedArtifactClass": { "const": "EVENT" },
+            "resolutionRequirement": { "const": "EXACT_HASH" }
+          }
+        }
+      ]
+    },
+    "effectiveAt": { "type": "string", "format": "date-time" },
+    "reason": { "type": "string", "minLength": 1 },
+    "historicalHops": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^context-sheet:[A-Za-z0-9._~-]+$"
+      }
+    },
+    "selfRedirectCheck": { "const": "PASSED" },
+    "cycleCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "checkedGraphHash"],
+      "properties": {
+        "state": { "const": "ACYCLIC" },
+        "checkedGraphHash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    }
+  }
+}

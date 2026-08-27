@@ -1,0 +1,47 @@
+{
+  "envelope": {
+    "schemaId": "memory-citation-namespace-v1",
+    "schemaVersion": 1,
+    "artifactClass": "IMMUTABLE_RECORD",
+    "artifactId": "artifact:memory-citation-namespace:jeep-primary",
+    "memoryScopeId": "scope:jeep-primary",
+    "createdAt": "2026-07-24T17:31:00.000Z",
+    "producer": {
+      "componentId": "summary-sharder-memory-citation-service",
+      "componentVersion": "phase-x-contract"
+    },
+    "contractBindings": [
+      {
+        "id": "phase-x-memory-catalog-record",
+        "version": "0.1.0"
+      }
+    ],
+    "policyBindings": [],
+    "payloadHash": "sha256:2020202020202020202020202020202020202020202020202020202020202020",
+    "revision": 2,
+    "predecessorRef": {
+      "artifactType": "memory-citation-namespace-v1",
+      "artifactId": "artifact:memory-citation-namespace:jeep-primary",
+      "memoryScopeId": "scope:jeep-primary",
+      "expectedArtifactClass": "IMMUTABLE_RECORD",
+      "resolutionRequirement": "EXACT_REVISION",
+      "revision": 1
+    }
+  },
+  "catalogJurisdictionId": "catalog-jurisdiction:jeep-primary",
+  "namespaceKind": "LOCAL_PRIMARY",
+  "namespaceVersion": 1,
+  "displayPrefix": "M",
+  "lastAllocatedOrdinal": 1,
+  "nextOrdinal": 2,
+  "createdAt": "2026-07-24T17:30:00.000Z",
+  "retiredAt": null,
+  "derivedThroughAllocationEventRef": {
+    "artifactType": "memory-citation-allocation-event-v1",
+    "artifactId": "artifact:memory-citation-allocation-event:01JZ9B00000000000000000001",
+    "memoryScopeId": "scope:jeep-primary",
+    "expectedArtifactClass": "EVENT",
+    "resolutionRequirement": "EXACT_HASH",
+    "immutableHash": "sha256:3030303030303030303030303030303030303030303030303030303030303030"
+  }
+}

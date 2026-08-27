@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:capture-job-state-v1",
+  "title": "CaptureJobStateV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "captureJobId",
+    "idempotencyKey",
+    "sourceRevisionHash",
+    "captureContractVersion",
+    "executionSpecHash",
+    "jobState",
+    "attemptCount",
+    "createdAt"
+  ],
+  "properties": {
+    "captureJobId": { "type": "string", "minLength": 1 },
+    "idempotencyKey": { "type": "string", "minLength": 1 },
+    "sourceRevisionHash": { "type": "string", "pattern": "^sha256:" },
+    "captureContractVersion": { "type": "string", "minLength": 1 },
+    "executionSpecHash": { "type": "string", "pattern": "^sha256:" },
+    "jobState": {
+      "enum": [
+        "PENDING",
+        "LEASED",
+        "RUNNING",
+        "SUCCEEDED",
+        "FAILED_RETRYABLE",
+        "FAILED_TERMINAL",
+        "CANCELLED"
+      ]
+    },
+    "leaseOwner": { "type": ["string", "null"] },
+    "leaseAcquiredAt": { "type": ["string", "null"], "format": "date-time" },
+    "leaseExpiresAt": { "type": ["string", "null"], "format": "date-time" },
+    "attemptCount": { "type": "integer", "minimum": 0 },
+    "lastAttemptAt": { "type": ["string", "null"], "format": "date-time" },
+    "nextRetryEligibleAt": { "type": ["string", "null"], "format": "date-time" },
+    "lastFailureCode": { "type": ["string", "null"] },
+    "lastFailureReason": { "type": ["string", "null"] },
+    "acceptedResultId": { "type": ["string", "null"] },
+    "reconsiderationRequestId": {
+      "type": ["string", "null"],
+      "pattern": "^reconsideration-request-[A-Za-z0-9._-]+$"
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "completedAt": { "type": ["string", "null"], "format": "date-time" }
+  }
+}

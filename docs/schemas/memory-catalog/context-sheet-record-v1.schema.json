@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:context-sheet-record-v1",
+  "title": "ContextSheetRecordV1",
+  "description": "Immutable creation record for one context sheet and its initial anchor basis. Titles and similarity are not identity.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "envelope",
+    "contextSheetId",
+    "memoryScopeId",
+    "sheetType",
+    "preferredTitle",
+    "anchorState",
+    "canonicalAnchorId",
+    "unresolvedAnchorLeadRef",
+    "identityAuthorityRef",
+    "anchorJurisdiction",
+    "creationBasis",
+    "createdBy",
+    "createdAt",
+    "creationEventRef",
+    "identityPolicyVersion"
+  ],
+  "properties": {
+    "envelope": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-envelope-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "artifactClass": { "const": "IMMUTABLE_RECORD" },
+            "schemaId": { "const": "context-sheet-record-v1" },
+            "revision": { "const": 1 }
+          },
+          "required": ["artifactClass", "schemaId", "revision"]
+        }
+      ]
+    },
+    "contextSheetId": {
+      "type": "string",
+      "pattern": "^context-sheet:[A-Za-z0-9._~-]+$"
+    },
+    "memoryScopeId": {
+      "type": "string",
+      "pattern": "^scope:[A-Za-z0-9._~-]+$"
+    },
+    "sheetType": {
+      "enum": [
+        "ENTITY",
+        "RELATIONSHIP",
+        "GROUP",
+        "PLACE",
+        "OBJECT",
+        "TOPIC",
+        "GOAL",
+        "PROJECT",
+        "MOTIF",
+        "RITUAL",
+        "ERA"
+      ]
+    },
+    "preferredTitle": { "type": "string", "minLength": 1 },
+    "anchorState": { "enum": ["UNRESOLVED", "RESOLVED"] },
+    "canonicalAnchorId": {
+      "type": ["string", "null"],
+      "pattern": "^canonical-anchor:[A-Za-z0-9._~-]+$"
+    },
+    "unresolvedAnchorLeadRef": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "allOf": [
+            {
+              "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "resolutionRequirement": { "const": "EXACT_HASH" }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "identityAuthorityRef": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "allOf": [
+            {
+              "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "expectedArtifactClass": {
+                  "enum": ["EVENT", "IMMUTABLE_RECORD", "AUTHORITY_REGISTRATION"]
+                },
+                "resolutionRequirement": { "const": "EXACT_HASH" }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "anchorJurisdiction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["jurisdictionId", "jurisdictionClass"],
+      "properties": {
+        "jurisdictionId": { "type": "string", "minLength": 1 },
+        "jurisdictionClass": {
+          "enum": [
+            "SELF_SUBJECT",
+            "SHARED_SUBJECT",
+            "ARCHITECTURAL_OR_GOVERNANCE",
+            "SHARED_WORLD",
+            "EXTERNAL_WORLD",
+            "PROJECT",
+            "OTHER"
+          ]
+        }
+      }
+    },
+    "creationBasis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["creationPath", "basisRefs", "basisHash"],
+      "properties": {
+        "creationPath": {
+          "enum": ["AUTOMATIC_NOMINATION", "MANUAL_SEED"]
+        },
+        "basisRefs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+          }
+        },
+        "basisHash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    },
+    "createdBy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["creationActorClass", "actorId"],
+      "properties": {
+        "creationActorClass": {
+          "enum": ["SERVER_POLICY", "ATTRIBUTABLE_REQUEST"]
+        },
+        "actorId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "creationEventRef": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "artifactType": { "const": "context-sheet-creation-event-v1" },
+            "expectedArtifactClass": { "const": "EVENT" },
+            "resolutionRequirement": { "const": "EXACT_HASH" }
+          }
+        }
+      ]
+    },
+    "identityPolicyVersion": { "type": "string", "minLength": 1 }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "anchorState": { "const": "RESOLVED" } },
+        "required": ["anchorState"]
+      },
+      "then": {
+        "properties": {
+          "canonicalAnchorId": { "type": "string" },
+          "unresolvedAnchorLeadRef": { "type": "null" },
+          "identityAuthorityRef": { "type": "object" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "anchorState": { "const": "UNRESOLVED" } },
+        "required": ["anchorState"]
+      },
+      "then": {
+        "properties": {
+          "canonicalAnchorId": { "type": "null" },
+          "unresolvedAnchorLeadRef": { "type": "object" },
+          "identityAuthorityRef": { "type": "null" }
+        }
+      }
+    }
+  ]
+}

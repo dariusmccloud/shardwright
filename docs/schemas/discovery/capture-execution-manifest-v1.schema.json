@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:capture-execution-manifest-v1",
+  "title": "CaptureExecutionManifestV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "modelIdentifier",
+    "modelFileHash",
+    "parameterCount",
+    "quantization",
+    "inferenceEngine",
+    "inferenceEngineVersion",
+    "promptContractHash",
+    "jsonSchemaHash",
+    "constraintMode",
+    "temperature",
+    "seed",
+    "contextLength",
+    "generationLimits",
+    "batchSettings",
+    "threadSettings",
+    "hardwareProfile",
+    "operatingEnvironment"
+  ],
+  "properties": {
+    "modelIdentifier": { "type": "string", "minLength": 1 },
+    "modelFileHash": { "type": "string", "pattern": "^sha256:" },
+    "parameterCount": { "type": "integer", "minimum": 1 },
+    "quantization": { "type": "string", "minLength": 1 },
+    "inferenceEngine": { "type": "string", "minLength": 1 },
+    "inferenceEngineVersion": { "type": "string", "minLength": 1 },
+    "promptContractHash": { "type": "string", "pattern": "^sha256:" },
+    "jsonSchemaHash": { "type": "string", "pattern": "^sha256:" },
+    "grammarOrConstraintHash": { "type": ["string", "null"], "pattern": "^sha256:" },
+    "constraintMode": {
+      "enum": [
+        "JSON_SCHEMA_CONSTRAINED",
+        "GRAMMAR_CONSTRAINED",
+        "POST_GENERATION_REPAIR",
+        "UNCONSTRAINED"
+      ]
+    },
+    "temperature": { "type": "number", "minimum": 0 },
+    "seed": { "type": "integer" },
+    "contextLength": { "type": "integer", "minimum": 1 },
+    "generationLimits": { "type": "object" },
+    "batchSettings": { "type": "object" },
+    "threadSettings": { "type": "object" },
+    "hardwareProfile": { "type": "object" },
+    "operatingEnvironment": { "type": "object" }
+  }
+}

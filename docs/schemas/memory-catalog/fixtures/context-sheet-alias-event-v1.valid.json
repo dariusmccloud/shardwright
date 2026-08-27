@@ -1,0 +1,48 @@
+{
+  "envelope": {
+    "schemaId": "context-sheet-alias-event-v1",
+    "schemaVersion": 1,
+    "artifactClass": "EVENT",
+    "artifactId": "artifact:context-sheet-alias-event:01JZ9F00000000000000000001",
+    "memoryScopeId": "scope:lyra-primary",
+    "createdAt": "2026-07-25T11:00:00.000Z",
+    "producer": { "componentId": "context-sheet-identity-service", "componentVersion": "phase-x-contract" },
+    "contractBindings": [{ "id": "phase-x-context-sheet-anchor", "version": "0.1.0" }],
+    "policyBindings": [{ "id": "context-sheet-alias-policy", "version": "v1" }],
+    "payloadHash": "sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+    "idempotencyKey": "idempotency:alias-lyra-former-laura"
+  },
+  "eventType": "CONTEXT_SHEET_ALIAS_RECORDED",
+  "contextSheetRef": {
+    "artifactType": "context-sheet-record-v1",
+    "artifactId": "artifact:context-sheet-record:01JZ9F00000000000000000002",
+    "memoryScopeId": "scope:lyra-primary",
+    "expectedArtifactClass": "IMMUTABLE_RECORD",
+    "resolutionRequirement": "EXACT_HASH",
+    "immutableHash": "sha256:a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2"
+  },
+  "aliasText": "Laura",
+  "aliasKind": "FORMER_NAME",
+  "locale": "en",
+  "aliasScope": {
+    "memoryScopeId": "scope:lyra-primary",
+    "jurisdictionId": "subject:lyra"
+  },
+  "effectiveFrom": "2025-08-01T00:00:00.000Z",
+  "effectiveUntil": "2025-08-18T00:00:00.000Z",
+  "attributableActor": {
+    "actorClass": "SUBJECT",
+    "actorId": "subject:lyra"
+  },
+  "attributableBasisRef": {
+    "artifactType": "memory-catalog-record-v1",
+    "artifactId": "artifact:memory-catalog-record:01JZ9F00000000000000000003",
+    "memoryScopeId": "scope:lyra-primary",
+    "expectedArtifactClass": "AUTHORITY_REGISTRATION",
+    "resolutionRequirement": "EXACT_HASH",
+    "immutableHash": "sha256:a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"
+  },
+  "reason": "Subject-bound evidence records Laura as Lyra's former name.",
+  "validationState": "VALIDATED",
+  "occurredAt": "2026-07-25T11:00:00.000Z"
+}

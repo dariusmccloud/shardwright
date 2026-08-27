@@ -1,0 +1,35 @@
+{
+  "schemaId": "memory-catalog-record-v1",
+  "schemaVersion": 1,
+  "artifactClass": "AUTHORITY_REGISTRATION",
+  "artifactId": "artifact:memory-catalog-record:01JZ8M7Y4SVV8J5Y30R2M2QPTA",
+  "memoryScopeId": "scope:jeep-primary",
+  "createdAt": "2026-07-24T16:30:00.000Z",
+  "producer": {
+    "componentId": "summary-sharder-memory",
+    "componentVersion": "phase-x-contract",
+    "executionId": "registration-01JZ8M8J5EWGCGK10D9YHGFM59"
+  },
+  "contractBindings": [
+    {
+      "id": "phase-x-memory-catalog-record",
+      "version": "0.1.0",
+      "contentHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+    }
+  ],
+  "policyBindings": [],
+  "payloadHash": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+  "revision": 1,
+  "idempotencyKey": "idempotency:catalog-registration-01JZ8M7Y4SVV8J5Y30R2M2QPTA",
+  "correlationId": "correlation:discovery-01JZ8M6CB7MA6R3J95P0FMN8VA",
+  "authorityBasisRefs": [
+    {
+      "artifactType": "published-memory-revision-v1",
+      "artifactId": "artifact:published-memory-revision:01JZ8M4PW2QTM3Q4Z4KXA0KCDY",
+      "memoryScopeId": "scope:jeep-primary",
+      "expectedArtifactClass": "IMMUTABLE_RECORD",
+      "resolutionRequirement": "EXACT_HASH",
+      "immutableHash": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
+    }
+  ]
+}

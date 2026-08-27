@@ -1,0 +1,16 @@
+{
+  "envelope": {
+    "schemaId": "context-sheet-restoration-event-v1", "schemaVersion": 1, "artifactClass": "EVENT",
+    "artifactId": "artifact:context-sheet-restoration-event:01K1RESTORE00000000000001", "memoryScopeId": "scope:lyra-primary",
+    "createdAt": "2026-08-02T13:00:00.000Z", "producer": { "componentId": "context-sheet-identity-service", "componentVersion": "phase-x-contract" },
+    "contractBindings": [{ "id": "phase-x-context-sheet-anchor", "version": "0.1.0" }], "policyBindings": [{ "id": "context-sheet-restoration-policy", "version": "v1" }],
+    "payloadHash": "sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1", "idempotencyKey": "idempotency:restore-historical-topic",
+    "authorityBasisRefs": [{ "artifactType": "governed-restoration-decision-v1", "artifactId": "artifact:governed-restoration-decision:01K1RESTORE00000000000002", "memoryScopeId": "scope:lyra-primary", "expectedArtifactClass": "EVENT", "resolutionRequirement": "EXACT_HASH", "immutableHash": "sha256:a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2" }]
+  },
+  "eventType": "CONTEXT_SHEET_RESTORED",
+  "retiredSheet": { "contextSheetId": "context-sheet:historical-topic", "exactStateRef": { "artifactType": "context-sheet-lifecycle-projection-v1", "artifactId": "artifact:context-sheet-lifecycle-projection:01K1RESTORE00000000000003", "memoryScopeId": "scope:lyra-primary", "expectedArtifactClass": "PROJECTION", "resolutionRequirement": "EXACT_HASH", "immutableHash": "sha256:a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3" }, "lifecycleState": "RETIRED" },
+  "retirementEventRef": { "artifactType": "context-sheet-retirement-event-v1", "artifactId": "artifact:context-sheet-retirement-event:01K1RETIRE000000000000001", "memoryScopeId": "scope:lyra-primary", "expectedArtifactClass": "EVENT", "resolutionRequirement": "EXACT_HASH", "immutableHash": "sha256:a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4" },
+  "revalidation": { "anchorState": "RESOLVED", "anchorCheck": "PASSED", "scopeCheck": "PASSED", "jurisdictionCheck": "PASSED", "redirectCheck": "NO_ACTIVE_REDIRECT", "conflictCheck": "CLEAR", "checkedStateHash": "sha256:a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5" },
+  "restorationAuthorityRef": { "artifactType": "governed-restoration-decision-v1", "artifactId": "artifact:governed-restoration-decision:01K1RESTORE00000000000002", "memoryScopeId": "scope:lyra-primary", "expectedArtifactClass": "EVENT", "resolutionRequirement": "EXACT_HASH", "immutableHash": "sha256:a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2" },
+  "reason": "The sheet is again needed in current organization and all lifecycle boundaries revalidate cleanly.", "restorationPolicyVersion": "v1", "occurredAt": "2026-08-02T13:00:00.000Z"
+}

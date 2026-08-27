@@ -1,0 +1,58 @@
+{
+  "envelope": {
+    "schemaId": "context-sheet-retirement-event-v1",
+    "schemaVersion": 1,
+    "artifactClass": "EVENT",
+    "artifactId": "artifact:context-sheet-retirement-event:01K1RETIRE000000000000001",
+    "memoryScopeId": "scope:lyra-primary",
+    "createdAt": "2026-08-02T12:00:00.000Z",
+    "producer": { "componentId": "context-sheet-identity-service", "componentVersion": "phase-x-contract" },
+    "contractBindings": [{ "id": "phase-x-context-sheet-anchor", "version": "0.1.0" }],
+    "policyBindings": [{ "id": "context-sheet-retirement-policy", "version": "v1" }],
+    "payloadHash": "sha256:f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1",
+    "idempotencyKey": "idempotency:retire-historical-topic",
+    "authorityBasisRefs": [{
+      "artifactType": "governed-retirement-decision-v1",
+      "artifactId": "artifact:governed-retirement-decision:01K1RETIRE000000000000002",
+      "memoryScopeId": "scope:lyra-primary",
+      "expectedArtifactClass": "EVENT",
+      "resolutionRequirement": "EXACT_HASH",
+      "immutableHash": "sha256:f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2"
+    }]
+  },
+  "eventType": "CONTEXT_SHEET_RETIRED",
+  "sourceSheet": {
+    "contextSheetId": "context-sheet:historical-topic",
+    "exactStateRef": {
+      "artifactType": "context-sheet-lifecycle-projection-v1",
+      "artifactId": "artifact:context-sheet-lifecycle-projection:01K1RETIRE000000000000003",
+      "memoryScopeId": "scope:lyra-primary",
+      "expectedArtifactClass": "PROJECTION",
+      "resolutionRequirement": "EXACT_HASH",
+      "immutableHash": "sha256:f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3"
+    },
+    "lifecycleState": "ACTIVE"
+  },
+  "retirementAuthorityRef": {
+    "artifactType": "governed-retirement-decision-v1",
+    "artifactId": "artifact:governed-retirement-decision:01K1RETIRE000000000000002",
+    "memoryScopeId": "scope:lyra-primary",
+    "expectedArtifactClass": "EVENT",
+    "resolutionRequirement": "EXACT_HASH",
+    "immutableHash": "sha256:f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2"
+  },
+  "identityDisputeCheck": {
+    "state": "CLEAR",
+    "checkedStateHash": "sha256:f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4"
+  },
+  "activeViewImpact": {
+    "ordinaryOrganization": "EXCLUDE",
+    "historyAccess": "PRESERVE",
+    "citations": "PRESERVE",
+    "dossierHistory": "PRESERVE",
+    "catalogEvidence": "UNCHANGED"
+  },
+  "reason": "The sheet is no longer used for ordinary organization, while its governed history remains relevant.",
+  "retirementPolicyVersion": "v1",
+  "occurredAt": "2026-08-02T12:00:00.000Z"
+}

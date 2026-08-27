@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:context-sheet-creation-event-v1",
+  "title": "ContextSheetCreationEventV1",
+  "description": "Server-owned event creating one context-sheet identity from a validated resolved or unresolved anchor basis.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "envelope",
+    "eventType",
+    "registrarClass",
+    "contextSheetRef",
+    "sheetType",
+    "anchorStateAtCreation",
+    "identityKeyHash",
+    "creationPath",
+    "creationDecision",
+    "occurredAt"
+  ],
+  "properties": {
+    "envelope": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-envelope-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "artifactClass": { "const": "EVENT" },
+            "schemaId": { "const": "context-sheet-creation-event-v1" },
+            "idempotencyKey": { "type": "string" },
+            "authorityBasisRefs": { "type": "array", "minItems": 1 }
+          },
+          "required": ["artifactClass", "schemaId", "idempotencyKey", "authorityBasisRefs"]
+        }
+      ]
+    },
+    "eventType": { "const": "CONTEXT_SHEET_CREATED" },
+    "registrarClass": { "const": "SERVER_SIDE_CONTEXT_SHEET_IDENTITY_SERVICE" },
+    "contextSheetRef": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "artifactType": { "const": "context-sheet-record-v1" },
+            "expectedArtifactClass": { "const": "IMMUTABLE_RECORD" },
+            "resolutionRequirement": { "const": "EXACT_HASH" }
+          }
+        }
+      ]
+    },
+    "sheetType": {
+      "enum": [
+        "ENTITY",
+        "RELATIONSHIP",
+        "GROUP",
+        "PLACE",
+        "OBJECT",
+        "TOPIC",
+        "GOAL",
+        "PROJECT",
+        "MOTIF",
+        "RITUAL",
+        "ERA"
+      ]
+    },
+    "anchorStateAtCreation": { "enum": ["UNRESOLVED", "RESOLVED"] },
+    "identityKeyHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "creationPath": { "enum": ["AUTOMATIC_NOMINATION", "MANUAL_SEED"] },
+    "creationDecision": { "const": "ACCEPTED" },
+    "occurredAt": { "type": "string", "format": "date-time" }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "envelope": {
+    "schemaId": "memory-catalog-reconciliation-result-v1",
+    "schemaVersion": 1,
+    "artifactClass": "RESULT",
+    "artifactId": "artifact:memory-catalog-reconciliation-result:01JZ9D00000000000000000011",
+    "memoryScopeId": "scope:jeep-primary",
+    "createdAt": "2026-07-25T09:25:00.000Z",
+    "producer": { "componentId": "summary-sharder-memory-reconciler", "componentVersion": "phase-x-contract" },
+    "contractBindings": [{ "id": "phase-x-memory-catalog-record", "version": "0.1.0" }],
+    "policyBindings": [],
+    "payloadHash": "sha256:7171717171717171717171717171717171717171717171717171717171717171"
+  },
+  "targetBoundary": "CONTINUITY_TARGET",
+  "targetId": "continuity-target:jeep:architecture",
+  "reconciliationState": "CONFLICT",
+  "authoritativeInputRefs": [],
+  "observedProjectionRef": null,
+  "discrepancies": [
+    {
+      "code": "MULTIPLE_ACTIVE_RECORDS",
+      "severity": "CRITICAL",
+      "message": "More than one authoritative record claims current activation.",
+      "affectedRefs": []
+    }
+  ],
+  "permittedAction": "REBUILD_PROJECTION",
+  "authorityMutationPermitted": false,
+  "reconciledAt": "2026-07-25T09:25:00.000Z"
+}

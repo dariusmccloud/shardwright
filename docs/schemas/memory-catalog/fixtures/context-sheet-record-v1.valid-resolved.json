@@ -1,0 +1,62 @@
+{
+  "envelope": {
+    "schemaId": "context-sheet-record-v1",
+    "schemaVersion": 1,
+    "artifactClass": "IMMUTABLE_RECORD",
+    "artifactId": "artifact:context-sheet-record:01JZ9E00000000000000000001",
+    "memoryScopeId": "scope:jeep-primary",
+    "createdAt": "2026-07-25T10:00:00.000Z",
+    "producer": { "componentId": "context-sheet-identity-service", "componentVersion": "phase-x-contract" },
+    "contractBindings": [{ "id": "phase-x-context-sheet-anchor", "version": "0.1.0" }],
+    "policyBindings": [{ "id": "context-sheet-identity-policy", "version": "v1" }],
+    "payloadHash": "sha256:8181818181818181818181818181818181818181818181818181818181818181",
+    "revision": 1
+  },
+  "contextSheetId": "context-sheet:jeep",
+  "memoryScopeId": "scope:jeep-primary",
+  "sheetType": "ENTITY",
+  "preferredTitle": "Jeep",
+  "anchorState": "RESOLVED",
+  "canonicalAnchorId": "canonical-anchor:character-jeep",
+  "unresolvedAnchorLeadRef": null,
+  "identityAuthorityRef": {
+    "artifactType": "host-character-identity-v1",
+    "artifactId": "artifact:host-character-identity:jeep.png",
+    "memoryScopeId": "scope:jeep-primary",
+    "expectedArtifactClass": "IMMUTABLE_RECORD",
+    "resolutionRequirement": "EXACT_HASH",
+    "immutableHash": "sha256:8282828282828282828282828282828282828282828282828282828282828282"
+  },
+  "anchorJurisdiction": {
+    "jurisdictionId": "subject:jeep",
+    "jurisdictionClass": "SELF_SUBJECT"
+  },
+  "creationBasis": {
+    "creationPath": "MANUAL_SEED",
+    "basisRefs": [
+      {
+        "artifactType": "manual-context-sheet-request-v1",
+        "artifactId": "artifact:manual-context-sheet-request:01JZ9E00000000000000000002",
+        "memoryScopeId": "scope:jeep-primary",
+        "expectedArtifactClass": "NOMINATION",
+        "resolutionRequirement": "EXACT_HASH",
+        "immutableHash": "sha256:8383838383838383838383838383838383838383838383838383838383838383"
+      }
+    ],
+    "basisHash": "sha256:8484848484848484848484848484848484848484848484848484848484848484"
+  },
+  "createdBy": {
+    "creationActorClass": "ATTRIBUTABLE_REQUEST",
+    "actorId": "subject:chris"
+  },
+  "createdAt": "2026-07-25T10:00:00.000Z",
+  "creationEventRef": {
+    "artifactType": "context-sheet-creation-event-v1",
+    "artifactId": "artifact:context-sheet-creation-event:01JZ9E00000000000000000003",
+    "memoryScopeId": "scope:jeep-primary",
+    "expectedArtifactClass": "EVENT",
+    "resolutionRequirement": "EXACT_HASH",
+    "immutableHash": "sha256:8585858585858585858585858585858585858585858585858585858585858585"
+  },
+  "identityPolicyVersion": "v1"
+}

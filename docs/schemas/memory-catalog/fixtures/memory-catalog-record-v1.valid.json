@@ -1,0 +1,85 @@
+{
+  "envelope": {
+    "schemaId": "memory-catalog-record-v1",
+    "schemaVersion": 1,
+    "artifactClass": "AUTHORITY_REGISTRATION",
+    "artifactId": "artifact:memory-catalog-record:01JZ9A00000000000000000001",
+    "memoryScopeId": "scope:jeep-primary",
+    "createdAt": "2026-07-24T17:00:00.000Z",
+    "producer": {
+      "componentId": "summary-sharder-memory-registrar",
+      "componentVersion": "phase-x-contract"
+    },
+    "contractBindings": [
+      {
+        "id": "phase-x-memory-catalog-record",
+        "version": "0.1.0"
+      }
+    ],
+    "policyBindings": [
+      {
+        "id": "catalog-registration-policy",
+        "version": "v1"
+      }
+    ],
+    "payloadHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "revision": 1,
+    "authorityBasisRefs": [
+      {
+        "artifactType": "governed-interpretation-revision-v1",
+        "artifactId": "artifact:governed-interpretation-revision:01JZ9A00000000000000000002",
+        "memoryScopeId": "scope:jeep-primary",
+        "expectedArtifactClass": "IMMUTABLE_RECORD",
+        "resolutionRequirement": "EXACT_HASH",
+        "immutableHash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      {
+        "artifactType": "dnm-publication-event-v1",
+        "artifactId": "artifact:dnm-publication-event:01JZ9A00000000000000000003",
+        "memoryScopeId": "scope:jeep-primary",
+        "expectedArtifactClass": "EVENT",
+        "resolutionRequirement": "EXACT_HASH",
+        "immutableHash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    ]
+  },
+  "catalogJurisdictionId": "catalog-jurisdiction:jeep-primary",
+  "catalogRecordKind": "PUBLISHED_CONTINUITY",
+  "governanceTrack": "INTERPRETIVE_CONTINUITY",
+  "governedArtifactId": "interpretation-candidate-01JZ9A00000000000000000004",
+  "governedArtifactRevisionId": "interpretation-revision-1",
+  "governedArtifactRevisionHash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "evidenceSetId": "evidence-set-01JZ9A00000000000000000005",
+  "evidenceSetHash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "sourceManifestHash": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "governanceLedgerId": "interpretive-governance-ledger",
+  "governanceEventId": "governance-approved-01JZ9A00000000000000000006",
+  "publicationLedgerId": "dnm-publication-ledger",
+  "publicationEventId": "dnm-published-01JZ9A00000000000000000007",
+  "publicationRecordId": "publication-record-01JZ9A00000000000000000008",
+  "continuityTargetId": "continuity-target:jeep:architectural-philosophy",
+  "memorySubjectId": "subject:jeep",
+  "materiallyAffectedSubjectIds": [
+    "subject:chris"
+  ],
+  "authorityBindingIds": [
+    "authority-binding:subject-jeep",
+    "authority-binding:operator-chris"
+  ],
+  "governingContractVersions": [
+    {
+      "id": "phase-x-memory-catalog-record",
+      "version": "0.1.0"
+    }
+  ],
+  "registrationPolicyVersion": "v1",
+  "registeredAt": "2026-07-24T17:00:00.000Z",
+  "registrationEventRef": {
+    "artifactType": "memory-catalog-registration-event-v1",
+    "artifactId": "artifact:memory-catalog-registration-event:01JZ9A00000000000000000009",
+    "memoryScopeId": "scope:jeep-primary",
+    "expectedArtifactClass": "EVENT",
+    "resolutionRequirement": "EXACT_HASH",
+    "immutableHash": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+  }
+}

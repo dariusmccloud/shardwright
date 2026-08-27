@@ -1,0 +1,11 @@
+{
+  "envelope": { "schemaId": "context-sheet-membership-nomination-v1", "schemaVersion": 1, "artifactClass": "NOMINATION", "artifactId": "artifact:context-sheet-membership-nomination:01K1MEMBER000000000000001", "memoryScopeId": "scope:jeep-primary", "createdAt": "2026-08-03T12:00:00.000Z", "producer": { "componentId": "membership-link-intake", "componentVersion": "phase-x-contract" }, "contractBindings": [{ "id": "phase-x-context-sheet-membership", "version": "0.1.0" }], "policyBindings": [], "payloadHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111", "idempotencyKey": "idempotency:membership-jeep-architecture" },
+  "nominationState": "PENDING_VALIDATION",
+  "catalogRecordRef": { "artifactType": "memory-catalog-record-v1", "artifactId": "artifact:memory-catalog-record:01K1MEMBER000000000000002", "memoryScopeId": "scope:jeep-primary", "expectedArtifactClass": "AUTHORITY_REGISTRATION", "resolutionRequirement": "EXACT_HASH", "immutableHash": "sha256:2222222222222222222222222222222222222222222222222222222222222222" },
+  "candidateContextSheetRef": { "artifactType": "context-sheet-lifecycle-projection-v1", "artifactId": "artifact:context-sheet-lifecycle-projection:01K1MEMBER000000000000003", "memoryScopeId": "scope:jeep-primary", "expectedArtifactClass": "PROJECTION", "resolutionRequirement": "EXACT_HASH", "immutableHash": "sha256:3333333333333333333333333333333333333333333333333333333333333333" },
+  "proposedLinkType": "DIRECT", "proposedCatalogClaimIds": ["claim:architecture-decision"], "proposedTargetClaimIds": [],
+  "proposedJurisdiction": { "memoryScopeId": "scope:jeep-primary", "jurisdictionId": "shared:chris-jeep-architecture", "perspectiveId": "shared:chris-jeep" },
+  "temporalApplicability": { "state": "CURRENT", "validFrom": "2026-07-16T11:15:00.000Z", "validThrough": null },
+  "antecedentState": null, "contradictionDimension": null, "reason": "The governed decision claim directly concerns the architecture project anchor.",
+  "origin": "OPERATOR", "originDiagnostics": null, "acceptedRelationship": false, "dossierEligible": false, "activeContinuityEligible": false, "createdAt": "2026-08-03T12:00:00.000Z"
+}

@@ -1,0 +1,11 @@
+{
+  "envelope": { "schemaId": "context-sheet-membership-nomination-v1", "schemaVersion": 1, "artifactClass": "NOMINATION", "artifactId": "artifact:context-sheet-membership-nomination:01K1MEMBER000000000000031", "memoryScopeId": "scope:lyra-primary", "createdAt": "2026-08-03T12:15:00.000Z", "producer": { "componentId": "membership-link-intake", "componentVersion": "phase-x-contract" }, "contractBindings": [{ "id": "phase-x-context-sheet-membership", "version": "0.1.0" }], "policyBindings": [], "payloadHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "idempotencyKey": "idempotency:membership-invalid-conflict" },
+  "nominationState": "PENDING_VALIDATION",
+  "catalogRecordRef": { "artifactType": "memory-catalog-record-v1", "artifactId": "artifact:memory-catalog-record:01K1MEMBER000000000000032", "memoryScopeId": "scope:lyra-primary", "expectedArtifactClass": "AUTHORITY_REGISTRATION", "resolutionRequirement": "EXACT_HASH", "immutableHash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" },
+  "candidateContextSheetRef": { "artifactType": "context-sheet-lifecycle-projection-v1", "artifactId": "artifact:context-sheet-lifecycle-projection:01K1MEMBER000000000000033", "memoryScopeId": "scope:lyra-primary", "expectedArtifactClass": "PROJECTION", "resolutionRequirement": "EXACT_HASH", "immutableHash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" },
+  "proposedLinkType": "CONTRADICTORY", "proposedCatalogClaimIds": ["claim:new-position"], "proposedTargetClaimIds": [],
+  "proposedJurisdiction": { "memoryScopeId": "scope:lyra-primary", "jurisdictionId": "subject:lyra", "perspectiveId": "subject:lyra" },
+  "temporalApplicability": { "state": "CURRENT", "validFrom": null, "validThrough": null }, "antecedentState": null, "contradictionDimension": null,
+  "reason": "Invalid contradiction nomination that names neither the target claim nor the material conflict dimension.", "origin": "DETERMINISTIC_RULE", "originDiagnostics": null,
+  "acceptedRelationship": false, "dossierEligible": false, "activeContinuityEligible": false, "createdAt": "2026-08-03T12:15:00.000Z"
+}

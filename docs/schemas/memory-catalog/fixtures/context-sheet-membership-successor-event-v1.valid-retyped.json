@@ -1,0 +1,22 @@
+{
+  "envelope": {
+    "schemaId": "context-sheet-membership-successor-event-v1", "schemaVersion": 1,
+    "artifactClass": "EVENT", "artifactId": "artifact:context-sheet-membership-successor-event:01K1SUCCESSOR000000000001",
+    "memoryScopeId": "scope:jeep-primary", "createdAt": "2026-08-03T15:00:00.000Z",
+    "producer": { "componentId": "membership-link-service", "componentVersion": "phase-x-contract" },
+    "contractBindings": [{ "id": "phase-x-context-sheet-membership", "version": "0.1.0" }],
+    "policyBindings": [{ "id": "membership-validation-policy", "version": "v1" }],
+    "payloadHash": "sha256:4141414141414141414141414141414141414141414141414141414141414141",
+    "idempotencyKey": "idempotency:retype-architecture-link",
+    "authorityBasisRefs": [{ "artifactType": "context-sheet-membership-link-v1", "artifactId": "artifact:context-sheet-membership-link:01K1SUCCESSOR000000000002", "memoryScopeId": "scope:jeep-primary", "expectedArtifactClass": "IMMUTABLE_RECORD", "resolutionRequirement": "EXACT_HASH", "immutableHash": "sha256:4242424242424242424242424242424242424242424242424242424242424242" }]
+  },
+  "eventType": "CONTEXT_SHEET_MEMBERSHIP_SUCCEEDED",
+  "predecessorLinkRef": { "artifactType": "context-sheet-membership-link-v1", "artifactId": "artifact:context-sheet-membership-link:01K1SUCCESSOR000000000002", "memoryScopeId": "scope:jeep-primary", "expectedArtifactClass": "IMMUTABLE_RECORD", "resolutionRequirement": "EXACT_HASH", "immutableHash": "sha256:4242424242424242424242424242424242424242424242424242424242424242" },
+  "correctionType": "LINK_RETYPED", "predecessorCurrentUseState": "SUPERSEDED",
+  "successorLinkRef": { "artifactType": "context-sheet-membership-link-v1", "artifactId": "artifact:context-sheet-membership-link:01K1SUCCESSOR000000000003", "memoryScopeId": "scope:jeep-primary", "expectedArtifactClass": "IMMUTABLE_RECORD", "resolutionRequirement": "EXACT_HASH", "immutableHash": "sha256:4343434343434343434343434343434343434343434343434343434343434343" },
+  "successorValidationEventRef": { "artifactType": "context-sheet-membership-validation-event-v1", "artifactId": "artifact:context-sheet-membership-validation-event:01K1SUCCESSOR000000000004", "memoryScopeId": "scope:jeep-primary", "expectedArtifactClass": "EVENT", "resolutionRequirement": "EXACT_HASH", "immutableHash": "sha256:4444444444444444444444444444444444444444444444444444444444444444" },
+  "reason": "Exact review determined that the source is attributed rather than direct.",
+  "evidenceRefs": [{ "artifactType": "accepted-observation-record-v1", "artifactId": "artifact:accepted-observation-record:01K1SUCCESSOR000000000005", "memoryScopeId": "scope:jeep-primary", "expectedArtifactClass": "IMMUTABLE_RECORD", "resolutionRequirement": "EXACT_HASH", "immutableHash": "sha256:4545454545454545454545454545454545454545454545454545454545454545" }],
+  "governingPolicyVersion": "v1", "decidedBy": { "owner": "MEMBERSHIP_LINK_SERVICE", "componentId": "membership-link-service", "componentVersion": "phase-x-contract" }, "occurredAt": "2026-08-03T15:00:00.000Z",
+  "priorLinkMutated": false, "catalogAuthorityChanged": false, "contextSheetAuthorityChanged": false, "createsDossierAuthority": false, "multipliesEvidenceAccounting": false
+}

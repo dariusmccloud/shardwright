@@ -1,0 +1,173 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:memory-catalog-registration-event-v1",
+  "title": "MemoryCatalogRegistrationEventV1",
+  "description": "Portable server-owned event registering one eligible governed basis in the Memory Catalog.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "envelope",
+    "eventType",
+    "registrarClass",
+    "registrationKey",
+    "catalogRecordRef",
+    "governedArtifactRevisionHash",
+    "evidenceSetHash",
+    "sourceManifestHash",
+    "governanceEventRef",
+    "publicationEventRef",
+    "registrationPolicyVersion",
+    "authorityValidationState",
+    "citationCommitState",
+    "occurredAt"
+  ],
+  "properties": {
+    "envelope": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-envelope-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "artifactClass": {
+              "const": "EVENT"
+            },
+            "schemaId": {
+              "const": "memory-catalog-registration-event-v1"
+            },
+            "idempotencyKey": {
+              "type": "string"
+            },
+            "authorityBasisRefs": {
+              "type": "array",
+              "minItems": 2
+            }
+          },
+          "required": [
+            "artifactClass",
+            "schemaId",
+            "idempotencyKey",
+            "authorityBasisRefs"
+          ]
+        }
+      ]
+    },
+    "eventType": {
+      "const": "MEMORY_CATALOG_REGISTERED"
+    },
+    "registrarClass": {
+      "const": "SERVER_SIDE_REGISTRAR"
+    },
+    "registrationKey": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "catalogJurisdictionId",
+        "memoryScopeId",
+        "catalogRecordKind",
+        "governedArtifactId",
+        "governedArtifactRevisionId",
+        "registrationKeyHash"
+      ],
+      "properties": {
+        "catalogJurisdictionId": {
+          "type": "string",
+          "pattern": "^catalog-jurisdiction:[A-Za-z0-9._~-]+$"
+        },
+        "memoryScopeId": {
+          "type": "string",
+          "pattern": "^scope:[A-Za-z0-9._~-]+$"
+        },
+        "catalogRecordKind": {
+          "const": "PUBLISHED_CONTINUITY"
+        },
+        "governedArtifactId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "governedArtifactRevisionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "registrationKeyHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "catalogRecordRef": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "artifactType": {
+              "const": "memory-catalog-record-v1"
+            },
+            "expectedArtifactClass": {
+              "const": "AUTHORITY_REGISTRATION"
+            },
+            "resolutionRequirement": {
+              "const": "EXACT_HASH"
+            }
+          }
+        }
+      ]
+    },
+    "governedArtifactRevisionHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "evidenceSetHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "sourceManifestHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "governanceEventRef": {
+      "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+    },
+    "publicationEventRef": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "expectedArtifactClass": {
+              "const": "EVENT"
+            },
+            "resolutionRequirement": {
+              "const": "EXACT_HASH"
+            }
+          }
+        }
+      ]
+    },
+    "registrationPolicyVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "authorityValidationState": {
+      "const": "VALIDATED"
+    },
+    "citationCommitState": {
+      "enum": [
+        "COMMITTED",
+        "RECONCILABLE"
+      ]
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

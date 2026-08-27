@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:context-sheet-membership-nomination-v1",
+  "title": "ContextSheetMembershipNominationV1",
+  "description": "Auditable reversible suggestion that one exact catalog revision may relate to one exact Context Sheet revision. A nomination is never accepted relationship authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "envelope", "nominationState", "catalogRecordRef", "candidateContextSheetRef",
+    "proposedLinkType", "proposedCatalogClaimIds", "proposedTargetClaimIds",
+    "proposedJurisdiction", "temporalApplicability", "antecedentState",
+    "contradictionDimension", "reason", "origin", "originDiagnostics",
+    "acceptedRelationship", "dossierEligible", "activeContinuityEligible", "createdAt"
+  ],
+  "properties": {
+    "envelope": {
+      "allOf": [
+        { "$ref": "urn:shardwright:schema:v1:memory-artifact-envelope-v1" },
+        {
+          "type": "object",
+          "properties": {
+            "artifactClass": { "const": "NOMINATION" },
+            "schemaId": { "const": "context-sheet-membership-nomination-v1" },
+            "idempotencyKey": { "type": "string" }
+          },
+          "required": ["artifactClass", "schemaId", "idempotencyKey"]
+        }
+      ]
+    },
+    "nominationState": {
+      "enum": [
+        "PENDING_VALIDATION",
+        "DEFERRED_UNRESOLVED_ANCHOR",
+        "DEFERRED_MISSING_CLAIM_BASIS",
+        "REFUSED",
+        "CONSUMED"
+      ]
+    },
+    "catalogRecordRef": {
+      "allOf": [
+        { "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1" },
+        {
+          "type": "object",
+          "properties": {
+            "artifactType": { "const": "memory-catalog-record-v1" },
+            "expectedArtifactClass": { "const": "AUTHORITY_REGISTRATION" },
+            "resolutionRequirement": { "const": "EXACT_HASH" }
+          }
+        }
+      ]
+    },
+    "candidateContextSheetRef": {
+      "allOf": [
+        { "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1" },
+        {
+          "type": "object",
+          "properties": {
+            "artifactType": { "const": "context-sheet-lifecycle-projection-v1" },
+            "expectedArtifactClass": { "const": "PROJECTION" },
+            "resolutionRequirement": { "const": "EXACT_HASH" }
+          }
+        }
+      ]
+    },
+    "proposedLinkType": {
+      "enum": ["DIRECT", "ATTRIBUTED", "INTERPRETIVE", "HISTORICAL", "CONTRADICTORY"]
+    },
+    "proposedCatalogClaimIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^claim:[A-Za-z0-9._~-]+$" }
+    },
+    "proposedTargetClaimIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^claim:[A-Za-z0-9._~-]+$" }
+    },
+    "proposedJurisdiction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["memoryScopeId", "jurisdictionId", "perspectiveId"],
+      "properties": {
+        "memoryScopeId": { "type": "string", "pattern": "^scope:[A-Za-z0-9._~-]+$" },
+        "jurisdictionId": { "type": "string", "minLength": 1 },
+        "perspectiveId": { "type": ["string", "null"], "minLength": 1 }
+      }
+    },
+    "temporalApplicability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "validFrom", "validThrough"],
+      "properties": {
+        "state": { "enum": ["CURRENT", "HISTORICAL", "BOUNDED", "UNKNOWN"] },
+        "validFrom": { "type": ["string", "null"], "format": "date-time" },
+        "validThrough": { "type": ["string", "null"], "format": "date-time" }
+      }
+    },
+    "antecedentState": {
+      "type": ["string", "null"],
+      "enum": ["RESOLVED", "UNRESOLVED", "UNAVAILABLE", "DISPUTED", null]
+    },
+    "contradictionDimension": { "type": ["string", "null"], "minLength": 1 },
+    "reason": { "type": "string", "minLength": 1 },
+    "origin": { "enum": ["DETERMINISTIC_RULE", "MODEL", "RETRIEVAL", "SUBJECT", "OPERATOR"] },
+    "originDiagnostics": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["methodId", "methodVersion", "score", "diagnosticRef"],
+          "properties": {
+            "methodId": { "type": "string", "minLength": 1 },
+            "methodVersion": { "type": "string", "minLength": 1 },
+            "score": { "type": ["number", "null"] },
+            "diagnosticRef": {
+              "anyOf": [
+                { "type": "null" },
+                { "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "acceptedRelationship": { "const": false },
+    "dossierEligible": { "const": false },
+    "activeContinuityEligible": { "const": false },
+    "createdAt": { "type": "string", "format": "date-time" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "nominationState": { "const": "PENDING_VALIDATION" } }, "required": ["nominationState"] },
+      "then": { "properties": { "proposedCatalogClaimIds": { "type": "array", "minItems": 1 } } }
+    },
+    {
+      "if": { "properties": { "nominationState": { "const": "DEFERRED_MISSING_CLAIM_BASIS" } }, "required": ["nominationState"] },
+      "then": { "properties": { "proposedCatalogClaimIds": { "type": "array", "maxItems": 0 } } }
+    },
+    {
+      "if": { "properties": { "proposedLinkType": { "const": "ATTRIBUTED" } }, "required": ["proposedLinkType"] },
+      "then": { "properties": { "antecedentState": { "type": "string" } } },
+      "else": { "properties": { "antecedentState": { "type": "null" } } }
+    },
+    {
+      "if": { "properties": { "proposedLinkType": { "const": "CONTRADICTORY" } }, "required": ["proposedLinkType"] },
+      "then": {
+        "properties": {
+          "proposedTargetClaimIds": { "type": "array", "minItems": 1 },
+          "contradictionDimension": { "type": "string" }
+        }
+      },
+      "else": { "properties": { "contradictionDimension": { "type": "null" } } }
+    },
+    {
+      "if": { "properties": { "origin": { "enum": ["MODEL", "RETRIEVAL"] } }, "required": ["origin"] },
+      "then": { "properties": { "originDiagnostics": { "type": "object" } } }
+    }
+  ]
+}

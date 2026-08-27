@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:memory-artifact-envelope-v1",
+  "title": "MemoryArtifactEnvelopeV1",
+  "description": "Shared structural envelope for Phase X Memory Catalog and Context Sheet artifacts. Structural validity grants no semantic or lifecycle authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaId",
+    "schemaVersion",
+    "artifactClass",
+    "artifactId",
+    "memoryScopeId",
+    "createdAt",
+    "producer",
+    "contractBindings",
+    "policyBindings",
+    "payloadHash"
+  ],
+  "properties": {
+    "schemaId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*-v[1-9][0-9]*$"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "artifactClass": {
+      "enum": [
+        "AUTHORITY_REGISTRATION",
+        "EVENT",
+        "IMMUTABLE_RECORD",
+        "NOMINATION",
+        "MANIFEST",
+        "PROJECTION",
+        "RESULT",
+        "REPORT"
+      ]
+    },
+    "artifactId": {
+      "type": "string",
+      "pattern": "^artifact:[a-z][a-z0-9-]*:[A-Za-z0-9._~-]+$"
+    },
+    "memoryScopeId": {
+      "type": "string",
+      "pattern": "^scope:[A-Za-z0-9._~-]+$"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "componentId",
+        "componentVersion"
+      ],
+      "properties": {
+        "componentId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "componentVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "executionId": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "contractBindings": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/versionBinding"
+      }
+    },
+    "policyBindings": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/versionBinding"
+      }
+    },
+    "payloadHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "predecessorRef": {
+      "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+    },
+    "idempotencyKey": {
+      "type": "string",
+      "pattern": "^idempotency:[A-Za-z0-9._~-]+$"
+    },
+    "causationRef": {
+      "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+    },
+    "correlationId": {
+      "type": "string",
+      "pattern": "^correlation:[A-Za-z0-9._~-]+$"
+    },
+    "authorityBasisRefs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+      }
+    },
+    "sourceManifestRef": {
+      "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+    },
+    "validationProfileRef": {
+      "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "versionBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contentHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    }
+  }
+}

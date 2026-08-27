@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:capture-source-disposition-v1",
+  "title": "CaptureSourceDispositionV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "sourceIdentity",
+    "sourceRevisionHash",
+    "captureContractVersion",
+    "sourceEligibilityPolicyVersion",
+    "sourceEligibilityPolicyHash",
+    "disposition",
+    "reasonCode",
+    "decisionOrigin",
+    "decidedAt",
+    "reconsiderationTriggers"
+  ],
+  "properties": {
+    "sourceIdentity": { "type": "string", "minLength": 1 },
+    "sourceRevisionHash": { "type": "string", "pattern": "^sha256:" },
+    "captureContractVersion": { "type": "string", "minLength": 1 },
+    "sourceEligibilityPolicyVersion": { "type": "string", "minLength": 1 },
+    "sourceEligibilityPolicyHash": { "type": "string", "pattern": "^sha256:" },
+    "disposition": {
+      "enum": [
+        "ELIGIBLE_PENDING",
+        "EVALUATED",
+        "NO_OBSERVATIONS",
+        "EXCLUDED_BY_SOURCE_POLICY",
+        "SUPERSEDED_SOURCE",
+        "SOURCE_NOT_CANONICAL",
+        "SOURCE_INCOMPLETE",
+        "SOURCE_UNAVAILABLE",
+        "SOURCE_PROFILE_INCOMPATIBLE"
+      ]
+    },
+    "reasonCode": { "type": "string", "minLength": 1 },
+    "decisionOrigin": { "enum": ["CODE", "CAPTURE_RESULT", "AUTHORIZED_RECONSIDERATION"] },
+    "decidedAt": { "type": "string", "format": "date-time" },
+    "reconsiderationTriggers": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+        "CAPTURE_CONTRACT_CHANGED",
+          "CAPTURE_PROFILE_CHANGED",
+          "ENTITY_RESOLUTION_CHANGED",
+          "SOURCE_POLICY_CHANGED",
+          "SOURCE_BECAME_AVAILABLE",
+          "ANTECEDENT_RESOLVED",
+          "DISPUTE_MATERIAL_CHANGED",
+          "HUMAN_RECONSIDERATION_REQUESTED"
+        ]
+      }
+    }
+  }
+}

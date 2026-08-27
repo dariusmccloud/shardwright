@@ -1,0 +1,47 @@
+{
+  "envelope": {
+    "schemaId": "context-sheet-merge-event-v1",
+    "schemaVersion": 1,
+    "artifactClass": "EVENT",
+    "artifactId": "artifact:context-sheet-merge-event:01K1MERGE00000000000000001",
+    "memoryScopeId": "scope:jeep-primary",
+    "createdAt": "2026-08-01T10:00:00.000Z",
+    "producer": { "componentId": "context-sheet-identity-service", "componentVersion": "phase-x-contract" },
+    "contractBindings": [{ "id": "phase-x-context-sheet-anchor", "version": "0.1.0" }],
+    "policyBindings": [],
+    "payloadHash": "sha256:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1",
+    "idempotencyKey": "idempotency:merge-by-similarity",
+    "authorityBasisRefs": [
+      {
+        "artifactType": "similarity-nomination-v1",
+        "artifactId": "artifact:similarity-nomination:01K1MERGE00000000000000005",
+        "memoryScopeId": "scope:jeep-primary",
+        "expectedArtifactClass": "NOMINATION",
+        "resolutionRequirement": "EXACT_HASH",
+        "immutableHash": "sha256:c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7"
+      }
+    ]
+  },
+  "eventType": "CONTEXT_SHEETS_MERGED",
+  "sourceSheets": [],
+  "survivingContextSheetId": "context-sheet:jeep",
+  "sharedCanonicalAnchorId": "canonical-anchor:guessed-jeep",
+  "sheetType": "ENTITY",
+  "memoryScopeId": "scope:jeep-primary",
+  "anchorJurisdictionId": "subject:jeep",
+  "mergeBasisClass": "SIMILARITY",
+  "mergeAuthorityRef": {
+    "artifactType": "similarity-nomination-v1",
+    "artifactId": "artifact:similarity-nomination:01K1MERGE00000000000000005",
+    "memoryScopeId": "scope:jeep-primary",
+    "expectedArtifactClass": "NOMINATION",
+    "resolutionRequirement": "EXACT_HASH",
+    "immutableHash": "sha256:c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7"
+  },
+  "impactManifest": { "catalogLinks": "COMPLETE", "dossiers": "COMPLETE", "aliases": "COMPLETE", "unresolvedItems": 0, "manifestHash": "sha256:c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5" },
+  "aliasReconciliationState": "COMPLETE",
+  "cycleCheck": { "state": "ACYCLIC", "checkedGraphHash": "sha256:c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6" },
+  "rationale": "Names look similar.",
+  "mergePolicyVersion": "v1",
+  "occurredAt": "2026-08-01T10:00:00.000Z"
+}

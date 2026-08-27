@@ -1,0 +1,122 @@
+{
+  "envelope": {
+    "schemaId": "context-sheet-split-event-v1",
+    "schemaVersion": 1,
+    "artifactClass": "EVENT",
+    "artifactId": "artifact:context-sheet-split-event:01K1SPLIT0000000000000001",
+    "memoryScopeId": "scope:lyra-primary",
+    "createdAt": "2026-08-01T11:00:00.000Z",
+    "producer": { "componentId": "context-sheet-identity-service", "componentVersion": "phase-x-contract" },
+    "contractBindings": [{ "id": "phase-x-context-sheet-anchor", "version": "0.1.0" }],
+    "policyBindings": [{ "id": "context-sheet-split-policy", "version": "v1" }],
+    "payloadHash": "sha256:e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1",
+    "idempotencyKey": "idempotency:split-embodiment",
+    "authorityBasisRefs": [
+      {
+        "artifactType": "governed-split-decision-v1",
+        "artifactId": "artifact:governed-split-decision:01K1SPLIT0000000000000002",
+        "memoryScopeId": "scope:lyra-primary",
+        "expectedArtifactClass": "EVENT",
+        "resolutionRequirement": "EXACT_HASH",
+        "immutableHash": "sha256:e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2"
+      }
+    ]
+  },
+  "eventType": "CONTEXT_SHEET_SPLIT",
+  "sourceSheet": {
+    "contextSheetId": "context-sheet:embodiment-catchall",
+    "exactStateRef": {
+      "artifactType": "context-sheet-lifecycle-projection-v1",
+      "artifactId": "artifact:context-sheet-lifecycle-projection:01K1SPLIT0000000000000003",
+      "memoryScopeId": "scope:lyra-primary",
+      "expectedArtifactClass": "PROJECTION",
+      "resolutionRequirement": "EXACT_HASH",
+      "immutableHash": "sha256:e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3"
+    }
+  },
+  "targetSheets": [
+    {
+      "contextSheetId": "context-sheet:embodiment",
+      "sheetType": "TOPIC",
+      "canonicalAnchorId": "canonical-anchor:embodiment",
+      "anchorJurisdictionId": "subject:lyra",
+      "identityAuthorityRef": {
+        "artifactType": "governed-split-decision-v1",
+        "artifactId": "artifact:governed-split-decision:01K1SPLIT0000000000000002",
+        "memoryScopeId": "scope:lyra-primary",
+        "expectedArtifactClass": "EVENT",
+        "resolutionRequirement": "EXACT_HASH",
+        "immutableHash": "sha256:e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2"
+      }
+    },
+    {
+      "contextSheetId": "context-sheet:movement",
+      "sheetType": "TOPIC",
+      "canonicalAnchorId": "canonical-anchor:movement",
+      "anchorJurisdictionId": "subject:lyra",
+      "identityAuthorityRef": {
+        "artifactType": "governed-split-decision-v1",
+        "artifactId": "artifact:governed-split-decision:01K1SPLIT0000000000000002",
+        "memoryScopeId": "scope:lyra-primary",
+        "expectedArtifactClass": "EVENT",
+        "resolutionRequirement": "EXACT_HASH",
+        "immutableHash": "sha256:e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2"
+      }
+    }
+  ],
+  "distinctIdentityCheck": {
+    "state": "PASSED",
+    "checkedIdentityKeyHash": "sha256:e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4"
+  },
+  "partitionManifest": {
+    "partitionState": "COMPLETE",
+    "duplicationCheck": "PASSED",
+    "unresolvedBucketId": "split-unresolved:embodiment-catchall",
+    "assignments": [
+      {
+        "itemKind": "CATALOG_LINK",
+        "sourceItemRef": {
+          "artifactType": "context-sheet-membership-link-v1",
+          "artifactId": "artifact:context-sheet-membership-link:01K1SPLIT0000000000000004",
+          "memoryScopeId": "scope:lyra-primary",
+          "expectedArtifactClass": "IMMUTABLE_RECORD",
+          "resolutionRequirement": "EXACT_HASH",
+          "immutableHash": "sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5"
+        },
+        "disposition": "ASSIGNED",
+        "targetContextSheetId": "context-sheet:movement",
+        "reason": "The source claim explicitly concerns movement."
+      },
+      {
+        "itemKind": "CLAIM",
+        "sourceItemRef": {
+          "artifactType": "dossier-claim-graph-v1",
+          "artifactId": "artifact:dossier-claim-graph:01K1SPLIT0000000000000005",
+          "memoryScopeId": "scope:lyra-primary",
+          "expectedArtifactClass": "IMMUTABLE_RECORD",
+          "resolutionRequirement": "EXACT_HASH",
+          "immutableHash": "sha256:e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6"
+        },
+        "disposition": "UNRESOLVED",
+        "targetContextSheetId": null,
+        "reason": "The claim combines embodiment and movement and requires later review."
+      }
+    ],
+    "manifestHash": "sha256:e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7"
+  },
+  "splitAuthorityRef": {
+    "artifactType": "governed-split-decision-v1",
+    "artifactId": "artifact:governed-split-decision:01K1SPLIT0000000000000002",
+    "memoryScopeId": "scope:lyra-primary",
+    "expectedArtifactClass": "EVENT",
+    "resolutionRequirement": "EXACT_HASH",
+    "immutableHash": "sha256:e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2"
+  },
+  "rationale": "The source sheet combined two independently governed semantic anchors.",
+  "splitPolicyVersion": "v1",
+  "cycleCheck": {
+    "state": "ACYCLIC",
+    "checkedGraphHash": "sha256:e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8"
+  },
+  "occurredAt": "2026-08-01T11:00:00.000Z"
+}

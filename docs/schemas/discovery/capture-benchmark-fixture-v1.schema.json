@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:capture-benchmark-fixture-v1",
+  "title": "CaptureBenchmarkFixtureV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "fixtureId",
+    "fixtureVersion",
+    "benchmarkSet",
+    "title",
+    "sourceClass",
+    "canonicalSourceRevisions",
+    "contextOnlySources",
+    "entityResolutionInputs",
+    "eligibilityDisposition",
+    "expectedResultDisposition",
+    "expectedObservations",
+    "allowedAlternateObservations",
+    "forbiddenObservations",
+    "requiredUnknownFields",
+    "requiredSourceSpans",
+    "forbiddenSourceSpans",
+    "difficultyTags",
+    "errorSeverityMappings",
+    "rationale",
+    "adjudicationRecord",
+    "contractVersion"
+  ],
+  "properties": {
+    "fixtureId": { "type": "string", "minLength": 1 },
+    "fixtureVersion": { "type": "string", "minLength": 1 },
+    "benchmarkSet": { "enum": ["CALIBRATION", "DEVELOPMENT", "LOCKED_HOLDOUT"] },
+    "title": { "type": "string", "minLength": 1 },
+    "sourceClass": { "type": "string", "minLength": 1 },
+    "canonicalSourceRevisions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "object" }
+    },
+    "contextOnlySources": { "type": "array", "items": { "type": "object" } },
+    "entityResolutionInputs": { "type": "object" },
+    "eligibilityDisposition": { "type": "string", "minLength": 1 },
+    "expectedResultDisposition": {
+      "enum": ["OBSERVATIONS_NOMINATED", "NO_OBSERVATIONS"]
+    },
+    "expectedObservations": { "type": "array", "items": { "type": "object" } },
+    "allowedAlternateObservations": { "type": "array", "items": { "type": "object" } },
+    "forbiddenObservations": { "type": "array", "items": { "type": "object" } },
+    "requiredUnknownFields": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "requiredSourceSpans": { "type": "array", "items": { "type": "object" } },
+    "forbiddenSourceSpans": { "type": "array", "items": { "type": "object" } },
+    "difficultyTags": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "SINGLE_EVENT",
+          "DISTANT_LIFECYCLE",
+          "SPEAKER_ACTOR_SPLIT",
+          "SUBJECT_FACILITATION",
+          "AUTHORITY_TRAP",
+          "SUMMARY_ORIGIN_TRAP",
+          "ROLE_METADATA_TRAP",
+          "NO_DECISION",
+          "REVISION_VS_SUPERSESSION",
+          "UNILATERAL_BOUNDARY",
+          "MUTUAL_AGREEMENT",
+          "AMBIGUOUS_ENTITY",
+          "CROSS_CHAT",
+          "INELIGIBLE_SOURCE",
+          "ZERO_OBSERVATION",
+          "UNICODE_SPAN",
+          "QUOTED_ACTOR",
+          "ATTRIBUTED_ANTECEDENT"
+        ]
+      }
+    },
+    "errorSeverityMappings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["errorClass", "severity"],
+        "properties": {
+          "errorClass": { "type": "string", "minLength": 1 },
+          "severity": { "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW"] }
+        }
+      }
+    },
+    "rationale": { "type": "string", "minLength": 1 },
+    "adjudicationRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["adjudicators", "adjudicatedAt", "status"],
+      "properties": {
+        "adjudicators": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "adjudicatedAt": { "type": "string", "format": "date-time" },
+        "status": { "enum": ["ACCEPTED", "AMBIGUOUS_WITH_ALLOWED_ALTERNATIVES"] },
+        "notes": { "type": "string" }
+      }
+    },
+    "contractVersion": { "type": "string", "minLength": 1 }
+  }
+}

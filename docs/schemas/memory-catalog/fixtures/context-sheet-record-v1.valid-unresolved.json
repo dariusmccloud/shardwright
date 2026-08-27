@@ -1,0 +1,62 @@
+{
+  "envelope": {
+    "schemaId": "context-sheet-record-v1",
+    "schemaVersion": 1,
+    "artifactClass": "IMMUTABLE_RECORD",
+    "artifactId": "artifact:context-sheet-record:01JZ9E00000000000000000004",
+    "memoryScopeId": "scope:jeep-primary",
+    "createdAt": "2026-07-25T10:05:00.000Z",
+    "producer": { "componentId": "context-sheet-identity-service", "componentVersion": "phase-x-contract" },
+    "contractBindings": [{ "id": "phase-x-context-sheet-anchor", "version": "0.1.0" }],
+    "policyBindings": [{ "id": "context-sheet-identity-policy", "version": "v1" }],
+    "payloadHash": "sha256:8686868686868686868686868686868686868686868686868686868686868686",
+    "revision": 1
+  },
+  "contextSheetId": "context-sheet:unresolved-archivist",
+  "memoryScopeId": "scope:jeep-primary",
+  "sheetType": "ENTITY",
+  "preferredTitle": "Archivist (identity unresolved)",
+  "anchorState": "UNRESOLVED",
+  "canonicalAnchorId": null,
+  "unresolvedAnchorLeadRef": {
+    "artifactType": "accepted-observation-record-v1",
+    "artifactId": "artifact:accepted-observation-record:01JZ9E00000000000000000005",
+    "memoryScopeId": "scope:jeep-primary",
+    "expectedArtifactClass": "RESULT",
+    "resolutionRequirement": "EXACT_HASH",
+    "immutableHash": "sha256:8787878787878787878787878787878787878787878787878787878787878787"
+  },
+  "identityAuthorityRef": null,
+  "anchorJurisdiction": {
+    "jurisdictionId": "scope:jeep-primary:unresolved",
+    "jurisdictionClass": "OTHER"
+  },
+  "creationBasis": {
+    "creationPath": "AUTOMATIC_NOMINATION",
+    "basisRefs": [
+      {
+        "artifactType": "context-sheet-creation-nomination-v1",
+        "artifactId": "artifact:context-sheet-creation-nomination:01JZ9E00000000000000000006",
+        "memoryScopeId": "scope:jeep-primary",
+        "expectedArtifactClass": "NOMINATION",
+        "resolutionRequirement": "EXACT_HASH",
+        "immutableHash": "sha256:8888888888888888888888888888888888888888888888888888888888888888"
+      }
+    ],
+    "basisHash": "sha256:8989898989898989898989898989898989898989898989898989898989898989"
+  },
+  "createdBy": {
+    "creationActorClass": "SERVER_POLICY",
+    "actorId": "context-sheet-identity-service"
+  },
+  "createdAt": "2026-07-25T10:05:00.000Z",
+  "creationEventRef": {
+    "artifactType": "context-sheet-creation-event-v1",
+    "artifactId": "artifact:context-sheet-creation-event:01JZ9E00000000000000000007",
+    "memoryScopeId": "scope:jeep-primary",
+    "expectedArtifactClass": "EVENT",
+    "resolutionRequirement": "EXACT_HASH",
+    "immutableHash": "sha256:9090909090909090909090909090909090909090909090909090909090909090"
+  },
+  "identityPolicyVersion": "v1"
+}

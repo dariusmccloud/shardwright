@@ -1,0 +1,213 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:memory-catalog-projection-v1",
+  "title": "MemoryCatalogProjectionV1",
+  "description": "Replay-derived lifecycle view of one catalog record. The projection is disposable and creates no lifecycle authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "envelope",
+    "catalogRecordRef",
+    "continuityTargetId",
+    "publicationState",
+    "lifecycleState",
+    "activationState",
+    "historicalState",
+    "contestState",
+    "deltaState",
+    "correctionState",
+    "resolutionState",
+    "facets",
+    "currentActiveForTarget",
+    "successorLinkRef",
+    "replayBasisRefs",
+    "replayThroughEventRef",
+    "projectedAt"
+  ],
+  "properties": {
+    "envelope": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-envelope-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "artifactClass": { "const": "PROJECTION" },
+            "schemaId": { "const": "memory-catalog-projection-v1" }
+          },
+          "required": ["artifactClass", "schemaId"]
+        }
+      ]
+    },
+    "catalogRecordRef": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "artifactType": { "const": "memory-catalog-record-v1" },
+            "expectedArtifactClass": { "const": "AUTHORITY_REGISTRATION" },
+            "resolutionRequirement": { "const": "EXACT_HASH" }
+          }
+        }
+      ]
+    },
+    "continuityTargetId": { "type": "string", "minLength": 1 },
+    "publicationState": { "const": "PUBLISHED" },
+    "lifecycleState": {
+      "enum": ["ACTIVE", "SUPERSEDED", "WITHDRAWN", "CONTEST_REOPENED", "DELTA_PENDING"]
+    },
+    "activationState": { "enum": ["ACTIVE", "DORMANT"] },
+    "historicalState": { "enum": ["CURRENT", "HISTORICAL"] },
+    "contestState": { "enum": ["NONE", "OPEN"] },
+    "deltaState": { "enum": ["NONE", "PENDING"] },
+    "correctionState": { "enum": ["NONE", "CORRECTED", "PARTIALLY_CORRECTED"] },
+    "resolutionState": { "enum": ["RESOLVED", "UNRESOLVED", "QUARANTINED"] },
+    "facets": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "ACTIVE",
+          "HISTORICAL",
+          "CORRECTED",
+          "DISPUTED",
+          "WITHDRAWN",
+          "SUPERSEDED",
+          "UNRESOLVED"
+        ]
+      }
+    },
+    "currentActiveForTarget": { "type": "boolean" },
+    "successorLinkRef": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "allOf": [
+            {
+              "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "artifactType": { "const": "memory-catalog-lineage-link-v1" },
+                "expectedArtifactClass": { "const": "IMMUTABLE_RECORD" },
+                "resolutionRequirement": { "const": "EXACT_HASH" }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "replayBasisRefs": {
+      "type": "array",
+      "minItems": 2,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+      }
+    },
+    "replayThroughEventRef": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "expectedArtifactClass": { "const": "EVENT" },
+            "resolutionRequirement": { "const": "EXACT_HASH" }
+          }
+        }
+      ]
+    },
+    "projectedAt": { "type": "string", "format": "date-time" }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "lifecycleState": { "const": "ACTIVE" } },
+        "required": ["lifecycleState"]
+      },
+      "then": {
+        "properties": {
+          "activationState": { "const": "ACTIVE" },
+          "historicalState": { "const": "CURRENT" },
+          "deltaState": { "const": "NONE" },
+          "successorLinkRef": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "lifecycleState": { "const": "SUPERSEDED" } },
+        "required": ["lifecycleState"]
+      },
+      "then": {
+        "properties": {
+          "activationState": { "const": "DORMANT" },
+          "historicalState": { "const": "HISTORICAL" },
+          "currentActiveForTarget": { "const": false },
+          "successorLinkRef": { "type": "object" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "lifecycleState": { "const": "WITHDRAWN" } },
+        "required": ["lifecycleState"]
+      },
+      "then": {
+        "properties": {
+          "activationState": { "const": "DORMANT" },
+          "historicalState": { "const": "HISTORICAL" },
+          "currentActiveForTarget": { "const": false },
+          "successorLinkRef": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "lifecycleState": { "const": "DELTA_PENDING" } },
+        "required": ["lifecycleState"]
+      },
+      "then": {
+        "properties": {
+          "activationState": { "const": "ACTIVE" },
+          "historicalState": { "const": "CURRENT" },
+          "deltaState": { "const": "PENDING" },
+          "successorLinkRef": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "resolutionState": { "enum": ["UNRESOLVED", "QUARANTINED"] }
+        },
+        "required": ["resolutionState"]
+      },
+      "then": {
+        "properties": {
+          "currentActiveForTarget": { "const": false }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "currentActiveForTarget": { "const": true } },
+        "required": ["currentActiveForTarget"]
+      },
+      "then": {
+        "properties": {
+          "activationState": { "const": "ACTIVE" },
+          "historicalState": { "const": "CURRENT" },
+          "resolutionState": { "const": "RESOLVED" }
+        }
+      }
+    }
+  ]
+}

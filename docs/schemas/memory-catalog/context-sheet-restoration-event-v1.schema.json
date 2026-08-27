@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:context-sheet-restoration-event-v1",
+  "title": "ContextSheetRestorationEventV1",
+  "description": "Append-only restoration of one retired context sheet after exact retirement binding and clean anchor, scope, jurisdiction, redirect, and conflict revalidation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "envelope",
+    "eventType",
+    "retiredSheet",
+    "retirementEventRef",
+    "revalidation",
+    "restorationAuthorityRef",
+    "reason",
+    "restorationPolicyVersion",
+    "occurredAt"
+  ],
+  "properties": {
+    "envelope": {
+      "allOf": [
+        { "$ref": "urn:shardwright:schema:v1:memory-artifact-envelope-v1" },
+        {
+          "type": "object",
+          "properties": {
+            "artifactClass": { "const": "EVENT" },
+            "schemaId": { "const": "context-sheet-restoration-event-v1" },
+            "idempotencyKey": { "type": "string" },
+            "authorityBasisRefs": { "type": "array", "minItems": 1 }
+          },
+          "required": ["artifactClass", "schemaId", "idempotencyKey", "authorityBasisRefs"]
+        }
+      ]
+    },
+    "eventType": { "const": "CONTEXT_SHEET_RESTORED" },
+    "retiredSheet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contextSheetId", "exactStateRef", "lifecycleState"],
+      "properties": {
+        "contextSheetId": {
+          "type": "string",
+          "pattern": "^context-sheet:[A-Za-z0-9._~-]+$"
+        },
+        "exactStateRef": {
+          "allOf": [
+            { "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1" },
+            {
+              "type": "object",
+              "properties": {
+                "artifactType": { "const": "context-sheet-lifecycle-projection-v1" },
+                "expectedArtifactClass": { "const": "PROJECTION" },
+                "resolutionRequirement": { "const": "EXACT_HASH" }
+              }
+            }
+          ]
+        },
+        "lifecycleState": { "const": "RETIRED" }
+      }
+    },
+    "retirementEventRef": {
+      "allOf": [
+        { "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1" },
+        {
+          "type": "object",
+          "properties": {
+            "artifactType": { "const": "context-sheet-retirement-event-v1" },
+            "expectedArtifactClass": { "const": "EVENT" },
+            "resolutionRequirement": { "const": "EXACT_HASH" }
+          }
+        }
+      ]
+    },
+    "revalidation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "anchorState",
+        "anchorCheck",
+        "scopeCheck",
+        "jurisdictionCheck",
+        "redirectCheck",
+        "conflictCheck",
+        "checkedStateHash"
+      ],
+      "properties": {
+        "anchorState": { "enum": ["RESOLVED", "UNRESOLVED", "DISPUTED"] },
+        "anchorCheck": { "const": "PASSED" },
+        "scopeCheck": { "const": "PASSED" },
+        "jurisdictionCheck": { "const": "PASSED" },
+        "redirectCheck": { "const": "NO_ACTIVE_REDIRECT" },
+        "conflictCheck": { "const": "CLEAR" },
+        "checkedStateHash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    },
+    "restorationAuthorityRef": {
+      "allOf": [
+        { "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1" },
+        {
+          "type": "object",
+          "properties": {
+            "expectedArtifactClass": {
+              "enum": ["EVENT", "IMMUTABLE_RECORD", "AUTHORITY_REGISTRATION"]
+            },
+            "resolutionRequirement": { "const": "EXACT_HASH" }
+          }
+        }
+      ]
+    },
+    "reason": { "type": "string", "minLength": 1 },
+    "restorationPolicyVersion": { "type": "string", "minLength": 1 },
+    "occurredAt": { "type": "string", "format": "date-time" }
+  }
+}

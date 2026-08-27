@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:memory-citation-namespace-v1",
+  "title": "MemoryCitationNamespaceV1",
+  "description": "Immutable revision of one citation namespace. Allocation events, not in-place counter mutation, produce successor revisions.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "envelope",
+    "catalogJurisdictionId",
+    "namespaceKind",
+    "namespaceVersion",
+    "displayPrefix",
+    "lastAllocatedOrdinal",
+    "nextOrdinal",
+    "createdAt",
+    "retiredAt",
+    "derivedThroughAllocationEventRef"
+  ],
+  "properties": {
+    "envelope": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-envelope-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "artifactClass": {
+              "const": "IMMUTABLE_RECORD"
+            },
+            "schemaId": {
+              "const": "memory-citation-namespace-v1"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "artifactClass",
+            "schemaId",
+            "revision"
+          ]
+        }
+      ]
+    },
+    "catalogJurisdictionId": {
+      "type": "string",
+      "pattern": "^catalog-jurisdiction:[A-Za-z0-9._~-]+$"
+    },
+    "namespaceKind": {
+      "type": "string",
+      "minLength": 1
+    },
+    "namespaceVersion": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "displayPrefix": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 16,
+      "pattern": "^[A-Za-z][A-Za-z0-9._-]*$"
+    },
+    "lastAllocatedOrdinal": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    },
+    "nextOrdinal": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "retiredAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "derivedThroughAllocationEventRef": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "artifactType": {
+                  "const": "memory-citation-allocation-event-v1"
+                },
+                "expectedArtifactClass": {
+                  "const": "EVENT"
+                },
+                "resolutionRequirement": {
+                  "const": "EXACT_HASH"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "lastAllocatedOrdinal": {
+            "type": "null"
+          }
+        },
+        "required": [
+          "lastAllocatedOrdinal"
+        ]
+      },
+      "then": {
+        "properties": {
+          "nextOrdinal": {
+            "const": 1
+          },
+          "derivedThroughAllocationEventRef": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  ]
+}

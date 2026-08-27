@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:memory-citation-allocation-event-v1",
+  "title": "MemoryCitationAllocationEventV1",
+  "description": "Portable event committing one immutable namespace ordinal to one canonical catalog record.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "envelope",
+    "eventType",
+    "namespaceBeforeRef",
+    "expectedNamespaceRevision",
+    "allocatedOrdinal",
+    "nextOrdinalAfter",
+    "catalogRecordRef",
+    "allocationKeyHash",
+    "allocationState",
+    "occurredAt"
+  ],
+  "properties": {
+    "envelope": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-envelope-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "artifactClass": {
+              "const": "EVENT"
+            },
+            "schemaId": {
+              "const": "memory-citation-allocation-event-v1"
+            },
+            "idempotencyKey": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "artifactClass",
+            "schemaId",
+            "idempotencyKey"
+          ]
+        }
+      ]
+    },
+    "eventType": {
+      "const": "MEMORY_CITATION_ALLOCATED"
+    },
+    "namespaceBeforeRef": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "artifactType": {
+              "const": "memory-citation-namespace-v1"
+            },
+            "expectedArtifactClass": {
+              "const": "IMMUTABLE_RECORD"
+            },
+            "resolutionRequirement": {
+              "const": "EXACT_REVISION"
+            }
+          }
+        }
+      ]
+    },
+    "expectedNamespaceRevision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "allocatedOrdinal": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "nextOrdinalAfter": {
+      "type": "integer",
+      "minimum": 2
+    },
+    "catalogRecordRef": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "artifactType": {
+              "const": "memory-catalog-record-v1"
+            },
+            "expectedArtifactClass": {
+              "const": "AUTHORITY_REGISTRATION"
+            },
+            "resolutionRequirement": {
+              "const": "EXACT_HASH"
+            }
+          }
+        }
+      ]
+    },
+    "allocationKeyHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "allocationState": {
+      "const": "COMMITTED"
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

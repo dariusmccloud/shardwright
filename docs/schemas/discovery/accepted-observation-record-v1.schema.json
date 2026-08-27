@@ -1,0 +1,220 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:accepted-observation-record-v1",
+  "title": "AcceptedObservationRecordV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "observationId",
+    "acceptedResultId",
+    "sourceRef",
+    "canonicalSpeaker",
+    "captureContractVersion",
+    "executionSpecHash",
+    "observationRevision",
+    "claimedActorEntityIds",
+    "affectedSubjectEntityIds",
+    "unresolvedEntityLeads",
+    "entityResolutionState",
+    "signalType",
+    "localEvidencedAction",
+    "actionObject",
+    "trackHints",
+    "conceptKeys",
+    "durabilitySignal",
+    "speechRelationship",
+    "antecedentResolution",
+    "verifiedSupportingSpans",
+    "claimSupport",
+    "uncertainties",
+    "evidenceBindingState",
+    "acceptanceState",
+    "validationContractVersion",
+    "createdAt"
+  ],
+  "properties": {
+    "observationId": { "type": "string", "minLength": 1 },
+    "acceptedResultId": { "type": "string", "minLength": 1 },
+    "sourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceRecordHandle",
+        "sourceRevisionHash",
+        "sourceClass",
+        "sourcePolicyResultHandle",
+        "sourcePolicyHash"
+      ],
+      "properties": {
+        "sourceRecordHandle": { "type": "string", "pattern": "^record-[A-Za-z0-9._-]+$" },
+        "sourceClass": {
+          "enum": [
+            "CANONICAL_CHAT_MESSAGE",
+            "CANONICAL_GOVERNANCE_RECORD",
+            "CANONICAL_DERIVED_RECORD",
+            "AUTHORIZED_PROJECT_RECORD",
+            "AUTHORIZED_IMPORTED_RECORD",
+            "ADMITTED_EXTERNAL_EVIDENCE"
+          ]
+        },
+        "sourcePolicyResultHandle": {
+          "type": "string",
+          "pattern": "^source-policy-result-[A-Za-z0-9._-]+$"
+        },
+        "sourcePolicyHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "memoryScopeId": { "type": "string", "minLength": 1 },
+        "chatInstanceId": { "type": "string", "minLength": 1 },
+        "messageId": { "type": "string", "minLength": 1 },
+        "sourceRevisionHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "sourceClass": { "const": "CANONICAL_CHAT_MESSAGE" } },
+            "required": ["sourceClass"]
+          },
+          "then": { "required": ["memoryScopeId", "chatInstanceId", "messageId"] }
+        }
+      ]
+    },
+    "canonicalSpeaker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entityId", "displayName", "hostClassification"],
+      "properties": {
+        "entityId": { "type": "string", "minLength": 1 },
+        "displayName": { "type": "string", "minLength": 1 },
+        "hostClassification": { "enum": ["USER", "CHARACTER", "SYSTEM", "OTHER"] },
+        "characterCardFile": { "type": "string", "minLength": 1 }
+      }
+    },
+    "captureContractVersion": { "type": "string", "minLength": 1 },
+    "executionSpecHash": { "type": "string", "pattern": "^sha256:" },
+    "observationRevision": { "type": "integer", "minimum": 1 },
+    "supersedesObservationId": { "type": ["string", "null"] },
+    "reconsiderationRequestId": {
+      "type": ["string", "null"],
+      "pattern": "^reconsideration-request-[A-Za-z0-9._-]+$"
+    },
+    "claimedActorEntityIds": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "affectedSubjectEntityIds": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "attributedActorEntityIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "unresolvedEntityLeads": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["leadId", "semanticRole", "verifiedSpanIds", "resolutionState"],
+        "properties": {
+          "leadId": { "type": "string", "pattern": "^lead-[A-Za-z0-9._-]+$" },
+          "semanticRole": {
+            "enum": ["CLAIMED_ACTOR", "AFFECTED_SUBJECT", "ATTRIBUTED_ACTOR"]
+          },
+          "verifiedSpanIds": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "resolutionHint": { "type": "string", "minLength": 1 },
+          "resolutionState": { "enum": ["UNRESOLVED", "AMBIGUOUS", "EXTERNAL"] }
+        }
+      }
+    },
+    "entityResolutionState": { "enum": ["RESOLVED", "PARTIAL", "UNKNOWN"] },
+    "signalType": {
+      "enum": [
+        "SELF_EVENT",
+        "RELATIONAL_EVENT",
+        "ARCHITECTURAL_EVENT",
+        "GOVERNANCE_EVENT",
+        "PROJECT_CONTINUITY_EVENT",
+        "OPERATOR_CONTEXT_EVENT",
+        "UNKNOWN"
+      ]
+    },
+    "localEvidencedAction": { "type": "string", "minLength": 1 },
+    "actionObject": { "type": ["string", "null"] },
+    "trackHints": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "conceptKeys": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "durabilitySignal": { "type": "string", "minLength": 1 },
+    "speechRelationship": { "type": "string", "minLength": 1 },
+    "antecedentResolution": { "type": "string", "minLength": 1 },
+    "verifiedSupportingSpans": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "spanId",
+          "sourceRef",
+          "startCodePoint",
+          "endCodePoint",
+          "textHash"
+        ],
+        "properties": {
+          "spanId": { "type": "string", "minLength": 1 },
+          "sourceRef": { "type": "string", "minLength": 1 },
+          "startCodePoint": { "type": "integer", "minimum": 0 },
+          "endCodePoint": { "type": "integer", "minimum": 1 },
+          "textHash": { "type": "string", "pattern": "^sha256:" }
+        }
+      }
+    },
+    "claimSupport": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "minItems": 1,
+        "uniqueItems": true,
+        "items": { "type": "string", "minLength": 1 }
+      }
+    },
+    "uncertainties": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "evidenceBindingState": {
+      "enum": ["VERIFIED", "PARTIAL", "DISPUTED", "UNAVAILABLE", "UNVERIFIED"]
+    },
+    "acceptanceState": { "enum": ["ACCEPTED", "QUARANTINED", "REJECTED"] },
+    "validationDiagnostics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "severity", "message"],
+        "properties": {
+          "code": { "type": "string", "minLength": 1 },
+          "severity": { "enum": ["INFO", "WARNING", "ERROR", "CRITICAL"] },
+          "message": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "validationContractVersion": { "type": "string", "minLength": 1 },
+    "createdAt": { "type": "string", "format": "date-time" }
+  }
+}

@@ -1,0 +1,212 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:context-sheet-membership-validation-event-v1",
+  "title": "ContextSheetMembershipValidationEventV1",
+  "description": "Immutable server-owned decision over one exact membership nomination. Only ACCEPTED may authorize creation of a current-use membership link.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "envelope", "eventType", "nominationRef", "evaluatedCatalogRecordRef",
+    "evaluatedContextSheetRef", "validatedLinkType", "claimBasis",
+    "validationMethod", "humanInputRef", "checks", "decision", "decisionReason",
+    "validationEffect", "acceptedLinkEligible", "semanticDeduplicationKey",
+    "duplicateDecisionRef", "validator", "governingPolicyVersion", "occurredAt"
+  ],
+  "properties": {
+    "envelope": {
+      "allOf": [
+        { "$ref": "urn:shardwright:schema:v1:memory-artifact-envelope-v1" },
+        {
+          "type": "object",
+          "properties": {
+            "artifactClass": { "const": "EVENT" },
+            "schemaId": { "const": "context-sheet-membership-validation-event-v1" },
+            "idempotencyKey": { "type": "string" },
+            "authorityBasisRefs": { "type": "array", "minItems": 1 }
+          },
+          "required": ["artifactClass", "schemaId", "idempotencyKey", "authorityBasisRefs"]
+        }
+      ]
+    },
+    "eventType": { "const": "CONTEXT_SHEET_MEMBERSHIP_VALIDATED" },
+    "nominationRef": {
+      "allOf": [
+        { "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1" },
+        {
+          "type": "object",
+          "properties": {
+            "artifactType": { "const": "context-sheet-membership-nomination-v1" },
+            "expectedArtifactClass": { "const": "NOMINATION" },
+            "resolutionRequirement": { "const": "EXACT_HASH" }
+          }
+        }
+      ]
+    },
+    "evaluatedCatalogRecordRef": {
+      "allOf": [
+        { "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1" },
+        {
+          "type": "object",
+          "properties": {
+            "artifactType": { "const": "memory-catalog-record-v1" },
+            "expectedArtifactClass": { "const": "AUTHORITY_REGISTRATION" },
+            "resolutionRequirement": { "const": "EXACT_HASH" }
+          }
+        }
+      ]
+    },
+    "evaluatedContextSheetRef": {
+      "allOf": [
+        { "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1" },
+        {
+          "type": "object",
+          "properties": {
+            "artifactType": { "const": "context-sheet-lifecycle-projection-v1" },
+            "expectedArtifactClass": { "const": "PROJECTION" },
+            "resolutionRequirement": { "const": "EXACT_HASH" }
+          }
+        }
+      ]
+    },
+    "validatedLinkType": { "enum": ["DIRECT", "ATTRIBUTED", "INTERPRETIVE", "HISTORICAL", "CONTRADICTORY"] },
+    "claimBasis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["catalogClaimIds", "targetClaimIds", "basisHash", "boundedMeaning", "limitations"],
+      "properties": {
+        "catalogClaimIds": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^claim:[A-Za-z0-9._~-]+$" } },
+        "targetClaimIds": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^claim:[A-Za-z0-9._~-]+$" } },
+        "basisHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "boundedMeaning": { "type": "string", "minLength": 1 },
+        "limitations": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "validationMethod": { "enum": ["DETERMINISTIC_CANONICAL_BINDING", "GOVERNED_CLAIM_BINDING", "HUMAN_ASSISTED_REVIEW"] },
+    "humanInputRef": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "allOf": [
+            { "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1" },
+            {
+              "type": "object",
+              "properties": {
+                "expectedArtifactClass": { "enum": ["NOMINATION", "EVENT", "IMMUTABLE_RECORD"] },
+                "resolutionRequirement": { "const": "EXACT_HASH" }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "checks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["catalog", "anchor", "claim", "scope", "jurisdiction", "temporal", "type", "duplicate"],
+      "properties": {
+        "catalog": { "$ref": "#/$defs/checkState" },
+        "anchor": { "$ref": "#/$defs/checkState" },
+        "claim": { "$ref": "#/$defs/checkState" },
+        "scope": { "$ref": "#/$defs/checkState" },
+        "jurisdiction": { "$ref": "#/$defs/checkState" },
+        "temporal": { "$ref": "#/$defs/checkState" },
+        "type": { "$ref": "#/$defs/checkState" },
+        "duplicate": { "$ref": "#/$defs/checkState" }
+      }
+    },
+    "decision": {
+      "enum": [
+        "ACCEPTED", "REFUSED_UNSUPPORTED", "REFUSED_TYPE_MISMATCH",
+        "REFUSED_SCOPE_MISMATCH", "REFUSED_JURISDICTION_MISMATCH",
+        "REFUSED_STALE_REVISION", "REFUSED_DUPLICATE",
+        "DEFERRED_UNRESOLVED_ANCHOR", "DEFERRED_UNRESOLVED_ANTECEDENT",
+        "DISPUTED", "QUARANTINED"
+      ]
+    },
+    "decisionReason": { "type": "string", "minLength": 1 },
+    "validationEffect": { "enum": ["ACCEPT_LINK", "PRESERVE_NOMINATION", "QUARANTINE"] },
+    "acceptedLinkEligible": { "type": "boolean" },
+    "semanticDeduplicationKey": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "duplicateDecisionRef": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "allOf": [
+            { "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1" },
+            {
+              "type": "object",
+              "properties": {
+                "artifactType": { "const": "context-sheet-membership-validation-event-v1" },
+                "expectedArtifactClass": { "const": "EVENT" },
+                "resolutionRequirement": { "const": "EXACT_HASH" }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "validator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["owner", "componentId", "componentVersion"],
+      "properties": {
+        "owner": { "const": "MEMBERSHIP_LINK_SERVICE" },
+        "componentId": { "type": "string", "minLength": 1 },
+        "componentVersion": { "type": "string", "minLength": 1 }
+      }
+    },
+    "governingPolicyVersion": { "type": "string", "minLength": 1 },
+    "occurredAt": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "checkState": { "enum": ["PASSED", "FAILED", "DEFERRED", "DISPUTED", "QUARANTINED"] }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "validationMethod": { "const": "HUMAN_ASSISTED_REVIEW" } }, "required": ["validationMethod"] },
+      "then": { "properties": { "humanInputRef": { "type": "object" } } },
+      "else": { "properties": { "humanInputRef": { "type": "null" } } }
+    },
+    {
+      "if": { "properties": { "decision": { "const": "ACCEPTED" } }, "required": ["decision"] },
+      "then": {
+        "properties": {
+          "claimBasis": { "type": "object", "properties": { "catalogClaimIds": { "type": "array", "minItems": 1 } } },
+          "checks": {
+            "type": "object",
+            "properties": {
+              "catalog": { "const": "PASSED" }, "anchor": { "const": "PASSED" },
+              "claim": { "const": "PASSED" }, "scope": { "const": "PASSED" },
+              "jurisdiction": { "const": "PASSED" }, "temporal": { "const": "PASSED" },
+              "type": { "const": "PASSED" }, "duplicate": { "const": "PASSED" }
+            }
+          },
+          "validationEffect": { "const": "ACCEPT_LINK" },
+          "acceptedLinkEligible": { "const": true },
+          "duplicateDecisionRef": { "type": "null" }
+        }
+      },
+      "else": { "properties": { "acceptedLinkEligible": { "const": false } } }
+    },
+    {
+      "if": { "properties": { "decision": { "const": "REFUSED_DUPLICATE" } }, "required": ["decision"] },
+      "then": { "properties": { "validationEffect": { "const": "PRESERVE_NOMINATION" }, "duplicateDecisionRef": { "type": "object" } } },
+      "else": { "properties": { "duplicateDecisionRef": { "type": "null" } } }
+    },
+    {
+      "if": { "properties": { "decision": { "const": "QUARANTINED" } }, "required": ["decision"] },
+      "then": { "properties": { "validationEffect": { "const": "QUARANTINE" } } }
+    },
+    {
+      "if": {
+        "properties": { "decision": { "enum": ["REFUSED_UNSUPPORTED", "REFUSED_TYPE_MISMATCH", "REFUSED_SCOPE_MISMATCH", "REFUSED_JURISDICTION_MISMATCH", "REFUSED_STALE_REVISION", "DEFERRED_UNRESOLVED_ANCHOR", "DEFERRED_UNRESOLVED_ANTECEDENT", "DISPUTED"] } },
+        "required": ["decision"]
+      },
+      "then": { "properties": { "validationEffect": { "const": "PRESERVE_NOMINATION" } } }
+    },
+    {
+      "if": { "properties": { "validatedLinkType": { "const": "CONTRADICTORY" } }, "required": ["validatedLinkType"] },
+      "then": { "properties": { "claimBasis": { "type": "object", "properties": { "targetClaimIds": { "type": "array", "minItems": 1 } } } } }
+    }
+  ]
+}

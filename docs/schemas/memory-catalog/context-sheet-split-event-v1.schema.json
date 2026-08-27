@@ -1,0 +1,243 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:context-sheet-split-event-v1",
+  "title": "ContextSheetSplitEventV1",
+  "description": "Governed split of one exact context sheet into distinct target anchors with complete, nonduplicating partition custody.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "envelope",
+    "eventType",
+    "sourceSheet",
+    "targetSheets",
+    "distinctIdentityCheck",
+    "partitionManifest",
+    "splitAuthorityRef",
+    "rationale",
+    "splitPolicyVersion",
+    "cycleCheck",
+    "occurredAt"
+  ],
+  "properties": {
+    "envelope": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-envelope-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "artifactClass": { "const": "EVENT" },
+            "schemaId": { "const": "context-sheet-split-event-v1" },
+            "idempotencyKey": { "type": "string" },
+            "authorityBasisRefs": { "type": "array", "minItems": 1 }
+          },
+          "required": ["artifactClass", "schemaId", "idempotencyKey", "authorityBasisRefs"]
+        }
+      ]
+    },
+    "eventType": { "const": "CONTEXT_SHEET_SPLIT" },
+    "sourceSheet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contextSheetId", "exactStateRef"],
+      "properties": {
+        "contextSheetId": {
+          "type": "string",
+          "pattern": "^context-sheet:[A-Za-z0-9._~-]+$"
+        },
+        "exactStateRef": {
+          "allOf": [
+            {
+              "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "artifactType": { "const": "context-sheet-lifecycle-projection-v1" },
+                "expectedArtifactClass": { "const": "PROJECTION" },
+                "resolutionRequirement": { "const": "EXACT_HASH" }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "targetSheets": {
+      "type": "array",
+      "minItems": 2,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "contextSheetId",
+          "sheetType",
+          "canonicalAnchorId",
+          "anchorJurisdictionId",
+          "identityAuthorityRef"
+        ],
+        "properties": {
+          "contextSheetId": {
+            "type": "string",
+            "pattern": "^context-sheet:[A-Za-z0-9._~-]+$"
+          },
+          "sheetType": {
+            "enum": [
+              "ENTITY",
+              "RELATIONSHIP",
+              "GROUP",
+              "PLACE",
+              "OBJECT",
+              "TOPIC",
+              "GOAL",
+              "PROJECT",
+              "MOTIF",
+              "RITUAL",
+              "ERA"
+            ]
+          },
+          "canonicalAnchorId": {
+            "type": "string",
+            "pattern": "^canonical-anchor:[A-Za-z0-9._~-]+$"
+          },
+          "anchorJurisdictionId": { "type": "string", "minLength": 1 },
+          "identityAuthorityRef": {
+            "allOf": [
+              {
+                "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "expectedArtifactClass": {
+                    "enum": ["EVENT", "IMMUTABLE_RECORD", "AUTHORITY_REGISTRATION"]
+                  },
+                  "resolutionRequirement": { "const": "EXACT_HASH" }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "distinctIdentityCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "checkedIdentityKeyHash"],
+      "properties": {
+        "state": { "const": "PASSED" },
+        "checkedIdentityKeyHash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    },
+    "partitionManifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "partitionState",
+        "duplicationCheck",
+        "unresolvedBucketId",
+        "assignments",
+        "manifestHash"
+      ],
+      "properties": {
+        "partitionState": { "const": "COMPLETE" },
+        "duplicationCheck": { "const": "PASSED" },
+        "unresolvedBucketId": {
+          "type": "string",
+          "pattern": "^split-unresolved:[A-Za-z0-9._~-]+$"
+        },
+        "assignments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "itemKind",
+              "sourceItemRef",
+              "disposition",
+              "targetContextSheetId",
+              "reason"
+            ],
+            "properties": {
+              "itemKind": {
+                "enum": ["ALIAS", "CATALOG_LINK", "CLAIM", "DOSSIER_HISTORY"]
+              },
+              "sourceItemRef": {
+                "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+              },
+              "disposition": {
+                "enum": ["ASSIGNED", "UNRESOLVED", "DISPUTED"]
+              },
+              "targetContextSheetId": {
+                "type": ["string", "null"],
+                "pattern": "^context-sheet:[A-Za-z0-9._~-]+$"
+              },
+              "reason": { "type": "string", "minLength": 1 }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": { "disposition": { "const": "ASSIGNED" } },
+                  "required": ["disposition"]
+                },
+                "then": {
+                  "properties": { "targetContextSheetId": { "type": "string" } }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "disposition": { "enum": ["UNRESOLVED", "DISPUTED"] }
+                  },
+                  "required": ["disposition"]
+                },
+                "then": {
+                  "properties": { "targetContextSheetId": { "type": "null" } }
+                }
+              }
+            ]
+          }
+        },
+        "manifestHash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    },
+    "splitAuthorityRef": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "expectedArtifactClass": {
+              "enum": ["EVENT", "IMMUTABLE_RECORD", "AUTHORITY_REGISTRATION"]
+            },
+            "resolutionRequirement": { "const": "EXACT_HASH" }
+          }
+        }
+      ]
+    },
+    "rationale": { "type": "string", "minLength": 1 },
+    "splitPolicyVersion": { "type": "string", "minLength": 1 },
+    "cycleCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "checkedGraphHash"],
+      "properties": {
+        "state": { "const": "ACYCLIC" },
+        "checkedGraphHash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    },
+    "occurredAt": { "type": "string", "format": "date-time" }
+  }
+}

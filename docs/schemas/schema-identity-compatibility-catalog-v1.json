@@ -1,0 +1,66 @@
+{
+  "catalogVersion": "1.0.0",
+  "canonicalSchemaRoot": "urn:shardwright:schema:v1:",
+  "reissuedDrafts": {
+    "classification": "PRE_RELEASE_UNBOUND_REISSUE",
+    "legacyRoots": [
+      "https://summary-sharder.local/schemas/discovery/",
+      "https://summary-sharder.local/schemas/memory-catalog/"
+    ],
+    "compatibility": "SEMANTICALLY_UNCHANGED_IDENTIFIER_REISSUE",
+    "artifacts": [
+      "accepted-observation-record-v1",
+      "capture-batch-manifest-v1",
+      "capture-benchmark-fixture-v1",
+      "capture-execution-manifest-v1",
+      "capture-job-state-v1",
+      "capture-model-result-v1",
+      "capture-reconsideration-decision-v1",
+      "capture-reconsideration-request-v1",
+      "capture-source-disposition-v1",
+      "capture-source-envelope-v1",
+      "capture-source-policy-result-v1",
+      "context-sheet-alias-event-v1",
+      "context-sheet-anchor-resolution-event-v1",
+      "context-sheet-creation-event-v1",
+      "context-sheet-merge-event-v1",
+      "context-sheet-record-v1",
+      "context-sheet-redirect-v1",
+      "context-sheet-split-event-v1",
+      "memory-artifact-envelope-v1",
+      "memory-artifact-reference-v1",
+      "memory-catalog-lineage-link-v1",
+      "memory-catalog-projection-v1",
+      "memory-catalog-reconciliation-result-v1",
+      "memory-catalog-record-v1",
+      "memory-catalog-registration-event-v1",
+      "memory-citation-allocation-event-v1",
+      "memory-citation-namespace-v1"
+    ]
+  },
+  "nativeDrafts": {
+    "classification": "PRE_RELEASE_SHARDWRIGHT_NATIVE",
+    "artifacts": [
+      "context-sheet-lifecycle-projection-v1",
+      "context-sheet-membership-impact-decision-v1",
+      "context-sheet-membership-link-v1",
+      "context-sheet-membership-nomination-v1",
+      "context-sheet-membership-reconciliation-result-v1",
+      "context-sheet-membership-successor-event-v1",
+      "context-sheet-membership-validation-event-v1",
+      "context-sheet-reconciliation-result-v1",
+      "context-sheet-restoration-event-v1",
+      "context-sheet-retirement-event-v1"
+    ]
+  },
+  "historicalSchemas": [
+    {
+      "schemaId": "https://summary-sharder/architectural-intermediate/v1",
+      "classification": "HISTORICAL_PERSISTED_IDENTITY",
+      "compatibility": "EXACT_HISTORICAL_RESOLUTION_REQUIRED",
+      "canonicalSuccessor": null,
+      "authorityChange": false,
+      "schemaPath": "core/summarization/architectural-intermediate-schema-v1.json"
+    }
+  ]
+}

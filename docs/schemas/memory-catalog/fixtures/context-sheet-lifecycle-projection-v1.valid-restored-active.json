@@ -1,0 +1,22 @@
+{
+  "envelope": {
+    "schemaId": "context-sheet-lifecycle-projection-v1", "schemaVersion": 1, "artifactClass": "PROJECTION",
+    "artifactId": "artifact:context-sheet-lifecycle-projection:01K1LIFECYCLE000000000001", "memoryScopeId": "scope:lyra-primary",
+    "createdAt": "2026-08-03T10:00:00.000Z", "producer": { "componentId": "context-sheet-replay", "componentVersion": "phase-x-contract" },
+    "contractBindings": [{ "id": "phase-x-context-sheet-anchor", "version": "0.1.0" }], "policyBindings": [],
+    "payloadHash": "sha256:b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1"
+  },
+  "contextSheetRef": { "artifactType": "context-sheet-record-v1", "artifactId": "artifact:context-sheet-record:01K1LIFECYCLE000000000002", "memoryScopeId": "scope:lyra-primary", "expectedArtifactClass": "IMMUTABLE_RECORD", "resolutionRequirement": "EXACT_HASH", "immutableHash": "sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2" },
+  "contextSheetId": "context-sheet:historical-topic", "sheetType": "TOPIC", "preferredTitle": "Historical Topic",
+  "anchorState": "RESOLVED", "canonicalAnchorId": "canonical-anchor:historical-topic", "lifecycleState": "ACTIVE", "appearsInOrdinaryOrganization": true,
+  "currentRedirectRef": null, "currentSplitEventRef": null, "currentRetirementEventRef": null,
+  "latestRestorationEventRef": { "artifactType": "context-sheet-restoration-event-v1", "artifactId": "artifact:context-sheet-restoration-event:01K1LIFECYCLE000000000003", "memoryScopeId": "scope:lyra-primary", "expectedArtifactClass": "EVENT", "resolutionRequirement": "EXACT_HASH", "immutableHash": "sha256:b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3" },
+  "quarantineReasons": [],
+  "replayBasisRefs": [
+    { "artifactType": "context-sheet-creation-event-v1", "artifactId": "artifact:context-sheet-creation-event:01K1LIFECYCLE000000000004", "memoryScopeId": "scope:lyra-primary", "expectedArtifactClass": "EVENT", "resolutionRequirement": "EXACT_HASH", "immutableHash": "sha256:b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4" },
+    { "artifactType": "context-sheet-retirement-event-v1", "artifactId": "artifact:context-sheet-retirement-event:01K1LIFECYCLE000000000005", "memoryScopeId": "scope:lyra-primary", "expectedArtifactClass": "EVENT", "resolutionRequirement": "EXACT_HASH", "immutableHash": "sha256:b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5" },
+    { "artifactType": "context-sheet-restoration-event-v1", "artifactId": "artifact:context-sheet-restoration-event:01K1LIFECYCLE000000000003", "memoryScopeId": "scope:lyra-primary", "expectedArtifactClass": "EVENT", "resolutionRequirement": "EXACT_HASH", "immutableHash": "sha256:b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3" }
+  ],
+  "replayThroughEventRef": { "artifactType": "context-sheet-restoration-event-v1", "artifactId": "artifact:context-sheet-restoration-event:01K1LIFECYCLE000000000003", "memoryScopeId": "scope:lyra-primary", "expectedArtifactClass": "EVENT", "resolutionRequirement": "EXACT_HASH", "immutableHash": "sha256:b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3" },
+  "projectionRevision": 4, "projectedAt": "2026-08-03T10:00:00.000Z"
+}

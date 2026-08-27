@@ -1,0 +1,12 @@
+{
+  "envelope": { "schemaId": "context-sheet-membership-nomination-v1", "schemaVersion": 1, "artifactClass": "NOMINATION", "artifactId": "artifact:context-sheet-membership-nomination:01K1MEMBER000000000000011", "memoryScopeId": "scope:lyra-primary", "createdAt": "2026-08-03T12:05:00.000Z", "producer": { "componentId": "membership-link-intake", "componentVersion": "phase-x-contract" }, "contractBindings": [{ "id": "phase-x-context-sheet-membership", "version": "0.1.0" }], "policyBindings": [], "payloadHash": "sha256:4444444444444444444444444444444444444444444444444444444444444444", "idempotencyKey": "idempotency:membership-retrieval-trust" },
+  "nominationState": "DEFERRED_MISSING_CLAIM_BASIS",
+  "catalogRecordRef": { "artifactType": "memory-catalog-record-v1", "artifactId": "artifact:memory-catalog-record:01K1MEMBER000000000000012", "memoryScopeId": "scope:lyra-primary", "expectedArtifactClass": "AUTHORITY_REGISTRATION", "resolutionRequirement": "EXACT_HASH", "immutableHash": "sha256:5555555555555555555555555555555555555555555555555555555555555555" },
+  "candidateContextSheetRef": { "artifactType": "context-sheet-lifecycle-projection-v1", "artifactId": "artifact:context-sheet-lifecycle-projection:01K1MEMBER000000000000013", "memoryScopeId": "scope:lyra-primary", "expectedArtifactClass": "PROJECTION", "resolutionRequirement": "EXACT_HASH", "immutableHash": "sha256:6666666666666666666666666666666666666666666666666666666666666666" },
+  "proposedLinkType": "INTERPRETIVE", "proposedCatalogClaimIds": [], "proposedTargetClaimIds": [],
+  "proposedJurisdiction": { "memoryScopeId": "scope:lyra-primary", "jurisdictionId": "relationship:lyra-chris", "perspectiveId": "subject:lyra" },
+  "temporalApplicability": { "state": "UNKNOWN", "validFrom": null, "validThrough": null },
+  "antecedentState": null, "contradictionDimension": null, "reason": "Retrieval suggests topical relevance, but no governed interpretive claim basis has been identified.",
+  "origin": "RETRIEVAL", "originDiagnostics": { "methodId": "banana-bread-reranker", "methodVersion": "configured", "score": 0.71, "diagnosticRef": null },
+  "acceptedRelationship": false, "dossierEligible": false, "activeContinuityEligible": false, "createdAt": "2026-08-03T12:05:00.000Z"
+}

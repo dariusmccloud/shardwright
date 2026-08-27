@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:context-sheet-reconciliation-result-v1",
+  "title": "ContextSheetReconciliationResultV1",
+  "description": "Diagnostic comparison of authoritative Context Sheet history with disposable lifecycle state. It may authorize projection rebuild or quarantine, never authority repair.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "envelope",
+    "contextSheetId",
+    "reconciliationState",
+    "authoritativeInputRefs",
+    "observedProjectionRef",
+    "discrepancies",
+    "permittedAction",
+    "authorityMutationPermitted",
+    "authorityInferencePermitted",
+    "unaffectedScopesRemainAvailable",
+    "reconciledAt"
+  ],
+  "properties": {
+    "envelope": {
+      "allOf": [
+        { "$ref": "urn:shardwright:schema:v1:memory-artifact-envelope-v1" },
+        {
+          "type": "object",
+          "properties": {
+            "artifactClass": { "const": "RESULT" },
+            "schemaId": { "const": "context-sheet-reconciliation-result-v1" }
+          },
+          "required": ["artifactClass", "schemaId"]
+        }
+      ]
+    },
+    "contextSheetId": {
+      "type": "string",
+      "pattern": "^context-sheet:[A-Za-z0-9._~-]+$"
+    },
+    "reconciliationState": {
+      "enum": [
+        "CLEAN",
+        "REBUILD_REQUIRED",
+        "AUTHORITY_MISSING",
+        "CONFLICT",
+        "CYCLE_DETECTED",
+        "INCOMPATIBLE_EVENT",
+        "QUARANTINED"
+      ]
+    },
+    "authoritativeInputRefs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "allOf": [
+          { "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1" },
+          {
+            "type": "object",
+            "properties": {
+              "expectedArtifactClass": { "enum": ["IMMUTABLE_RECORD", "EVENT"] },
+              "resolutionRequirement": { "const": "EXACT_HASH" }
+            }
+          }
+        ]
+      }
+    },
+    "observedProjectionRef": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "allOf": [
+            { "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1" },
+            {
+              "type": "object",
+              "properties": {
+                "artifactType": { "const": "context-sheet-lifecycle-projection-v1" },
+                "expectedArtifactClass": { "const": "PROJECTION" },
+                "resolutionRequirement": { "const": "EXACT_HASH" }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "discrepancies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "severity", "message", "affectedRefs"],
+        "properties": {
+          "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+          "severity": { "enum": ["INFO", "WARNING", "ERROR", "CRITICAL"] },
+          "message": { "type": "string", "minLength": 1 },
+          "affectedRefs": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1" }
+          }
+        }
+      }
+    },
+    "permittedAction": { "enum": ["NONE", "REBUILD_PROJECTION", "QUARANTINE"] },
+    "authorityMutationPermitted": { "const": false },
+    "authorityInferencePermitted": { "const": false },
+    "unaffectedScopesRemainAvailable": { "type": "boolean" },
+    "reconciledAt": { "type": "string", "format": "date-time" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "reconciliationState": { "const": "CLEAN" } }, "required": ["reconciliationState"] },
+      "then": {
+        "properties": {
+          "authoritativeInputRefs": { "type": "array", "minItems": 1 },
+          "observedProjectionRef": { "type": "object" },
+          "discrepancies": { "type": "array", "maxItems": 0 },
+          "permittedAction": { "const": "NONE" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "reconciliationState": { "const": "REBUILD_REQUIRED" } }, "required": ["reconciliationState"] },
+      "then": {
+        "properties": {
+          "authoritativeInputRefs": { "type": "array", "minItems": 1 },
+          "discrepancies": { "type": "array", "minItems": 1 },
+          "permittedAction": { "const": "REBUILD_PROJECTION" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "reconciliationState": {
+            "enum": ["AUTHORITY_MISSING", "CONFLICT", "CYCLE_DETECTED", "INCOMPATIBLE_EVENT", "QUARANTINED"]
+          }
+        },
+        "required": ["reconciliationState"]
+      },
+      "then": {
+        "properties": {
+          "discrepancies": { "type": "array", "minItems": 1 },
+          "permittedAction": { "const": "QUARANTINE" }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "envelope": { "schemaId": "context-sheet-reconciliation-result-v1", "schemaVersion": 1, "artifactClass": "RESULT", "artifactId": "artifact:context-sheet-reconciliation-result:01K1RECONCILE000000000001", "memoryScopeId": "scope:lyra-primary", "createdAt": "2026-08-03T11:00:00.000Z", "producer": { "componentId": "context-sheet-reconciler", "componentVersion": "phase-x-contract" }, "contractBindings": [{ "id": "phase-x-context-sheet-anchor", "version": "0.1.0" }], "policyBindings": [], "payloadHash": "sha256:f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1" },
+  "contextSheetId": "context-sheet:historical-topic", "reconciliationState": "REBUILD_REQUIRED",
+  "authoritativeInputRefs": [{ "artifactType": "context-sheet-restoration-event-v1", "artifactId": "artifact:context-sheet-restoration-event:01K1RECONCILE000000000002", "memoryScopeId": "scope:lyra-primary", "expectedArtifactClass": "EVENT", "resolutionRequirement": "EXACT_HASH", "immutableHash": "sha256:f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2" }],
+  "observedProjectionRef": null,
+  "discrepancies": [{ "code": "PROJECTION_MISSING", "severity": "ERROR", "message": "Authoritative lifecycle history is intact but its disposable projection is absent.", "affectedRefs": [] }],
+  "permittedAction": "REBUILD_PROJECTION", "authorityMutationPermitted": false, "authorityInferencePermitted": false, "unaffectedScopesRemainAvailable": true, "reconciledAt": "2026-08-03T11:00:00.000Z"
+}

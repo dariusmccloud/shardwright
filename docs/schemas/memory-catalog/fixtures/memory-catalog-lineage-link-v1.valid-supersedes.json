@@ -1,0 +1,63 @@
+{
+  "envelope": {
+    "schemaId": "memory-catalog-lineage-link-v1",
+    "schemaVersion": 1,
+    "artifactClass": "IMMUTABLE_RECORD",
+    "artifactId": "artifact:memory-catalog-lineage-link:01JZ9C00000000000000000001",
+    "memoryScopeId": "scope:jeep-primary",
+    "createdAt": "2026-07-24T18:00:00.000Z",
+    "producer": {
+      "componentId": "summary-sharder-memory-catalog-projector",
+      "componentVersion": "phase-x-contract"
+    },
+    "contractBindings": [
+      {
+        "id": "phase-x-memory-catalog-record",
+        "version": "0.1.0"
+      }
+    ],
+    "policyBindings": [],
+    "payloadHash": "sha256:5151515151515151515151515151515151515151515151515151515151515151",
+    "authorityBasisRefs": [
+      {
+        "artifactType": "dnm-superseded-event-v1",
+        "artifactId": "artifact:dnm-superseded-event:01JZ9C00000000000000000002",
+        "memoryScopeId": "scope:jeep-primary",
+        "expectedArtifactClass": "EVENT",
+        "resolutionRequirement": "EXACT_HASH",
+        "immutableHash": "sha256:5252525252525252525252525252525252525252525252525252525252525252"
+      }
+    ]
+  },
+  "relationshipType": "SUPERSEDES",
+  "relationshipAuthorityMode": "EXISTING_LIFECYCLE",
+  "sourceCatalogRecordRef": {
+    "artifactType": "memory-catalog-record-v1",
+    "artifactId": "artifact:memory-catalog-record:01JZ9C00000000000000000003",
+    "memoryScopeId": "scope:jeep-primary",
+    "expectedArtifactClass": "AUTHORITY_REGISTRATION",
+    "resolutionRequirement": "EXACT_HASH",
+    "immutableHash": "sha256:5353535353535353535353535353535353535353535353535353535353535353"
+  },
+  "targetCatalogRecordRef": {
+    "artifactType": "memory-catalog-record-v1",
+    "artifactId": "artifact:memory-catalog-record:01JZ9C00000000000000000004",
+    "memoryScopeId": "scope:jeep-primary",
+    "expectedArtifactClass": "AUTHORITY_REGISTRATION",
+    "resolutionRequirement": "EXACT_HASH",
+    "immutableHash": "sha256:5454545454545454545454545454545454545454545454545454545454545454"
+  },
+  "relationScope": {
+    "scopeType": "WHOLE_RECORD",
+    "affectedClaimIds": []
+  },
+  "authorityEventRef": {
+    "artifactType": "dnm-superseded-event-v1",
+    "artifactId": "artifact:dnm-superseded-event:01JZ9C00000000000000000002",
+    "memoryScopeId": "scope:jeep-primary",
+    "expectedArtifactClass": "EVENT",
+    "resolutionRequirement": "EXACT_HASH",
+    "immutableHash": "sha256:5252525252525252525252525252525252525252525252525252525252525252"
+  },
+  "effectiveAt": "2026-07-24T18:00:00.000Z"
+}

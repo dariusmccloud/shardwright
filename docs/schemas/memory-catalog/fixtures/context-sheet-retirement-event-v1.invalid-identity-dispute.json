@@ -1,0 +1,16 @@
+{
+  "envelope": {
+    "schemaId": "context-sheet-retirement-event-v1", "schemaVersion": 1, "artifactClass": "EVENT",
+    "artifactId": "artifact:context-sheet-retirement-event:01K1RETIRE000000000000011", "memoryScopeId": "scope:lyra-primary",
+    "createdAt": "2026-08-02T12:00:00.000Z", "producer": { "componentId": "context-sheet-identity-service", "componentVersion": "phase-x-contract" },
+    "contractBindings": [{ "id": "phase-x-context-sheet-anchor", "version": "0.1.0" }], "policyBindings": [],
+    "payloadHash": "sha256:f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1", "idempotencyKey": "idempotency:retire-disputed",
+    "authorityBasisRefs": [{ "artifactType": "governed-retirement-decision-v1", "artifactId": "artifact:governed-retirement-decision:01K1RETIRE000000000000012", "memoryScopeId": "scope:lyra-primary", "expectedArtifactClass": "EVENT", "resolutionRequirement": "EXACT_HASH", "immutableHash": "sha256:f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2" }]
+  },
+  "eventType": "CONTEXT_SHEET_RETIRED",
+  "sourceSheet": { "contextSheetId": "context-sheet:disputed-topic", "exactStateRef": { "artifactType": "context-sheet-lifecycle-projection-v1", "artifactId": "artifact:context-sheet-lifecycle-projection:01K1RETIRE000000000000013", "memoryScopeId": "scope:lyra-primary", "expectedArtifactClass": "PROJECTION", "resolutionRequirement": "EXACT_HASH", "immutableHash": "sha256:f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3" }, "lifecycleState": "ACTIVE" },
+  "retirementAuthorityRef": { "artifactType": "governed-retirement-decision-v1", "artifactId": "artifact:governed-retirement-decision:01K1RETIRE000000000000012", "memoryScopeId": "scope:lyra-primary", "expectedArtifactClass": "EVENT", "resolutionRequirement": "EXACT_HASH", "immutableHash": "sha256:f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2" },
+  "identityDisputeCheck": { "state": "DISPUTED", "checkedStateHash": "sha256:f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4" },
+  "activeViewImpact": { "ordinaryOrganization": "EXCLUDE", "historyAccess": "PRESERVE", "citations": "PRESERVE", "dossierHistory": "PRESERVE", "catalogEvidence": "UNCHANGED" },
+  "reason": "Improper attempt to hide an unresolved identity dispute.", "retirementPolicyVersion": "v1", "occurredAt": "2026-08-02T12:00:00.000Z"
+}

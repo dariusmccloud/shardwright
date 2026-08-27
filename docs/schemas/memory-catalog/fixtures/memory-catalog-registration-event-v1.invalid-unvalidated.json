@@ -1,0 +1,82 @@
+{
+  "envelope": {
+    "schemaId": "memory-catalog-registration-event-v1",
+    "schemaVersion": 1,
+    "artifactClass": "EVENT",
+    "artifactId": "artifact:memory-catalog-registration-event:01JZ9A00000000000000000009",
+    "memoryScopeId": "scope:jeep-primary",
+    "createdAt": "2026-07-24T17:00:00.000Z",
+    "producer": {
+      "componentId": "summary-sharder-memory-registrar",
+      "componentVersion": "phase-x-contract"
+    },
+    "contractBindings": [
+      {
+        "id": "phase-x-memory-catalog-record",
+        "version": "0.1.0"
+      }
+    ],
+    "policyBindings": [],
+    "payloadHash": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "idempotencyKey": "idempotency:catalog-registration-01JZ9A00000000000000000001",
+    "authorityBasisRefs": [
+      {
+        "artifactType": "governed-interpretation-revision-v1",
+        "artifactId": "artifact:governed-interpretation-revision:01JZ9A00000000000000000002",
+        "memoryScopeId": "scope:jeep-primary",
+        "expectedArtifactClass": "IMMUTABLE_RECORD",
+        "resolutionRequirement": "EXACT_HASH",
+        "immutableHash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      {
+        "artifactType": "dnm-publication-event-v1",
+        "artifactId": "artifact:dnm-publication-event:01JZ9A00000000000000000003",
+        "memoryScopeId": "scope:jeep-primary",
+        "expectedArtifactClass": "EVENT",
+        "resolutionRequirement": "EXACT_HASH",
+        "immutableHash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    ]
+  },
+  "eventType": "MEMORY_CATALOG_REGISTERED",
+  "registrarClass": "SERVER_SIDE_REGISTRAR",
+  "registrationKey": {
+    "catalogJurisdictionId": "catalog-jurisdiction:jeep-primary",
+    "memoryScopeId": "scope:jeep-primary",
+    "catalogRecordKind": "PUBLISHED_CONTINUITY",
+    "governedArtifactId": "interpretation-candidate-01JZ9A00000000000000000004",
+    "governedArtifactRevisionId": "interpretation-revision-1",
+    "registrationKeyHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "catalogRecordRef": {
+    "artifactType": "memory-catalog-record-v1",
+    "artifactId": "artifact:memory-catalog-record:01JZ9A00000000000000000001",
+    "memoryScopeId": "scope:jeep-primary",
+    "expectedArtifactClass": "AUTHORITY_REGISTRATION",
+    "resolutionRequirement": "EXACT_HASH",
+    "immutableHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "governedArtifactRevisionHash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "evidenceSetHash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "sourceManifestHash": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "governanceEventRef": {
+    "artifactType": "governance-disposition-event-v1",
+    "artifactId": "artifact:governance-disposition-event:01JZ9A00000000000000000006",
+    "memoryScopeId": "scope:jeep-primary",
+    "expectedArtifactClass": "EVENT",
+    "resolutionRequirement": "EXACT_HASH",
+    "immutableHash": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+  },
+  "publicationEventRef": {
+    "artifactType": "dnm-publication-event-v1",
+    "artifactId": "artifact:dnm-publication-event:01JZ9A00000000000000000003",
+    "memoryScopeId": "scope:jeep-primary",
+    "expectedArtifactClass": "EVENT",
+    "resolutionRequirement": "EXACT_HASH",
+    "immutableHash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  },
+  "registrationPolicyVersion": "v1",
+  "authorityValidationState": "PENDING",
+  "citationCommitState": "COMMITTED",
+  "occurredAt": "2026-07-24T17:00:00.000Z"
+}

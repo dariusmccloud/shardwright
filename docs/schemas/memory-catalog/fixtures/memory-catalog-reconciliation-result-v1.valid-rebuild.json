@@ -1,0 +1,39 @@
+{
+  "envelope": {
+    "schemaId": "memory-catalog-reconciliation-result-v1",
+    "schemaVersion": 1,
+    "artifactClass": "RESULT",
+    "artifactId": "artifact:memory-catalog-reconciliation-result:01JZ9D00000000000000000009",
+    "memoryScopeId": "scope:jeep-primary",
+    "createdAt": "2026-07-25T09:15:00.000Z",
+    "producer": { "componentId": "summary-sharder-memory-reconciler", "componentVersion": "phase-x-contract" },
+    "contractBindings": [{ "id": "phase-x-memory-catalog-record", "version": "0.1.0" }],
+    "policyBindings": [],
+    "payloadHash": "sha256:6969696969696969696969696969696969696969696969696969696969696969"
+  },
+  "targetBoundary": "CATALOG_RECORD",
+  "targetId": "artifact:memory-catalog-record:01JZ9D00000000000000000002",
+  "reconciliationState": "REBUILD_REQUIRED",
+  "authoritativeInputRefs": [
+    {
+      "artifactType": "dnm-publication-event-v1",
+      "artifactId": "artifact:dnm-publication-event:01JZ9D00000000000000000003",
+      "memoryScopeId": "scope:jeep-primary",
+      "expectedArtifactClass": "EVENT",
+      "resolutionRequirement": "EXACT_HASH",
+      "immutableHash": "sha256:6363636363636363636363636363636363636363636363636363636363636363"
+    }
+  ],
+  "observedProjectionRef": null,
+  "discrepancies": [
+    {
+      "code": "PROJECTION_MISSING",
+      "severity": "ERROR",
+      "message": "The disposable projection is absent while portable authority is complete.",
+      "affectedRefs": []
+    }
+  ],
+  "permittedAction": "REBUILD_PROJECTION",
+  "authorityMutationPermitted": false,
+  "reconciledAt": "2026-07-25T09:15:00.000Z"
+}

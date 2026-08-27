@@ -1,0 +1,53 @@
+{
+  "envelope": {
+    "schemaId": "context-sheet-anchor-resolution-event-v1",
+    "schemaVersion": 1,
+    "artifactClass": "EVENT",
+    "artifactId": "artifact:context-sheet-anchor-resolution-event:01JZ9F00000000000000000010",
+    "memoryScopeId": "scope:jeep-primary",
+    "createdAt": "2026-07-25T11:20:00.000Z",
+    "producer": { "componentId": "context-sheet-identity-service", "componentVersion": "phase-x-contract" },
+    "contractBindings": [{ "id": "phase-x-context-sheet-anchor", "version": "0.1.0" }],
+    "policyBindings": [],
+    "payloadHash": "sha256:b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3",
+    "idempotencyKey": "idempotency:resolve-from-similarity",
+    "authorityBasisRefs": [
+      {
+        "artifactType": "similarity-nomination-v1",
+        "artifactId": "artifact:similarity-nomination:01JZ9F00000000000000000011",
+        "memoryScopeId": "scope:jeep-primary",
+        "expectedArtifactClass": "NOMINATION",
+        "resolutionRequirement": "EXACT_HASH",
+        "immutableHash": "sha256:b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4"
+      }
+    ]
+  },
+  "eventType": "CONTEXT_SHEET_ANCHOR_RESOLVED",
+  "unresolvedSheetRef": {
+    "artifactType": "context-sheet-record-v1",
+    "artifactId": "artifact:context-sheet-record:01JZ9F00000000000000000007",
+    "memoryScopeId": "scope:jeep-primary",
+    "expectedArtifactClass": "IMMUTABLE_RECORD",
+    "resolutionRequirement": "EXACT_HASH",
+    "immutableHash": "sha256:a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7"
+  },
+  "sourceAnchorState": "UNRESOLVED",
+  "resolvedCanonicalAnchorId": "canonical-anchor:guessed",
+  "governedIdentityBasisRef": {
+    "artifactType": "similarity-nomination-v1",
+    "artifactId": "artifact:similarity-nomination:01JZ9F00000000000000000011",
+    "memoryScopeId": "scope:jeep-primary",
+    "expectedArtifactClass": "NOMINATION",
+    "resolutionRequirement": "EXACT_HASH",
+    "immutableHash": "sha256:b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4"
+  },
+  "anchorJurisdiction": { "memoryScopeId": "scope:jeep-primary", "jurisdictionId": "unknown" },
+  "aliasDecisionRefs": [],
+  "catalogLinkImpact": { "evaluated": true, "decision": "NO_LINKS", "impactManifestHash": "sha256:b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5" },
+  "identityCollisionState": "NONE",
+  "mergeReviewRef": null,
+  "resolutionEffect": "RESOLVED",
+  "decidedBy": { "decisionClass": "CODE_OWNED_POLICY", "actorId": "context-sheet-identity-service" },
+  "identityPolicyVersion": "v1",
+  "occurredAt": "2026-07-25T11:20:00.000Z"
+}

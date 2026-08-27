@@ -38,7 +38,7 @@ An optional **RAG pipeline** vectorizes shards and automatically injects relevan
 - **Themes** — 8 built-in themes plus custom theme creation/import/export
 - **FAB** — Draggable floating action button with quick access to all features
 
-> 📖 **[Full Feature Documentation →](FEATURES.md)**
+> 📖 **[Full Feature Documentation →](docs/FEATURES.md)**
 
 ---
 
@@ -94,7 +94,7 @@ Clone into `data/<user-data>/extensions/third-party/shardwright` and restart Sil
 | **Visibility** | Per-range hide/collapse, speaker ignore lists |
 | **Themes** | 8 built-in + custom (33 CSS variables) |
 
-> 📖 **[Full configuration reference →](FEATURES.md#configuration-reference)**
+> 📖 **[Full configuration reference →](docs/FEATURES.md#configuration-reference)**
 
 ---
 

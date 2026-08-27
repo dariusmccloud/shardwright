@@ -1,0 +1,326 @@
+{
+  "registryVersion": 1,
+  "status": "ENTERED",
+  "governingContract": "PHASE_X_SHARDWRIGHT_IDENTITY_AND_LEGACY_MIGRATION_CONTRACT.md",
+  "purpose": "Canonical Shardwright identity registry and classified legacy collision inventory.",
+  "productIdentity": {
+    "product": "Shardwright",
+    "repositorySlug": "shardwright",
+    "displayName": "Shardwright",
+    "primaryNamespace": "shardwright",
+    "serverPlugin": "shardwright-memory",
+    "tagline": "Structured continuity for long-form roleplay.",
+    "artifactName": "Memory Shard"
+  },
+  "canonicalIdentifiers": {
+    "browserRootGlobal": "Shardwright",
+    "browserRootHostExpression": "window.Shardwright",
+    "browserRootExpression": "globalThis.Shardwright",
+    "requiredInterceptorGlobal": "shardwright_rearrangeChat",
+    "domCssPrefix": "shardwright-",
+    "internalLocalAbbreviation": "sw",
+    "settingsNamespace": "shardwright",
+    "chatMetadataNamespace": "shardwright",
+    "messageMetadataNamespace": "shardwright",
+    "browserStoragePrefix": "shardwright:",
+    "serverPluginId": "shardwright-memory",
+    "serverPluginInstallFolder": "shardwright-memory",
+    "serverApiRouteRoot": "/api/plugins/shardwright-memory",
+    "serverStorageRoot": "shardwright",
+    "ragShardCollectionPrefix": "shardwright_shards_",
+    "ragStandardCollectionPrefix": "shardwright_standard_",
+    "ragInjectionVariable": "shardwright_rag_memory",
+    "schemaNamespace": "urn:shardwright:schema:v1:"
+  },
+  "globalOwnership": {
+    "ownedRoot": "globalThis.Shardwright",
+    "allowedLooseGlobals": [
+      "shardwright_rearrangeChat"
+    ],
+    "rule": "All other exported runtime capabilities belong beneath the owned root object."
+  },
+  "legacyIdentityFamilies": [
+    {
+      "familyId": "LEGACY-BRAND-001",
+      "surface": "PRODUCT_PRESENTATION",
+      "legacyIdentifiers": [
+        "Summary Sharder"
+      ],
+      "canonicalIdentifiers": [
+        "Shardwright"
+      ],
+      "disposition": "REPLACE_CURRENT_PRESERVE_HISTORY",
+      "migrationClass": "PRESENTATION_ONLY",
+      "collisionRisk": "OPERATOR_AMBIGUITY",
+      "notes": "Historical references and upstream credit remain truthful."
+    },
+    {
+      "familyId": "LEGACY-INSTALL-001",
+      "surface": "REPOSITORY_AND_EXTENSION_FOLDER",
+      "legacyIdentifiers": [
+        "Promansis/summary-sharder",
+        "dariusmccloud/summary-sharder",
+        "third-party/summary-sharder"
+      ],
+      "canonicalIdentifiers": [
+        "dariusmccloud/shardwright",
+        "third-party/shardwright"
+      ],
+      "disposition": "RENAME_CURRENT_PRESERVE_LOCATOR_HISTORY",
+      "migrationClass": "INSTALLATION_IDENTITY",
+      "collisionRisk": "INSTALL_OR_UPDATE_ALIASING",
+      "notes": "Repository redirects and old folders are compatibility locators, not current identity."
+    },
+    {
+      "familyId": "LEGACY-INTERCEPTOR-001",
+      "surface": "PROMPT_INTERCEPTOR_GLOBAL",
+      "legacyIdentifiers": [
+        "summary_sharder_rearrangeChat"
+      ],
+      "canonicalIdentifiers": [
+        "shardwright_rearrangeChat"
+      ],
+      "disposition": "REPLACE_NO_RUNTIME_ALIAS",
+      "migrationClass": "RUNTIME_EXCLUSIVE",
+      "collisionRisk": "OVERWRITE_OR_DOUBLE_INVOCATION",
+      "notes": "The old interceptor must never be published by Shardwright."
+    },
+    {
+      "familyId": "LEGACY-NAMESPACE-001",
+      "surface": "SETTINGS_CHAT_AND_MESSAGE_METADATA",
+      "legacyIdentifiers": [
+        "extension_settings.summary_sharder",
+        "chat_metadata.summary_sharder",
+        "extra.summary_sharder",
+        "summary_sharder"
+      ],
+      "canonicalIdentifiers": [
+        "extension_settings.shardwright",
+        "chat_metadata.shardwright",
+        "extra.shardwright",
+        "shardwright"
+      ],
+      "disposition": "MANIFEST_DRIVEN_COPY_WITH_PROVENANCE",
+      "migrationClass": "AUTHORITATIVE_OR_EVIDENTIARY_DATA",
+      "collisionRisk": "CROSS_PRODUCT_MUTATION_OR_FALSE_ATTRIBUTION",
+      "notes": "Ambiguous shared fields refuse automatic adoption; legacy records remain unchanged."
+    },
+    {
+      "familyId": "LEGACY-GLOBAL-001",
+      "surface": "BROWSER_GLOBALS",
+      "legacyIdentifiers": [
+        "summarySharder",
+        "__summarySharderArchitecturalIntegrationTrace",
+        "summarySharderDebug",
+        "summarySharderLoadProfiler",
+        "summarySharderSaveDiagnosticContext"
+      ],
+      "canonicalIdentifiers": [
+        "globalThis.Shardwright"
+      ],
+      "disposition": "MOVE_CAPABILITIES_UNDER_OWNED_ROOT",
+      "migrationClass": "EPHEMERAL_RUNTIME_STATE",
+      "collisionRisk": "GLOBAL_OVERWRITE",
+      "notes": "No loose compatibility globals are permitted."
+    },
+    {
+      "familyId": "LEGACY-DOM-001",
+      "surface": "DOM_CSS_EVENTS_AND_DATA_ATTRIBUTES",
+      "legacyIdentifiers": [
+        "summary-sharder-settings",
+        "ss-",
+        "ss-ui-operation-state",
+        "ss-operation-started",
+        "ss-operation-ended",
+        "data-ss-"
+      ],
+      "canonicalIdentifiers": [
+        "shardwright-",
+        "shardwright-ui-operation-state",
+        "shardwright-operation-started",
+        "shardwright-operation-ended",
+        "data-shardwright-"
+      ],
+      "disposition": "REPLACE_EXPORTED_IDENTIFIER",
+      "migrationClass": "EPHEMERAL_UI_STATE",
+      "collisionRisk": "DUPLICATE_ID_SELECTOR_STYLE_OR_EVENT_BLEED",
+      "notes": "The sw abbreviation remains local-only and cannot escape into DOM or CSS."
+    },
+    {
+      "familyId": "LEGACY-BROWSER-STORAGE-001",
+      "surface": "LOCAL_AND_SESSION_STORAGE",
+      "legacyIdentifiers": [
+        "ss_debug",
+        "summarySharderProfilingBypass",
+        "summarySharderDebugTracing",
+        "summary_sharder:architectural_integration_trace",
+        "summary_sharder:debug_fail_next_host_save"
+      ],
+      "canonicalIdentifiers": [
+        "shardwright:debug",
+        "shardwright:profiling-bypass",
+        "shardwright:debug-tracing",
+        "shardwright:architectural-integration-trace",
+        "shardwright:debug-fail-next-host-save"
+      ],
+      "disposition": "ONE_TIME_IMPORT_NO_DUAL_WRITE",
+      "migrationClass": "CLIENT_PERSISTED_STATE",
+      "collisionRisk": "CROSS_PRODUCT_STATE_MUTATION",
+      "notes": "Only recognized values and versions are eligible for import."
+    },
+    {
+      "familyId": "LEGACY-RAG-COLLECTION-001",
+      "surface": "VECTOR_COLLECTIONS",
+      "legacyIdentifiers": [
+        "ss_shards_",
+        "ss_standard_"
+      ],
+      "canonicalIdentifiers": [
+        "shardwright_shards_",
+        "shardwright_standard_"
+      ],
+      "disposition": "REBUILD_OR_VERIFIED_COPY",
+      "migrationClass": "REBUILDABLE_PROJECTION",
+      "collisionRisk": "CROSS_PRODUCT_RETRIEVAL_OR_INJECTION",
+      "notes": "Legacy and canonical collections cannot be queried as one undifferentiated authority set."
+    },
+    {
+      "familyId": "LEGACY-RAG-VARIABLE-001",
+      "surface": "PROMPT_INJECTION_VARIABLE",
+      "legacyIdentifiers": [
+        "ss_rag_memory",
+        "5_summary_sharder_rag"
+      ],
+      "canonicalIdentifiers": [
+        "shardwright_rag_memory",
+        "5_shardwright_rag"
+      ],
+      "disposition": "REPLACE_RUNTIME_IDENTIFIER",
+      "migrationClass": "EPHEMERAL_PROMPT_STATE",
+      "collisionRisk": "INJECTION_OVERWRITE_OR_DUPLICATION",
+      "notes": "Saved configuration referencing the legacy variable follows settings migration rules."
+    },
+    {
+      "familyId": "LEGACY-PLUGIN-001",
+      "surface": "SERVER_PLUGIN_PACKAGE_AND_INSTALL_FOLDER",
+      "legacyIdentifiers": [
+        "summary-sharder-memory"
+      ],
+      "canonicalIdentifiers": [
+        "shardwright-memory"
+      ],
+      "disposition": "COPY_VERIFY_ACTIVATE",
+      "migrationClass": "SERVER_RUNTIME_AND_DURABLE_BOUNDARY",
+      "collisionRisk": "PLUGIN_ROUTE_OR_STORAGE_OWNERSHIP_COLLISION",
+      "notes": "Plugin ID, package, folder, emitted identity, and route must change together."
+    },
+    {
+      "familyId": "LEGACY-API-001",
+      "surface": "SERVER_API_ROUTE",
+      "legacyIdentifiers": [
+        "/api/plugins/summary-sharder-memory"
+      ],
+      "canonicalIdentifiers": [
+        "/api/plugins/shardwright-memory"
+      ],
+      "disposition": "COORDINATED_CLIENT_SERVER_SWITCH",
+      "migrationClass": "RUNTIME_PROTOCOL",
+      "collisionRisk": "WRONG_PLUGIN_REQUEST",
+      "notes": "The legacy route cannot be retained as a Shardwright alias during coexistence."
+    },
+    {
+      "familyId": "LEGACY-SERVER-STORAGE-001",
+      "surface": "SERVER_STORAGE_ROOT",
+      "legacyIdentifiers": [
+        "summary-sharder/architectural-memory.db",
+        "summary-sharder/architectural-memory.snapshot.db",
+        "summary-sharder/architectural-memory.state.json",
+        "summary-sharder/"
+      ],
+      "canonicalIdentifiers": [
+        "shardwright/architectural-memory.db",
+        "shardwright/architectural-memory.snapshot.db",
+        "shardwright/architectural-memory.state.json",
+        "shardwright/"
+      ],
+      "disposition": "COPY_VERIFY_ACTIVATE_RETAIN_SOURCE",
+      "migrationClass": "DURABLE_AUTHORITY",
+      "collisionRisk": "DATA_LOSS_SPLIT_BRAIN_OR_DUAL_OWNERSHIP",
+      "notes": "In-place move, source deletion, and concurrent opening through both identities are prohibited."
+    },
+    {
+      "familyId": "LEGACY-SCHEMA-001",
+      "surface": "JSON_SCHEMA_ID",
+      "legacyIdentifiers": [
+        "https://summary-sharder/"
+      ],
+      "canonicalIdentifiers": [
+        "urn:shardwright:schema:v1:"
+      ],
+      "disposition": "SUCCESSOR_OR_COMPATIBILITY_CATALOG",
+      "migrationClass": "VERSIONED_CONTRACT_IDENTITY",
+      "collisionRisk": "SILENT_SCHEMA_REINTERPRETATION",
+      "notes": "Persisted historical schema IDs remain resolvable with their original meaning."
+    },
+    {
+      "familyId": "LEGACY-DOWNLOAD-001",
+      "surface": "EXPORTED_FILE_NAMES",
+      "legacyIdentifiers": [
+        "summary-sharder-prompts.json"
+      ],
+      "canonicalIdentifiers": [
+        "shardwright-prompts.json"
+      ],
+      "disposition": "REPLACE_NEW_EXPORT_NAME",
+      "migrationClass": "USER_FACING_EXPORT",
+      "collisionRisk": "OPERATOR_AMBIGUITY_OR_OVERWRITE",
+      "notes": "Previously exported files retain their historical names."
+    },
+    {
+      "familyId": "LEGACY-SCHEMA-PACKAGE-001",
+      "surface": "PACKAGED_SHARED_CODE_AND_SCHEMA_DESCRIPTORS",
+      "legacyIdentifiers": [
+        "SUMMARY_SHARDER_NAMESPACE",
+        "namespace: 'summary_sharder'",
+        "pluginId: 'summary-sharder-memory'"
+      ],
+      "canonicalIdentifiers": [
+        "SHARDWRIGHT_NAMESPACE",
+        "namespace: 'shardwright'",
+        "pluginId: 'shardwright-memory'"
+      ],
+      "disposition": "REPACKAGE_FROM_CANONICAL_SOURCE",
+      "migrationClass": "GENERATED_OR_PACKAGED_DERIVATIVE",
+      "collisionRisk": "CLIENT_SERVER_CONTRACT_DRIFT",
+      "notes": "Generated copies must be regenerated, not edited independently."
+    }
+  ],
+  "migrationRules": {
+    "ordinaryReadsMayMigrate": false,
+    "dualWriteAllowed": false,
+    "legacySourceDeletionAllowed": false,
+    "ambiguousAutomaticAdoptionAllowed": false,
+    "runtimeCompatibilityAliasesAllowed": false,
+    "manifestRequiredForStatefulMigration": true,
+    "completionOrRollbackReportRequired": true,
+    "sideBySideProofRequired": true
+  },
+  "inventoryScope": {
+    "included": [
+      "manifest.json",
+      "index.js",
+      "core/**",
+      "ui/**",
+      "tools/server-plugin/**",
+      "README.md",
+      "FEATURES.md",
+      "docs/architectural-memory/**"
+    ],
+    "excluded": [
+      ".git/**",
+      "tools/server-plugin/**/node_modules/**"
+    ],
+    "classificationUnit": "legacy identity family",
+    "note": "Occurrence-level replacement remains the responsibility of each separately authorized implementation slice."
+  }
+}

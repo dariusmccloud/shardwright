@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:capture-reconsideration-decision-v1",
+  "title": "CaptureReconsiderationDecisionV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "reconsiderationDecisionId",
+    "reconsiderationRequestId",
+    "reconsiderationPolicyVersion",
+    "reconsiderationPolicyHash",
+    "decision",
+    "reason",
+    "decidedAt"
+  ],
+  "properties": {
+    "reconsiderationDecisionId": {
+      "type": "string",
+      "pattern": "^reconsideration-decision-[A-Za-z0-9._-]+$"
+    },
+    "reconsiderationRequestId": {
+      "type": "string",
+      "pattern": "^reconsideration-request-[A-Za-z0-9._-]+$"
+    },
+    "reconsiderationPolicyVersion": { "type": "string", "minLength": 1 },
+    "reconsiderationPolicyHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "decision": {
+      "enum": [
+        "ADMITTED",
+        "REFUSED_DUPLICATE",
+        "REFUSED_NO_MATERIAL_CHANGE",
+        "REFUSED_TARGET_MISMATCH",
+        "REFUSED_CYCLE",
+        "REFUSED_POLICY_LIMIT",
+        "DEFERRED_MISSING_BASIS",
+        "MANUAL_REVIEW_REQUIRED"
+      ]
+    },
+    "reason": { "type": "string", "minLength": 1 },
+    "successorCaptureJobId": { "type": "string", "minLength": 1 },
+    "authoritativePriorRequestId": {
+      "type": "string",
+      "pattern": "^reconsideration-request-[A-Za-z0-9._-]+$"
+    },
+    "decidedAt": { "type": "string", "format": "date-time" }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "decision": { "const": "ADMITTED" } },
+        "required": ["decision"]
+      },
+      "then": { "required": ["successorCaptureJobId"] }
+    },
+    {
+      "if": {
+        "properties": { "decision": { "const": "REFUSED_DUPLICATE" } },
+        "required": ["decision"]
+      },
+      "then": { "required": ["authoritativePriorRequestId"] }
+    }
+  ]
+}

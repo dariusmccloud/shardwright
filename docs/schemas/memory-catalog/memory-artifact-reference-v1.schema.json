@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:memory-artifact-reference-v1",
+  "title": "MemoryArtifactReferenceV1",
+  "description": "Typed, scope-bound Phase X artifact reference. Resolution and authority acceptance remain server-owned.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "artifactType",
+    "artifactId",
+    "memoryScopeId",
+    "expectedArtifactClass",
+    "resolutionRequirement"
+  ],
+  "properties": {
+    "artifactType": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*-v[1-9][0-9]*$"
+    },
+    "artifactId": {
+      "type": "string",
+      "pattern": "^artifact:[a-z][a-z0-9-]*:[A-Za-z0-9._~-]+$"
+    },
+    "memoryScopeId": {
+      "type": "string",
+      "pattern": "^scope:[A-Za-z0-9._~-]+$"
+    },
+    "expectedArtifactClass": {
+      "enum": [
+        "AUTHORITY_REGISTRATION",
+        "EVENT",
+        "IMMUTABLE_RECORD",
+        "NOMINATION",
+        "MANIFEST",
+        "PROJECTION",
+        "RESULT",
+        "REPORT"
+      ]
+    },
+    "resolutionRequirement": {
+      "enum": [
+        "CURRENT_ALLOWED",
+        "EXACT_REVISION",
+        "EXACT_HASH"
+      ]
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "immutableHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "resolutionRequirement": {
+            "const": "CURRENT_ALLOWED"
+          }
+        },
+        "required": [
+          "resolutionRequirement"
+        ]
+      },
+      "then": {
+        "properties": {
+          "revision": false,
+          "immutableHash": false
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "resolutionRequirement": {
+            "const": "EXACT_REVISION"
+          }
+        },
+        "required": [
+          "resolutionRequirement"
+        ]
+      },
+      "then": {
+        "properties": {
+          "revision": true,
+          "immutableHash": false
+        },
+        "required": [
+          "revision"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "resolutionRequirement": {
+            "const": "EXACT_HASH"
+          }
+        },
+        "required": [
+          "resolutionRequirement"
+        ]
+      },
+      "then": {
+        "properties": {
+          "revision": false,
+          "immutableHash": true
+        },
+        "required": [
+          "immutableHash"
+        ]
+      }
+    }
+  ]
+}

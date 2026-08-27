@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:context-sheet-merge-event-v1",
+  "title": "ContextSheetMergeEventV1",
+  "description": "Governed merge of two or more resolved context sheets sharing one canonical anchor. Similarity alone is never merge authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "envelope",
+    "eventType",
+    "sourceSheets",
+    "survivingContextSheetId",
+    "sharedCanonicalAnchorId",
+    "sheetType",
+    "memoryScopeId",
+    "anchorJurisdictionId",
+    "mergeBasisClass",
+    "mergeAuthorityRef",
+    "impactManifest",
+    "aliasReconciliationState",
+    "cycleCheck",
+    "rationale",
+    "mergePolicyVersion",
+    "occurredAt"
+  ],
+  "properties": {
+    "envelope": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-envelope-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "artifactClass": { "const": "EVENT" },
+            "schemaId": { "const": "context-sheet-merge-event-v1" },
+            "idempotencyKey": { "type": "string" },
+            "authorityBasisRefs": { "type": "array", "minItems": 1 }
+          },
+          "required": ["artifactClass", "schemaId", "idempotencyKey", "authorityBasisRefs"]
+        }
+      ]
+    },
+    "eventType": { "const": "CONTEXT_SHEETS_MERGED" },
+    "sourceSheets": {
+      "type": "array",
+      "minItems": 2,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "contextSheetId",
+          "exactStateRef",
+          "anchorState",
+          "lifecycleState"
+        ],
+        "properties": {
+          "contextSheetId": {
+            "type": "string",
+            "pattern": "^context-sheet:[A-Za-z0-9._~-]+$"
+          },
+          "exactStateRef": {
+            "allOf": [
+              {
+                "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "artifactType": { "const": "context-sheet-lifecycle-projection-v1" },
+                  "expectedArtifactClass": { "const": "PROJECTION" },
+                  "resolutionRequirement": { "const": "EXACT_HASH" }
+                }
+              }
+            ]
+          },
+          "anchorState": { "const": "RESOLVED" },
+          "lifecycleState": { "const": "ACTIVE" }
+        }
+      }
+    },
+    "survivingContextSheetId": {
+      "type": "string",
+      "pattern": "^context-sheet:[A-Za-z0-9._~-]+$"
+    },
+    "sharedCanonicalAnchorId": {
+      "type": "string",
+      "pattern": "^canonical-anchor:[A-Za-z0-9._~-]+$"
+    },
+    "sheetType": {
+      "enum": [
+        "ENTITY",
+        "RELATIONSHIP",
+        "GROUP",
+        "PLACE",
+        "OBJECT",
+        "TOPIC",
+        "GOAL",
+        "PROJECT",
+        "MOTIF",
+        "RITUAL",
+        "ERA"
+      ]
+    },
+    "memoryScopeId": {
+      "type": "string",
+      "pattern": "^scope:[A-Za-z0-9._~-]+$"
+    },
+    "anchorJurisdictionId": { "type": "string", "minLength": 1 },
+    "mergeBasisClass": { "const": "GOVERNED_IDENTITY" },
+    "mergeAuthorityRef": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "expectedArtifactClass": {
+              "enum": ["EVENT", "IMMUTABLE_RECORD", "AUTHORITY_REGISTRATION"]
+            },
+            "resolutionRequirement": { "const": "EXACT_HASH" }
+          }
+        }
+      ]
+    },
+    "impactManifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "catalogLinks",
+        "dossiers",
+        "aliases",
+        "unresolvedItems",
+        "manifestHash"
+      ],
+      "properties": {
+        "catalogLinks": { "const": "COMPLETE" },
+        "dossiers": { "const": "COMPLETE" },
+        "aliases": { "const": "COMPLETE" },
+        "unresolvedItems": { "type": "integer", "minimum": 0 },
+        "manifestHash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    },
+    "aliasReconciliationState": { "const": "COMPLETE" },
+    "cycleCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "checkedGraphHash"],
+      "properties": {
+        "state": { "const": "ACYCLIC" },
+        "checkedGraphHash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    },
+    "rationale": { "type": "string", "minLength": 1 },
+    "mergePolicyVersion": { "type": "string", "minLength": 1 },
+    "occurredAt": { "type": "string", "format": "date-time" }
+  }
+}

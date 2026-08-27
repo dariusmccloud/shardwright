@@ -1,0 +1,218 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:capture-batch-manifest-v1",
+  "title": "CaptureBatchManifestV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "batchHandle",
+    "batchContractVersion",
+    "memoryScopeId",
+    "sourcePolicySnapshotHash",
+    "constructionProfile",
+    "orderedSources",
+    "capacityAccounting",
+    "batchHash",
+    "createdAt"
+  ],
+  "properties": {
+    "batchHandle": {
+      "type": "string",
+      "pattern": "^batch-[A-Za-z0-9._-]+$"
+    },
+    "batchContractVersion": { "type": "string", "minLength": 1 },
+    "memoryScopeId": { "type": "string", "minLength": 1 },
+    "chatInstanceId": { "type": "string", "minLength": 1 },
+    "sourcePolicySnapshotHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "constructionProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "profileId",
+        "profileVersion",
+        "profileHash",
+        "tokenizerId",
+        "tokenizerVersion",
+        "tokenizerHash",
+        "modelContextTokens",
+        "fixedPromptTokens",
+        "schemaOrGrammarTokens",
+        "reservedOutputTokens",
+        "safetyMarginTokens",
+        "maxSourceInputTokens",
+        "maxSourceCount",
+        "maxPrimaryEvidenceSourceCount",
+        "maxEvidenceOverlapSourceCount",
+        "maxContextOnlySourceCount",
+        "maxContextOnlyTokens",
+        "maxContextToEvidenceTokenRatio",
+        "evidenceOverlapCount",
+        "contextLookBehindCount",
+        "contextLookAheadCount"
+      ],
+      "properties": {
+        "profileId": { "type": "string", "minLength": 1 },
+        "profileVersion": { "type": "string", "minLength": 1 },
+        "profileHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "tokenizerId": { "type": "string", "minLength": 1 },
+        "tokenizerVersion": { "type": "string", "minLength": 1 },
+        "tokenizerHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "modelContextTokens": { "type": "integer", "minimum": 1 },
+        "fixedPromptTokens": { "type": "integer", "minimum": 0 },
+        "schemaOrGrammarTokens": { "type": "integer", "minimum": 0 },
+        "reservedOutputTokens": { "type": "integer", "minimum": 1 },
+        "safetyMarginTokens": { "type": "integer", "minimum": 0 },
+        "maxSourceInputTokens": { "type": "integer", "minimum": 1 },
+        "maxSourceCount": { "type": "integer", "minimum": 1 },
+        "maxPrimaryEvidenceSourceCount": { "type": "integer", "minimum": 1 },
+        "maxEvidenceOverlapSourceCount": { "type": "integer", "minimum": 0 },
+        "maxContextOnlySourceCount": { "type": "integer", "minimum": 0 },
+        "maxContextOnlyTokens": { "type": "integer", "minimum": 0 },
+        "maxContextToEvidenceTokenRatio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "evidenceOverlapCount": { "type": "integer", "minimum": 0 },
+        "contextLookBehindCount": { "type": "integer", "minimum": 0 },
+        "contextLookAheadCount": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "orderedSources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "orderIndex",
+          "sourceHandle",
+          "sourceRecordHandle",
+          "sourceRevisionHash",
+          "sourcePolicyResultHandle",
+          "batchRole",
+          "selectionReason",
+          "tokenCount"
+        ],
+        "properties": {
+          "orderIndex": { "type": "integer", "minimum": 0 },
+          "sourceHandle": {
+            "type": "string",
+            "pattern": "^src-[A-Za-z0-9._-]+$"
+          },
+          "sourceRecordHandle": {
+            "type": "string",
+            "pattern": "^record-[A-Za-z0-9._-]+$"
+          },
+          "sourceRevisionHash": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          },
+          "sourcePolicyResultHandle": {
+            "type": "string",
+            "pattern": "^source-policy-result-[A-Za-z0-9._-]+$"
+          },
+          "batchRole": {
+            "enum": ["PRIMARY_EVIDENCE", "EVIDENCE_OVERLAP", "CONTEXT_ONLY"]
+          },
+          "selectionReason": {
+            "enum": [
+              "PENDING_CAPTURE_OBLIGATION",
+              "ADJACENT_EVIDENCE_OVERLAP",
+              "PRECEDING_LOCAL_CONTEXT",
+              "FOLLOWING_LOCAL_CONTEXT",
+              "EXPLICITLY_RESOLVED_LOCAL_REFERENCE",
+              "DERIVED_RECORD_ORIENTATION"
+            ]
+          },
+          "tokenCount": { "type": "integer", "minimum": 0 }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": { "batchRole": { "const": "PRIMARY_EVIDENCE" } },
+              "required": ["batchRole"]
+            },
+            "then": {
+              "properties": {
+                "selectionReason": { "const": "PENDING_CAPTURE_OBLIGATION" }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": { "batchRole": { "const": "EVIDENCE_OVERLAP" } },
+              "required": ["batchRole"]
+            },
+            "then": {
+              "properties": {
+                "selectionReason": { "const": "ADJACENT_EVIDENCE_OVERLAP" }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": { "batchRole": { "const": "CONTEXT_ONLY" } },
+              "required": ["batchRole"]
+            },
+            "then": {
+              "properties": {
+                "selectionReason": {
+                  "enum": [
+                    "PRECEDING_LOCAL_CONTEXT",
+                    "FOLLOWING_LOCAL_CONTEXT",
+                    "EXPLICITLY_RESOLVED_LOCAL_REFERENCE",
+                    "DERIVED_RECORD_ORIENTATION"
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "capacityAccounting": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actualPrimaryEvidenceTokens",
+        "actualEvidenceOverlapTokens",
+        "actualContextOnlyTokens",
+        "actualSourceInputTokens",
+        "actualRenderedInputTokens"
+      ],
+      "properties": {
+        "actualPrimaryEvidenceTokens": { "type": "integer", "minimum": 1 },
+        "actualEvidenceOverlapTokens": { "type": "integer", "minimum": 0 },
+        "actualContextOnlyTokens": { "type": "integer", "minimum": 0 },
+        "actualSourceInputTokens": { "type": "integer", "minimum": 1 },
+        "actualRenderedInputTokens": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "batchHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "createdAt": { "type": "string", "format": "date-time" }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "orderedSources": {
+            "contains": {
+              "properties": { "batchRole": { "const": "PRIMARY_EVIDENCE" } },
+              "required": ["batchRole"]
+            }
+          }
+        },
+        "required": ["orderedSources"]
+      },
+      "then": true,
+      "else": false
+    }
+  ]
+}

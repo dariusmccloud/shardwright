@@ -1,0 +1,34 @@
+{
+  "envelope": {
+    "schemaId": "context-sheet-merge-event-v1",
+    "schemaVersion": 1,
+    "artifactClass": "EVENT",
+    "artifactId": "artifact:context-sheet-merge-event:01K1MERGE00000000000000001",
+    "memoryScopeId": "scope:jeep-primary",
+    "createdAt": "2026-08-01T10:00:00.000Z",
+    "producer": { "componentId": "context-sheet-identity-service", "componentVersion": "phase-x-contract" },
+    "contractBindings": [{ "id": "phase-x-context-sheet-anchor", "version": "0.1.0" }],
+    "policyBindings": [],
+    "payloadHash": "sha256:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1",
+    "idempotencyKey": "idempotency:merge-incomplete",
+    "authorityBasisRefs": [{ "artifactType": "governed-identity-resolution-v1", "artifactId": "artifact:governed-identity-resolution:01K1MERGE00000000000000002", "memoryScopeId": "scope:jeep-primary", "expectedArtifactClass": "EVENT", "resolutionRequirement": "EXACT_HASH", "immutableHash": "sha256:c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2" }]
+  },
+  "eventType": "CONTEXT_SHEETS_MERGED",
+  "sourceSheets": [
+    { "contextSheetId": "context-sheet:jeep", "exactStateRef": { "artifactType": "context-sheet-lifecycle-projection-v1", "artifactId": "artifact:context-sheet-lifecycle-projection:01K1MERGE00000000000000003", "memoryScopeId": "scope:jeep-primary", "expectedArtifactClass": "PROJECTION", "resolutionRequirement": "EXACT_HASH", "immutableHash": "sha256:c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3" }, "anchorState": "RESOLVED", "lifecycleState": "ACTIVE" },
+    { "contextSheetId": "context-sheet:jeep-duplicate", "exactStateRef": { "artifactType": "context-sheet-lifecycle-projection-v1", "artifactId": "artifact:context-sheet-lifecycle-projection:01K1MERGE00000000000000004", "memoryScopeId": "scope:jeep-primary", "expectedArtifactClass": "PROJECTION", "resolutionRequirement": "EXACT_HASH", "immutableHash": "sha256:c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4" }, "anchorState": "RESOLVED", "lifecycleState": "ACTIVE" }
+  ],
+  "survivingContextSheetId": "context-sheet:jeep",
+  "sharedCanonicalAnchorId": "canonical-anchor:character-jeep",
+  "sheetType": "ENTITY",
+  "memoryScopeId": "scope:jeep-primary",
+  "anchorJurisdictionId": "subject:jeep",
+  "mergeBasisClass": "GOVERNED_IDENTITY",
+  "mergeAuthorityRef": { "artifactType": "governed-identity-resolution-v1", "artifactId": "artifact:governed-identity-resolution:01K1MERGE00000000000000002", "memoryScopeId": "scope:jeep-primary", "expectedArtifactClass": "EVENT", "resolutionRequirement": "EXACT_HASH", "immutableHash": "sha256:c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2" },
+  "impactManifest": { "catalogLinks": "COMPLETE", "dossiers": "PENDING", "aliases": "COMPLETE", "unresolvedItems": 1, "manifestHash": "sha256:c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5" },
+  "aliasReconciliationState": "COMPLETE",
+  "cycleCheck": { "state": "ACYCLIC", "checkedGraphHash": "sha256:c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6" },
+  "rationale": "Identity basis is shared but impact work is incomplete.",
+  "mergePolicyVersion": "v1",
+  "occurredAt": "2026-08-01T10:00:00.000Z"
+}

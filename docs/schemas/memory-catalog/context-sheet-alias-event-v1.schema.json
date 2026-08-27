@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:context-sheet-alias-event-v1",
+  "title": "ContextSheetAliasEventV1",
+  "description": "Validated, attributable, scoped alias event. Alias text never establishes or merges anchor identity.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "envelope",
+    "eventType",
+    "contextSheetRef",
+    "aliasText",
+    "aliasKind",
+    "locale",
+    "aliasScope",
+    "effectiveFrom",
+    "effectiveUntil",
+    "attributableActor",
+    "attributableBasisRef",
+    "reason",
+    "validationState",
+    "occurredAt"
+  ],
+  "properties": {
+    "envelope": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-envelope-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "artifactClass": { "const": "EVENT" },
+            "schemaId": { "const": "context-sheet-alias-event-v1" },
+            "idempotencyKey": { "type": "string" }
+          },
+          "required": ["artifactClass", "schemaId", "idempotencyKey"]
+        }
+      ]
+    },
+    "eventType": { "const": "CONTEXT_SHEET_ALIAS_RECORDED" },
+    "contextSheetRef": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "artifactType": { "const": "context-sheet-record-v1" },
+            "expectedArtifactClass": { "const": "IMMUTABLE_RECORD" },
+            "resolutionRequirement": { "const": "EXACT_HASH" }
+          }
+        }
+      ]
+    },
+    "aliasText": { "type": "string", "minLength": 1 },
+    "aliasKind": {
+      "enum": [
+        "FORMER_NAME",
+        "ALTERNATE_NAME",
+        "DISPLAY_VARIANT",
+        "SELF_IDENTIFIED_NAME",
+        "IMPORTED_NAME",
+        "HISTORICAL_LABEL"
+      ]
+    },
+    "locale": {
+      "type": ["string", "null"],
+      "minLength": 2
+    },
+    "aliasScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["memoryScopeId", "jurisdictionId"],
+      "properties": {
+        "memoryScopeId": {
+          "type": "string",
+          "pattern": "^scope:[A-Za-z0-9._~-]+$"
+        },
+        "jurisdictionId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "effectiveFrom": { "type": "string", "format": "date-time" },
+    "effectiveUntil": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "attributableActor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actorClass", "actorId"],
+      "properties": {
+        "actorClass": {
+          "enum": ["SUBJECT", "OPERATOR", "SERVER_POLICY", "IMPORT_AUTHORITY"]
+        },
+        "actorId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "attributableBasisRef": {
+      "allOf": [
+        {
+          "$ref": "urn:shardwright:schema:v1:memory-artifact-reference-v1"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "resolutionRequirement": { "const": "EXACT_HASH" }
+          }
+        }
+      ]
+    },
+    "reason": { "type": "string", "minLength": 1 },
+    "validationState": { "const": "VALIDATED" },
+    "occurredAt": { "type": "string", "format": "date-time" }
+  }
+}

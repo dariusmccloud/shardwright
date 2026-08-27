@@ -1,0 +1,44 @@
+{
+  "envelope": {
+    "schemaId": "context-sheet-redirect-v1",
+    "schemaVersion": 1,
+    "artifactClass": "IMMUTABLE_RECORD",
+    "artifactId": "artifact:context-sheet-redirect:01K1REDIR00000000000000001",
+    "memoryScopeId": "scope:jeep-primary",
+    "createdAt": "2026-08-01T10:05:00.000Z",
+    "producer": { "componentId": "context-sheet-identity-service", "componentVersion": "phase-x-contract" },
+    "contractBindings": [{ "id": "phase-x-context-sheet-anchor", "version": "0.1.0" }],
+    "policyBindings": [],
+    "payloadHash": "sha256:d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1"
+  },
+  "sourceContextSheetId": "context-sheet:jeep-duplicate",
+  "destination": {
+    "destinationKind": "ACTIVE_SHEET",
+    "targetContextSheetId": "context-sheet:jeep",
+    "targetStateRef": {
+      "artifactType": "context-sheet-lifecycle-projection-v1",
+      "artifactId": "artifact:context-sheet-lifecycle-projection:01K1MERGE00000000000000003",
+      "memoryScopeId": "scope:jeep-primary",
+      "expectedArtifactClass": "PROJECTION",
+      "resolutionRequirement": "EXACT_HASH",
+      "immutableHash": "sha256:c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3"
+    }
+  },
+  "redirectKind": "MERGE",
+  "authorityEventRef": {
+    "artifactType": "context-sheet-merge-event-v1",
+    "artifactId": "artifact:context-sheet-merge-event:01K1MERGE00000000000000001",
+    "memoryScopeId": "scope:jeep-primary",
+    "expectedArtifactClass": "EVENT",
+    "resolutionRequirement": "EXACT_HASH",
+    "immutableHash": "sha256:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1"
+  },
+  "effectiveAt": "2026-08-01T10:05:00.000Z",
+  "reason": "The source sheet was lawfully merged into the surviving sheet.",
+  "historicalHops": ["context-sheet:jeep-duplicate"],
+  "selfRedirectCheck": "PASSED",
+  "cycleCheck": {
+    "state": "ACYCLIC",
+    "checkedGraphHash": "sha256:d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2"
+  }
+}
