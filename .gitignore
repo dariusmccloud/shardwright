@@ -2,13 +2,7 @@
 .claude
 .codex
 .gemini/settings.json
-.git
 .venv
-
-AGENTS.md
-CLAUDE.md
-FEATURES.md
-GEMINI.md
 
 node_modules/
 
