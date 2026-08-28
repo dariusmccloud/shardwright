@@ -1,9 +1,28 @@
 # Phase X: Capture Vocabulary And Source Policy Contract
 
-**Version:** 0.1.0
+**Version:** 0.2.0
 **Status:** ENTERED — v1 vocabularies and source-policy boundary are normative;
 production implementation remains unauthorized.
 **Parent:** `RFC_DISCOVERY_CAPTURE_OBSERVATION.md`
+
+## 0. Amendment Note (v0.2.0)
+
+This version adds one closed-vocabulary action, `DISCLOSED`, and records one deferred
+candidate, `EXPRESSED_VULNERABILITY`, pending benchmark evidence. No other v0.1.0
+vocabulary, mapping, or requirement changes.
+
+**Finding:** The v0.1.0 `localEvidencedAction` vocabulary has no action for revealing
+previously withheld material to the party it was withheld from. A disclosure scenario
+("I've known since Tuesday and didn't tell you") can only be forced into `STATED`,
+which loses the distinction, or `DISCOVERED`, which is the wrong subject — `DISCOVERED`
+covers a newly recognized self-understanding, not information withheld from another
+party.
+
+**Scope discipline:** Per `VOC-ACT-001`, this is a versioned vocabulary successor with
+an explicit mapping, not a free-form addition. It does not add an emotion taxonomy;
+`EXPRESSED_VULNERABILITY` is named but deliberately withheld from the closed vocabulary
+until benchmark evidence shows the existing vocabulary plus supporting spans and
+`uncertainties` is insufficient.
 
 ## 1. Problem
 
@@ -51,6 +70,7 @@ The closed v1 vocabulary is:
 |---|---|
 | `STATED` | Expressed a proposition without a narrower supported action |
 | `DISCOVERED` | Articulated a newly recognized fact or self-understanding |
+| `DISCLOSED` | Revealed material while explicitly indicating it was previously withheld from the recipient |
 | `INTRODUCED` | Put forward a new concept, structure, requirement, or possibility |
 | `PROPOSED` | Offered a specific candidate decision or change |
 | `ADOPTED` | Explicitly selected or put a proposal into effect |
@@ -88,6 +108,31 @@ The closed v1 vocabulary is:
   action.
 - New labels require a versioned vocabulary successor, benchmark fixtures, and explicit
   mapping. Free-form or nearest-label invention is prohibited.
+- `DISCLOSED` requires the source to explicitly indicate both the revelation and that
+  the material was previously withheld from the recipient; withholding MUST NOT be
+  inferred from context the source does not state. A first-time statement of something
+  never withheld from this recipient is `STATED`. A newly recognized self-understanding
+  with no other party it was being withheld from is `DISCOVERED`.
+
+### `DISCLOSED` examples
+
+Positive: *"I've known since Tuesday. I didn't tell you."* → `DISCLOSED` — the speaker
+reveals information previously withheld from the person being told.
+
+Refusal (`STATED`, not `DISCLOSED`): *"I go by Alex now."* → `STATED` — a first-time
+self-identification is not information that was being withheld from this recipient.
+
+Refusal (`DISCOVERED`, not `DISCLOSED`): *"I only just realized I've loved her the whole
+time."* → `DISCOVERED` — a newly recognized self-understanding with no other party it
+was being withheld from.
+
+`EXPRESSED_VULNERABILITY` (deferred candidate, not part of v0.2.0): an admission of fear
+or emotional exposure that may accompany a disclosure but is not itself one — e.g. *"I
+didn't think you'd stay if you knew all of me."* — currently nominates `STATED` unless
+the supplied source also explicitly establishes a disclosure; it preserves the statement
+but not the distinct vulnerability act. Adding a separate action for that act requires
+benchmark evidence that the existing vocabulary plus supporting spans and
+`uncertainties` is insufficient before it may enter the closed vocabulary.
 
 ## 4. Memory Track Vocabulary
 
@@ -337,6 +382,9 @@ their existence.
 10. A missing or stale source-policy result prevents capture acceptance.
 11. Restart/replay preserves vocabulary version, source policy, unresolved leads, and
     mappings unchanged.
+12. The disclosure scenario ("I've known since Tuesday and didn't tell you") nominates
+    `DISCLOSED`; a first-time self-identification nominates `STATED`; a newly recognized
+    self-understanding with no other party it was withheld from nominates `DISCOVERED`.
 
 ## 10. Stop Boundary
 
@@ -347,4 +395,7 @@ proposal admission, historical migration, or production schema wiring.
 ## 11. Status
 
 The v1 action, track, entity-lead, source-class, and source-policy vocabularies are
-**ENTERED**. Implementation and benchmark proof remain open.
+**ENTERED**. The v0.2.0 action addendum (`DISCLOSED`) is **ENTERED**.
+`EXPRESSED_VULNERABILITY` remains a named, deferred candidate pending benchmark
+evidence, not part of the closed vocabulary. Implementation and benchmark proof remain
+open.
