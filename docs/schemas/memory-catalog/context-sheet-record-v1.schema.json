@@ -170,7 +170,7 @@
           "properties": {
             "artifactType": { "const": "context-sheet-creation-event-v1" },
             "expectedArtifactClass": { "const": "EVENT" },
-            "resolutionRequirement": { "const": "EXACT_HASH" }
+            "resolutionRequirement": { "const": "CURRENT_ALLOWED" }
           }
         }
       ]
