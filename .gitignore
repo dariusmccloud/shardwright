@@ -3,8 +3,12 @@
 .codex
 .gemini/settings.json
 .venv
-
+.archive
+ClaudeStateSync
 node_modules/
+
+
+
 
 *.code-workspace
 tools/sqlite-tools-win-x64/
