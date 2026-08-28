@@ -29,13 +29,15 @@ an informal claim.
 ## Current Delivery Position
 
 Phase X has a substantial approved design and schema boundary. Its ordinary runtime
-delivery is beginning: a first bounded slice of the membership persistence contract is
-now proven, though routes, storage migration, and every operation past NOMINATE remain
-unauthorized.
+delivery has proven bounded NOMINATE, VALIDATE, LINK, and SUCCEED membership persistence slices.
+It is now blocked before IMPACT_DECIDE because the separate Context Sheet Identity service has no
+durable lifecycle writer or source resolver for the exact merge/split event that operation requires.
 
-**Current next authorized implementation slice:** Context Sheet membership VALIDATE
-operation admission, bounded by the runtime persistence and replay ownership contract.
-It must receive its own slice declaration and proof before work begins.
+**Current blocker:** `IMPACT_DECIDE` must resolve an exact persisted Context Sheet merge/split
+event, but no Context Sheet lifecycle storage path, writer, or replay source currently exists.
+The Membership Link ledger cannot become that authority owner. The next lawful work is a separately
+declared Context Sheet Identity persistence slice; its exact starting operation requires a new
+authorization decision.
 
 ## Release-Critical Workstreams
 
@@ -53,7 +55,7 @@ It must receive its own slice declaration and proof before work begins.
 | Existing-memory catalog migration | [Existing Memory Catalog Migration](contracts/PHASE_X_EXISTING_MEMORY_CATALOG_MIGRATION_CONTRACT.md) | `ENTERED` | No migration run or proof recorded | Authorize a separate inventory and dry-run slice. |
 | Catalog record, citations, and lifecycle projection | [Catalog Record Citation and Lifecycle Projection](contracts/PHASE_X_MEMORY_CATALOG_RECORD_CITATION_AND_LIFECYCLE_PROJECTION_CONTRACT.md) | `ENTERED` | No runtime projection proof recorded | Implement after durable authority records exist. |
 | Context Sheet anchors | [Context Sheet Anchor Identity and Lifecycle](contracts/PHASE_X_CONTEXT_SHEET_ANCHOR_IDENTITY_AND_LIFECYCLE_CONTRACT.md) | `ENTERED` | No runtime proof recorded | Implement durable anchor lifecycle before dependent projections. |
-| Context Sheet membership | [Membership Link Contract](contracts/PHASE_X_CONTEXT_SHEET_MEMBERSHIP_LINK_CONTRACT.md); [Runtime Persistence and Replay Ownership](contracts/PHASE_X_CONTEXT_SHEET_MEMBERSHIP_RUNTIME_PERSISTENCE_AND_REPLAY_OWNERSHIP_CONTRACT.md) | `ENTERED` | NOMINATE-only ledger writer/read-back `PROVEN` (`tools/server-plugin/shardwright-memory/membership.js`, `membership.test.mjs`, 7/7 on 2026-08-27); VALIDATE, LINK, SUCCEED, IMPACT_DECIDE, RECONCILE, routes, projections, UI, and lock-recovery policy remain unauthorized | Implement VALIDATE-operation admission as its own declared slice. |
+| Context Sheet membership | [Membership Link Contract](contracts/PHASE_X_CONTEXT_SHEET_MEMBERSHIP_LINK_CONTRACT.md); [Runtime Persistence and Replay Ownership](contracts/PHASE_X_CONTEXT_SHEET_MEMBERSHIP_RUNTIME_PERSISTENCE_AND_REPLAY_OWNERSHIP_CONTRACT.md) | `BLOCKED` | NOMINATE, VALIDATE, LINK, and SUCCEED durable admission/read-back `PROVEN` (`tools/server-plugin/shardwright-memory/membership.js`, `membership.test.mjs`, 23/23 on 2026-08-27). `IMPACT_DECIDE` and RECONCILE require exact Context Sheet lifecycle custody that has no server-side authority source yet. Routes, projections, UI, and lock recovery remain open. | First implement a separately bounded Context Sheet Identity lifecycle persistence source; then resume IMPACT_DECIDE. |
 | Dossier claim graph and revisions | [Versioned Dossier Claim Graph and Revision](contracts/PHASE_X_VERSIONED_DOSSIER_CLAIM_GRAPH_AND_REVISION_CONTRACT.md) | `ENTERED` | No runtime proof recorded | Implement only after its authority records and sources are durable. |
 | Active continuity and request assembly | [Active Continuity Assembly and Precedence](contracts/PHASE_X_ACTIVE_CONTINUITY_ASSEMBLY_AND_PRECEDENCE_CONTRACT.md) | `ENTERED` | No assembly proof recorded | Implement after governed catalog, sheets, and dossiers can supply eligible material. |
 | Catalog / sheet / dossier benchmark | [Catalog Context Dossier Benchmark Governance](contracts/PHASE_X_CATALOG_CONTEXT_DOSSIER_BENCHMARK_GOVERNANCE_CONTRACT.md) | `ENTERED` | Benchmark construction and proof remain open | Build only after the three surfaces have candidate implementations. |
@@ -89,8 +91,10 @@ writer, projection, replay path, or ordinary UI path by itself.
 
 - [Documentation Closure Report](contracts/PHASE_X_MEMORY_CATALOG_AND_CONTEXT_SHEET_DOCUMENTATION_CLOSURE_REPORT.md) states that the documentation stack is entered while executable work remains open.
 - [Membership Schema Closure Audit](contracts/PHASE_X_CONTEXT_SHEET_MEMBERSHIP_SCHEMA_CLOSURE_AUDIT.md) records schema-consequence closure as complete and explicitly does not claim implementation closure.
-- [Membership Runtime Persistence and Replay Ownership](contracts/PHASE_X_CONTEXT_SHEET_MEMBERSHIP_RUNTIME_PERSISTENCE_AND_REPLAY_OWNERSHIP_CONTRACT.md) states that routes, writers, storage migration, and projections remain unauthorized beyond the NOMINATE slice proven below.
-- `node --test membership.test.mjs` in `tools/server-plugin/shardwright-memory/` passed 7/7 on 2026-08-27, proving: a valid NOMINATE artifact appends exactly once and is recovered identically by a separate Node process reading the same storage root; a repeated idempotency key with the same artifact hash returns the original entry without a second append; a repeated key with a different artifact hash refuses with `CSM_NOMINATION_IDEMPOTENCY_COLLISION`; and `interpretive-governance-ledger.jsonl` / `dnm-publication-ledger.jsonl` stay byte-identical across membership intake. Contract/policy binding is code-enforced (`assertKnownContractAndPolicyBindings`), not merely schema-shaped. The full `tools/server-plugin/shardwright-memory` suite passed 199/199 with no regressions. This proves the NOMINATE ledger write/read-back boundary only — not VALIDATE, LINK, SUCCEED, IMPACT_DECIDE, RECONCILE, routes, projections, or UI.
+- [Membership Runtime Persistence and Replay Ownership](contracts/PHASE_X_CONTEXT_SHEET_MEMBERSHIP_RUNTIME_PERSISTENCE_AND_REPLAY_OWNERSHIP_CONTRACT.md) remains the governing authority. Its broader writer, route, migration, projection, replay, and recovery closure is not claimed by the two proven admission slices below.
+- `node --test membership.test.mjs` in `tools/server-plugin/shardwright-memory/` passed 23/23 on 2026-08-27 after SUCCEED admission. In addition to NOMINATE/VALIDATE/LINK proof, it proves: a successor correction event appends only from exact durable predecessor-link custody, survives a separate-process read-back, and refuses changed idempotent content, missing predecessor custody, and schema-invalid authority changes without an append; all three unrelated-ledger isolation proofs remain green. This proves NOMINATE/VALIDATE/LINK/SUCCEED durable admission and read-back only — not semantic validation, current-use reconstruction, IMPACT_DECIDE, RECONCILE, routes, projections, or UI.
+- `node --test *.test.mjs` in `tools/server-plugin/shardwright-memory/` passed 215/215 on 2026-08-27 after the four admission slices. Expected refusal-path logs were exercised by existing negative tests; the command completed with exit code 0.
+- **Blocker evidence:** [Context Sheet Anchor Identity and Lifecycle](contracts/PHASE_X_CONTEXT_SHEET_ANCHOR_IDENTITY_AND_LIFECYCLE_CONTRACT.md) assigns merge/split lifecycle authority to the Context Sheet Identity service, while `tools/server-plugin/shardwright-memory/core.js` currently resolves only the membership ledger/lock for this domain and no Context Sheet lifecycle authority store. An `IMPACT_DECIDE` artifact's `structuralEventRef` therefore cannot be verified against its lawful owner. Admitting it from a schema-shaped reference would violate missing-authority fail-closed behavior.
 
 ## Update Protocol
 
