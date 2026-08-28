@@ -517,6 +517,10 @@ PHASE_X_CAPTURE_BENCHMARK_GOVERNANCE_CONTRACT.md
    `PHASE_X_CAPTURE_RECONSIDERATION_AND_SUCCESSOR_CONTRACT.md`; implementation proof
    remains open.
 7. X.2 queue, lease, cursor, and reconciliation contract.
+8. Whether a piece of source material is worth nominating at all — the candidacy test,
+   positive criteria, and exclusion list narrowing `CAP-ZERO-001` — is governed by
+   `PHASE_X_CAPTURE_CANDIDACY_AND_EXCLUSION_CONTRACT.md`; benchmark fixtures and
+   implementation proof remain open.
 
 No local model may be selected and no production capture implementation may begin while
 these blocking decisions remain open.

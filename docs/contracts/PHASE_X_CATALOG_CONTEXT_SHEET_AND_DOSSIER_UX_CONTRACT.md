@@ -1,10 +1,33 @@
 # Phase X: Catalog, Context-Sheet, And Dossier UX Contract
 
-**Version:** 0.1.0
+**Version:** 0.2.0
 **Status:** ENTERED — ordinary information architecture, evidence preview, lifecycle
 visibility, action, diagnostic separation, scale, and clarity acceptance boundaries are
 normative; UI implementation remains unauthorized.
 **Parent:** `PHASE_X_MEMORY_CATALOG_AND_CONTEXT_SHEET_PARENT_ARCHITECTURE_CONTRACT.md`
+
+## 0. Amendment Note (v0.2.0)
+
+This version restores three dossier sections from the original Phase X design dialogue
+(`docs/Phase_X-Origin.md`) that were compressed out of v0.1.0's Section 9 list without a
+recorded reason: `Perspectives`, `Motifs And Symbols`, and `Commitments, Boundaries, Or
+Goals`. It also splits `Why It Matters` out from `Current understanding` as its own
+section, matching the origin document's treatment of them as two different questions
+("what this presently means" versus "for whom, and what future continuity depends on
+it").
+
+**Finding:** Comparing the origin document against the current contract stack
+(2026-08-28) found v0.1.0's six-section dossier list had silently dropped these four
+distinctions during compression, even though the authority each depends on was already
+entered elsewhere: `Perspectives` on the Parent Architecture Contract's per-claim
+`applicable subject and jurisdiction`; `Motifs And Symbols` on `MOTIF`-type Context
+Sheets and `SHE-MOT-001`; `Commitments, Boundaries, Or Goals` on `GOAL`-type sheets and
+commitment/boundary claims.
+
+**Scope discipline:** This is a presentation-layer restoration only. It adds no new
+claim field, sheet type, membership-link type, or normative code beyond Section 9's
+existing "may include" list — it does not touch the Parent Architecture Contract, any
+child contract's claim or sheet schema, or any other section of this contract.
 
 ## 1. Problem
 
@@ -272,14 +295,37 @@ Readable sections may include:
 
 ```text
 Current understanding
+Why it matters
 How this developed
 Important events
+Perspectives
+Motifs and symbols
+Commitments, boundaries, or goals
 Changes and corrections
 Unresolved questions
 Related context
 ```
 
-Sections appear only when they contain useful information.
+Sections appear only when they contain useful information. In particular:
+
+- `Why it matters` states for whom the current understanding matters and what future
+  continuity depends on it. It is distinct from `Current understanding`, which states
+  only what the context presently means.
+- `Perspectives` groups claim-level evidence by the subject who attested it, drawn from
+  each claim's bound subject and jurisdiction. It renders only when more than one
+  attesting perspective exists or when a single perspective's framing materially differs
+  from the sheet's synthesized current understanding.
+- `Motifs and symbols` surfaces related `MOTIF`-type Context Sheets and the claims that
+  establish their occurrences and evolving meaning. It renders only when the dossier's
+  sheet is itself a motif or has a governed link to one.
+- `Commitments, boundaries, or goals` surfaces current durable obligations and
+  aspirations drawn from linked `GOAL`-type sheets and commitment- or boundary-bearing
+  claims. It renders only when such claims exist.
+
+None of these four sections introduces new claim fields, sheet types, or authority. Each
+renders existing claim, subject, jurisdiction, and sheet-type data already governed by
+the Parent Architecture Contract; this contract governs only whether and how it is
+surfaced.
 
 Each material claim exposes its evidence through a citation, evidence affordance, or
 accessible preview control. A paragraph-level pile of unexplained machine references
@@ -797,6 +843,14 @@ MUST be removed rather than merely collapsed.
     empty section, repeated copy instruction, or non-actionable control.
 21. Delayed actions show progress and produce one final success or blocker.
 22. Restart/refetch presents the same authoritative current state and next action.
+23. A dossier with claims from more than one attesting subject renders a `Perspectives`
+    section grouped by subject; a dossier with only one attesting perspective omits it.
+24. A dossier for a `MOTIF`-type sheet, or one linked to one, renders `Motifs and
+    symbols`; a dossier with no motif link omits it.
+25. A dossier with a linked `GOAL`-type sheet or a commitment/boundary claim renders
+    `Commitments, boundaries, or goals`; a dossier with none omits it.
+26. `Why it matters` and `Current understanding` render as distinct sections with
+    non-identical content when both apply.
 
 ## 25. Stop Boundary
 
