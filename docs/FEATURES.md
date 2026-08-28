@@ -60,25 +60,25 @@ A unique workflow that creates detailed, structured "Memory Shards" from your ro
 
 The AI parses your conversation and identifies key elements organized by tagged sections:
 
-| Section | Tag | Description |
-|---------|-----|-------------|
-| Key | `[KEY]` | Scene code legend (preamble) |
-| Tone | `[TONE]` | Overall mood and atmosphere |
-| Characters | `[CHARACTERS]` | Character introductions and notes |
-| World | `[WORLD]` | World-building and setting details |
-| Timeline | `[TIMELINE]` | Chronological scene progression |
-| Events | `[EVENTS]` | Significant plot events |
-| States | `[STATES]` | Character physical/emotional states |
-| Relationships | `[RELATIONSHIPS]` | Relationship dynamics and shifts |
-| Developments | `[DEVELOPMENTS]` | Plot and character development |
-| NSFW | `[NSFW]` | Adult content (verbatim, conditional) |
-| Dialogue | `[DIALOGUE]` | Key dialogue lines |
-| Voice | `[VOICE]` | Character speech patterns and quirks |
-| Anchors | `[ANCHORS]` | Memorable moments and callbacks |
-| Callbacks | `[CALLBACKS]` | Setups awaiting payoff |
-| Threads | `[THREADS]` | Unresolved plot threads |
-| Scenes | `[SCENES]` | Scene summaries |
-| Current | `[CURRENT]` | Current state snapshot (always present) |
+| Section       | Tag               | Description                             |
+| ------------- | ----------------- | --------------------------------------- |
+| Key           | `[KEY]`           | Scene code legend (preamble)            |
+| Tone          | `[TONE]`          | Overall mood and atmosphere             |
+| Characters    | `[CHARACTERS]`    | Character introductions and notes       |
+| World         | `[WORLD]`         | World-building and setting details      |
+| Timeline      | `[TIMELINE]`      | Chronological scene progression         |
+| Events        | `[EVENTS]`        | Significant plot events                 |
+| States        | `[STATES]`        | Character physical/emotional states     |
+| Relationships | `[RELATIONSHIPS]` | Relationship dynamics and shifts        |
+| Developments  | `[DEVELOPMENTS]`  | Plot and character development          |
+| NSFW          | `[NSFW]`          | Adult content (verbatim, conditional)   |
+| Dialogue      | `[DIALOGUE]`      | Key dialogue lines                      |
+| Voice         | `[VOICE]`         | Character speech patterns and quirks    |
+| Anchors       | `[ANCHORS]`       | Memorable moments and callbacks         |
+| Callbacks     | `[CALLBACKS]`     | Setups awaiting payoff                  |
+| Threads       | `[THREADS]`       | Unresolved plot threads                 |
+| Scenes        | `[SCENES]`        | Scene summaries                         |
+| Current       | `[CURRENT]`       | Current state snapshot (always present) |
 
 ---
 
@@ -130,10 +130,10 @@ Review and edit summaries before they're saved (available outside of Sharder Mod
 
 **Review Mode Options:**
 
-| Mode | Behavior |
-|------|----------|
+| Mode     | Behavior                 |
+| -------- | ------------------------ |
 | `Always` | Always show review modal |
-| `Never` | Auto-save without review |
+| `Never`  | Auto-save without review |
 
 **Additional Settings:**
 
@@ -187,16 +187,16 @@ Save summaries and Memory Shards directly to your World Info/Lorebook for persis
 
 Configure how summaries are saved to lorebooks via the **Lorebook Options Modal**:
 
-| Option | Description |
-|--------|-------------|
-| **Entry Type** | `constant` (always active), `vectorized`, `normal`, or `disabled` |
-| **Name Format** | Template for entry names using variables: `{start}`, `{end}`, `{date}`, `{character}` |
-| **Keywords Enabled** | Toggle automatic keyword generation |
-| **Keyword Format** | Template for generated keywords |
-| **Additional Keywords** | Custom keywords to add to every entry |
-| **Banned Keywords** | Keywords to exclude from generation |
-| **Extract Keywords** | AI-powered keyword extraction from content |
-| **Order Strategy** | Recency-based or fixed entry priority/ordering |
+| Option                  | Description                                                                           |
+| ----------------------- | ------------------------------------------------------------------------------------- |
+| **Entry Type**          | `constant` (always active), `vectorized`, `normal`, or `disabled`                     |
+| **Name Format**         | Template for entry names using variables: `{start}`, `{end}`, `{date}`, `{character}` |
+| **Keywords Enabled**    | Toggle automatic keyword generation                                                   |
+| **Keyword Format**      | Template for generated keywords                                                       |
+| **Additional Keywords** | Custom keywords to add to every entry                                                 |
+| **Banned Keywords**     | Keywords to exclude from generation                                                   |
+| **Extract Keywords**    | AI-powered keyword extraction from content                                            |
+| **Order Strategy**      | Recency-based or fixed entry priority/ordering                                        |
 
 ---
 
@@ -206,30 +206,30 @@ Vectorize your Memory Shards and automatically inject relevant memories during g
 
 ### Vector DB Backends
 
-| Backend | Description |
-|---------|-------------|
-| **Vectra** | Default lightweight option |
-| **LanceDB** | Columnar vector database |
-| **Qdrant** | High-performance vector search |
-| **Milvus** | Distributed vector database |
+| Backend     | Description                    |
+| ----------- | ------------------------------ |
+| **Vectra**  | Default lightweight option     |
+| **LanceDB** | Columnar vector database       |
+| **Qdrant**  | High-performance vector search |
+| **Milvus**  | Distributed vector database    |
 
 ### Scoring Methods
 
-| Method | Description |
-|--------|-------------|
-| **Keyword Boost** | Keyword-based scoring |
-| **BM25** | With Porter stemming for term relevance |
+| Method            | Description                                        |
+| ----------------- | -------------------------------------------------- |
+| **Keyword Boost** | Keyword-based scoring                              |
+| **BM25**          | With Porter stemming for term relevance            |
 | **Hybrid Fusion** | Combined scoring via RRF or weighted normalization |
 
 ### Section-Aware Chunking
 
 In Sharder mode, chunks are typed for intelligent handling:
 
-| Chunk Type | Behavior |
-|------------|----------|
-| **Superseding** | Newer entries replace older ones |
-| **Cumulative** | Entries are combined/merged |
-| **Rolling** | Window-based, older entries age out |
+| Chunk Type      | Behavior                            |
+| --------------- | ----------------------------------- |
+| **Superseding** | Newer entries replace older ones    |
+| **Cumulative**  | Entries are combined/merged         |
+| **Rolling**     | Window-based, older entries age out |
 
 **Additional RAG Features:**
 
@@ -244,18 +244,18 @@ In Sharder mode, chunks are typed for intelligent handling:
 
 ### RAG Configuration
 
-| Setting | Options | Default | Description |
-|---------|---------|---------|-------------|
-| **Backend** | Vectra / LanceDB / Qdrant / Milvus | Vectra | Vector database backend |
-| **Scoring Method** | Keyword / BM25 / Hybrid | Keyword | How retrieved chunks are scored |
-| **Hybrid Fusion** | RRF / Weighted | RRF | Fusion strategy for hybrid scoring |
-| **Insert Count** | 1–50 | 5 | Max chunks injected per generation |
-| **Query Count** | 1–10 | 2 | Number of recent messages used as query |
-| **Score Threshold** | 0–1 | 0.25 | Minimum score for chunk inclusion |
-| **Section-Aware Chunking** | On / Off | Off | Split shards by section type (Sharder mode) |
-| **Scene Expansion** | On / Off | On | Pull full scene context from partial hits |
-| **Reranker** | On / Off | Off | Cross-encoder reranking of retrieved chunks |
-| **Protect Count** | 1–50 | 5 | Recent messages checked for dedup against injected chunks |
+| Setting                    | Options                            | Default | Description                                               |
+| -------------------------- | ---------------------------------- | ------- | --------------------------------------------------------- |
+| **Backend**                | Vectra / LanceDB / Qdrant / Milvus | Vectra  | Vector database backend                                   |
+| **Scoring Method**         | Keyword / BM25 / Hybrid            | Keyword | How retrieved chunks are scored                           |
+| **Hybrid Fusion**          | RRF / Weighted                     | RRF     | Fusion strategy for hybrid scoring                        |
+| **Insert Count**           | 1–50                               | 5       | Max chunks injected per generation                        |
+| **Query Count**            | 1–10                               | 2       | Number of recent messages used as query                   |
+| **Score Threshold**        | 0–1                                | 0.25    | Minimum score for chunk inclusion                         |
+| **Section-Aware Chunking** | On / Off                           | Off     | Split shards by section type (Sharder mode)               |
+| **Scene Expansion**        | On / Off                           | On      | Pull full scene context from partial hits                 |
+| **Reranker**               | On / Off                           | Off     | Cross-encoder reranking of retrieved chunks               |
+| **Protect Count**          | 1–50                               | 5       | Recent messages checked for dedup against injected chunks |
 
 ---
 
@@ -265,12 +265,12 @@ Different features can use different AI providers, allowing you to optimize cost
 
 ### Configurable Features
 
-| Feature | Use Case | Default Temp | Default Max Tokens |
-|---------|----------|-------------|-------------------|
-| **Summary API** | Standard summarization | 0.4 | 8096 |
-| **Sharder API** | Structured shard generation | 0.25 | 8096 |
-| **Events API** | Pre-Edit Events extraction | 0.4 | 4096 |
-| **Chat Manager API** | Cross-chat summarization | 0.3 | 4096 |
+| Feature              | Use Case                    | Default Temp | Default Max Tokens |
+| -------------------- | --------------------------- | ------------ | ------------------ |
+| **Summary API**      | Standard summarization      | 0.4          | 8096               |
+| **Sharder API**      | Structured shard generation | 0.25         | 8096               |
+| **Events API**       | Pre-Edit Events extraction  | 0.4          | 4096               |
+| **Chat Manager API** | Cross-chat summarization    | 0.3          | 4096               |
 
 ### Configuration Options
 
@@ -294,20 +294,20 @@ Preprocess chat text before sending to the AI for cleaner, more focused summarie
 
 ### Cleanup Options
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| **Strip HTML** | On | Remove `<div>`, `<span>`, and other HTML tags |
-| **Strip Code Blocks** | Off | Remove fenced code blocks entirely |
-| **Strip URLs** | Off | Remove http/https links |
-| **Strip Emojis** | Off | Remove emoji characters |
-| **Strip Bracketed Meta** | Off | Remove `[OOC]`, `(OOC)`, etc. |
-| **Strip Reasoning Blocks** | On | Remove LLM thinking/reasoning blocks |
-| **Strip Hidden Messages** | On | Skip messages flagged as hidden |
-| **Custom Regex Patterns** | — | User-defined regex pattern replacements (multiple supported) |
+| Option                     | Default | Description                                                  |
+| -------------------------- | ------- | ------------------------------------------------------------ |
+| **Strip HTML**             | On      | Remove `<div>`, `<span>`, and other HTML tags                |
+| **Strip Code Blocks**      | Off     | Remove fenced code blocks entirely                           |
+| **Strip URLs**             | Off     | Remove http/https links                                      |
+| **Strip Emojis**           | Off     | Remove emoji characters                                      |
+| **Strip Bracketed Meta**   | Off     | Remove `[OOC]`, `(OOC)`, etc.                                |
+| **Strip Reasoning Blocks** | On      | Remove LLM thinking/reasoning blocks                         |
+| **Strip Hidden Messages**  | On      | Skip messages flagged as hidden                              |
+| **Custom Regex Patterns**  | —       | User-defined regex pattern replacements (multiple supported) |
 
 ### Custom Regex Format
 
-javascript
+```javascript
 {
   id: "unique-id",
   name: "Pattern Name",
@@ -316,7 +316,7 @@ javascript
   replacement: "",
   enabled: true
 }
-
+```
 
 Access via **"Context Cleanup"** button.
 
@@ -326,10 +326,10 @@ Access via **"Context Cleanup"** button.
 
 Target a specific summary length as a percentage of the original content.
 
-| Setting | Range | Default |
-|---------|-------|---------|
-| **Enable Length Control** | On/Off | Off |
-| **Target Percentage** | 1% - 30% | 10% |
+| Setting                   | Range    | Default |
+| ------------------------- | -------- | ------- |
+| **Enable Length Control** | On/Off   | Off     |
+| **Target Percentage**     | 1% - 30% | 10%     |
 
 When enabled, the length instruction is appended to your summary prompt to guide the AI toward the target compression ratio.
 
@@ -355,10 +355,10 @@ Access via **"Manage Chats"** button or FAB → Advanced → Chat Mngr.
 
 A draggable radial-menu overlay for quick access, with three panels:
 
-| Panel | Contents |
-|-------|----------|
-| **Actions** | Summarize / Run Sharder / Batch Sharder / Stop, plus RAG operations (Vectorize, Purge, Browse) |
-| **Overview** | At-a-glance status: current mode, auto/manual, RAG state, output target, active API |
+| Panel        | Contents                                                                                                   |
+| ------------ | ---------------------------------------------------------------------------------------------------------- |
+| **Actions**  | Summarize / Run Sharder / Batch Sharder / Stop, plus RAG operations (Vectorize, Purge, Browse)             |
+| **Overview** | At-a-glance status: current mode, auto/manual, RAG state, output target, active API                        |
 | **Advanced** | Quick links to Themes, Prompts, Cleanup, Visibility, Chat Manager, RAG Settings, API Config, and RAG Debug |
 
 ---
@@ -396,11 +396,11 @@ A tabbed interface for managing all prompt templates used by the extension.
 
 ### Tabs
 
-| Tab | Contents |
-|-----|----------|
+| Tab                 | Contents                            |
+| ------------------- | ----------------------------------- |
 | **Summary Prompts** | Main summarization prompt templates |
 | **Sharder Prompts** | Structured shard generation prompts |
-| **Events Prompt** | Pre-Edit Events extraction prompt |
+| **Events Prompt**   | Pre-Edit Events extraction prompt   |
 
 ### Features
 
@@ -417,37 +417,37 @@ Access via **"Manage Prompts"** button.
 
 ### Mode & Output
 
-| Setting | Options | Default | Description |
-|---------|---------|---------|-------------|
-| Mode | Auto / Manual | Auto | Auto-summarize at intervals or trigger manually |
-| Auto Interval | 1–100 | 20 | Messages between auto-summaries |
-| Output Mode | System / Lorebook | System | Where summaries are saved |
-| Sharder Mode | On / Off | Off | Enable structured shard generation |
+| Setting       | Options           | Default | Description                                     |
+| ------------- | ----------------- | ------- | ----------------------------------------------- |
+| Mode          | Auto / Manual     | Auto    | Auto-summarize at intervals or trigger manually |
+| Auto Interval | 1–100             | 20      | Messages between auto-summaries                 |
+| Output Mode   | System / Lorebook | System  | Where summaries are saved                       |
+| Sharder Mode  | On / Off          | Off     | Enable structured shard generation              |
 
 ### Summarization
 
-| Setting | Description |
-|---------|-------------|
-| Active Prompt | Select from saved summarization prompts |
-| Pre-Edit Events | Extract and curate narrative events before generation |
-| Summary Review | Review and edit shards section-by-section after generation |
-| Length Control | Target summary length as percentage of input (1–30%) |
+| Setting             | Description                                                |
+| ------------------- | ---------------------------------------------------------- |
+| Active Prompt       | Select from saved summarization prompts                    |
+| Pre-Edit Events     | Extract and curate narrative events before generation      |
+| Summary Review      | Review and edit shards section-by-section after generation |
+| Length Control      | Target summary length as percentage of input (1–30%)       |
 | Auto-Include Shards | Skip shard selection modal and include all existing shards |
 
 ### Quick Reference
 
-| Feature | Access | Requires |
-|---------|--------|----------|
-| Sharder Mode | Toggle in main panel | — |
-| Run Sharder | FAB or settings button | Sharder Mode ON |
-| Basic Summary | FAB or settings button | — |
-| Batch Sharder | FAB → Actions | Sharder Mode ON |
-| Visibility | "Manage Visibility" button | — |
-| Lorebook Options | "Lorebook Options" button | Output Mode = Lorebook |
-| API Config | "Configure APIs..." button | — |
-| Context Cleanup | "Context Cleanup" button | — |
-| Prompts | "Manage Prompts" button | — |
-| Chat Manager | "Manage Chats" button | — |
-| RAG Settings | FAB → Advanced | — |
-| RAG Debug | FAB → Advanced | RAG enabled |
-| Themes | FAB → Advanced | — |
+| Feature          | Access                     | Requires               |
+| ---------------- | -------------------------- | ---------------------- |
+| Sharder Mode     | Toggle in main panel       | —                      |
+| Run Sharder      | FAB or settings button     | Sharder Mode ON        |
+| Basic Summary    | FAB or settings button     | —                      |
+| Batch Sharder    | FAB → Actions              | Sharder Mode ON        |
+| Visibility       | "Manage Visibility" button | —                      |
+| Lorebook Options | "Lorebook Options" button  | Output Mode = Lorebook |
+| API Config       | "Configure APIs..." button | —                      |
+| Context Cleanup  | "Context Cleanup" button   | —                      |
+| Prompts          | "Manage Prompts" button    | —                      |
+| Chat Manager     | "Manage Chats" button      | —                      |
+| RAG Settings     | FAB → Advanced             | —                      |
+| RAG Debug        | FAB → Advanced             | RAG enabled            |
+| Themes           | FAB → Advanced             | —                      |
