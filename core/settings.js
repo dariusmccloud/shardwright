@@ -173,6 +173,7 @@ export function getDefaultSettings() {
         fab: {
             enabled: true,
             position: { edge: null, fraction: null },
+            defaultEdge: 'left', // Which edge a fresh/reset dock starts on; user's dragged position always wins once set.
         },
 
         theme: 'default',

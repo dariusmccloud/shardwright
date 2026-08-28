@@ -10,6 +10,14 @@ import { getAllMessages } from '../../core/chat/chat-state.js';
 import { showSsInput } from '../common/modal-base.js';
 import { buildFabPanels, getFabPanelIds } from './fab-content.js';
 import { createFabPanels } from './fab-panels.js';
+import { createSegmentedToggle } from '../common/segmented-toggle.js';
+import {
+    ARCHITECTURAL_DISPLAY_NAME,
+    ARCHITECTURAL_PROFILE,
+    NARRATIVE_DISPLAY_NAME,
+    NARRATIVE_PROFILE,
+    normalizeSharderProfile,
+} from '../../core/summarization/sharder-section-registry.js';
 
 let fabElement = null;
 let settingsRef = null;
@@ -33,7 +41,7 @@ let resizePersistTimeoutId = null;
 // the top, and docking there or along the bottom risks covering chat input.
 // Only left/right are lawful docking edges.
 const EDGES = ['right', 'left'];
-const DEFAULT_EDGE = 'right';
+const DEFAULT_EDGE = 'left';
 const DEFAULT_FRACTION = 0.5;
 const DRAG_THRESHOLD_PX = 6;
 const EDGE_MARGIN_PX = 4;
@@ -95,7 +103,8 @@ export function initFab(settings, callbacks) {
     createFabElement();
     bindEvents();
 
-    const storedEdge = settingsRef.fab.position.edge || DEFAULT_EDGE;
+    const preferredDefaultEdge = settingsRef.fab.defaultEdge === 'right' ? 'right' : DEFAULT_EDGE;
+    const storedEdge = settingsRef.fab.position.edge || preferredDefaultEdge;
     const storedFraction = isFiniteNumber(settingsRef.fab.position.fraction)
         ? settingsRef.fab.position.fraction
         : DEFAULT_FRACTION;
@@ -113,6 +122,11 @@ export function initFab(settings, callbacks) {
         }),
         onAction: (action, button) => {
             void handleAction(action, button);
+        },
+        onPanelRendered: (panelId, panelElement) => {
+            if (panelId === 'jobSetup') {
+                mountJobSetupControls(panelElement);
+            }
         },
     });
 
@@ -148,7 +162,14 @@ function bindEvents() {
             closePanels();
         }
     };
-    document.addEventListener('pointerdown', onOutsideClick);
+    // Capture phase, not bubble: opening another panel (SillyTavern's native
+    // drawers, SillyBunny's Companion) can involve handlers elsewhere in the
+    // page that stop propagation on the way up. A capture-phase listener on
+    // document fires before any of that, so Shardwright reliably closes
+    // whenever something else opens — matching the reverse direction, which
+    // already worked because it's driven by SillyTavern's own native
+    // outside-click-closes-drawers behavior, not by Shardwright's code.
+    document.addEventListener('pointerdown', onOutsideClick, true);
 
     onResize = () => handleViewportChange();
     window.addEventListener('resize', onResize);
@@ -156,18 +177,18 @@ function bindEvents() {
     onOperationStarted = () => {
         isGenerating = true;
         fabElement.classList.add('shardwright-fab-generating');
-        refreshOpenPanels(['actions', 'config', 'advanced']);
+        refreshOpenPanels(['jobSetup', 'ragSetup', 'settings', 'info']);
     };
     onOperationEnded = () => {
         isGenerating = false;
         fabElement.classList.remove('shardwright-fab-generating');
-        refreshOpenPanels(['actions', 'config', 'advanced']);
+        refreshOpenPanels(['jobSetup', 'ragSetup', 'settings', 'info']);
     };
     window.addEventListener('shardwright-operation-started', onOperationStarted);
     window.addEventListener('shardwright-operation-ended', onOperationEnded);
 
     onSharderModeChange = () => {
-        refreshOpenPanels(['actions', 'config', 'advanced']);
+        refreshOpenPanels(['jobSetup', 'ragSetup', 'settings', 'info']);
     };
     const sharderToggle = document.getElementById('shardwright-sharder-mode');
     if (sharderToggle) {
@@ -525,6 +546,45 @@ function refreshOpenPanels(panelIds = getFabPanelIds()) {
     }
 }
 
+// The Sharder Profile toggle is a stateful component (createSegmentedToggle
+// returns a live DOM node with its own change handling), not plain markup,
+// so it has to be mounted after the panel's HTML lands — mirrors the same
+// control in ui-manager.js (Extensions > Shardwright > Summarization) so
+// picking a profile here changes the same settings.sharderProfile the
+// sharding pipeline already reads.
+function mountJobSetupControls(panelElement) {
+    if (!settingsRef) return;
+
+    const mount = panelElement.querySelector('#shardwright-fab-sharder-profile-mount');
+    if (mount) {
+        const toggle = createSegmentedToggle({
+            options: [
+                { value: NARRATIVE_PROFILE, label: NARRATIVE_DISPLAY_NAME },
+                { value: ARCHITECTURAL_PROFILE, label: ARCHITECTURAL_DISPLAY_NAME },
+            ],
+            value: normalizeSharderProfile(settingsRef.sharderProfile),
+            onChange: (value) => {
+                if (!settingsRef) return;
+                settingsRef.sharderProfile = normalizeSharderProfile(value);
+                saveSettings(settingsRef);
+                // Info's "Profile" row reads this same setting — without this
+                // it stayed stale until the next full page reload.
+                refreshOpenPanels(['info']);
+            },
+        });
+        mount.replaceChildren(toggle);
+    }
+
+    const autoIncludeCheckbox = panelElement.querySelector('#shardwright-fab-auto-include-shards');
+    if (autoIncludeCheckbox) {
+        autoIncludeCheckbox.addEventListener('change', (e) => {
+            if (!settingsRef) return;
+            settingsRef.autoIncludeShards = e.target.checked;
+            saveSettings(settingsRef);
+        });
+    }
+}
+
 async function handleAction(action, button) {
     if (!callbacksRef) return;
 
@@ -785,7 +845,7 @@ export function updateFabVisibility() {
 }
 
 export function destroyFab() {
-    if (onOutsideClick) document.removeEventListener('pointerdown', onOutsideClick);
+    if (onOutsideClick) document.removeEventListener('pointerdown', onOutsideClick, true);
     if (onResize) window.removeEventListener('resize', onResize);
     if (onOperationStarted) window.removeEventListener('shardwright-operation-started', onOperationStarted);
     if (onOperationEnded) window.removeEventListener('shardwright-operation-ended', onOperationEnded);

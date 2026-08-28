@@ -1,13 +1,15 @@
-const PANEL_ORDER = ['actions', 'config', 'advanced'];
+const PANEL_ORDER = ['jobSetup', 'ragSetup', 'settings', 'info'];
 const PANEL_TITLES = {
-    actions: 'Actions',
-    config: 'Overview',
-    advanced: 'Advanced',
+    jobSetup: 'Job Setup',
+    ragSetup: 'RAG Setup',
+    settings: 'Settings',
+    info: 'Info',
 };
 const PANEL_ICONS = {
-    actions: 'fa-bolt',
-    config: 'fa-circle-info',
-    advanced: 'fa-gears',
+    jobSetup: 'fa-bolt',
+    ragSetup: 'fa-database',
+    settings: 'fa-gears',
+    info: 'fa-circle-info',
 };
 
 /**
@@ -15,7 +17,7 @@ const PANEL_ICONS = {
  * Shardwright trigger is opened. Replaces the former radial wheel + popover
  * layout: one panel, one internal tab row, no anchor-relative positioning.
  */
-export function createFabPanels({ edge, panelMarkupById, onAction }) {
+export function createFabPanels({ edge, panelMarkupById, onAction, onPanelRendered }) {
     const root = document.createElement('div');
     root.className = 'shardwright-fab-panels';
     root.dataset.edge = edge;
@@ -53,6 +55,7 @@ export function createFabPanels({ edge, panelMarkupById, onAction }) {
         panel.innerHTML = buildPanelShell(panelMarkupById[panelId]);
         scroll.appendChild(panel);
         panelElements.set(panelId, panel);
+        onPanelRendered?.(panelId, panel);
     });
 
     root.appendChild(tabRow);
@@ -139,6 +142,7 @@ export function createFabPanels({ edge, panelMarkupById, onAction }) {
             const panel = panelElements.get(panelId);
             if (!panel) return;
             panel.innerHTML = buildPanelShell(panelMarkup);
+            onPanelRendered?.(panelId, panel);
         },
         containsTarget(target) {
             return root.contains(target);

@@ -489,6 +489,14 @@ export function renderSettingsUI(settings, callbacks) {
                                     <span>Show Floating Quick Actions</span>
                                 </label>
                             </div>
+
+                            <div class="shardwright-block">
+                                <div class="shardwright-inline-row">
+                                    <label for="shardwright-fab-default-edge">Dock Side:</label>
+                                    <div id="shardwright-fab-default-edge-mount"></div>
+                                </div>
+                                <p class="shardwright-hint">Where the "Shardwright" tab starts docked. Dragging it always overrides this.</p>
+                            </div>
                         </div>
                     </div>
 
@@ -528,7 +536,7 @@ export function renderSettingsUI(settings, callbacks) {
                         <div class="shardwright-action-bar-secondary">
                             <input id="shardwright-visibility-button" class="menu_button" type="button" value="Manage Visibility" />
                             <input id="shardwright-manage-chats-btn" class="menu_button" type="button" value="Manage Chats" />
-                            <input id="shardwright-interpretive-reviews-btn" class="menu_button" type="button" value="Interpretive Reviews" />
+                            <input id="shardwright-interpretive-reviews-btn" class="menu_button" type="button" value="Memory Review" />
                         </div>
                     </div>
                     </div>
@@ -611,6 +619,16 @@ export function renderSettingsUI(settings, callbacks) {
             { value: ARCHITECTURAL_PROFILE, label: ARCHITECTURAL_DISPLAY_NAME },
         ],
         normalizeSharderProfile(settings.sharderProfile),
+    );
+
+    const fabDefaultEdgeToggle = mountSegmentedToggle(
+        'shardwright-fab-default-edge-mount',
+        'shardwright-fab-default-edge',
+        [
+            { value: 'left', label: 'Left' },
+            { value: 'right', label: 'Right' },
+        ],
+        settings.fab?.defaultEdge === 'right' ? 'right' : 'left',
     );
 
     const lengthPairHost = document.getElementById('shardwright-length-percent-host');
@@ -912,6 +930,12 @@ export function renderSettingsUI(settings, callbacks) {
         settings.fab.enabled = e.target.checked;
         saveSettings(settings);
         updateFabVisibility();
+    });
+
+    fabDefaultEdgeToggle?.addEventListener('change', (e) => {
+        if (!settings.fab) settings.fab = {};
+        settings.fab.defaultEdge = e.target.value === 'right' ? 'right' : 'left';
+        saveSettings(settings);
     });
 
     debugLoggingEl?.addEventListener('change', (e) => {
