@@ -190,6 +190,7 @@ function buildStoragePaths(userRoot, storageDirectoryName) {
     const interpretiveGovernanceLedgerPath = path.join(storageRoot, 'interpretive-governance-ledger.jsonl');
     const dnmPublicationLedgerPath = path.join(storageRoot, 'dnm-publication-ledger.jsonl');
     const contextSheetMembershipLedgerPath = path.join(storageRoot, 'context-sheet-membership-ledger.jsonl');
+    const contextSheetIdentityLedgerPath = path.join(storageRoot, 'context-sheet-identity-ledger.jsonl');
     const architecturalReplayArtifactsRoot = path.join(storageRoot, 'architectural-replay-artifacts');
     const architecturalReplayLedgerPath = path.join(storageRoot, 'architectural-shard-replay-ledger.jsonl');
     const generationsRoot = path.join(storageRoot, 'generations');
@@ -199,6 +200,7 @@ function buildStoragePaths(userRoot, storageDirectoryName) {
     const locksRoot = path.join(storageRoot, 'locks');
     const authorityTransitionLockPath = path.join(locksRoot, 'authority-transition.lock');
     const contextSheetMembershipLockPath = path.join(locksRoot, 'context-sheet-membership-ledger.lock');
+    const contextSheetIdentityLockPath = path.join(locksRoot, 'context-sheet-identity-ledger.lock');
     return {
         storageRoot,
         dbPath,
@@ -207,6 +209,7 @@ function buildStoragePaths(userRoot, storageDirectoryName) {
         interpretiveGovernanceLedgerPath,
         dnmPublicationLedgerPath,
         contextSheetMembershipLedgerPath,
+        contextSheetIdentityLedgerPath,
         architecturalReplayArtifactsRoot,
         architecturalReplayLedgerPath,
         generationsRoot,
@@ -216,6 +219,7 @@ function buildStoragePaths(userRoot, storageDirectoryName) {
         locksRoot,
         authorityTransitionLockPath,
         contextSheetMembershipLockPath,
+        contextSheetIdentityLockPath,
     };
 }
 
