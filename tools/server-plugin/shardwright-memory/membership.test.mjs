@@ -20,6 +20,7 @@ import {
     computeMembershipArtifactHash,
     nominateContextSheetMembership,
     readContextSheetMembershipLedger,
+    replayContextSheetMembershipCurrentUse,
     validateMembershipValidationArtifact,
     validateMembershipImpactDecisionArtifact,
     validateMembershipLinkArtifact,
@@ -461,6 +462,65 @@ test('identity and neighboring authority ledgers remain byte-identical throughou
     assert.deepEqual(readBytes(paths.contextSheetIdentityLedgerPath), beforeIdentity);
     assert.deepEqual(readBytes(paths.interpretiveGovernanceLedgerPath), beforeInterpretive);
     assert.deepEqual(readBytes(paths.dnmPublicationLedgerPath), beforeDnm);
+});
+
+test('membership replay reconstructs current-use state from LINK, SUCCEED, and IMPACT_DECIDE authority', () => {
+    const root = makeTempRoot();
+    const paths = getStoragePaths(root);
+    const { structuralEventRef, predecessorLink, successorEvent } = admitImpactCustodyScenario(paths);
+    const artifact = makeImpactDecisionArtifact(structuralEventRef, predecessorLink, successorEvent);
+    admitContextSheetMembershipImpactDecision(paths, artifact);
+
+    const projection = replayContextSheetMembershipCurrentUse(paths);
+    const predecessor = projection.links.find((link) => link.linkRef.artifactId === predecessorLink.artifactId);
+    const successor = projection.links.find((link) => link.linkRef.artifactId === successorEvent.artifact.successorLinkRef.artifactId);
+
+    assert.equal(projection.projectionAuthority, 'DISPOSABLE_REPLAY_DERIVED');
+    assert.equal(projection.entriesReplayed, 7);
+    assert.equal(predecessor.currentUseState, 'SUPERSEDED');
+    assert.deepEqual(predecessor.successorLinkRefs, [successorEvent.artifact.successorLinkRef]);
+    assert.equal(successor.currentUseState, 'CURRENT');
+    assert.equal(projection.currentLinks.length, 1);
+    assert.deepEqual(projection.currentLinks[0], successor.linkRef);
+});
+
+test('membership replay refuses missing Context Sheet structural-event custody without repairing authority', () => {
+    const root = makeTempRoot();
+    const paths = getStoragePaths(root);
+    const { structuralEventRef, predecessorLink, successorEvent } = admitImpactCustodyScenario(paths);
+    admitContextSheetMembershipImpactDecision(paths, makeImpactDecisionArtifact(structuralEventRef, predecessorLink, successorEvent));
+    const beforeMembership = readBytes(paths.contextSheetMembershipLedgerPath);
+    fs.writeFileSync(paths.contextSheetIdentityLedgerPath, '', 'utf8');
+
+    assertErrorCode(
+        () => replayContextSheetMembershipCurrentUse(paths),
+        'CSM_REPLAY_STRUCTURAL_EVENT_MISSING',
+    );
+    assert.deepEqual(readBytes(paths.contextSheetMembershipLedgerPath), beforeMembership);
+});
+
+test('membership replay blocks conflicting current-use events instead of choosing by write order', () => {
+    const root = makeTempRoot();
+    const paths = getStoragePaths(root);
+    const link = admitInitialLink(paths);
+    const removed = makeSuccessorArtifact(link);
+    admitContextSheetMembershipSuccessor(paths, removed);
+
+    const disputed = makeSuccessorArtifact(link);
+    disputed.envelope.artifactId = 'artifact:context-sheet-membership-successor-event:conflicting-dispute';
+    disputed.envelope.idempotencyKey = 'idempotency:conflicting-dispute';
+    disputed.correctionType = 'LINK_DISPUTED';
+    disputed.predecessorCurrentUseState = 'BLOCKED';
+    disputed.reason = 'Separate review disputed this link after removal.';
+    admitContextSheetMembershipSuccessor(paths, disputed);
+
+    const projection = replayContextSheetMembershipCurrentUse(paths);
+    const predecessor = projection.links.find((item) => item.linkRef.artifactId === link.artifactId);
+
+    assert.equal(predecessor.currentUseState, 'BLOCKED');
+    assert.deepEqual(predecessor.successorLinkRefs, []);
+    assert.deepEqual(predecessor.blockers, ['CSM_REPLAY_CONFLICTING_CURRENT_USE_EVENTS']);
+    assert.deepEqual(projection.blockedLinks, [predecessor.linkRef]);
 });
 
 test('same idempotency key and same artifact returns the original entry without a second append', () => {

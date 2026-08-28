@@ -493,6 +493,10 @@ function findExactIdentityLedgerEntry(paths, scopeId, reference) {
     return entry.artifactHash === reference.immutableHash ? entry : false;
 }
 
+function exactReferenceForMembershipEntry(entry) {
+    return exactLedgerReference(entry, entry.artifactSchemaId, entry.artifactClass);
+}
+
 function assertImpactDecisionCustody(paths, entries, artifact) {
     const { envelope, structuralEventRef, impactedLinkRef, successorEventRefs } = artifact;
     if (structuralEventRef.memoryScopeId !== envelope.memoryScopeId
@@ -541,6 +545,62 @@ function assertImpactDecisionCustody(paths, entries, artifact) {
             throw createError(409, 'Context Sheet membership IMPACT_DECIDE successor event does not govern the impacted predecessor link.', 'CSM_IMPACT_SUCCESSOR_PREDECESSOR_MISMATCH');
         }
     }
+}
+
+function findExactMembershipEntryByRef(entries, operation, artifactSchemaId, scopeId, reference) {
+    const entry = findExactLedgerEntry(entries, operation, artifactSchemaId, scopeId, reference);
+    if (entry === null) {
+        throw createError(409, 'Context Sheet membership replay is missing exact durable membership custody.', 'CSM_REPLAY_MEMBERSHIP_CUSTODY_MISSING');
+    }
+    if (entry === false) {
+        throw createError(409, 'Context Sheet membership replay found stale durable membership custody.', 'CSM_REPLAY_MEMBERSHIP_CUSTODY_HASH_MISMATCH');
+    }
+    return entry;
+}
+
+function assertReplayStructuralEventCustody(paths, scopeId, reference, impactSource) {
+    const entry = findExactIdentityLedgerEntry(paths, scopeId, reference);
+    if (entry === null) {
+        throw createError(409, 'Context Sheet membership replay is missing exact Context Sheet structural-event custody.', 'CSM_REPLAY_STRUCTURAL_EVENT_MISSING');
+    }
+    if (entry === false) {
+        throw createError(409, 'Context Sheet membership replay found stale Context Sheet structural-event custody.', 'CSM_REPLAY_STRUCTURAL_EVENT_HASH_MISMATCH');
+    }
+    if ((impactSource === 'MERGE' && entry.operation !== 'MERGE')
+        || (impactSource === 'SPLIT' && entry.operation !== 'SPLIT')) {
+        throw createError(409, 'Context Sheet membership replay structural-event operation does not match the impact source.', 'CSM_REPLAY_STRUCTURAL_EVENT_OPERATION_MISMATCH');
+    }
+    return entry;
+}
+
+function referenceKeysEqual(left, right) {
+    return stableStringify(left) === stableStringify(right);
+}
+
+function sameLinkRefs(left, right) {
+    return Array.isArray(left) && Array.isArray(right)
+        && left.length === right.length
+        && left.every((reference, index) => referenceKeysEqual(reference, right[index]));
+}
+
+function applyCurrentUseEffect(linkStatesByArtifactId, targetLinkRef, currentUseState, successorLinkRefs, effectRef) {
+    const target = linkStatesByArtifactId.get(targetLinkRef.artifactId);
+    if (!target) {
+        throw createError(409, 'Context Sheet membership replay cannot apply current-use state to a missing link.', 'CSM_REPLAY_LINK_STATE_MISSING');
+    }
+
+    if (target.currentUseEffectRef
+        && (target.currentUseState !== currentUseState || !sameLinkRefs(target.successorLinkRefs, successorLinkRefs))) {
+        target.currentUseState = 'BLOCKED';
+        target.successorLinkRefs = [];
+        target.blockers.push('CSM_REPLAY_CONFLICTING_CURRENT_USE_EVENTS');
+        target.currentUseEffectRef = effectRef;
+        return;
+    }
+
+    target.currentUseState = currentUseState;
+    target.successorLinkRefs = successorLinkRefs.map((reference) => cloneJson(reference));
+    target.currentUseEffectRef = effectRef;
 }
 
 function createLedgerEntry(entries, operation, artifactSchemaId, artifactClass, artifact, artifactHash, options) {
@@ -852,4 +912,111 @@ export function admitContextSheetMembershipImpactDecision(paths, artifact, optio
     } finally {
         releaseMembershipLedgerLock(paths);
     }
+}
+
+export function replayContextSheetMembershipCurrentUse(paths) {
+    const entries = readMembershipLedgerEntries(paths.contextSheetMembershipLedgerPath);
+    const linkEntries = entries.filter((entry) => entry.operation === MEMBERSHIP_LINK_OPERATION);
+    const successorEntries = entries.filter((entry) => entry.operation === MEMBERSHIP_SUCCESSOR_OPERATION);
+    const impactEntries = entries.filter((entry) => entry.operation === MEMBERSHIP_IMPACT_DECIDE_OPERATION);
+
+    const linkStatesByArtifactId = new Map();
+    for (const entry of linkEntries) {
+        const link = entry.artifact;
+        linkStatesByArtifactId.set(entry.artifactId, {
+            membershipLinkId: link.membershipLinkId,
+            linkRef: exactReferenceForMembershipEntry(entry),
+            catalogRecordRef: cloneJson(link.catalogRecordRef),
+            contextSheetRef: cloneJson(link.contextSheetRef),
+            contextSheetLifecycleRef: cloneJson(link.contextSheetLifecycleRef),
+            linkType: link.linkType,
+            currentUseState: 'CURRENT',
+            successorLinkRefs: [],
+            currentUseEffectRef: null,
+            blockers: [],
+        });
+    }
+
+    for (const entry of successorEntries) {
+        const successor = entry.artifact;
+        findExactMembershipEntryByRef(
+            entries,
+            MEMBERSHIP_LINK_OPERATION,
+            MEMBERSHIP_LINK_SCHEMA_ID,
+            entry.scopeId,
+            successor.predecessorLinkRef,
+        );
+        const successorLinkRefs = [];
+        if (successor.successorLinkRef) {
+            findExactMembershipEntryByRef(
+                entries,
+                MEMBERSHIP_LINK_OPERATION,
+                MEMBERSHIP_LINK_SCHEMA_ID,
+                entry.scopeId,
+                successor.successorLinkRef,
+            );
+            successorLinkRefs.push(successor.successorLinkRef);
+        }
+        applyCurrentUseEffect(
+            linkStatesByArtifactId,
+            successor.predecessorLinkRef,
+            successor.predecessorCurrentUseState,
+            successorLinkRefs,
+            exactReferenceForMembershipEntry(entry),
+        );
+    }
+
+    for (const entry of impactEntries) {
+        const impact = entry.artifact;
+        assertReplayStructuralEventCustody(paths, entry.scopeId, impact.structuralEventRef, impact.impactSource);
+        findExactMembershipEntryByRef(
+            entries,
+            MEMBERSHIP_LINK_OPERATION,
+            MEMBERSHIP_LINK_SCHEMA_ID,
+            entry.scopeId,
+            impact.impactedLinkRef,
+        );
+        const successorLinkRefs = [];
+        for (const successorEventRef of impact.successorEventRefs) {
+            const successorEntry = findExactMembershipEntryByRef(
+                entries,
+                MEMBERSHIP_SUCCESSOR_OPERATION,
+                MEMBERSHIP_SUCCESSOR_SCHEMA_ID,
+                entry.scopeId,
+                successorEventRef,
+            );
+            const successor = successorEntry.artifact;
+            if (!sameExactReference(successor.predecessorLinkRef, impact.impactedLinkRef)) {
+                throw createError(409, 'Context Sheet membership replay impact successor does not govern the impacted link.', 'CSM_REPLAY_IMPACT_SUCCESSOR_PREDECESSOR_MISMATCH');
+            }
+            if (successor.successorLinkRef) {
+                findExactMembershipEntryByRef(
+                    entries,
+                    MEMBERSHIP_LINK_OPERATION,
+                    MEMBERSHIP_LINK_SCHEMA_ID,
+                    entry.scopeId,
+                    successor.successorLinkRef,
+                );
+                successorLinkRefs.push(successor.successorLinkRef);
+            }
+        }
+        applyCurrentUseEffect(
+            linkStatesByArtifactId,
+            impact.impactedLinkRef,
+            impact.predecessorCurrentUseState,
+            successorLinkRefs,
+            exactReferenceForMembershipEntry(entry),
+        );
+    }
+
+    const links = [...linkStatesByArtifactId.values()];
+    return {
+        projectionType: 'context-sheet-membership-current-use-v1',
+        projectionAuthority: 'DISPOSABLE_REPLAY_DERIVED',
+        sourceLedger: 'context-sheet-membership-ledger.jsonl',
+        entriesReplayed: entries.length,
+        links,
+        currentLinks: links.filter((link) => link.currentUseState === 'CURRENT').map((link) => link.linkRef),
+        blockedLinks: links.filter((link) => link.currentUseState === 'BLOCKED').map((link) => link.linkRef),
+    };
 }
