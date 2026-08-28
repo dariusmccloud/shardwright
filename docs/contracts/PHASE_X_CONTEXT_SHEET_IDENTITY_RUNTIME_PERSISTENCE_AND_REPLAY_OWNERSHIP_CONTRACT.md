@@ -61,7 +61,11 @@ The server-side **Context Sheet Identity service** is the sole writer and replay
 for this ledger. Browser code, models, retrieval, RAG indexes, UI state, direct database
 editing, membership code, and dossier code MUST NOT append or rewrite it.
 
-The ledger is append-only. Each accepted line is one immutable canonical ledger entry:
+The ledger is append-only. Each accepted line is one immutable canonical ledger entry.
+Most operations append one artifact. Sheet creation is explicitly two linked entries:
+one immutable `context-sheet-record-v1` entry and one `context-sheet-creation-event-v1`
+entry that references that exact record. No other operation may use an implicit bundle
+or mixed one-artifact/two-artifact model.
 
 ```text
 ledgerVersion
@@ -90,7 +94,8 @@ Initial allowed operations are closed:
 
 | Operation | Stored artifact | Authority limited to |
 | --- | --- | --- |
-| `CREATE` | `context-sheet-creation-event-v1` and resulting `context-sheet-record-v1` | durable sheet creation and initial anchor basis |
+| `CREATE_RECORD` | `context-sheet-record-v1` | immutable sheet record and initial anchor basis |
+| `CREATE_EVENT` | `context-sheet-creation-event-v1` | server-owned creation event that references the exact sheet record |
 | `ALIAS` | `context-sheet-alias-event-v1` | attributable alias or title history |
 | `RESOLVE` | `context-sheet-anchor-resolution-event-v1` | governed transition from unresolved lead to canonical anchor, or merge-review routing |
 | `MERGE` | `context-sheet-merge-event-v1` | governed assertion that two or more sheets share one canonical anchor |
@@ -110,11 +115,14 @@ failure.
 Implementation MUST proceed incrementally. The first lawful runtime slice is only:
 
 ```text
-CREATE admission and fresh-process read-back
+CREATE_RECORD + CREATE_EVENT admission and fresh-process read-back
 ```
 
-That slice proves the ledger exists, the Context Sheet Identity service owns the write,
-and a created sheet can be reconstructed from durable authority rather than a projection.
+That slice proves the ledger exists, the Context Sheet Identity service owns both
+creation writes, and a created sheet can be reconstructed from durable authority rather
+than a projection. The creation request is exact-once only when both linked entries are
+already present with the same canonical content hashes; a partial pair quarantines the
+affected scope and MUST NOT be silently repaired by appending the missing half.
 
 Only after creation custody is proven may a later slice implement:
 
@@ -136,26 +144,35 @@ Before append, the Context Sheet Identity service MUST:
    version;
 3. verify every required exact reference is structurally complete;
 4. enforce the operation-to-schema mapping above;
-5. calculate canonical artifact hash and content-bound idempotency identity;
+5. calculate the canonical artifact hash independently from the request
+   idempotency key;
 6. acquire the Context Sheet identity-ledger write lease or equivalent exclusive append
    guard;
 7. recheck the idempotency identity under that guard;
 8. append one canonical entry and durably flush it before returning success.
 
-The idempotency identity binds at least:
+The request idempotency key identifies one attempted operation within one scope. It is
+not the artifact content hash. The canonical artifact content is hashed independently.
+
+The request collision key binds at least:
 
 ```text
 scopeId
 operation
 artifactSchemaId
-artifactId
-canonical artifact hash
+idempotencyKey
 ```
 
-Repetition with the same identity and same artifact hash returns the original entry and
-MUST NOT append a second effect. Reuse of an identity with a different hash refuses as
-an idempotency collision. Concurrent different lawful lifecycle decisions remain
-distinct explicit events; storage order does not select a semantic winner.
+On an existing request collision key, the implementation compares the canonical
+artifact hash and any other required content identity fields against the stored entry.
+Same key plus same content returns the original entry and MUST NOT append a second
+effect. Same key plus different content refuses as an idempotency collision.
+Concurrent different lawful lifecycle decisions remain distinct explicit events;
+storage order does not select a semantic winner.
+
+For the two-entry creation request, the same request key binds the exact
+`CREATE_RECORD` and `CREATE_EVENT` pair. A repeat returns the original pair only when
+both entries and both canonical artifact hashes match.
 
 Structural reference completeness is not semantic validation. A valid write proves only
 that the artifact was lawfully admitted to the Context Sheet Identity ledger; it does
@@ -186,19 +203,26 @@ No projection may:
 
 The Context Sheet Identity service replays identity authority only after replay can
 resolve prerequisite host/account bindings, governed entity identity records, and exact
-Memory Catalog records needed by the artifacts being replayed. Its deterministic order
-is:
+Memory Catalog records needed by the artifacts being replayed.
+
+Context Sheet ledger effects are applied in ascending ledger `sequence`. The operation
+classes below describe prerequisite phases, not permission to reorder ledger entries
+inside the Context Sheet Identity ledger:
 
 ```text
 1. canonical host/account and governed entity identities
 2. exact governed Memory Catalog records and lifecycle
-3. Context Sheet CREATE entries
+3. Context Sheet CREATE_RECORD and CREATE_EVENT entries
 4. Context Sheet ALIAS entries
 5. Context Sheet RESOLVE entries
 6. Context Sheet MERGE, SPLIT, REDIRECT, RETIRE, and RESTORE entries
 7. Context Sheet RECONCILE entries
 8. disposable Context Sheet projections, indexes, dossier inputs, and UI views
 ```
+
+Prerequisites may delay an entry until its required authority is available. Among
+entries eligible for application, ascending ledger sequence is the effect-order
+tie-breaker. Ledger sequence governs replayed effect order, not merely stored metadata.
 
 Replay validates each entry using its recorded schema, contract, and policy version,
 recomputes its artifact hash, and preserves the recorded ledger sequence. It produces
@@ -230,6 +254,16 @@ The service MUST preserve the ledger bytes and all referenced authority. It may 
 quarantine/reconciliation result and rebuild only disposable projections. Unaffected
 scopes and independently replayable artifacts remain available.
 
+Malformed ledger-line recovery has two cases:
+
+1. If trusted framing or metadata can unambiguously associate the malformed record with
+   a valid `scopeId`, sheet, or sequence without skipping bytes, guessing record
+   boundaries, or relying on corrupted ordering, the service may quarantine that
+   affected record or scope under the existing recovery model.
+2. If the affected scope cannot be established without skipping bytes, guessing
+   boundaries, or trusting corrupted ordering, the entire Context Sheet Identity ledger
+   MUST fail closed. Replay MUST NOT continue past the malformed data.
+
 No recovery path may truncate, rewrite, compact, silently skip, or reverse-copy the
 Context Sheet Identity ledger. A new corrective action requires a later lawful ledger
 artifact.
@@ -248,10 +282,12 @@ use.
 
 ## 11. Required Runtime Proof Before Implementation Closure
 
-1. A structurally valid `CREATE` appends exactly once and survives service restart.
-2. Same idempotency identity and same artifact returns the original entry without a
-   second append.
-3. Same idempotency identity with different immutable content refuses without append.
+1. A structurally valid `CREATE_RECORD` + `CREATE_EVENT` creation pair appends exactly
+   once and survives service restart.
+2. Same request idempotency key and same creation pair returns the original entries
+   without a second append.
+3. Same request idempotency key with different immutable content refuses without
+   append.
 4. A malformed or hash-mismatched entry quarantines the affected replay scope and does
    not mutate source authority.
 5. The interpretive, publication, catalog, membership, and dossier authority stores

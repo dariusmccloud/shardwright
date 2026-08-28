@@ -107,6 +107,33 @@ function makeLinkArtifact(nominationEntry, validationEntry) {
     return artifact;
 }
 
+function makeDistinctValidationArtifact(nominationEntry, suffix) {
+    const artifact = makeValidationArtifact(nominationEntry);
+    artifact.envelope.artifactId = `artifact:context-sheet-membership-validation-event:${suffix}`;
+    artifact.envelope.idempotencyKey = `idempotency:validate-${suffix}`;
+    artifact.envelope.payloadHash = `sha256:${'a'.repeat(64)}`;
+    artifact.evaluatedCatalogRecordRef.artifactId = `artifact:memory-catalog-record:${suffix}`;
+    artifact.evaluatedCatalogRecordRef.immutableHash = `sha256:${'b'.repeat(64)}`;
+    artifact.evaluatedContextSheetRef.artifactId = `artifact:context-sheet-lifecycle-projection:${suffix}`;
+    artifact.evaluatedContextSheetRef.immutableHash = `sha256:${'c'.repeat(64)}`;
+    artifact.claimBasis.catalogClaimIds = [`claim:${suffix}`];
+    artifact.claimBasis.basisHash = `sha256:${'d'.repeat(64)}`;
+    artifact.claimBasis.boundedMeaning = `The governed decision directly concerns ${suffix}.`;
+    artifact.semanticDeduplicationKey = `sha256:${'e'.repeat(64)}`;
+    return artifact;
+}
+
+function makeDistinctLinkArtifact(nominationEntry, validationEntry, suffix) {
+    const artifact = makeLinkArtifact(nominationEntry, validationEntry);
+    artifact.envelope.artifactId = `artifact:context-sheet-membership-link:${suffix}`;
+    artifact.envelope.idempotencyKey = `idempotency:link-${suffix}`;
+    artifact.envelope.payloadHash = `sha256:${'1'.repeat(64)}`;
+    artifact.membershipLinkId = `membership-link:${suffix}`;
+    artifact.semanticDeduplicationKey = `sha256:${'2'.repeat(64)}`;
+    artifact.evidenceAccountingKey = `sha256:${'3'.repeat(64)}`;
+    return artifact;
+}
+
 function admitAcceptedValidation(paths) {
     const nomination = nominateContextSheetMembership(
         paths,
@@ -140,10 +167,37 @@ function makeSuccessorArtifact(linkEntry) {
     return artifact;
 }
 
+function makeRetypedSuccessorArtifact(predecessorLinkEntry, successorLinkEntry, successorValidationEntry) {
+    const artifact = loadFixture('context-sheet-membership-successor-event-v1.valid-retyped');
+    const predecessorLinkRef = makeExactLinkReference(predecessorLinkEntry);
+    const successorLinkRef = makeExactLinkReference(successorLinkEntry);
+    const successorValidationEventRef = makeExactValidationReference(successorValidationEntry);
+    artifact.envelope.memoryScopeId = predecessorLinkEntry.scopeId;
+    artifact.envelope.authorityBasisRefs = [predecessorLinkRef, successorLinkRef, successorValidationEventRef];
+    artifact.predecessorLinkRef = predecessorLinkRef;
+    artifact.successorLinkRef = successorLinkRef;
+    artifact.successorValidationEventRef = successorValidationEventRef;
+    return artifact;
+}
+
 function admitInitialLink(paths) {
     const { nomination, validation } = admitAcceptedValidation(paths);
     const link = admitContextSheetMembershipLink(paths, makeLinkArtifact(nomination, validation));
     return link.entry;
+}
+
+function admitSuccessorCustodyScenario(paths) {
+    const { nomination, validation } = admitAcceptedValidation(paths);
+    const predecessorLink = admitContextSheetMembershipLink(paths, makeLinkArtifact(nomination, validation));
+    const successorValidationArtifact = makeDistinctValidationArtifact(nomination, 'successor-custody');
+    const successorValidation = admitContextSheetMembershipValidation(paths, successorValidationArtifact);
+    const successorLinkArtifact = makeDistinctLinkArtifact(nomination, successorValidation.entry, 'successor-custody');
+    const successorLink = admitContextSheetMembershipLink(paths, successorLinkArtifact);
+    return {
+        predecessorLink: predecessorLink.entry,
+        successorValidation: successorValidation.entry,
+        successorLink: successorLink.entry,
+    };
 }
 
 test('a structurally valid nomination appends exactly once and survives an actual process restart', () => {
@@ -514,6 +568,20 @@ test('a successor correction appends from exact predecessor custody and survives
     assert.deepEqual(reopened[3], entry);
 });
 
+test('a successor correction appends with populated successor link and validation custody', () => {
+    const root = makeTempRoot();
+    const paths = getStoragePaths(root);
+    const { predecessorLink, successorLink, successorValidation } = admitSuccessorCustodyScenario(paths);
+    const successorArtifact = makeRetypedSuccessorArtifact(predecessorLink, successorLink, successorValidation);
+    const { entry, appended } = admitContextSheetMembershipSuccessor(paths, successorArtifact);
+
+    assert.equal(appended, true);
+    assert.equal(entry.sequence, 6);
+    assert.equal(entry.operation, 'SUCCEED');
+    assert.deepEqual(entry.artifact.successorLinkRef, makeExactLinkReference(successorLink));
+    assert.deepEqual(entry.artifact.successorValidationEventRef, makeExactValidationReference(successorValidation));
+});
+
 test('same SUCCEED idempotency key returns the original event while changed content refuses', () => {
     const root = makeTempRoot();
     const paths = getStoragePaths(root);
@@ -530,6 +598,57 @@ test('same SUCCEED idempotency key returns the original event while changed cont
         (error) => error.code === 'CSM_SUCCEED_IDEMPOTENCY_COLLISION',
     );
     assert.equal(readContextSheetMembershipLedger(paths).length, 4);
+});
+
+test('SUCCEED refuses populated successor link custody gaps without append', () => {
+    const root = makeTempRoot();
+    const paths = getStoragePaths(root);
+    const { predecessorLink, successorLink, successorValidation } = admitSuccessorCustodyScenario(paths);
+
+    const missingSuccessorLink = makeRetypedSuccessorArtifact(predecessorLink, successorLink, successorValidation);
+    missingSuccessorLink.successorLinkRef.artifactId = 'artifact:context-sheet-membership-link:missing-successor';
+    assert.throws(
+        () => admitContextSheetMembershipSuccessor(paths, missingSuccessorLink),
+        (error) => error.code === 'CSM_SUCCEED_SUCCESSOR_LINK_MISSING',
+    );
+
+    const mismatchedSuccessorLink = makeRetypedSuccessorArtifact(predecessorLink, successorLink, successorValidation);
+    mismatchedSuccessorLink.successorLinkRef.immutableHash = `sha256:${'0'.repeat(64)}`;
+    assert.throws(
+        () => admitContextSheetMembershipSuccessor(paths, mismatchedSuccessorLink),
+        (error) => error.code === 'CSM_SUCCEED_SUCCESSOR_LINK_HASH_MISMATCH',
+    );
+
+    const outOfScopeSuccessorLink = makeRetypedSuccessorArtifact(predecessorLink, successorLink, successorValidation);
+    outOfScopeSuccessorLink.successorLinkRef.memoryScopeId = 'scope:other';
+    assert.throws(
+        () => admitContextSheetMembershipSuccessor(paths, outOfScopeSuccessorLink),
+        (error) => error.code === 'CSM_SUCCEED_SUCCESSOR_SCOPE_MISMATCH',
+    );
+
+    assert.equal(readContextSheetMembershipLedger(paths).length, 5);
+});
+
+test('SUCCEED refuses populated successor validation custody gaps without append', () => {
+    const root = makeTempRoot();
+    const paths = getStoragePaths(root);
+    const { predecessorLink, successorLink, successorValidation } = admitSuccessorCustodyScenario(paths);
+
+    const missingSuccessorValidation = makeRetypedSuccessorArtifact(predecessorLink, successorLink, successorValidation);
+    missingSuccessorValidation.successorValidationEventRef.artifactId = 'artifact:context-sheet-membership-validation-event:missing-successor';
+    assert.throws(
+        () => admitContextSheetMembershipSuccessor(paths, missingSuccessorValidation),
+        (error) => error.code === 'CSM_SUCCEED_SUCCESSOR_VALIDATION_MISSING',
+    );
+
+    const mismatchedSuccessorValidation = makeRetypedSuccessorArtifact(predecessorLink, successorLink, successorValidation);
+    mismatchedSuccessorValidation.successorValidationEventRef.immutableHash = `sha256:${'0'.repeat(64)}`;
+    assert.throws(
+        () => admitContextSheetMembershipSuccessor(paths, mismatchedSuccessorValidation),
+        (error) => error.code === 'CSM_SUCCEED_SUCCESSOR_VALIDATION_HASH_MISMATCH',
+    );
+
+    assert.equal(readContextSheetMembershipLedger(paths).length, 5);
 });
 
 test('SUCCEED refuses missing predecessor custody and schema-invalid authority changes without append', () => {

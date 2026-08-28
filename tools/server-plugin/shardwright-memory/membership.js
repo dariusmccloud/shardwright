@@ -1,8 +1,8 @@
-// Context Sheet Membership: durable NOMINATE and VALIDATE ledger foundation.
+// Context Sheet Membership: durable NOMINATE, VALIDATE, LINK, and SUCCEED ledger foundation.
 //
 // Bounded by docs/contracts/PHASE_X_CONTEXT_SHEET_MEMBERSHIP_RUNTIME_PERSISTENCE_AND_REPLAY_OWNERSHIP_CONTRACT.md.
 // This module owns only the context-sheet-membership-ledger.jsonl append/read boundary for the
-// NOMINATE and durable VALIDATE-event admission. LINK, SUCCEED, IMPACT_DECIDE, RECONCILE, routes,
+// NOMINATE, durable VALIDATE-event, immutable LINK, and SUCCEED-event admission. IMPACT_DECIDE, RECONCILE, routes,
 // projections, semantic validation, and UI remain unauthorized and out of scope for this slice.
 
 import fs from 'node:fs';
@@ -32,9 +32,10 @@ const MEMBERSHIP_LINK_ARTIFACT_CLASS = 'IMMUTABLE_RECORD';
 const MEMBERSHIP_SUCCESSOR_OPERATION = 'SUCCEED';
 const MEMBERSHIP_SUCCESSOR_ARTIFACT_CLASS = 'EVENT';
 
-// This slice recognizes exactly one governing contract binding for NOMINATE and no applicable
-// policy binding yet. Any other contract binding, or any non-empty policy binding, is unsupported
-// and must refuse before append rather than be silently accepted or guessed at.
+// This slice recognizes exactly one governing contract binding for membership operations. NOMINATE
+// has no applicable policy binding yet; VALIDATE, LINK, and SUCCEED require the recognized
+// membership-validation policy binding. Unsupported bindings refuse before append rather than being
+// silently accepted or guessed at.
 const KNOWN_MEMBERSHIP_CONTRACT_BINDINGS = new Set(['phase-x-context-sheet-membership@0.1.0']);
 const KNOWN_MEMBERSHIP_VALIDATION_POLICY_BINDING = 'membership-validation-policy@v1';
 
@@ -70,15 +71,18 @@ function assertKnownNominationPolicyBindings(envelope) {
     }
 }
 
-function assertKnownValidationPolicyBindings(artifact) {
+function assertKnownValidationPolicyBindings(artifact, operationName) {
     const policyBindings = Array.isArray(artifact.envelope.policyBindings) ? artifact.envelope.policyBindings : [];
     const policyBindingKeys = policyBindings.map((binding) => `${binding?.id}@${binding?.version}`);
     if (policyBindingKeys.length !== 1 || policyBindingKeys[0] !== KNOWN_MEMBERSHIP_VALIDATION_POLICY_BINDING
         || artifact.governingPolicyVersion !== 'v1') {
+        const errorCode = operationName === MEMBERSHIP_VALIDATION_OPERATION
+            ? 'CSM_VALIDATE_POLICY_BINDING_UNSUPPORTED'
+            : `CSM_${operationName}_POLICY_BINDING_UNSUPPORTED`;
         throw createError(
             400,
-            'Context Sheet membership VALIDATE must bind the recognized membership validation policy version.',
-            'CSM_VALIDATE_POLICY_BINDING_UNSUPPORTED',
+            `Context Sheet membership ${operationName} must bind the recognized membership validation policy version.`,
+            errorCode,
         );
     }
 }
@@ -89,61 +93,35 @@ function loadSchema(fileName) {
 
 const DATE_TIME_FORMAT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/u;
 
-let nominationValidator = null;
-let validationValidator = null;
-let linkValidator = null;
-let successorValidator = null;
+const artifactValidators = new Map();
 
-function getNominationValidator() {
-    if (nominationValidator) {
-        return nominationValidator;
+function getArtifactValidator(schemaFileName) {
+    if (artifactValidators.has(schemaFileName)) {
+        return artifactValidators.get(schemaFileName);
     }
-
     const ajv = new Ajv2020({ strict: true, allErrors: true });
     ajv.addFormat('date-time', { type: 'string', validate: (value) => DATE_TIME_FORMAT.test(value) });
     ajv.addSchema(loadSchema('memory-artifact-envelope-v1.schema.json'));
     ajv.addSchema(loadSchema('memory-artifact-reference-v1.schema.json'));
-    nominationValidator = ajv.compile(loadSchema('context-sheet-membership-nomination-v1.schema.json'));
-    return nominationValidator;
+    const validator = ajv.compile(loadSchema(schemaFileName));
+    artifactValidators.set(schemaFileName, validator);
+    return validator;
+}
+
+function getNominationValidator() {
+    return getArtifactValidator('context-sheet-membership-nomination-v1.schema.json');
 }
 
 function getValidationValidator() {
-    if (validationValidator) {
-        return validationValidator;
-    }
-
-    const ajv = new Ajv2020({ strict: true, allErrors: true });
-    ajv.addFormat('date-time', { type: 'string', validate: (value) => DATE_TIME_FORMAT.test(value) });
-    ajv.addSchema(loadSchema('memory-artifact-envelope-v1.schema.json'));
-    ajv.addSchema(loadSchema('memory-artifact-reference-v1.schema.json'));
-    validationValidator = ajv.compile(loadSchema('context-sheet-membership-validation-event-v1.schema.json'));
-    return validationValidator;
+    return getArtifactValidator('context-sheet-membership-validation-event-v1.schema.json');
 }
 
 function getLinkValidator() {
-    if (linkValidator) {
-        return linkValidator;
-    }
-
-    const ajv = new Ajv2020({ strict: true, allErrors: true });
-    ajv.addFormat('date-time', { type: 'string', validate: (value) => DATE_TIME_FORMAT.test(value) });
-    ajv.addSchema(loadSchema('memory-artifact-envelope-v1.schema.json'));
-    ajv.addSchema(loadSchema('memory-artifact-reference-v1.schema.json'));
-    linkValidator = ajv.compile(loadSchema('context-sheet-membership-link-v1.schema.json'));
-    return linkValidator;
+    return getArtifactValidator('context-sheet-membership-link-v1.schema.json');
 }
 
 function getSuccessorValidator() {
-    if (successorValidator) {
-        return successorValidator;
-    }
-
-    const ajv = new Ajv2020({ strict: true, allErrors: true });
-    ajv.addFormat('date-time', { type: 'string', validate: (value) => DATE_TIME_FORMAT.test(value) });
-    ajv.addSchema(loadSchema('memory-artifact-envelope-v1.schema.json'));
-    ajv.addSchema(loadSchema('memory-artifact-reference-v1.schema.json'));
-    successorValidator = ajv.compile(loadSchema('context-sheet-membership-successor-event-v1.schema.json'));
-    return successorValidator;
+    return getArtifactValidator('context-sheet-membership-successor-event-v1.schema.json');
 }
 
 export function validateMembershipNominationArtifact(artifact) {
@@ -604,7 +582,7 @@ export function admitContextSheetMembershipValidation(paths, artifact, options =
     }
 
     assertKnownContractBindings(envelope, MEMBERSHIP_VALIDATION_OPERATION);
-    assertKnownValidationPolicyBindings(artifact);
+    assertKnownValidationPolicyBindings(artifact, MEMBERSHIP_VALIDATION_OPERATION);
 
     const scopeId = envelope.memoryScopeId;
     const idempotencyKey = envelope.idempotencyKey;
@@ -660,7 +638,7 @@ export function admitContextSheetMembershipLink(paths, artifact, options = {}) {
         throw createError(400, 'Context Sheet membership link envelope does not match the LINK operation mapping.', 'CSM_LINK_OPERATION_MISMATCH');
     }
     assertKnownContractBindings(envelope, MEMBERSHIP_LINK_OPERATION);
-    assertKnownValidationPolicyBindings(artifact);
+    assertKnownValidationPolicyBindings(artifact, MEMBERSHIP_LINK_OPERATION);
 
     const scopeId = envelope.memoryScopeId;
     const idempotencyKey = envelope.idempotencyKey;
@@ -711,7 +689,7 @@ export function admitContextSheetMembershipSuccessor(paths, artifact, options = 
         throw createError(400, 'Context Sheet membership successor envelope does not match the SUCCEED operation mapping.', 'CSM_SUCCEED_OPERATION_MISMATCH');
     }
     assertKnownContractBindings(envelope, MEMBERSHIP_SUCCESSOR_OPERATION);
-    assertKnownValidationPolicyBindings(artifact);
+    assertKnownValidationPolicyBindings(artifact, MEMBERSHIP_SUCCESSOR_OPERATION);
 
     const scopeId = envelope.memoryScopeId;
     const idempotencyKey = envelope.idempotencyKey;
