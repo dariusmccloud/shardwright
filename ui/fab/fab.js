@@ -1,209 +1,157 @@
 /**
- * Floating Action Button for Shardwright
- * Crystal shard hub with animated radial quick-access panels.
+ * Docked, draggable trigger for Shardwright.
+ * Replaces the former radial crystal-shard FAB with a single edge-docked
+ * tab, adapted from SillyBunny's Companion handle pattern: dock/drag/snap,
+ * persisted {edge, fraction} position, and same-edge collision avoidance
+ * against other docked handles (e.g. SillyBunny's own Companion tab).
  */
-
 import { saveSettings } from '../../core/settings.js';
 import { getAllMessages } from '../../core/chat/chat-state.js';
 import { showSsInput } from '../common/modal-base.js';
 import { buildFabPanels, getFabPanelIds } from './fab-content.js';
-import { createFabPanels, WHEEL_RADIUS_PX, WHEEL_MAX_HALF_EXTENT_PX } from './fab-panels.js';
-import { createFabAnimator } from './fab-animation.js';
-import { log } from '../../core/logger.js';
+import { createFabPanels } from './fab-panels.js';
 
 let fabElement = null;
 let settingsRef = null;
 let callbacksRef = null;
-let animator = null;
 let panelsController = null;
 let isGenerating = false;
-let fabState = 'closed';
+let isOpen = false;
 let previousFocus = null;
-let fabTransitionToken = 0;
-let relocation = createRelocationState();
-let pendingPositionSaveId = null;
-let pendingPositionSaveMode = null;
-let pendingPositionValue = null;
-let lastPersistedPosition = null;
 let scheduledToggleId = null;
 let scheduledToggleMode = null;
-const fabPerfSamples = new Map();
 
-// Bound listeners stored for cleanup
 let onOutsideClick = null;
 let onResize = null;
 let onOperationStarted = null;
 let onOperationEnded = null;
 let onSharderModeChange = null;
 let onKeyDown = null;
-let onVisualViewportChange = null;
-let onPageHide = null;
-let onBeforeUnload = null;
+let resizePersistTimeoutId = null;
 
-const FAB_SIZE_PX = 56;
-const FAB_RADIUS_PX = FAB_SIZE_PX / 2;
-const MOBILE_BREAKPOINT_QUERY = '(max-width: 768px)';
+// Top and bottom are protected: SillyTavern/SillyBunny's #top-bar lives at
+// the top, and docking there or along the bottom risks covering chat input.
+// Only left/right are lawful docking edges.
+const EDGES = ['right', 'left'];
+const DEFAULT_EDGE = 'right';
+const DEFAULT_FRACTION = 0.5;
+const DRAG_THRESHOLD_PX = 6;
+const EDGE_MARGIN_PX = 4;
+const COLLISION_GAP_PX = 8;
+const TOP_BAR_FALLBACK_PX = 40;
+const BOTTOM_BAR_FALLBACK_PX = 100;
+const RESIZE_PERSIST_DEBOUNCE_MS = 250;
+// Concrete, evidenced collision partner: SillyBunny's own Companion handle
+// carries this exact selector (confirmed against its source/CSS). Shardwright
+// is the guest here, so only Shardwright's handle avoids the collision.
+const OTHER_DOCKED_HANDLE_SELECTOR = '.ica--tpanel-handle[data-edge]';
 
 /**
- * Mobile FAB scale — percentage of default size (100 = current size).
- * Adjust this single value to resize the FAB + wheel buttons on mobile.
- * Examples: 75 = 75% size, 100 = unchanged, 120 = 20% larger.
+ * Height of SillyTavern/SillyBunny's real top bar (#top-bar), read live
+ * rather than assumed, so left/right docking never rests above it.
  */
-const MOBILE_FAB_SCALE_PERCENT = 80;
-
-function getMobileScale() {
-    return isMobileViewport() ? MOBILE_FAB_SCALE_PERCENT / 100 : 1;
-}
-
-const SAFE_VIEWPORT_MARGIN_PX = 8;
-const MOBILE_EXTRA_TAP_PADDING_PX = 6;
-const MIN_NUDGE_DELTA_PX = 2;
-const NUDGE_IN_DURATION_MS = 160;
-const NUDGE_IN_EASING = 'cubic-bezier(0.22, 0.61, 0.36, 1)';
-const NUDGE_BACK_DURATION_MS = 180;
-const NUDGE_BACK_EASING = 'cubic-bezier(0.4, 0, 0.2, 1)';
-const POSITION_SAVE_IDLE_TIMEOUT_MS = 200;
-const POSITION_SAVE_TIMEOUT_FALLBACK_MS = 64;
-const FAB_PERF_DEBUG = false;
-const FAB_PERF_SAMPLE_LIMIT = 120;
-const FAB_PERF_LOG_INTERVAL = 20;
-const INTERPRETIVE_REVIEW_MODAL_TIMEOUT_MS = 1200;
-
-function createRelocationState() {
-    return {
-        mode: 'idle',
-        home: null,
-        nudged: null,
-        shouldReturn: false,
-        anim: null,
-    };
-}
-
-function recordFabPerfSample(metric, value) {
-    if (!Number.isFinite(value)) return;
-
-    const state = fabPerfSamples.get(metric) || { samples: [], count: 0, max: 0 };
-    state.count += 1;
-    state.max = Math.max(state.max, value);
-    if (state.samples.length >= FAB_PERF_SAMPLE_LIMIT) {
-        state.samples.shift();
-    }
-    state.samples.push(value);
-    fabPerfSamples.set(metric, state);
-
-    if (!FAB_PERF_DEBUG) return;
-    if (state.count % FAB_PERF_LOG_INTERVAL !== 0 && value < 50) return;
-
-    const sorted = [...state.samples].sort((a, b) => a - b);
-    const p50 = getPercentile(sorted, 0.5);
-    const p95 = getPercentile(sorted, 0.95);
-    log.debug(
-        `[FAB perf] ${metric} n=${state.samples.length} p50=${p50.toFixed(1)}ms p95=${p95.toFixed(1)}ms max=${state.max.toFixed(1)}ms`
-    );
-}
-
-function getPercentile(sortedValues, fraction) {
-    if (!sortedValues.length) return 0;
-    const index = Math.max(0, Math.min(sortedValues.length - 1, Math.floor((sortedValues.length - 1) * fraction)));
-    return sortedValues[index];
+function getProtectedTopInset() {
+    const bar = document.getElementById('top-bar');
+    const height = bar?.getBoundingClientRect().height;
+    return Number.isFinite(height) && height > 0 ? height : TOP_BAR_FALLBACK_PX;
 }
 
 /**
- * Initialize the FAB.
- * @param {Object} settings
- * @param {Object} callbacks
+ * Height of SillyTavern/SillyBunny's bottom message-input area (#form_sheld:
+ * the send form plus whatever sits above it, e.g. quick replies), read live
+ * for the same reason as the top bar: so docking never rests over it.
  */
+function getProtectedBottomInset() {
+    const bottomBar = document.getElementById('form_sheld');
+    const height = bottomBar?.getBoundingClientRect().height;
+    return Number.isFinite(height) && height > 0 ? height : BOTTOM_BAR_FALLBACK_PX;
+}
+
+/**
+ * The vertical band an edge-docked element (handle or panel) of the given
+ * height is allowed to occupy: below the protected top bar, above the
+ * protected bottom message-input area, with a small margin on each side.
+ */
+function computeUsableVerticalBand(elementHeight) {
+    const vh = window.innerHeight;
+    const min = getProtectedTopInset() + EDGE_MARGIN_PX;
+    const max = Math.max(min, vh - getProtectedBottomInset() - elementHeight - EDGE_MARGIN_PX);
+    return { min, max };
+}
+
 export function initFab(settings, callbacks) {
     settingsRef = settings;
     callbacksRef = callbacks;
-    fabTransitionToken = 0;
-    relocation = createRelocationState();
-    pendingPositionValue = null;
-    cancelPendingPositionSaveFlush();
     cancelScheduledTogglePanels();
     cleanupOrphanedPanelsDom();
 
     if (!settingsRef.fab) {
-        settingsRef.fab = { enabled: true, position: { x: null, y: null } };
+        settingsRef.fab = { enabled: true, position: { edge: null, fraction: null } };
     }
-    lastPersistedPosition = isValidPoint(settingsRef.fab.position) ? {
-        x: settingsRef.fab.position.x,
-        y: settingsRef.fab.position.y,
-    } : null;
+    if (!settingsRef.fab.position) {
+        settingsRef.fab.position = { edge: null, fraction: null };
+    }
 
     createFabElement();
-    document.documentElement.style.setProperty('--shardwright-fab-mobile-scale', MOBILE_FAB_SCALE_PERCENT / 100);
-    animator = createFabAnimator(fabElement);
     bindEvents();
-    restorePosition();
+
+    const storedEdge = settingsRef.fab.position.edge || DEFAULT_EDGE;
+    const storedFraction = isFiniteNumber(settingsRef.fab.position.fraction)
+        ? settingsRef.fab.position.fraction
+        : DEFAULT_FRACTION;
+    // Left/right render an identical (vertical-text) layout, so any lawful
+    // edge is fine here — this just ensures the edge-specific CSS is already
+    // active before resolveDockConflict measures the handle's real height.
+    fabElement.dataset.edge = storedEdge;
+    const initialDock = resolveDockConflict(storedEdge, storedFraction);
+
+    panelsController = createFabPanels({
+        edge: initialDock.edge,
+        panelMarkupById: buildFabPanels(settingsRef, {
+            isGenerating,
+            lastSummarizedIndex: callbacksRef?.getLastSummarizedIndex?.() ?? -1,
+        }),
+        onAction: (action, button) => {
+            void handleAction(action, button);
+        },
+    });
+
+    applyDock(initialDock.edge, initialDock.fraction);
+    persistDockIfChanged(initialDock.edge, initialDock.fraction);
     updateFabVisibility();
 }
 
 function createFabElement() {
-    fabElement = document.createElement('div');
+    fabElement = document.createElement('button');
+    fabElement.type = 'button';
     fabElement.className = 'shardwright-fab';
     fabElement.id = 'shardwright-fab';
-    fabElement.innerHTML = `
-        <button type="button" class="shardwright-fab-trigger" title="Shardwright Quick Actions" aria-haspopup="dialog" aria-expanded="false">
-            <div class="shardwright-crystal-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 28" xmlns="http://www.w3.org/2000/svg">
-                    <polygon class="shardwright-crystal-shard shardwright-crystal-shard--1" points="12,0 4,8 12,10"></polygon>
-                    <polygon class="shardwright-crystal-shard shardwright-crystal-shard--2" points="12,0 20,8 12,10"></polygon>
-                    <polygon class="shardwright-crystal-shard shardwright-crystal-shard--3" points="4,8 12,10 12,18 2,14"></polygon>
-                    <polygon class="shardwright-crystal-shard shardwright-crystal-shard--4" points="20,8 12,10 12,18 22,14"></polygon>
-                    <polygon class="shardwright-crystal-shard shardwright-crystal-shard--5a" points="2,14 12,18 12,28"></polygon>
-                    <polygon class="shardwright-crystal-shard shardwright-crystal-shard--5b" points="12,18 22,14 12,28"></polygon>
-                </svg>
-            </div>
-        </button>
-    `;
+    fabElement.setAttribute('aria-haspopup', 'dialog');
+    fabElement.setAttribute('aria-expanded', 'false');
+    fabElement.title = 'Shardwright';
+    fabElement.innerHTML = '<span class="shardwright-fab-label">🛡️ Shardwright</span>';
     document.body.appendChild(fabElement);
 }
 
 function cleanupOrphanedPanelsDom() {
-    document.querySelectorAll('.shardwright-fab-panels').forEach((root) => {
-        root.classList.remove('shardwright-fab-sheet-active');
-        root.setAttribute('aria-hidden', 'true');
-        root.remove();
-    });
+    document.querySelectorAll('.shardwright-fab-panels').forEach((root) => root.remove());
 }
 
 function bindEvents() {
     setupDrag();
 
     onOutsideClick = (e) => {
-        if (!isOpenState()) return;
-
+        if (!isOpen) return;
         const clickedFab = fabElement?.contains(e.target);
         const clickedPanels = panelsController?.containsTarget(e.target);
-
         if (!clickedFab && !clickedPanels) {
-            void closePanels();
+            closePanels();
         }
     };
     document.addEventListener('pointerdown', onOutsideClick);
 
-    onResize = () => {
-        handleViewportChange();
-    };
+    onResize = () => handleViewportChange();
     window.addEventListener('resize', onResize);
-    onVisualViewportChange = () => {
-        handleViewportChange();
-    };
-    if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', onVisualViewportChange);
-        window.visualViewport.addEventListener('scroll', onVisualViewportChange);
-    }
-
-    onPageHide = () => {
-        flushPendingPositionSave();
-    };
-    window.addEventListener('pagehide', onPageHide);
-
-    onBeforeUnload = () => {
-        flushPendingPositionSave();
-    };
-    window.addEventListener('beforeunload', onBeforeUnload);
 
     onOperationStarted = () => {
         isGenerating = true;
@@ -221,38 +169,25 @@ function bindEvents() {
     onSharderModeChange = () => {
         refreshOpenPanels(['actions', 'config', 'advanced']);
     };
-
     const sharderToggle = document.getElementById('shardwright-sharder-mode');
     if (sharderToggle) {
         sharderToggle.addEventListener('change', onSharderModeChange);
     }
 
     onKeyDown = (event) => {
-        if (event.key === 'Escape' && isOpenState()) {
+        if (event.key === 'Escape' && isOpen) {
             event.preventDefault();
-            void closePanels();
+            closePanels();
             return;
         }
 
-        if ((event.key === 'Enter' || event.key === ' ') && document.activeElement === getTrigger()) {
+        if ((event.key === 'Enter' || event.key === ' ') && document.activeElement === fabElement) {
             event.preventDefault();
             scheduleTogglePanels();
             return;
         }
 
-        if (isOpenState() && isFocusWithinFabControls() && (event.key === 'ArrowRight' || event.key === 'ArrowDown')) {
-            event.preventDefault();
-            panelsController?.focusNextWheel?.(1);
-            return;
-        }
-
-        if (isOpenState() && isFocusWithinFabControls() && (event.key === 'ArrowLeft' || event.key === 'ArrowUp')) {
-            event.preventDefault();
-            panelsController?.focusNextWheel?.(-1);
-            return;
-        }
-
-        if (event.key === 'Tab' && isOpenState() && panelsController?.root) {
+        if (event.key === 'Tab' && isOpen && panelsController?.root) {
             trapFocus(event, panelsController.root);
         }
     };
@@ -260,59 +195,59 @@ function bindEvents() {
 }
 
 function setupDrag() {
-    const trigger = getTrigger();
     let isDragging = false;
     let startX = null;
     let startY = null;
     let initialX;
     let initialY;
     let lastDraggedPosition = null;
-    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    const DRAG_THRESHOLD = isTouchDevice ? 12 : 5;
 
-    trigger.addEventListener('pointerdown', (e) => {
+    fabElement.addEventListener('pointerdown', (e) => {
         if (e.button !== 0) return;
 
         isDragging = false;
         startX = e.clientX;
         startY = e.clientY;
 
-        const position = getRenderedFabPosition();
-        initialX = position.x;
-        initialY = position.y;
+        const rect = fabElement.getBoundingClientRect();
+        initialX = rect.left;
+        initialY = rect.top;
         lastDraggedPosition = null;
 
-        trigger.setPointerCapture(e.pointerId);
-        fabElement.classList.add('shardwright-fab-dragging');
+        fabElement.setPointerCapture(e.pointerId);
     });
 
-    trigger.addEventListener('pointermove', (e) => {
+    fabElement.addEventListener('pointermove', (e) => {
         if (startX === null) return;
 
         const dx = e.clientX - startX;
         const dy = e.clientY - startY;
 
-        if (!isDragging && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
+        if (!isDragging && (Math.abs(dx) > DRAG_THRESHOLD_PX || Math.abs(dy) > DRAG_THRESHOLD_PX)) {
             isDragging = true;
-            clearRelocationForDrag();
             closePanelsImmediate();
-            fabState = 'dragging';
+            fabElement.classList.add('shardwright-fab-dragging');
         }
 
         if (isDragging) {
-            const { x, y } = clampToViewport(initialX + dx, initialY + dy);
+            const rect = fabElement.getBoundingClientRect();
+            const { min, max } = computeUsableVerticalBand(rect.height);
+            const x = clamp(initialX + dx, 0, window.innerWidth - rect.width);
+            const y = clamp(initialY + dy, min, max);
             lastDraggedPosition = { x, y };
             setFabPosition(x, y);
         }
     });
 
-    trigger.addEventListener('pointerup', () => {
-        const startedAt = performance.now();
+    fabElement.addEventListener('pointerup', () => {
         try {
-            if (isDragging) {
-                const position = lastDraggedPosition || getSafeCurrentPosition();
-                savePosition(position.x, position.y);
-                fabState = 'closed';
+            if (isDragging && lastDraggedPosition) {
+                const rect = fabElement.getBoundingClientRect();
+                const droppedEdge = nearestEdge(lastDraggedPosition, rect);
+                const droppedFraction = fractionFromPoint(lastDraggedPosition, rect);
+                const dock = resolveDockConflict(droppedEdge, droppedFraction);
+                applyDock(dock.edge, dock.fraction);
+                savePosition(dock.edge, dock.fraction);
             } else if (startX !== null) {
                 scheduleTogglePanels();
             }
@@ -322,45 +257,208 @@ function setupDrag() {
             startY = null;
             lastDraggedPosition = null;
             fabElement.classList.remove('shardwright-fab-dragging');
-            recordFabPerfSample('pointerup', performance.now() - startedAt);
         }
     });
 
     // Touch browsers may fire pointercancel instead of pointerup (e.g. when
-    // the OS takes over the gesture). Reset state to avoid a stuck FAB.
-    trigger.addEventListener('pointercancel', () => {
+    // the OS takes over the gesture). Reset state to avoid a stuck handle.
+    fabElement.addEventListener('pointercancel', () => {
         startX = null;
         startY = null;
         isDragging = false;
         lastDraggedPosition = null;
         fabElement.classList.remove('shardwright-fab-dragging');
-        if (fabState === 'dragging') {
-            fabState = 'closed';
-        }
     });
+}
+
+function nearestEdge(position, rect) {
+    const distLeft = position.x;
+    const distRight = window.innerWidth - (position.x + rect.width);
+    return distLeft <= distRight ? 'left' : 'right';
+}
+
+// Fraction is relative to the usable vertical band (below the protected top
+// bar), not the full viewport, so a stored fraction can never resolve into
+// the protected zone regardless of viewport size.
+function fractionFromPoint(position, rect) {
+    const { min, max } = computeUsableVerticalBand(rect.height);
+    if (max <= min) return 0.5;
+    return clamp((position.y - min) / (max - min), 0, 1);
+}
+
+function getOtherDockedHandles(edge) {
+    return Array.from(document.querySelectorAll(OTHER_DOCKED_HANDLE_SELECTOR))
+        .filter((el) => el !== fabElement && el.dataset.edge === edge);
+}
+
+// Two rects (as [top, bottom] ranges) are "too close" if less than
+// COLLISION_GAP_PX separates their nearest edges — a real pixel gap, not a
+// fraction of the band, so the visual spacing stays symmetric regardless of
+// how tall the other docked handle actually is.
+function rangesTooClose(aTop, aBottom, bTop, bBottom) {
+    return !(aBottom + COLLISION_GAP_PX <= bTop || aTop >= bBottom + COLLISION_GAP_PX);
+}
+
+/**
+ * Picks a lawful {edge, fraction} for Shardwright's own handle: prefer the
+ * requested edge/fraction, slide along that edge (in real pixels, using the
+ * actual rects) if another docked handle (e.g. SillyBunny's Companion)
+ * occupies that band too closely, and only move to a different edge if the
+ * preferred edge stays crowded after sliding.
+ */
+function resolveDockConflict(preferredEdge, preferredFraction) {
+    const handleHeight = fabElement?.getBoundingClientRect().height || 0;
+    const startIndex = Math.max(0, EDGES.indexOf(preferredEdge));
+
+    for (let offset = 0; offset < EDGES.length; offset += 1) {
+        const edge = EDGES[(startIndex + offset) % EDGES.length];
+        const fraction = offset === 0 ? clamp(preferredFraction, 0, 1) : DEFAULT_FRACTION;
+        const conflictRects = getOtherDockedHandles(edge).map((el) => el.getBoundingClientRect());
+
+        if (conflictRects.length === 0) {
+            return { edge, fraction };
+        }
+
+        const { min, max } = computeUsableVerticalBand(handleHeight);
+        let top = min + (fraction * (max - min));
+        let attempts = 0;
+
+        const findConflict = (candidateTop) => conflictRects.find(
+            (r) => rangesTooClose(candidateTop, candidateTop + handleHeight, r.top, r.bottom),
+        );
+
+        let conflict = findConflict(top);
+        while (conflict && attempts < 20) {
+            const below = conflict.bottom + COLLISION_GAP_PX;
+            const above = conflict.top - COLLISION_GAP_PX - handleHeight;
+            // Prefer sliding toward whichever direction stays in-band.
+            if (below <= max) {
+                top = below;
+            } else if (above >= min) {
+                top = above;
+            } else {
+                break;
+            }
+            attempts += 1;
+            conflict = findConflict(top);
+        }
+
+        if (!conflict) {
+            const resolvedFraction = max > min ? clamp((top - min) / (max - min), 0, 1) : 0.5;
+            return { edge, fraction: resolvedFraction };
+        }
+    }
+
+    // All lawful edges stayed crowded after sliding (unlikely) — best effort.
+    return { edge: preferredEdge, fraction: clamp(preferredFraction, 0, 1) };
+}
+
+function applyDock(edge, fraction) {
+    if (!fabElement) return;
+    fabElement.dataset.edge = edge;
+
+    const rect = fabElement.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const { min, max } = computeUsableVerticalBand(rect.height);
+    const x = edge === 'right' ? vw - rect.width : 0;
+    const y = min + (clamp(fraction, 0, 1) * (max - min));
+
+    setFabPosition(x, y);
+    panelsController?.setEdge(edge);
+    syncPanelPosition();
+}
+
+/**
+ * Keeps the panel's vertical position "in-line" with wherever the handle is
+ * currently docked, instead of a fixed center — the panel's vertical center
+ * matches the handle's, clamped to the same protected top-bar band.
+ */
+function syncPanelPosition() {
+    if (!fabElement || !panelsController) return;
+
+    const handleRect = fabElement.getBoundingClientRect();
+    const panelHeight = panelsController.root.getBoundingClientRect().height || 0;
+    const { min, max } = computeUsableVerticalBand(panelHeight);
+    const handleCenterY = handleRect.top + (handleRect.height / 2);
+    const top = clamp(handleCenterY - (panelHeight / 2), min, max);
+
+    // Pop out from the handle's inner edge, not the viewport edge underneath
+    // it, so the panel never sits behind/under the handle it opened from.
+    panelsController.setPosition({ top, edgeInset: handleRect.width });
+}
+
+function setFabPosition(x, y) {
+    if (!fabElement) return;
+    fabElement.style.setProperty('left', `${x}px`, 'important');
+    fabElement.style.setProperty('top', `${y}px`, 'important');
+    fabElement.style.setProperty('right', 'auto', 'important');
+    fabElement.style.setProperty('bottom', 'auto', 'important');
+    // Chromium serializes individually-set left/top/right/bottom into a
+    // shorthand `inset` in the style attribute, which breaks any CSS rule
+    // keyed off [style*="left"]/[style*="top"] substring matching — use an
+    // explicit class instead so the pre-JS fallback position/transform
+    // reliably stops applying once JS has taken over.
+    fabElement.classList.add('shardwright-fab-positioned');
+}
+
+function savePosition(edge, fraction) {
+    if (!settingsRef) return;
+    if (!settingsRef.fab) settingsRef.fab = {};
+    settingsRef.fab.position = { edge, fraction };
+    saveSettings(settingsRef);
+}
+
+// Keeps settings.fab.position holding the actual, conflict-free {edge,
+// fraction} that was applied — not just whatever was requested — so a later
+// read (e.g. handleViewportChange) never falls back to a stale, possibly
+// still-conflicting value.
+function persistDockIfChanged(edge, fraction) {
+    const current = settingsRef?.fab?.position;
+    if (current && current.edge === edge && current.fraction === fraction) return;
+    savePosition(edge, fraction);
+}
+
+function schedulePersistDock(edge, fraction) {
+    if (resizePersistTimeoutId !== null) {
+        window.clearTimeout(resizePersistTimeoutId);
+    }
+    resizePersistTimeoutId = window.setTimeout(() => {
+        resizePersistTimeoutId = null;
+        persistDockIfChanged(edge, fraction);
+    }, RESIZE_PERSIST_DEBOUNCE_MS);
+}
+
+function handleViewportChange() {
+    if (!fabElement) return;
+    const edge = fabElement.dataset.edge || DEFAULT_EDGE;
+    const fraction = isFiniteNumber(settingsRef?.fab?.position?.fraction)
+        ? settingsRef.fab.position.fraction
+        : DEFAULT_FRACTION;
+    // Re-resolve on every viewport change, not just at init — the viewport
+    // size and the set of other docked handles can both differ from when
+    // the stored fraction was first computed.
+    const resolved = resolveDockConflict(edge, fraction);
+    applyDock(resolved.edge, resolved.fraction);
+    schedulePersistDock(resolved.edge, resolved.fraction);
 }
 
 function scheduleTogglePanels() {
     if (scheduledToggleId !== null) return;
 
-    const run = async () => {
+    const run = () => {
         scheduledToggleId = null;
         scheduledToggleMode = null;
-        await togglePanels();
+        togglePanels();
     };
 
     if (typeof window.requestAnimationFrame === 'function') {
         scheduledToggleMode = 'raf';
-        scheduledToggleId = window.requestAnimationFrame(() => {
-            void run();
-        });
+        scheduledToggleId = window.requestAnimationFrame(run);
         return;
     }
 
     scheduledToggleMode = 'timeout';
-    scheduledToggleId = window.setTimeout(() => {
-        void run();
-    }, 0);
+    scheduledToggleId = window.setTimeout(run, 0);
 }
 
 function cancelScheduledTogglePanels() {
@@ -374,166 +472,47 @@ function cancelScheduledTogglePanels() {
     scheduledToggleMode = null;
 }
 
-async function togglePanels() {
-    // Trigger toggles are single-flight to avoid interleaving open/close paths.
-    if (fabState === 'opening' || fabState === 'closing' || fabState === 'dragging') {
-        return;
-    }
-
-    if (isOpenState()) {
-        await closePanels();
+function togglePanels() {
+    if (isOpen) {
+        closePanels();
     } else {
-        await openPanels();
+        openPanels();
     }
 }
 
-async function openPanels() {
-    if (!fabElement || isOpenState() || fabState === 'opening') return;
+function openPanels() {
+    if (!fabElement || isOpen || !panelsController) return;
 
-    const transitionToken = ++fabTransitionToken;
-    fabState = 'opening';
     previousFocus = document.activeElement;
-
-    const homePosition = getSafeCurrentPosition();
-    relocation = createRelocationState();
-    relocation.home = homePosition;
-
-    const safeOpenPosition = computeSafeOpenPosition(homePosition.x, homePosition.y, getViewportInfo());
-    const shouldNudge = shouldApplyMobileNudge(homePosition, safeOpenPosition);
-
-    if (shouldNudge) {
-        relocation.mode = 'nudging-in';
-        relocation.nudged = { ...safeOpenPosition };
-        relocation.shouldReturn = true;
-        await animateFabPosition(safeOpenPosition.x, safeOpenPosition.y, {
-            duration: NUDGE_IN_DURATION_MS,
-            easing: NUDGE_IN_EASING,
-        });
-
-        if (transitionToken !== fabTransitionToken || fabState !== 'opening') {
-            return;
-        }
-
-        relocation.mode = 'nudged';
-    }
-
-    const panelMarkup = buildFabPanels(settingsRef, {
-        isGenerating,
-        lastSummarizedIndex: callbacksRef?.getLastSummarizedIndex?.() ?? -1,
-    });
-
-    if (transitionToken !== fabTransitionToken || fabState !== 'opening') {
-        return;
-    }
-
-    const openAnchorRect = getFabRect();
-    panelsController = createFabPanels({
-        anchorRect: openAnchorRect,
-        panelMarkupById: panelMarkup,
-        mobileScalePercent: MOBILE_FAB_SCALE_PERCENT,
-        onAction: (action, button) => {
-            void handleAction(action, button);
-        },
-    });
+    refreshOpenPanels();
+    panelsController.setEdge(fabElement.dataset.edge || DEFAULT_EDGE);
+    syncPanelPosition();
+    panelsController.open();
 
     fabElement.classList.add('shardwright-fab-open');
-    getTrigger().setAttribute('aria-expanded', 'true');
+    fabElement.setAttribute('aria-expanded', 'true');
+    isOpen = true;
 
-    await animator.animateOpen(panelsController);
-
-    if (transitionToken !== fabTransitionToken || fabState !== 'opening') {
-        return;
-    }
-
-    // Use synchronous layout to prevent rAF-deferred positioning from being
-    // affected by theme CSS mutations or competing callbacks.  Re-use the
-    // anchor rect captured at open-time so the wheel positions stay
-    // consistent with the initial layout (the FAB does not move during the
-    // shard animation on any platform).
-    panelsController.repositionSync(openAnchorRect);
-
-    fabState = 'open';
-    focusFirstInPanels();
+    panelsController.focusInitial();
 }
 
-async function closePanels() {
-    const hasRelocationWork = relocation.shouldReturn || relocation.mode === 'nudging-in' || relocation.mode === 'nudged' || relocation.mode === 'nudging-back';
-    if ((!panelsController && !hasRelocationWork && !isOpenState()) || fabState === 'closing') {
-        return;
-    }
+function closePanels() {
+    if (!isOpen) return;
 
-    const transitionToken = ++fabTransitionToken;
-    const closingFromOpening = fabState === 'opening';
-    fabState = 'closing';
-
-    if (closingFromOpening) {
-        animator.cancelAll();
-    }
-
-    if (relocation.mode === 'nudging-in') {
-        stopRelocationAnimation({ freezePosition: true });
-        relocation.mode = 'nudged';
-        relocation.shouldReturn = true;
-        if (!relocation.nudged) {
-            relocation.nudged = getSafeCurrentPosition();
-        }
-    }
-
-    if (panelsController) {
-        await animator.animateClose(panelsController);
-        if (transitionToken !== fabTransitionToken) {
-            return;
-        }
-        panelsController.destroy();
-        panelsController = null;
-    }
-    cleanupOrphanedPanelsDom();
-
+    panelsController?.close();
     fabElement.classList.remove('shardwright-fab-open');
-    getTrigger()?.setAttribute('aria-expanded', 'false');
+    fabElement.setAttribute('aria-expanded', 'false');
+    isOpen = false;
 
-    if (relocation.shouldReturn) {
-        const home = isValidPoint(relocation.home) ? relocation.home : getSafeCurrentPosition();
-        relocation.mode = 'nudging-back';
-        await animateFabPosition(home.x, home.y, {
-            duration: NUDGE_BACK_DURATION_MS,
-            easing: NUDGE_BACK_EASING,
-        });
-
-        if (transitionToken !== fabTransitionToken) {
-            return;
-        }
-    }
-
-    resetRelocationState();
-    fabState = 'closed';
     restoreFocus();
 }
 
 function closePanelsImmediate() {
-    fabTransitionToken += 1;
-    stopRelocationAnimation({ freezePosition: true });
-    resetRelocationState({ cancelAnimation: false });
-    animator.cancelAll();
-
-    if (panelsController) {
-        panelsController.destroy();
-        panelsController = null;
-    }
-    cleanupOrphanedPanelsDom();
-
-    fabElement.classList.remove('shardwright-fab-open');
-    getTrigger().setAttribute('aria-expanded', 'false');
-
-    if (fabState !== 'dragging') {
-        fabState = 'closed';
-    }
-
-    restoreFocus();
+    closePanels();
 }
 
 function refreshOpenPanels(panelIds = getFabPanelIds()) {
-    if (!panelsController || !isOpenState()) return;
+    if (!panelsController) return;
 
     const panelMarkup = buildFabPanels(settingsRef, {
         isGenerating,
@@ -544,8 +523,6 @@ function refreshOpenPanels(panelIds = getFabPanelIds()) {
             panelsController.updatePanel(panelId, panelMarkup[panelId]);
         }
     }
-
-    panelsController.reposition(getFabRect());
 }
 
 async function handleAction(action, button) {
@@ -562,66 +539,66 @@ async function handleAction(action, button) {
                 await handleBatchSharder();
                 break;
             case 'summarize':
-                await closePanels();
+                closePanels();
                 await callbacksRef.onSummarize?.();
                 break;
             case 'stop':
-                await closePanels();
+                closePanels();
                 await callbacksRef.onStop?.();
                 break;
             case 'vectorize':
-                await closePanels();
+                closePanels();
                 await callbacksRef.onVectorize?.();
                 break;
             case 'purge-vectors':
-                await closePanels();
+                closePanels();
                 await callbacksRef.onPurgeVectors?.();
                 break;
             case 'browse-vectors':
-                await closePanels();
+                closePanels();
                 await callbacksRef.onBrowseVectors?.();
                 break;
             case 'rag-debug':
-                await closePanels();
+                closePanels();
                 await callbacksRef.onOpenRagDebug?.();
                 break;
             case 'manage-collections':
-                await closePanels();
+                closePanels();
                 await callbacksRef.onManageCollections?.();
                 break;
             case 'rag-history':
-                await closePanels();
+                closePanels();
                 await callbacksRef.onOpenRagHistory?.();
                 break;
             case 'open-themes':
-                await closePanels();
+                closePanels();
                 await callbacksRef.onOpenThemes?.();
                 break;
             case 'open-prompts':
-                await closePanels();
+                closePanels();
                 await callbacksRef.onOpenPrompts?.();
                 break;
             case 'open-api-config':
-                await closePanels();
+                closePanels();
                 await callbacksRef.onOpenApiConfig?.();
                 break;
             case 'open-rag-settings':
-                await closePanels();
+                closePanels();
                 await callbacksRef.onOpenRagSettings?.();
                 break;
             case 'open-chat-manager':
-                await closePanels();
+                closePanels();
                 await callbacksRef.onOpenChatManager?.();
                 break;
             case 'open-interpretive-review':
                 await openInterpretiveReviewFromFab();
                 break;
             case 'open-visibility':
-                await closePanels();
+                closePanels();
                 await callbacksRef.onOpenVisibility?.();
                 break;
             case 'open-clean-context':
-                await closePanels();
+                closePanels();
                 await callbacksRef.onOpenCleanContext?.();
                 break;
             default:
@@ -635,13 +612,13 @@ async function handleAction(action, button) {
 }
 
 async function openInterpretiveReviewFromFab() {
-    await closePanels();
+    closePanels();
     await waitForFabActionHandoff();
 
     const launcher = document.getElementById('shardwright-interpretive-reviews-btn');
     if (launcher instanceof HTMLElement) {
         launcher.click();
-        if (await waitForInterpretiveReviewModal(INTERPRETIVE_REVIEW_MODAL_TIMEOUT_MS)) {
+        if (await waitForInterpretiveReviewModal(1200)) {
             return;
         }
     }
@@ -652,13 +629,11 @@ async function openInterpretiveReviewFromFab() {
 
     try {
         await callbacksRef.onOpenInterpretiveReview?.();
-    } catch (error) {
-        log.warn('[FAB] Interpretive review callback failed, launcher fallback exhausted.', error);
+    } catch {
+        // Launcher fallback exhausted; nothing further to attempt here.
     }
 
-    if (await waitForInterpretiveReviewModal(INTERPRETIVE_REVIEW_MODAL_TIMEOUT_MS)) {
-        return;
-    }
+    await waitForInterpretiveReviewModal(1200);
 }
 
 async function waitForFabActionHandoff() {
@@ -679,7 +654,7 @@ function hasInterpretiveReviewModal() {
     return !!document.querySelector('.shardwright-interpretive-review-modal');
 }
 
-async function waitForInterpretiveReviewModal(timeoutMs = INTERPRETIVE_REVIEW_MODAL_TIMEOUT_MS) {
+async function waitForInterpretiveReviewModal(timeoutMs) {
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
         if (hasInterpretiveReviewModal()) {
@@ -697,7 +672,7 @@ function withActionLock(button, isLocked) {
 }
 
 async function handleSinglePass() {
-    await closePanels();
+    closePanels();
 
     const messages = getAllMessages();
     if (!messages || messages.length === 0) {
@@ -720,7 +695,7 @@ async function handleSinglePass() {
 }
 
 async function handleBatchSharder() {
-    await closePanels();
+    closePanels();
 
     const messages = getAllMessages();
     if (!messages || messages.length === 0) {
@@ -761,306 +736,19 @@ function parseRangeInput(rangeStr, maxIndex) {
     return { startIdx, endIdx };
 }
 
-function savePosition(x, y) {
-    if (!settingsRef.fab) settingsRef.fab = {};
-    const nextPosition = clampToViewport(x, y);
-    settingsRef.fab.position = { ...nextPosition };
-    pendingPositionValue = { ...nextPosition };
-    schedulePendingPositionSaveFlush();
-}
-
-function schedulePendingPositionSaveFlush() {
-    if (pendingPositionSaveId !== null) return;
-
-    const run = () => {
-        pendingPositionSaveId = null;
-        pendingPositionSaveMode = null;
-        flushPendingPositionSave();
-    };
-
-    if (typeof window.requestIdleCallback === 'function') {
-        pendingPositionSaveMode = 'idle';
-        pendingPositionSaveId = window.requestIdleCallback(run, { timeout: POSITION_SAVE_IDLE_TIMEOUT_MS });
-        return;
-    }
-
-    pendingPositionSaveMode = 'timeout';
-    pendingPositionSaveId = window.setTimeout(run, POSITION_SAVE_TIMEOUT_FALLBACK_MS);
-}
-
-function cancelPendingPositionSaveFlush() {
-    if (pendingPositionSaveId === null) return;
-    if (pendingPositionSaveMode === 'idle' && typeof window.cancelIdleCallback === 'function') {
-        window.cancelIdleCallback(pendingPositionSaveId);
-    } else {
-        window.clearTimeout(pendingPositionSaveId);
-    }
-    pendingPositionSaveId = null;
-    pendingPositionSaveMode = null;
-}
-
-function flushPendingPositionSave() {
-    cancelPendingPositionSaveFlush();
-    if (!pendingPositionValue || !settingsRef) return;
-
-    const nextPosition = pendingPositionValue;
-    pendingPositionValue = null;
-    if (samePosition(lastPersistedPosition, nextPosition)) {
-        return;
-    }
-
-    const startedAt = performance.now();
-    saveSettings(settingsRef);
-    lastPersistedPosition = { ...nextPosition };
-    recordFabPerfSample('savePosition.flush', performance.now() - startedAt);
-}
-
-function samePosition(a, b) {
-    if (!a || !b) return false;
-    return a.x === b.x && a.y === b.y;
-}
-
-function restorePosition() {
-    const pos = settingsRef.fab?.position;
-    if (pos && pos.x !== null && pos.y !== null) {
-        const clamped = clampToViewport(pos.x, pos.y);
-        setFabPosition(clamped.x, clamped.y);
-    }
-}
-
-function clampToViewport(x, y) {
-    const size = FAB_SIZE_PX * getMobileScale();
-    const maxX = Math.max(0, window.innerWidth - size);
-    const maxY = Math.max(0, window.innerHeight - size);
-    return {
-        x: clamp(Number.isFinite(x) ? x : 0, 0, maxX),
-        y: clamp(Number.isFinite(y) ? y : 0, 0, maxY),
-    };
-}
-
-function setFabPosition(x, y) {
-    if (!fabElement) return;
-    fabElement.style.setProperty('left', `${x}px`, 'important');
-    fabElement.style.setProperty('top', `${y}px`, 'important');
-    fabElement.style.setProperty('right', 'auto', 'important');
-    fabElement.style.setProperty('bottom', 'auto', 'important');
-}
-
-function getViewportInfo() {
-    const viewport = window.visualViewport;
-    if (!viewport) {
-        return {
-            width: window.innerWidth,
-            height: window.innerHeight,
-            offsetLeft: 0,
-            offsetTop: 0,
-        };
-    }
-
-    return {
-        width: viewport.width,
-        height: viewport.height,
-        offsetLeft: viewport.offsetLeft,
-        offsetTop: viewport.offsetTop,
-    };
-}
-
-function getRenderedFabPosition() {
-    if (!fabElement) {
-        return { x: 0, y: 0 };
-    }
-
-    const rect = fabElement.getBoundingClientRect();
-    const viewport = getViewportInfo();
-    return {
-        x: rect.left + viewport.offsetLeft,
-        y: rect.top + viewport.offsetTop,
-    };
-}
-
-function getSafeCurrentPosition() {
-    const current = getRenderedFabPosition();
-    return clampToViewport(current.x, current.y);
-}
-
-function isMobileViewport() {
-    return window.matchMedia?.(MOBILE_BREAKPOINT_QUERY)?.matches ?? (window.innerWidth <= 768);
-}
-
-function shouldApplyMobileNudge(home, safeOpen) {
-    if (!isMobileViewport()) return false;
-    if (!isValidPoint(home) || !isValidPoint(safeOpen)) return false;
-    const delta = Math.abs(home.x - safeOpen.x) + Math.abs(home.y - safeOpen.y);
-    return delta >= MIN_NUDGE_DELTA_PX;
-}
-
-function computeSafeOpenPosition(x, y, viewportInfo = getViewportInfo()) {
-    const scale = getMobileScale();
-    const fabRadius = FAB_RADIUS_PX * scale;
-    const wingPadding = SAFE_VIEWPORT_MARGIN_PX + (WHEEL_RADIUS_PX * scale) + (WHEEL_MAX_HALF_EXTENT_PX * scale) + MOBILE_EXTRA_TAP_PADDING_PX;
-
-    const minCenterX = viewportInfo.offsetLeft + wingPadding;
-    const maxCenterX = viewportInfo.offsetLeft + viewportInfo.width - wingPadding;
-    const minCenterY = viewportInfo.offsetTop + wingPadding;
-    const maxCenterY = viewportInfo.offsetTop + viewportInfo.height - wingPadding;
-
-    const clampedCenterX = clamp(
-        x + fabRadius,
-        Math.min(minCenterX, maxCenterX),
-        Math.max(minCenterX, maxCenterX)
-    );
-    const clampedCenterY = clamp(
-        y + fabRadius,
-        Math.min(minCenterY, maxCenterY),
-        Math.max(minCenterY, maxCenterY)
-    );
-
-    return clampToViewport(
-        clampedCenterX - fabRadius,
-        clampedCenterY - fabRadius
-    );
-}
-
-async function animateFabPosition(x, y, { duration = 0, easing = 'linear' } = {}) {
-    const target = clampToViewport(x, y);
-    const current = getSafeCurrentPosition();
-    const totalDelta = Math.abs(current.x - target.x) + Math.abs(current.y - target.y);
-
-    if (totalDelta < 0.5) {
-        setFabPosition(target.x, target.y);
-        return;
-    }
-
-    stopRelocationAnimation({ freezePosition: true });
-    setFabPosition(current.x, current.y);
-
-    const supportsWaapi = typeof fabElement?.animate === 'function' && duration > 0;
-    if (!supportsWaapi) {
-        setFabPosition(target.x, target.y);
-        return;
-    }
-
-    const animation = fabElement.animate(
-        [
-            { left: `${current.x}px`, top: `${current.y}px` },
-            { left: `${target.x}px`, top: `${target.y}px` },
-        ],
-        {
-            duration,
-            easing,
-            fill: 'forwards',
-        }
-    );
-    relocation.anim = animation;
-
-    try {
-        await animation.finished;
-    } catch {
-        // ignored
-    } finally {
-        if (relocation.anim === animation) {
-            relocation.anim = null;
-        }
-        try {
-            animation.cancel();
-        } catch {
-            // ignored
-        }
-        setFabPosition(target.x, target.y);
-    }
-}
-
-function stopRelocationAnimation({ freezePosition = true } = {}) {
-    const animation = relocation.anim;
-    if (!animation) return;
-
-    const frozenPosition = freezePosition ? getSafeCurrentPosition() : null;
-    relocation.anim = null;
-
-    try {
-        animation.commitStyles?.();
-    } catch {
-        // ignored
-    }
-    try {
-        animation.cancel();
-    } catch {
-        // ignored
-    }
-
-    if (frozenPosition) {
-        setFabPosition(frozenPosition.x, frozenPosition.y);
-    }
-}
-
-function resetRelocationState({ cancelAnimation = true } = {}) {
-    if (cancelAnimation) {
-        stopRelocationAnimation({ freezePosition: true });
-    }
-    relocation = createRelocationState();
-}
-
-function clearRelocationForDrag() {
-    stopRelocationAnimation({ freezePosition: true });
-    resetRelocationState({ cancelAnimation: false });
-}
-
-function handleViewportChange() {
-    if (!fabElement) return;
-
-    if (fabElement.style.left !== '') {
-        let nextPosition = getSafeCurrentPosition();
-
-        if (
-            isOpenState()
-            && relocation.shouldReturn
-            && (relocation.mode === 'nudged' || relocation.mode === 'nudging-in')
-        ) {
-            stopRelocationAnimation({ freezePosition: true });
-            nextPosition = computeSafeOpenPosition(nextPosition.x, nextPosition.y, getViewportInfo());
-            relocation.mode = 'nudged';
-            relocation.nudged = { ...nextPosition };
-        } else {
-            nextPosition = clampToViewport(nextPosition.x, nextPosition.y);
-        }
-
-        setFabPosition(nextPosition.x, nextPosition.y);
-    }
-
-    if (panelsController) {
-        panelsController.reposition(getFabRect());
-    }
-}
-
-function isValidPoint(point) {
-    return Number.isFinite(point?.x) && Number.isFinite(point?.y);
+function isFiniteNumber(value) {
+    return Number.isFinite(value);
 }
 
 function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
 }
 
-function getFabRect() {
-    return fabElement.getBoundingClientRect();
-}
-
-function getTrigger() {
-    return fabElement.querySelector('.shardwright-fab-trigger');
-}
-
-function isOpenState() {
-    return fabState === 'open' || fabState === 'opening';
-}
-
-function focusFirstInPanels() {
-    panelsController?.focusInitial?.();
-}
-
 function restoreFocus() {
     if (previousFocus && typeof previousFocus.focus === 'function') {
         previousFocus.focus();
     } else {
-        getTrigger()?.focus();
+        fabElement?.focus();
     }
     previousFocus = null;
 }
@@ -1087,18 +775,11 @@ function getFocusableElements(container) {
         .filter((node) => !node.disabled && node.getClientRects().length > 0);
 }
 
-function isFocusWithinFabControls() {
-    const active = document.activeElement;
-    if (!active) return false;
-    return Boolean(fabElement?.contains(active) || panelsController?.containsTarget(active));
-}
-
 export function updateFabVisibility() {
     if (!fabElement) return;
     fabElement.style.display = settingsRef.fab?.enabled !== false ? '' : 'none';
 
     if (fabElement.style.display === 'none') {
-        flushPendingPositionSave();
         closePanelsImmediate();
     }
 }
@@ -1106,15 +787,9 @@ export function updateFabVisibility() {
 export function destroyFab() {
     if (onOutsideClick) document.removeEventListener('pointerdown', onOutsideClick);
     if (onResize) window.removeEventListener('resize', onResize);
-    if (onVisualViewportChange && window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', onVisualViewportChange);
-        window.visualViewport.removeEventListener('scroll', onVisualViewportChange);
-    }
     if (onOperationStarted) window.removeEventListener('shardwright-operation-started', onOperationStarted);
     if (onOperationEnded) window.removeEventListener('shardwright-operation-ended', onOperationEnded);
     if (onKeyDown) document.removeEventListener('keydown', onKeyDown);
-    if (onPageHide) window.removeEventListener('pagehide', onPageHide);
-    if (onBeforeUnload) window.removeEventListener('beforeunload', onBeforeUnload);
 
     const sharderToggle = document.getElementById('shardwright-sharder-mode');
     if (sharderToggle && onSharderModeChange) {
@@ -1123,26 +798,22 @@ export function destroyFab() {
 
     closePanelsImmediate();
     cancelScheduledTogglePanels();
-    flushPendingPositionSave();
+    if (resizePersistTimeoutId !== null) {
+        window.clearTimeout(resizePersistTimeoutId);
+        resizePersistTimeoutId = null;
+    }
 
-    animator?.destroy();
-    animator = null;
+    panelsController?.destroy();
+    panelsController = null;
 
     if (fabElement) {
         fabElement.remove();
         fabElement = null;
     }
 
-    fabState = 'closed';
-    relocation = createRelocationState();
-    fabTransitionToken = 0;
-    pendingPositionValue = null;
-    lastPersistedPosition = null;
-    onPageHide = null;
-    onBeforeUnload = null;
+    isOpen = false;
+    previousFocus = null;
     settingsRef = null;
     callbacksRef = null;
     isGenerating = false;
 }
-
-

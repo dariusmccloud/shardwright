@@ -172,7 +172,7 @@ export function getDefaultSettings() {
         // Floating Action Button settings
         fab: {
             enabled: true,
-            position: { x: null, y: null },
+            position: { edge: null, fraction: null },
         },
 
         theme: 'default',
