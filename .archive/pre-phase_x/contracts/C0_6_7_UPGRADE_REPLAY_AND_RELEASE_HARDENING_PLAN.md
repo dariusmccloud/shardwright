@@ -93,7 +93,7 @@ proof-only artifact
 
 Release hardening must not treat all persisted files as equal authority.
 
-SQLite may be an operational authority projection, but it is not automatically the only source of truth. Derived projections must be rebuildable or safely invalidated.
+SQLite is not authority, may be an operational authority projectio, and is not automatically the only source of truth. Derived projections must be rebuildable or safely invalidated.
 
 ### 2. Replay must preserve operator-visible truth
 
@@ -403,14 +403,14 @@ This does not close the full `6.7C` matrix. It closes the bundled fresh-install 
 Still open after the current bundled proof entry points:
 
 1. no remaining open proof items; the operator-visible matrix is now closed by:
-   - `.archive/pre-phase_x/contracts/pre-phase_x/C0_6_7C_OPERATOR_VISIBLE_TRUTH_REPORT.md`
+   - `.archive/pre-phase_x/contracts/C0_6_7C_OPERATOR_VISIBLE_TRUTH_REPORT.md`
 
 ### Recommended execution order from here
 
 The remaining work should stay bounded instead of reopening the completed release-proof matrix:
 
 1. closeout against the `v1.0` release boundary using the bundled proof plus:
-   - `.archive/pre-phase_x/contracts/pre-phase_x/C0_6_7C_OPERATOR_VISIBLE_TRUTH_REPORT.md`
+   - `.archive/pre-phase_x/contracts/C0_6_7C_OPERATOR_VISIBLE_TRUTH_REPORT.md`
 
 ### Required Proof Scenarios
 

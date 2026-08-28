@@ -12,11 +12,11 @@ This document remains the governing record of the deterministic Tier-2 reconstru
 
 Implementation closeout is recorded in:
 
-- [C0_5B_COMPLETION_REPORT.md](C:\Users\chris\OneDrive\Documents\Personal\Projects\summary-sharder\docs\architectural-memory\C0_5B_COMPLETION_REPORT.md)
+- [C0_5B_COMPLETION_REPORT.md](Projects\summary-sharder\docs\architectural-memory\C0_5B_COMPLETION_REPORT.md)
 
 The next implementation boundary is:
 
-- [PHASE_C0_5C_TIER_1_COLLISION_CLASSIFICATION_AND_CANDIDATE_VALIDITY_RECOVERY_BRIEF.md](C:\Users\chris\OneDrive\Documents\Personal\Projects\summary-sharder\docs\architectural-memory\PHASE_C0_5C_TIER_1_COLLISION_CLASSIFICATION_AND_CANDIDATE_VALIDITY_RECOVERY_BRIEF.md)
+- [PHASE_C0_5C_TIER_1_COLLISION_CLASSIFICATION_AND_CANDIDATE_VALIDITY_RECOVERY_BRIEF.md](Personal\Projects\summary-sharder\docs\architectural-memory\PHASE_C0_5C_TIER_1_COLLISION_CLASSIFICATION_AND_CANDIDATE_VALIDITY_RECOVERY_BRIEF.md)
 
 It does not authorize:
 

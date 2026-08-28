@@ -174,7 +174,7 @@ Recommendation: add a mode-specific section registry. Without it, Architectural 
 
 | Requirement | Existing Support | Gap | Recommended Change | Risk |
 |---|---|---|---|---|
-| Add Architectural Mode without replacing narrative | Existing `sharderMode` boolean separates Basic Summary from Sharder | No subtype/profile | Add `settings.sharderProfile = "narrative"|"architectural"` while preserving `sharderMode` | LOW |
+| Add Architectural Mode without replacing narrative | Existing `sharderMode` boolean separates Basic Summary from Sharder | No subtype/profile | Add `settings.sharderProfile = "narrative"\|"architectural"` while preserving `sharderMode` | LOW |
 | Architectural metadata and content section set | Iteration over `SHARDER_SECTIONS` is reusable | `SHARDER_SECTIONS` is global narrative-only and has no metadata/content split | Introduce `getSharderSectionRegistry(settings/context)` with metadata definitions and content-section definitions | MEDIUM |
 | Stable decision identity | Rolling RAG entity keys exist | No DECISIONS section or explicit ID field | Parse `ID:<kebab-case>` and store `entityKey = id` in item metadata/RAG metadata | MEDIUM |
 | Structured DECISIONS records | Existing items preserve raw `content` | No field maps; naive pipe use would corrupt values | Add stateful field parser or prohibit/escape literal pipes | HIGH |

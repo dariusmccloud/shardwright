@@ -207,7 +207,7 @@ C0.6.6 Operator Flow And Revision Ergonomics
 See:
 
 ```text
-.archive/pre-phase_x/contracts/pre-phase_x/C0_6_6_OPERATOR_FLOW_AND_REVISION_ERGONOMICS_PLAN.md
+.archive/pre-phase_x/contracts/C0_6_6_OPERATOR_FLOW_AND_REVISION_ERGONOMICS_PLAN.md
 ```
 
 Reason:

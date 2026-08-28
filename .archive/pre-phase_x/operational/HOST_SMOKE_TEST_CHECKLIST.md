@@ -113,7 +113,7 @@ Still open in `C0.6.7C`:
 
 Closure artifact:
 
-- `.archive/pre-phase_x/contracts/pre-phase_x/C0_6_7C_OPERATOR_VISIBLE_TRUTH_REPORT.md`
+- `.archive/pre-phase_x/contracts/C0_6_7C_OPERATOR_VISIBLE_TRUTH_REPORT.md`
 
 ## Verified now
 
