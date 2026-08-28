@@ -14,6 +14,7 @@ import {
 } from './identity.js';
 import {
     admitContextSheetMembershipImpactDecision,
+    admitContextSheetMembershipReconciliationResult,
     admitContextSheetMembershipValidation,
     admitContextSheetMembershipLink,
     admitContextSheetMembershipSuccessor,
@@ -26,6 +27,7 @@ import {
     validateMembershipLinkArtifact,
     validateMembershipSuccessorArtifact,
     validateMembershipNominationArtifact,
+    validateMembershipReconciliationResultArtifact,
 } from './membership.js';
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
@@ -316,6 +318,25 @@ function makeImpactDecisionArtifact(structuralEventRef, predecessorLink, success
     return artifact;
 }
 
+function makeReconciliationResultArtifact(authoritativeInputRefs, replayThroughEventRef) {
+    const artifact = loadFixture('context-sheet-membership-reconciliation-result-v1.valid-rebuild');
+    artifact.envelope.memoryScopeId = replayThroughEventRef.memoryScopeId;
+    artifact.envelope.artifactId = 'artifact:context-sheet-membership-reconciliation-result:runtime-rebuild';
+    artifact.targetId = replayThroughEventRef.memoryScopeId;
+    artifact.authoritativeInputRefs = authoritativeInputRefs.map((reference) => clone(reference));
+    artifact.replayThroughEventRef = clone(replayThroughEventRef);
+    artifact.reconstructedCounts = {
+        nominations: 1,
+        validationEvents: 2,
+        acceptedLinks: 2,
+        refusedDecisions: 0,
+        successorEvents: 1,
+        impactDecisions: 1,
+        quarantinedItems: 0,
+    };
+    return artifact;
+}
+
 function assertErrorCode(fn, code) {
     assert.throws(fn, (error) => error.code === code);
 }
@@ -535,6 +556,125 @@ test('membership replay blocks conflicting current-use events instead of choosin
     assert.deepEqual(predecessor.successorLinkRefs, []);
     assert.deepEqual(predecessor.blockers, ['CSM_REPLAY_CONFLICTING_CURRENT_USE_EVENTS']);
     assert.deepEqual(projection.blockedLinks, [predecessor.linkRef]);
+});
+
+test('structurally valid reconciliation result schema compiles and authority repair variants refuse schema admission', () => {
+    assert.equal(validateMembershipReconciliationResultArtifact(loadFixture('context-sheet-membership-reconciliation-result-v1.valid-rebuild')).valid, true);
+    assert.equal(validateMembershipReconciliationResultArtifact(loadFixture('context-sheet-membership-reconciliation-result-v1.invalid-authority-repair')).valid, false);
+    assert.equal(validateMembershipReconciliationResultArtifact(loadFixture('context-sheet-membership-reconciliation-result-v1.invalid-clean-discrepancy')).valid, false);
+});
+
+test('a reconciliation result appends from exact authoritative input and replay-through custody', () => {
+    const root = makeTempRoot();
+    const paths = getStoragePaths(root);
+    const { structuralEventRef, predecessorLink, successorEvent } = admitImpactCustodyScenario(paths);
+    const impactArtifact = makeImpactDecisionArtifact(structuralEventRef, predecessorLink, successorEvent);
+    const impact = admitContextSheetMembershipImpactDecision(paths, impactArtifact);
+    const impactRef = {
+        artifactType: 'context-sheet-membership-impact-decision-v1',
+        artifactId: impact.entry.artifactId,
+        memoryScopeId: impact.entry.scopeId,
+        expectedArtifactClass: 'EVENT',
+        resolutionRequirement: 'EXACT_HASH',
+        immutableHash: impact.entry.artifactHash,
+    };
+    const artifact = makeReconciliationResultArtifact([
+        makeExactLinkReference(predecessorLink),
+        makeExactSuccessorReference(successorEvent),
+        impactRef,
+    ], impactRef);
+
+    const { entry, appended } = admitContextSheetMembershipReconciliationResult(paths, artifact);
+
+    assert.equal(appended, true);
+    assert.equal(entry.sequence, 8);
+    assert.equal(entry.operation, 'RECONCILE');
+    assert.equal(entry.idempotencyKey, artifact.envelope.artifactId);
+    assert.equal(entry.artifactHash, computeMembershipArtifactHash(artifact));
+
+    const duplicate = admitContextSheetMembershipReconciliationResult(paths, artifact);
+    assert.equal(duplicate.appended, false);
+    assert.deepEqual(duplicate.entry, entry);
+
+    const reopened = readLedgerInFreshProcess(root);
+    assert.equal(reopened.length, 8);
+    assert.deepEqual(reopened[7], entry);
+});
+
+test('RECONCILE refuses missing or stale authoritative input custody without append', () => {
+    const root = makeTempRoot();
+    const paths = getStoragePaths(root);
+    const { structuralEventRef, predecessorLink, successorEvent } = admitImpactCustodyScenario(paths);
+    const impact = admitContextSheetMembershipImpactDecision(
+        paths,
+        makeImpactDecisionArtifact(structuralEventRef, predecessorLink, successorEvent),
+    );
+    const impactRef = {
+        artifactType: 'context-sheet-membership-impact-decision-v1',
+        artifactId: impact.entry.artifactId,
+        memoryScopeId: impact.entry.scopeId,
+        expectedArtifactClass: 'EVENT',
+        resolutionRequirement: 'EXACT_HASH',
+        immutableHash: impact.entry.artifactHash,
+    };
+    const missing = makeReconciliationResultArtifact([
+        {
+            ...makeExactLinkReference(predecessorLink),
+            artifactId: 'artifact:context-sheet-membership-link:missing',
+        },
+    ], impactRef);
+
+    assertErrorCode(
+        () => admitContextSheetMembershipReconciliationResult(paths, missing),
+        'CSM_RECONCILE_AUTHORITY_INPUT_MISSING',
+    );
+
+    const stale = makeReconciliationResultArtifact([{
+        ...impactRef,
+        immutableHash: 'sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+    }], impactRef);
+    stale.envelope.artifactId = 'artifact:context-sheet-membership-reconciliation-result:stale-input';
+    assertErrorCode(
+        () => admitContextSheetMembershipReconciliationResult(paths, stale),
+        'CSM_RECONCILE_AUTHORITY_INPUT_HASH_MISMATCH',
+    );
+    assert.equal(readContextSheetMembershipLedger(paths).filter((entry) => entry.operation === 'RECONCILE').length, 0);
+});
+
+test('RECONCILE refuses unsupported policy bindings and changed result content without append', () => {
+    const root = makeTempRoot();
+    const paths = getStoragePaths(root);
+    const { structuralEventRef, predecessorLink, successorEvent } = admitImpactCustodyScenario(paths);
+    const impact = admitContextSheetMembershipImpactDecision(
+        paths,
+        makeImpactDecisionArtifact(structuralEventRef, predecessorLink, successorEvent),
+    );
+    const impactRef = {
+        artifactType: 'context-sheet-membership-impact-decision-v1',
+        artifactId: impact.entry.artifactId,
+        memoryScopeId: impact.entry.scopeId,
+        expectedArtifactClass: 'EVENT',
+        resolutionRequirement: 'EXACT_HASH',
+        immutableHash: impact.entry.artifactHash,
+    };
+    const artifact = makeReconciliationResultArtifact([impactRef], impactRef);
+    admitContextSheetMembershipReconciliationResult(paths, artifact);
+
+    const changed = clone(artifact);
+    changed.reconstructedCounts.quarantinedItems = 1;
+    assertErrorCode(
+        () => admitContextSheetMembershipReconciliationResult(paths, changed),
+        'CSM_RECONCILE_IDEMPOTENCY_COLLISION',
+    );
+
+    const unsupportedPolicy = makeReconciliationResultArtifact([impactRef], impactRef);
+    unsupportedPolicy.envelope.artifactId = 'artifact:context-sheet-membership-reconciliation-result:unsupported-policy';
+    unsupportedPolicy.envelope.policyBindings = [{ id: 'membership-reconcile-policy', version: 'v1' }];
+    assertErrorCode(
+        () => admitContextSheetMembershipReconciliationResult(paths, unsupportedPolicy),
+        'CSM_RECONCILE_POLICY_BINDING_UNSUPPORTED',
+    );
+    assert.equal(readContextSheetMembershipLedger(paths).filter((entry) => entry.operation === 'RECONCILE').length, 1);
 });
 
 test('same idempotency key and same artifact returns the original entry without a second append', () => {

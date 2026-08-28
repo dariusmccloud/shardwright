@@ -26,6 +26,7 @@ export const MEMBERSHIP_VALIDATION_SCHEMA_ID = 'context-sheet-membership-validat
 export const MEMBERSHIP_LINK_SCHEMA_ID = 'context-sheet-membership-link-v1';
 export const MEMBERSHIP_SUCCESSOR_SCHEMA_ID = 'context-sheet-membership-successor-event-v1';
 export const MEMBERSHIP_IMPACT_DECISION_SCHEMA_ID = 'context-sheet-membership-impact-decision-v1';
+export const MEMBERSHIP_RECONCILIATION_RESULT_SCHEMA_ID = 'context-sheet-membership-reconciliation-result-v1';
 const MEMBERSHIP_NOMINATION_OPERATION = 'NOMINATE';
 const MEMBERSHIP_NOMINATION_ARTIFACT_CLASS = 'NOMINATION';
 const MEMBERSHIP_VALIDATION_OPERATION = 'VALIDATE';
@@ -36,6 +37,8 @@ const MEMBERSHIP_SUCCESSOR_OPERATION = 'SUCCEED';
 const MEMBERSHIP_SUCCESSOR_ARTIFACT_CLASS = 'EVENT';
 const MEMBERSHIP_IMPACT_DECIDE_OPERATION = 'IMPACT_DECIDE';
 const MEMBERSHIP_IMPACT_DECISION_ARTIFACT_CLASS = 'EVENT';
+const MEMBERSHIP_RECONCILE_OPERATION = 'RECONCILE';
+const MEMBERSHIP_RECONCILIATION_RESULT_ARTIFACT_CLASS = 'RESULT';
 
 // This slice recognizes exactly one governing contract binding for membership operations. NOMINATE
 // has no applicable policy binding yet; VALIDATE, LINK, and SUCCEED require the recognized
@@ -133,6 +136,10 @@ function getImpactDecisionValidator() {
     return getArtifactValidator('context-sheet-membership-impact-decision-v1.schema.json');
 }
 
+function getReconciliationResultValidator() {
+    return getArtifactValidator('context-sheet-membership-reconciliation-result-v1.schema.json');
+}
+
 export function validateMembershipNominationArtifact(artifact) {
     const validate = getNominationValidator();
     const valid = validate(artifact) === true;
@@ -171,6 +178,15 @@ export function validateMembershipSuccessorArtifact(artifact) {
 
 export function validateMembershipImpactDecisionArtifact(artifact) {
     const validate = getImpactDecisionValidator();
+    const valid = validate(artifact) === true;
+    return {
+        valid,
+        errors: valid ? [] : cloneJson(validate.errors || []),
+    };
+}
+
+export function validateMembershipReconciliationResultArtifact(artifact) {
+    const validate = getReconciliationResultValidator();
     const valid = validate(artifact) === true;
     return {
         valid,
@@ -264,6 +280,9 @@ function readMembershipLedgerEntries(ledgerPath) {
                         : entry.operation === MEMBERSHIP_IMPACT_DECIDE_OPERATION
                             && entry.artifactSchemaId === MEMBERSHIP_IMPACT_DECISION_SCHEMA_ID
                             ? MEMBERSHIP_IMPACT_DECISION_ARTIFACT_CLASS
+                            : entry.operation === MEMBERSHIP_RECONCILE_OPERATION
+                                && entry.artifactSchemaId === MEMBERSHIP_RECONCILIATION_RESULT_SCHEMA_ID
+                                ? MEMBERSHIP_RECONCILIATION_RESULT_ARTIFACT_CLASS
                             : null;
         if (!expectedArtifactClass || entry.artifactClass !== expectedArtifactClass) {
             throw createError(
@@ -275,12 +294,19 @@ function readMembershipLedgerEntries(ledgerPath) {
         if (entry.artifact?.envelope?.schemaId !== entry.artifactSchemaId
             || entry.artifact?.envelope?.artifactClass !== entry.artifactClass
             || entry.artifact?.envelope?.artifactId !== entry.artifactId
-            || entry.artifact?.envelope?.memoryScopeId !== entry.scopeId
-            || entry.artifact?.envelope?.idempotencyKey !== entry.idempotencyKey) {
+            || entry.artifact?.envelope?.memoryScopeId !== entry.scopeId) {
             throw createError(
                 409,
                 `Context Sheet membership ledger entry ${entry.entryId || index + 1} does not match its artifact envelope.`,
                 'CSM_LEDGER_ENTRY_ENVELOPE_MISMATCH',
+            );
+        }
+        const expectedIdempotencyKey = entry.artifact?.envelope?.idempotencyKey || entry.artifact?.envelope?.artifactId;
+        if (expectedIdempotencyKey !== entry.idempotencyKey) {
+            throw createError(
+                409,
+                `Context Sheet membership ledger entry ${entry.entryId || index + 1} does not match its request identity.`,
+                'CSM_LEDGER_ENTRY_IDEMPOTENCY_MISMATCH',
             );
         }
 
@@ -493,8 +519,64 @@ function findExactIdentityLedgerEntry(paths, scopeId, reference) {
     return entry.artifactHash === reference.immutableHash ? entry : false;
 }
 
+function findExactAuthorityEntry(paths, entries, scopeId, reference) {
+    const membershipSchemaOperations = new Map([
+        [MEMBERSHIP_NOMINATION_SCHEMA_ID, MEMBERSHIP_NOMINATION_OPERATION],
+        [MEMBERSHIP_VALIDATION_SCHEMA_ID, MEMBERSHIP_VALIDATION_OPERATION],
+        [MEMBERSHIP_LINK_SCHEMA_ID, MEMBERSHIP_LINK_OPERATION],
+        [MEMBERSHIP_SUCCESSOR_SCHEMA_ID, MEMBERSHIP_SUCCESSOR_OPERATION],
+        [MEMBERSHIP_IMPACT_DECISION_SCHEMA_ID, MEMBERSHIP_IMPACT_DECIDE_OPERATION],
+        [MEMBERSHIP_RECONCILIATION_RESULT_SCHEMA_ID, MEMBERSHIP_RECONCILE_OPERATION],
+    ]);
+    const membershipOperation = membershipSchemaOperations.get(reference.artifactType);
+    if (membershipOperation) {
+        return findExactLedgerEntry(entries, membershipOperation, reference.artifactType, scopeId, reference);
+    }
+    if (reference.artifactType === 'context-sheet-merge-event-v1'
+        || reference.artifactType === 'context-sheet-split-event-v1') {
+        return findExactIdentityLedgerEntry(paths, scopeId, reference);
+    }
+    return null;
+}
+
 function exactReferenceForMembershipEntry(entry) {
     return exactLedgerReference(entry, entry.artifactSchemaId, entry.artifactClass);
+}
+
+function assertReconciliationCustody(paths, entries, artifact) {
+    const { envelope, authoritativeInputRefs, replayThroughEventRef } = artifact;
+    if ((Array.isArray(envelope.policyBindings) ? envelope.policyBindings : []).length !== 0) {
+        throw createError(400, 'Context Sheet membership RECONCILE has no recognized policy binding in this slice.', 'CSM_RECONCILE_POLICY_BINDING_UNSUPPORTED');
+    }
+    if (artifact.authorityMutationPermitted !== false
+        || artifact.authorityInferencePermitted !== false
+        || artifact.linkAuthorityRepairPermitted !== false) {
+        throw createError(400, 'Context Sheet membership RECONCILE cannot permit authority mutation, inference, or repair.', 'CSM_RECONCILE_AUTHORITY_REPAIR_FORBIDDEN');
+    }
+
+    for (const reference of authoritativeInputRefs) {
+        if (reference.memoryScopeId !== envelope.memoryScopeId) {
+            throw createError(400, 'Context Sheet membership RECONCILE authoritative inputs must stay inside the result scope.', 'CSM_RECONCILE_AUTHORITY_SCOPE_MISMATCH');
+        }
+        const entry = findExactAuthorityEntry(paths, entries, envelope.memoryScopeId, reference);
+        if (entry === null) {
+            throw createError(409, 'Context Sheet membership RECONCILE requires exact authoritative input custody.', 'CSM_RECONCILE_AUTHORITY_INPUT_MISSING');
+        }
+        if (entry === false) {
+            throw createError(409, 'Context Sheet membership RECONCILE authoritative input hash is stale.', 'CSM_RECONCILE_AUTHORITY_INPUT_HASH_MISMATCH');
+        }
+    }
+
+    if (replayThroughEventRef.memoryScopeId !== envelope.memoryScopeId) {
+        throw createError(400, 'Context Sheet membership RECONCILE replay-through reference must stay inside the result scope.', 'CSM_RECONCILE_REPLAY_THROUGH_SCOPE_MISMATCH');
+    }
+    const replayThroughEntry = findExactAuthorityEntry(paths, entries, envelope.memoryScopeId, replayThroughEventRef);
+    if (replayThroughEntry === null) {
+        throw createError(409, 'Context Sheet membership RECONCILE requires exact replay-through event custody.', 'CSM_RECONCILE_REPLAY_THROUGH_MISSING');
+    }
+    if (replayThroughEntry === false) {
+        throw createError(409, 'Context Sheet membership RECONCILE replay-through event hash is stale.', 'CSM_RECONCILE_REPLAY_THROUGH_HASH_MISMATCH');
+    }
 }
 
 function assertImpactDecisionCustody(paths, entries, artifact) {
@@ -612,7 +694,7 @@ function createLedgerEntry(entries, operation, artifactSchemaId, artifactClass, 
         recordedAt: new Date(nowTimestamp(options.now)).toISOString(),
         scopeId: artifact.envelope.memoryScopeId,
         operation,
-        idempotencyKey: artifact.envelope.idempotencyKey,
+        idempotencyKey: artifact.envelope.idempotencyKey || artifact.envelope.artifactId,
         artifactSchemaId,
         artifactClass,
         artifactId: artifact.envelope.artifactId,
@@ -1019,4 +1101,47 @@ export function replayContextSheetMembershipCurrentUse(paths) {
         currentLinks: links.filter((link) => link.currentUseState === 'CURRENT').map((link) => link.linkRef),
         blockedLinks: links.filter((link) => link.currentUseState === 'BLOCKED').map((link) => link.linkRef),
     };
+}
+
+export function admitContextSheetMembershipReconciliationResult(paths, artifact, options = {}) {
+    const { valid, errors } = validateMembershipReconciliationResultArtifact(artifact);
+    if (!valid) {
+        throw createError(400, 'Context Sheet membership reconciliation result artifact failed schema validation.', 'CSM_RECONCILE_SCHEMA_INVALID', { errors });
+    }
+    const envelope = artifact.envelope;
+    if (envelope.schemaId !== MEMBERSHIP_RECONCILIATION_RESULT_SCHEMA_ID || envelope.artifactClass !== MEMBERSHIP_RECONCILIATION_RESULT_ARTIFACT_CLASS) {
+        throw createError(400, 'Context Sheet membership reconciliation result envelope does not match the RECONCILE operation mapping.', 'CSM_RECONCILE_OPERATION_MISMATCH');
+    }
+    assertKnownContractBindings(envelope, MEMBERSHIP_RECONCILE_OPERATION, 'RECONCILE');
+
+    const scopeId = envelope.memoryScopeId;
+    const idempotencyKey = envelope.artifactId;
+    const artifactHash = computeMembershipArtifactHash(artifact);
+    ensureStorageRoot(paths.storageRoot);
+    acquireMembershipLedgerLock(paths);
+    try {
+        const entries = readMembershipLedgerEntries(paths.contextSheetMembershipLedgerPath);
+        const existing = findExistingOperation(entries, scopeId, MEMBERSHIP_RECONCILE_OPERATION, MEMBERSHIP_RECONCILIATION_RESULT_SCHEMA_ID, idempotencyKey);
+        if (existing) {
+            if (existing.artifactHash === artifactHash) {
+                return { entry: existing, appended: false };
+            }
+            throw createError(409, 'Context Sheet membership reconciliation result idempotency collision with different artifact content.', 'CSM_RECONCILE_IDEMPOTENCY_COLLISION');
+        }
+
+        assertReconciliationCustody(paths, entries, artifact);
+        const entry = createLedgerEntry(
+            entries,
+            MEMBERSHIP_RECONCILE_OPERATION,
+            MEMBERSHIP_RECONCILIATION_RESULT_SCHEMA_ID,
+            MEMBERSHIP_RECONCILIATION_RESULT_ARTIFACT_CLASS,
+            artifact,
+            artifactHash,
+            options,
+        );
+        appendLedgerEntryDurably(paths.contextSheetMembershipLedgerPath, entry);
+        return { entry, appended: true };
+    } finally {
+        releaseMembershipLedgerLock(paths);
+    }
 }
