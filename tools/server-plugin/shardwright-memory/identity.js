@@ -534,7 +534,7 @@ function admitContextSheetLifecycleEvent(paths, artifact, options, config) {
         const existingEntry = findLifecycleEventEntry(entries, scopeId, config.operation, config.schemaId, idempotencyKey);
         if (existingEntry) {
             if (existingEntry.artifactHash === artifactHash) {
-                return { eventEntry: existingEntry, appended: false };
+                return { eventEntry: existingEntry, eventRef: eventReference(existingEntry.artifact, existingEntry.artifactHash), appended: false };
             }
             throw createError(409, `Context Sheet ${config.label} idempotency key collision with different artifact content.`, `CSI_${config.operation}_IDEMPOTENCY_COLLISION`);
         }

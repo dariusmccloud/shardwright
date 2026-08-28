@@ -185,6 +185,7 @@ test('a governed merge appends once, preserves exact source custody, and survive
     });
     assert.equal(duplicate.appended, false);
     assert.deepEqual(duplicate.eventEntry, result.eventEntry);
+    assert.deepEqual(duplicate.eventRef, result.eventRef);
 
     const reopened = readLedgerInFreshProcess(root);
     assert.equal(reopened.length, 5);
@@ -313,6 +314,7 @@ test('a governed split appends once, preserves partition custody, and survives f
     });
     assert.equal(duplicate.appended, false);
     assert.deepEqual(duplicate.eventEntry, result.eventEntry);
+    assert.deepEqual(duplicate.eventRef, result.eventRef);
 
     const reopened = readLedgerInFreshProcess(root);
     assert.equal(reopened.length, 7);

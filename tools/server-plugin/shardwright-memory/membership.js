@@ -76,14 +76,14 @@ function assertKnownNominationPolicyBindings(envelope) {
     }
 }
 
-function assertKnownValidationPolicyBindings(artifact, operationName) {
+function assertKnownValidationPolicyBindings(artifact, operationName, errorPrefix = operationName) {
     const policyBindings = Array.isArray(artifact.envelope.policyBindings) ? artifact.envelope.policyBindings : [];
     const policyBindingKeys = policyBindings.map((binding) => `${binding?.id}@${binding?.version}`);
     if (policyBindingKeys.length !== 1 || policyBindingKeys[0] !== KNOWN_MEMBERSHIP_VALIDATION_POLICY_BINDING
         || artifact.governingPolicyVersion !== 'v1') {
         const errorCode = operationName === MEMBERSHIP_VALIDATION_OPERATION
             ? 'CSM_VALIDATE_POLICY_BINDING_UNSUPPORTED'
-            : `CSM_${operationName}_POLICY_BINDING_UNSUPPORTED`;
+            : `CSM_${errorPrefix}_POLICY_BINDING_UNSUPPORTED`;
         throw createError(
             400,
             `Context Sheet membership ${operationName} must bind the recognized membership validation policy version.`,
@@ -880,7 +880,7 @@ export function admitContextSheetMembershipImpactDecision(paths, artifact, optio
         throw createError(400, 'Context Sheet membership impact decision envelope does not match the IMPACT_DECIDE operation mapping.', 'CSM_IMPACT_OPERATION_MISMATCH');
     }
     assertKnownContractBindings(envelope, MEMBERSHIP_IMPACT_DECIDE_OPERATION, 'IMPACT');
-    assertKnownValidationPolicyBindings(artifact, MEMBERSHIP_IMPACT_DECIDE_OPERATION);
+    assertKnownValidationPolicyBindings(artifact, MEMBERSHIP_IMPACT_DECIDE_OPERATION, 'IMPACT');
 
     const scopeId = envelope.memoryScopeId;
     const idempotencyKey = envelope.idempotencyKey;

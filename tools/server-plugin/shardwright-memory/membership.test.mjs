@@ -381,6 +381,20 @@ test('same IMPACT_DECIDE idempotency key returns the original event while change
     assert.equal(readContextSheetMembershipLedger(paths).length, 7);
 });
 
+test('IMPACT_DECIDE refuses an unknown policy binding with the impact error prefix', () => {
+    const root = makeTempRoot();
+    const paths = getStoragePaths(root);
+    const { structuralEventRef, predecessorLink, successorEvent } = admitImpactCustodyScenario(paths);
+    const artifact = makeImpactDecisionArtifact(structuralEventRef, predecessorLink, successorEvent);
+    artifact.envelope.policyBindings = [{ id: 'membership-validation-policy', version: 'v2' }];
+
+    assertErrorCode(
+        () => admitContextSheetMembershipImpactDecision(paths, artifact),
+        'CSM_IMPACT_POLICY_BINDING_UNSUPPORTED',
+    );
+    assert.equal(readContextSheetMembershipLedger(paths).filter((entry) => entry.operation === 'IMPACT_DECIDE').length, 0);
+});
+
 test('IMPACT_DECIDE refuses missing or stale Context Sheet structural-event custody without append', () => {
     const root = makeTempRoot();
     const paths = getStoragePaths(root);
