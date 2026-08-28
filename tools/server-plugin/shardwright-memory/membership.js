@@ -1,9 +1,10 @@
-// Context Sheet Membership: durable NOMINATE, VALIDATE, LINK, and SUCCEED ledger foundation.
+// Context Sheet Membership: durable NOMINATE, VALIDATE, LINK, SUCCEED, and IMPACT_DECIDE ledger foundation.
 //
 // Bounded by docs/contracts/PHASE_X_CONTEXT_SHEET_MEMBERSHIP_RUNTIME_PERSISTENCE_AND_REPLAY_OWNERSHIP_CONTRACT.md.
 // This module owns only the context-sheet-membership-ledger.jsonl append/read boundary for the
-// NOMINATE, durable VALIDATE-event, immutable LINK, and SUCCEED-event admission. IMPACT_DECIDE, RECONCILE, routes,
-// projections, semantic validation, and UI remain unauthorized and out of scope for this slice.
+// NOMINATE, durable VALIDATE-event, immutable LINK, SUCCEED-event, and IMPACT_DECIDE-event
+// admission. RECONCILE, routes, projections, semantic validation, and UI remain unauthorized
+// and out of scope for this slice.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -13,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import Ajv2020 from 'ajv/dist/2020.js';
 
 import { cloneJson, createError, createId, ensureStorageRoot, nowTimestamp, stableStringify } from './core.js';
+import { readContextSheetIdentityLedger } from './identity.js';
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(currentDir, '..', '..', '..');
@@ -23,6 +25,7 @@ export const MEMBERSHIP_NOMINATION_SCHEMA_ID = 'context-sheet-membership-nominat
 export const MEMBERSHIP_VALIDATION_SCHEMA_ID = 'context-sheet-membership-validation-event-v1';
 export const MEMBERSHIP_LINK_SCHEMA_ID = 'context-sheet-membership-link-v1';
 export const MEMBERSHIP_SUCCESSOR_SCHEMA_ID = 'context-sheet-membership-successor-event-v1';
+export const MEMBERSHIP_IMPACT_DECISION_SCHEMA_ID = 'context-sheet-membership-impact-decision-v1';
 const MEMBERSHIP_NOMINATION_OPERATION = 'NOMINATE';
 const MEMBERSHIP_NOMINATION_ARTIFACT_CLASS = 'NOMINATION';
 const MEMBERSHIP_VALIDATION_OPERATION = 'VALIDATE';
@@ -31,6 +34,8 @@ const MEMBERSHIP_LINK_OPERATION = 'LINK';
 const MEMBERSHIP_LINK_ARTIFACT_CLASS = 'IMMUTABLE_RECORD';
 const MEMBERSHIP_SUCCESSOR_OPERATION = 'SUCCEED';
 const MEMBERSHIP_SUCCESSOR_ARTIFACT_CLASS = 'EVENT';
+const MEMBERSHIP_IMPACT_DECIDE_OPERATION = 'IMPACT_DECIDE';
+const MEMBERSHIP_IMPACT_DECISION_ARTIFACT_CLASS = 'EVENT';
 
 // This slice recognizes exactly one governing contract binding for membership operations. NOMINATE
 // has no applicable policy binding yet; VALIDATE, LINK, and SUCCEED require the recognized
@@ -124,6 +129,10 @@ function getSuccessorValidator() {
     return getArtifactValidator('context-sheet-membership-successor-event-v1.schema.json');
 }
 
+function getImpactDecisionValidator() {
+    return getArtifactValidator('context-sheet-membership-impact-decision-v1.schema.json');
+}
+
 export function validateMembershipNominationArtifact(artifact) {
     const validate = getNominationValidator();
     const valid = validate(artifact) === true;
@@ -153,6 +162,15 @@ export function validateMembershipLinkArtifact(artifact) {
 
 export function validateMembershipSuccessorArtifact(artifact) {
     const validate = getSuccessorValidator();
+    const valid = validate(artifact) === true;
+    return {
+        valid,
+        errors: valid ? [] : cloneJson(validate.errors || []),
+    };
+}
+
+export function validateMembershipImpactDecisionArtifact(artifact) {
+    const validate = getImpactDecisionValidator();
     const valid = validate(artifact) === true;
     return {
         valid,
@@ -243,7 +261,10 @@ function readMembershipLedgerEntries(ledgerPath) {
                     : entry.operation === MEMBERSHIP_SUCCESSOR_OPERATION
                         && entry.artifactSchemaId === MEMBERSHIP_SUCCESSOR_SCHEMA_ID
                         ? MEMBERSHIP_SUCCESSOR_ARTIFACT_CLASS
-                    : null;
+                        : entry.operation === MEMBERSHIP_IMPACT_DECIDE_OPERATION
+                            && entry.artifactSchemaId === MEMBERSHIP_IMPACT_DECISION_SCHEMA_ID
+                            ? MEMBERSHIP_IMPACT_DECISION_ARTIFACT_CLASS
+                            : null;
         if (!expectedArtifactClass || entry.artifactClass !== expectedArtifactClass) {
             throw createError(
                 409,
@@ -456,6 +477,68 @@ function assertSuccessorLinkCustody(entries, artifact) {
         }
         if (successor === false) {
             throw createError(409, 'Context Sheet membership SUCCEED successor reference does not match durable custody.', hashCode);
+        }
+    }
+}
+
+function findExactIdentityLedgerEntry(paths, scopeId, reference) {
+    const identityEntries = readContextSheetIdentityLedger(paths);
+    const entry = identityEntries.find((candidate) => candidate.scopeId === scopeId
+        && candidate.artifactSchemaId === reference.artifactType
+        && candidate.artifactClass === reference.expectedArtifactClass
+        && candidate.artifactId === reference.artifactId);
+    if (!entry) {
+        return null;
+    }
+    return entry.artifactHash === reference.immutableHash ? entry : false;
+}
+
+function assertImpactDecisionCustody(paths, entries, artifact) {
+    const { envelope, structuralEventRef, impactedLinkRef, successorEventRefs } = artifact;
+    if (structuralEventRef.memoryScopeId !== envelope.memoryScopeId
+        || impactedLinkRef.memoryScopeId !== envelope.memoryScopeId
+        || successorEventRefs.some((reference) => reference.memoryScopeId !== envelope.memoryScopeId)) {
+        throw createError(400, 'Context Sheet membership IMPACT_DECIDE references must stay inside the event scope.', 'CSM_IMPACT_SCOPE_MISMATCH');
+    }
+
+    const structuralEvent = findExactIdentityLedgerEntry(paths, envelope.memoryScopeId, structuralEventRef);
+    if (structuralEvent === null) {
+        throw createError(409, 'Context Sheet membership IMPACT_DECIDE requires exact durable Context Sheet structural-event custody.', 'CSM_IMPACT_STRUCTURAL_EVENT_MISSING');
+    }
+    if (structuralEvent === false) {
+        throw createError(409, 'Context Sheet membership IMPACT_DECIDE structural-event reference does not match the Identity ledger hash.', 'CSM_IMPACT_STRUCTURAL_EVENT_HASH_MISMATCH');
+    }
+    if ((artifact.impactSource === 'MERGE' && structuralEvent.operation !== 'MERGE')
+        || (artifact.impactSource === 'SPLIT' && structuralEvent.operation !== 'SPLIT')) {
+        throw createError(409, 'Context Sheet membership IMPACT_DECIDE impact source does not match the structural event operation.', 'CSM_IMPACT_STRUCTURAL_EVENT_OPERATION_MISMATCH');
+    }
+
+    const impactedLink = findExactLedgerEntry(entries, MEMBERSHIP_LINK_OPERATION, MEMBERSHIP_LINK_SCHEMA_ID, envelope.memoryScopeId, impactedLinkRef);
+    if (impactedLink === null) {
+        throw createError(409, 'Context Sheet membership IMPACT_DECIDE requires exact durable impacted LINK custody.', 'CSM_IMPACT_LINK_MISSING');
+    }
+    if (impactedLink === false) {
+        throw createError(409, 'Context Sheet membership IMPACT_DECIDE impacted LINK reference does not match the durable link hash.', 'CSM_IMPACT_LINK_HASH_MISMATCH');
+    }
+
+    const authorityBasisRefs = Array.isArray(envelope.authorityBasisRefs) ? envelope.authorityBasisRefs : [];
+    if (!authorityBasisRefs.some((reference) => sameExactReference(reference, structuralEventRef))) {
+        throw createError(400, 'Context Sheet membership IMPACT_DECIDE must bind its exact structural event as an authority basis reference.', 'CSM_IMPACT_STRUCTURAL_EVENT_BASIS_MISSING');
+    }
+    if (!artifact.evidenceRefs.some((reference) => sameExactReference(reference, structuralEventRef))) {
+        throw createError(400, 'Context Sheet membership IMPACT_DECIDE must cite the structural event as evidence.', 'CSM_IMPACT_STRUCTURAL_EVENT_EVIDENCE_MISSING');
+    }
+
+    for (const successorEventRef of successorEventRefs) {
+        const successorEvent = findExactLedgerEntry(entries, MEMBERSHIP_SUCCESSOR_OPERATION, MEMBERSHIP_SUCCESSOR_SCHEMA_ID, envelope.memoryScopeId, successorEventRef);
+        if (successorEvent === null) {
+            throw createError(409, 'Context Sheet membership IMPACT_DECIDE requires exact durable successor-event custody.', 'CSM_IMPACT_SUCCESSOR_EVENT_MISSING');
+        }
+        if (successorEvent === false) {
+            throw createError(409, 'Context Sheet membership IMPACT_DECIDE successor-event reference does not match the durable successor hash.', 'CSM_IMPACT_SUCCESSOR_EVENT_HASH_MISMATCH');
+        }
+        if (!sameExactReference(successorEvent.artifact.predecessorLinkRef, impactedLinkRef)) {
+            throw createError(409, 'Context Sheet membership IMPACT_DECIDE successor event does not govern the impacted predecessor link.', 'CSM_IMPACT_SUCCESSOR_PREDECESSOR_MISMATCH');
         }
     }
 }
@@ -711,6 +794,55 @@ export function admitContextSheetMembershipSuccessor(paths, artifact, options = 
             MEMBERSHIP_SUCCESSOR_OPERATION,
             MEMBERSHIP_SUCCESSOR_SCHEMA_ID,
             MEMBERSHIP_SUCCESSOR_ARTIFACT_CLASS,
+            artifact,
+            artifactHash,
+            options,
+        );
+        appendLedgerEntryDurably(paths.contextSheetMembershipLedgerPath, entry);
+        return { entry, appended: true };
+    } finally {
+        releaseMembershipLedgerLock(paths);
+    }
+}
+
+/**
+ * Admits one IMPACT_DECIDE event from exact durable membership-link custody and exact Context
+ * Sheet Identity merge/split custody. This records the per-link decision only; it does not mutate
+ * the predecessor link, write Context Sheet authority, or materialize current-use projections.
+ */
+export function admitContextSheetMembershipImpactDecision(paths, artifact, options = {}) {
+    const { valid, errors } = validateMembershipImpactDecisionArtifact(artifact);
+    if (!valid) {
+        throw createError(400, 'Context Sheet membership impact decision artifact failed schema validation.', 'CSM_IMPACT_SCHEMA_INVALID', { errors });
+    }
+    const envelope = artifact.envelope;
+    if (envelope.schemaId !== MEMBERSHIP_IMPACT_DECISION_SCHEMA_ID || envelope.artifactClass !== MEMBERSHIP_IMPACT_DECISION_ARTIFACT_CLASS) {
+        throw createError(400, 'Context Sheet membership impact decision envelope does not match the IMPACT_DECIDE operation mapping.', 'CSM_IMPACT_OPERATION_MISMATCH');
+    }
+    assertKnownContractBindings(envelope, MEMBERSHIP_IMPACT_DECIDE_OPERATION, 'IMPACT');
+    assertKnownValidationPolicyBindings(artifact, MEMBERSHIP_IMPACT_DECIDE_OPERATION);
+
+    const scopeId = envelope.memoryScopeId;
+    const idempotencyKey = envelope.idempotencyKey;
+    const artifactHash = computeMembershipArtifactHash(artifact);
+    ensureStorageRoot(paths.storageRoot);
+    acquireMembershipLedgerLock(paths);
+    try {
+        const entries = readMembershipLedgerEntries(paths.contextSheetMembershipLedgerPath);
+        const existing = findExistingOperation(entries, scopeId, MEMBERSHIP_IMPACT_DECIDE_OPERATION, MEMBERSHIP_IMPACT_DECISION_SCHEMA_ID, idempotencyKey);
+        if (existing) {
+            if (existing.artifactHash === artifactHash) {
+                return { entry: existing, appended: false };
+            }
+            throw createError(409, 'Context Sheet membership impact decision idempotency key collision with different artifact content.', 'CSM_IMPACT_IDEMPOTENCY_COLLISION');
+        }
+
+        assertImpactDecisionCustody(paths, entries, artifact);
+        const entry = createLedgerEntry(
+            entries,
+            MEMBERSHIP_IMPACT_DECIDE_OPERATION,
+            MEMBERSHIP_IMPACT_DECISION_SCHEMA_ID,
+            MEMBERSHIP_IMPACT_DECISION_ARTIFACT_CLASS,
             artifact,
             artifactHash,
             options,

@@ -8,6 +8,12 @@ import { fileURLToPath } from 'node:url';
 
 import { getStoragePaths } from './core.js';
 import {
+    admitContextSheetCreation,
+    admitContextSheetMerge,
+    computeContextSheetIdentityArtifactHash,
+} from './identity.js';
+import {
+    admitContextSheetMembershipImpactDecision,
     admitContextSheetMembershipValidation,
     admitContextSheetMembershipLink,
     admitContextSheetMembershipSuccessor,
@@ -15,6 +21,7 @@ import {
     nominateContextSheetMembership,
     readContextSheetMembershipLedger,
     validateMembershipValidationArtifact,
+    validateMembershipImpactDecisionArtifact,
     validateMembershipLinkArtifact,
     validateMembershipSuccessorArtifact,
     validateMembershipNominationArtifact,
@@ -32,6 +39,10 @@ function readLedgerInFreshProcess(storageRoot) {
 
 function loadFixture(name) {
     return JSON.parse(fs.readFileSync(path.join(fixtureDir, `${name}.json`), 'utf8'));
+}
+
+function clone(value) {
+    return JSON.parse(JSON.stringify(value));
 }
 
 function makeTempRoot() {
@@ -154,6 +165,17 @@ function makeExactLinkReference(linkEntry) {
     };
 }
 
+function makeExactSuccessorReference(successorEntry) {
+    return {
+        artifactType: 'context-sheet-membership-successor-event-v1',
+        artifactId: successorEntry.artifactId,
+        memoryScopeId: successorEntry.scopeId,
+        expectedArtifactClass: 'EVENT',
+        resolutionRequirement: 'EXACT_HASH',
+        immutableHash: successorEntry.artifactHash,
+    };
+}
+
 function makeSuccessorArtifact(linkEntry) {
     const artifact = loadFixture('context-sheet-membership-successor-event-v1.valid-retyped');
     const linkRef = makeExactLinkReference(linkEntry);
@@ -200,6 +222,103 @@ function admitSuccessorCustodyScenario(paths) {
     };
 }
 
+function makeIdentityCreationPairForSheet({
+    contextSheetId,
+    scopeId,
+    sheetType,
+    preferredTitle,
+    canonicalAnchorId,
+    anchorJurisdictionId,
+    identityAuthorityRef,
+    suffix,
+}) {
+    const record = loadFixture('context-sheet-record-v1.valid-resolved');
+    const event = loadFixture('context-sheet-creation-event-v1.valid');
+    record.envelope.artifactId = `artifact:context-sheet-record:${suffix}`;
+    record.envelope.memoryScopeId = scopeId;
+    record.envelope.payloadHash = `sha256:${suffix.slice(0, 2).repeat(32)}`;
+    record.contextSheetId = contextSheetId;
+    record.memoryScopeId = scopeId;
+    record.sheetType = sheetType;
+    record.preferredTitle = preferredTitle;
+    record.canonicalAnchorId = canonicalAnchorId;
+    record.identityAuthorityRef = clone(identityAuthorityRef);
+    record.identityAuthorityRef.memoryScopeId = scopeId;
+    record.anchorJurisdiction.jurisdictionId = anchorJurisdictionId;
+    record.creationEventRef.artifactId = `artifact:context-sheet-creation-event:${suffix}`;
+    record.creationEventRef.memoryScopeId = scopeId;
+
+    event.envelope.artifactId = `artifact:context-sheet-creation-event:${suffix}`;
+    event.envelope.memoryScopeId = scopeId;
+    event.envelope.payloadHash = `sha256:${suffix.slice(2, 4).repeat(32)}`;
+    event.envelope.idempotencyKey = `idempotency:context-sheet-create-${suffix}`;
+    event.envelope.authorityBasisRefs = [clone(identityAuthorityRef)];
+    event.envelope.authorityBasisRefs[0].memoryScopeId = scopeId;
+    event.contextSheetRef.artifactId = record.envelope.artifactId;
+    event.contextSheetRef.memoryScopeId = scopeId;
+    event.contextSheetRef.immutableHash = computeContextSheetIdentityArtifactHash(record);
+    event.sheetType = sheetType;
+    return { record, event };
+}
+
+function admitIdentitySheet(paths, config) {
+    const { record, event } = makeIdentityCreationPairForSheet(config);
+    admitContextSheetCreation(paths, record, event);
+}
+
+function lifecycleRefsForSourceSheets(sourceSheets) {
+    return Object.fromEntries(sourceSheets.map((sourceSheet) => [
+        sourceSheet.contextSheetId,
+        sourceSheet.exactStateRef,
+    ]));
+}
+
+function admitMergeStructuralEvent(paths) {
+    const merge = loadFixture('context-sheet-merge-event-v1.valid');
+    for (const sourceSheet of merge.sourceSheets) {
+        admitIdentitySheet(paths, {
+            contextSheetId: sourceSheet.contextSheetId,
+            scopeId: merge.envelope.memoryScopeId,
+            sheetType: merge.sheetType,
+            preferredTitle: sourceSheet.contextSheetId,
+            canonicalAnchorId: merge.sharedCanonicalAnchorId,
+            anchorJurisdictionId: merge.anchorJurisdictionId,
+            identityAuthorityRef: merge.mergeAuthorityRef,
+            suffix: sourceSheet.contextSheetId.endsWith('duplicate') ? 'ababababababababababababab' : 'cdcdcdcdcdcdcdcdcdcdcdcdcd',
+        });
+    }
+    return admitContextSheetMerge(paths, merge, {
+        lifecycleStateRefsByContextSheetId: lifecycleRefsForSourceSheets(merge.sourceSheets),
+    }).eventRef;
+}
+
+function admitImpactCustodyScenario(paths) {
+    const structuralEventRef = admitMergeStructuralEvent(paths);
+    const { predecessorLink, successorLink, successorValidation } = admitSuccessorCustodyScenario(paths);
+    const successorArtifact = makeRetypedSuccessorArtifact(predecessorLink, successorLink, successorValidation);
+    const successorEvent = admitContextSheetMembershipSuccessor(paths, successorArtifact);
+    return {
+        structuralEventRef,
+        predecessorLink,
+        successorEvent: successorEvent.entry,
+    };
+}
+
+function makeImpactDecisionArtifact(structuralEventRef, predecessorLink, successorEvent) {
+    const artifact = loadFixture('context-sheet-membership-impact-decision-v1.valid-merge-remap');
+    artifact.envelope.memoryScopeId = predecessorLink.scopeId;
+    artifact.envelope.authorityBasisRefs = [clone(structuralEventRef)];
+    artifact.structuralEventRef = clone(structuralEventRef);
+    artifact.impactedLinkRef = makeExactLinkReference(predecessorLink);
+    artifact.successorEventRefs = successorEvent ? [makeExactSuccessorReference(successorEvent)] : [];
+    artifact.evidenceRefs = [clone(structuralEventRef)];
+    return artifact;
+}
+
+function assertErrorCode(fn, code) {
+    assert.throws(fn, (error) => error.code === code);
+}
+
 test('a structurally valid nomination appends exactly once and survives an actual process restart', () => {
     const root = makeTempRoot();
     const paths = getStoragePaths(root);
@@ -215,6 +334,133 @@ test('a structurally valid nomination appends exactly once and survives an actua
     const reopened = readLedgerInFreshProcess(root);
     assert.equal(reopened.length, 1);
     assert.deepEqual(reopened[0], entry);
+});
+
+test('structurally valid impact decision schema compiles and invalid authority changes refuse schema admission', () => {
+    assert.equal(validateMembershipImpactDecisionArtifact(loadFixture('context-sheet-membership-impact-decision-v1.valid-merge-remap')).valid, true);
+    assert.equal(validateMembershipImpactDecisionArtifact(loadFixture('context-sheet-membership-impact-decision-v1.invalid-authority-change')).valid, false);
+    assert.equal(validateMembershipImpactDecisionArtifact(loadFixture('context-sheet-membership-impact-decision-v1.invalid-merge-multiple-successors')).valid, false);
+});
+
+test('an impact decision appends from exact link, successor, and Context Sheet structural-event custody', () => {
+    const root = makeTempRoot();
+    const paths = getStoragePaths(root);
+    const { structuralEventRef, predecessorLink, successorEvent } = admitImpactCustodyScenario(paths);
+    const artifact = makeImpactDecisionArtifact(structuralEventRef, predecessorLink, successorEvent);
+
+    const { entry, appended } = admitContextSheetMembershipImpactDecision(paths, artifact);
+
+    assert.equal(appended, true);
+    assert.equal(entry.sequence, 7);
+    assert.equal(entry.operation, 'IMPACT_DECIDE');
+    assert.equal(entry.artifactHash, computeMembershipArtifactHash(artifact));
+
+    const reopened = readLedgerInFreshProcess(root);
+    assert.equal(reopened.length, 7);
+    assert.deepEqual(reopened[6], entry);
+});
+
+test('same IMPACT_DECIDE idempotency key returns the original event while changed content refuses', () => {
+    const root = makeTempRoot();
+    const paths = getStoragePaths(root);
+    const { structuralEventRef, predecessorLink, successorEvent } = admitImpactCustodyScenario(paths);
+    const artifact = makeImpactDecisionArtifact(structuralEventRef, predecessorLink, successorEvent);
+    const first = admitContextSheetMembershipImpactDecision(paths, artifact);
+    const second = admitContextSheetMembershipImpactDecision(paths, artifact);
+    const changed = clone(artifact);
+    changed.reason = 'A different impact reason under the same request identity.';
+
+    assert.equal(first.appended, true);
+    assert.equal(second.appended, false);
+    assert.deepEqual(second.entry, first.entry);
+    assertErrorCode(
+        () => admitContextSheetMembershipImpactDecision(paths, changed),
+        'CSM_IMPACT_IDEMPOTENCY_COLLISION',
+    );
+    assert.equal(readContextSheetMembershipLedger(paths).length, 7);
+});
+
+test('IMPACT_DECIDE refuses missing or stale Context Sheet structural-event custody without append', () => {
+    const root = makeTempRoot();
+    const paths = getStoragePaths(root);
+    const link = admitInitialLink(paths);
+    const artifact = makeImpactDecisionArtifact(loadFixture('context-sheet-membership-impact-decision-v1.valid-merge-remap').structuralEventRef, link, null);
+    artifact.successorEventRefs = [];
+    artifact.impactDecision = 'REMAINS_HISTORICAL_ONLY';
+    artifact.predecessorCurrentUseState = 'HISTORICAL_ONLY';
+    artifact.compatibilityChecks = {
+        type: 'NOT_APPLICABLE',
+        anchor: 'NOT_APPLICABLE',
+        claim: 'NOT_APPLICABLE',
+        jurisdiction: 'NOT_APPLICABLE',
+        temporal: 'NOT_APPLICABLE',
+    };
+
+    assertErrorCode(
+        () => admitContextSheetMembershipImpactDecision(paths, artifact),
+        'CSM_IMPACT_STRUCTURAL_EVENT_MISSING',
+    );
+
+    const { structuralEventRef } = admitImpactCustodyScenario(paths);
+    const stale = clone(artifact);
+    stale.envelope.idempotencyKey = 'idempotency:impact-stale-structural';
+    stale.envelope.artifactId = 'artifact:context-sheet-membership-impact-decision:stale-structural';
+    stale.structuralEventRef = {
+        ...structuralEventRef,
+        immutableHash: 'sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+    };
+    stale.envelope.authorityBasisRefs = [clone(stale.structuralEventRef)];
+    stale.evidenceRefs = [clone(stale.structuralEventRef)];
+    stale.impactedLinkRef = makeExactLinkReference(link);
+    assertErrorCode(
+        () => admitContextSheetMembershipImpactDecision(paths, stale),
+        'CSM_IMPACT_STRUCTURAL_EVENT_HASH_MISMATCH',
+    );
+    assert.equal(readContextSheetMembershipLedger(paths).filter((entry) => entry.operation === 'IMPACT_DECIDE').length, 0);
+});
+
+test('IMPACT_DECIDE refuses missing impacted link or successor-event custody without append', () => {
+    const root = makeTempRoot();
+    const paths = getStoragePaths(root);
+    const { structuralEventRef, predecessorLink, successorEvent } = admitImpactCustodyScenario(paths);
+
+    const missingLink = makeImpactDecisionArtifact(structuralEventRef, predecessorLink, successorEvent);
+    missingLink.envelope.idempotencyKey = 'idempotency:impact-missing-link';
+    missingLink.envelope.artifactId = 'artifact:context-sheet-membership-impact-decision:missing-link';
+    missingLink.impactedLinkRef.artifactId = 'artifact:context-sheet-membership-link:missing';
+    assertErrorCode(
+        () => admitContextSheetMembershipImpactDecision(paths, missingLink),
+        'CSM_IMPACT_LINK_MISSING',
+    );
+
+    const missingSuccessor = makeImpactDecisionArtifact(structuralEventRef, predecessorLink, successorEvent);
+    missingSuccessor.envelope.idempotencyKey = 'idempotency:impact-missing-successor';
+    missingSuccessor.envelope.artifactId = 'artifact:context-sheet-membership-impact-decision:missing-successor';
+    missingSuccessor.successorEventRefs[0].artifactId = 'artifact:context-sheet-membership-successor-event:missing';
+    assertErrorCode(
+        () => admitContextSheetMembershipImpactDecision(paths, missingSuccessor),
+        'CSM_IMPACT_SUCCESSOR_EVENT_MISSING',
+    );
+
+    assert.equal(readContextSheetMembershipLedger(paths).filter((entry) => entry.operation === 'IMPACT_DECIDE').length, 0);
+});
+
+test('identity and neighboring authority ledgers remain byte-identical throughout IMPACT_DECIDE admission', () => {
+    const root = makeTempRoot();
+    const paths = getStoragePaths(root);
+    seedNeighboringLedgers(paths);
+    const { structuralEventRef, predecessorLink, successorEvent } = admitImpactCustodyScenario(paths);
+    const artifact = makeImpactDecisionArtifact(structuralEventRef, predecessorLink, successorEvent);
+    const beforeIdentity = readBytes(paths.contextSheetIdentityLedgerPath);
+    const beforeInterpretive = readBytes(paths.interpretiveGovernanceLedgerPath);
+    const beforeDnm = readBytes(paths.dnmPublicationLedgerPath);
+
+    admitContextSheetMembershipImpactDecision(paths, artifact);
+    admitContextSheetMembershipImpactDecision(paths, artifact);
+
+    assert.deepEqual(readBytes(paths.contextSheetIdentityLedgerPath), beforeIdentity);
+    assert.deepEqual(readBytes(paths.interpretiveGovernanceLedgerPath), beforeInterpretive);
+    assert.deepEqual(readBytes(paths.dnmPublicationLedgerPath), beforeDnm);
 });
 
 test('same idempotency key and same artifact returns the original entry without a second append', () => {
