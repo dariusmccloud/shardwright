@@ -1,9 +1,10 @@
-// Context Sheet Identity: durable CREATE_RECORD + CREATE_EVENT ledger foundation.
+// Context Sheet Identity: durable creation and structural lifecycle-event ledger foundation.
 //
 // Bounded by docs/contracts/PHASE_X_CONTEXT_SHEET_IDENTITY_RUNTIME_PERSISTENCE_AND_REPLAY_OWNERSHIP_CONTRACT.md.
 // This module owns only the context-sheet-identity-ledger.jsonl append/read boundary for
-// initial sheet creation. Alias, resolution, merge, split, redirect, retirement, restoration,
-// reconciliation, projections, routes, semantic validation, and UI remain unauthorized.
+// initial sheet creation plus merge/split lifecycle events. Alias, resolution, redirect,
+// retirement, restoration, reconciliation, projections, routes, semantic validation, and UI
+// remain unauthorized.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -21,13 +22,19 @@ const schemaDir = path.join(repoRoot, 'docs', 'schemas', 'memory-catalog');
 export const CONTEXT_SHEET_IDENTITY_LEDGER_VERSION = 1;
 export const CONTEXT_SHEET_RECORD_SCHEMA_ID = 'context-sheet-record-v1';
 export const CONTEXT_SHEET_CREATION_EVENT_SCHEMA_ID = 'context-sheet-creation-event-v1';
+export const CONTEXT_SHEET_MERGE_EVENT_SCHEMA_ID = 'context-sheet-merge-event-v1';
+export const CONTEXT_SHEET_SPLIT_EVENT_SCHEMA_ID = 'context-sheet-split-event-v1';
 export const CONTEXT_SHEET_CREATE_RECORD_OPERATION = 'CREATE_RECORD';
 export const CONTEXT_SHEET_CREATE_EVENT_OPERATION = 'CREATE_EVENT';
+export const CONTEXT_SHEET_MERGE_OPERATION = 'MERGE';
+export const CONTEXT_SHEET_SPLIT_OPERATION = 'SPLIT';
 
 const CONTEXT_SHEET_RECORD_ARTIFACT_CLASS = 'IMMUTABLE_RECORD';
-const CONTEXT_SHEET_CREATION_EVENT_ARTIFACT_CLASS = 'EVENT';
+const CONTEXT_SHEET_EVENT_ARTIFACT_CLASS = 'EVENT';
 const KNOWN_CONTEXT_SHEET_CONTRACT_BINDING = 'phase-x-context-sheet-anchor@0.1.0';
 const KNOWN_CONTEXT_SHEET_IDENTITY_POLICY_BINDING = 'context-sheet-identity-policy@v1';
+const KNOWN_CONTEXT_SHEET_MERGE_POLICY_BINDING = 'context-sheet-merge-policy@v1';
+const KNOWN_CONTEXT_SHEET_SPLIT_POLICY_BINDING = 'context-sheet-split-policy@v1';
 const DATE_TIME_FORMAT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/u;
 
 const artifactValidators = new Map();
@@ -57,6 +64,14 @@ function getCreationEventValidator() {
     return getArtifactValidator('context-sheet-creation-event-v1.schema.json');
 }
 
+function getMergeEventValidator() {
+    return getArtifactValidator('context-sheet-merge-event-v1.schema.json');
+}
+
+function getSplitEventValidator() {
+    return getArtifactValidator('context-sheet-split-event-v1.schema.json');
+}
+
 export function validateContextSheetRecordArtifact(artifact) {
     const validate = getRecordValidator();
     const valid = validate(artifact) === true;
@@ -75,11 +90,29 @@ export function validateContextSheetCreationEventArtifact(artifact) {
     };
 }
 
+export function validateContextSheetMergeEventArtifact(artifact) {
+    const validate = getMergeEventValidator();
+    const valid = validate(artifact) === true;
+    return {
+        valid,
+        errors: valid ? [] : cloneJson(validate.errors || []),
+    };
+}
+
+export function validateContextSheetSplitEventArtifact(artifact) {
+    const validate = getSplitEventValidator();
+    const valid = validate(artifact) === true;
+    return {
+        valid,
+        errors: valid ? [] : cloneJson(validate.errors || []),
+    };
+}
+
 export function computeContextSheetIdentityArtifactHash(artifact) {
     return `sha256:${crypto.createHash('sha256').update(stableStringify(artifact)).digest('hex')}`;
 }
 
-function assertKnownBindings(envelope, operationName, policyVersion = null) {
+function assertKnownBindings(envelope, operationName, expectedPolicyBinding, policyVersion = null) {
     const contractBindings = Array.isArray(envelope.contractBindings) ? envelope.contractBindings : [];
     const contractKeys = contractBindings.map((binding) => `${binding?.id}@${binding?.version}`);
     if (contractKeys.length !== 1 || contractKeys[0] !== KNOWN_CONTEXT_SHEET_CONTRACT_BINDING) {
@@ -92,7 +125,7 @@ function assertKnownBindings(envelope, operationName, policyVersion = null) {
 
     const policyBindings = Array.isArray(envelope.policyBindings) ? envelope.policyBindings : [];
     const policyKeys = policyBindings.map((binding) => `${binding?.id}@${binding?.version}`);
-    if (policyKeys.length !== 1 || policyKeys[0] !== KNOWN_CONTEXT_SHEET_IDENTITY_POLICY_BINDING
+    if (policyKeys.length !== 1 || policyKeys[0] !== expectedPolicyBinding
         || (policyVersion !== null && policyVersion !== 'v1')) {
         throw createError(
             400,
@@ -129,7 +162,15 @@ function expectedArtifactClassForEntry(entry) {
     }
     if (entry.operation === CONTEXT_SHEET_CREATE_EVENT_OPERATION
         && entry.artifactSchemaId === CONTEXT_SHEET_CREATION_EVENT_SCHEMA_ID) {
-        return CONTEXT_SHEET_CREATION_EVENT_ARTIFACT_CLASS;
+        return CONTEXT_SHEET_EVENT_ARTIFACT_CLASS;
+    }
+    if (entry.operation === CONTEXT_SHEET_MERGE_OPERATION
+        && entry.artifactSchemaId === CONTEXT_SHEET_MERGE_EVENT_SCHEMA_ID) {
+        return CONTEXT_SHEET_EVENT_ARTIFACT_CLASS;
+    }
+    if (entry.operation === CONTEXT_SHEET_SPLIT_OPERATION
+        && entry.artifactSchemaId === CONTEXT_SHEET_SPLIT_EVENT_SCHEMA_ID) {
+        return CONTEXT_SHEET_EVENT_ARTIFACT_CLASS;
     }
     return null;
 }
@@ -200,7 +241,7 @@ function readContextSheetIdentityLedgerEntries(ledgerPath) {
             );
         }
 
-        if (entry.operation === CONTEXT_SHEET_CREATE_EVENT_OPERATION
+        if (entry.artifactClass === CONTEXT_SHEET_EVENT_ARTIFACT_CLASS
             && entry.artifact.envelope.idempotencyKey !== entry.idempotencyKey) {
             throw createError(
                 409,
@@ -243,7 +284,7 @@ function creationEventReference(event) {
         artifactType: CONTEXT_SHEET_CREATION_EVENT_SCHEMA_ID,
         artifactId: event.envelope.artifactId,
         memoryScopeId: event.envelope.memoryScopeId,
-        expectedArtifactClass: CONTEXT_SHEET_CREATION_EVENT_ARTIFACT_CLASS,
+        expectedArtifactClass: CONTEXT_SHEET_EVENT_ARTIFACT_CLASS,
         resolutionRequirement: 'CURRENT_ALLOWED',
     };
 }
@@ -263,6 +304,168 @@ function assertCreationPair(record, event, recordHash) {
         || record.anchorState !== event.anchorStateAtCreation
         || record.creationBasis?.creationPath !== event.creationPath) {
         throw createError(400, 'Context Sheet creation event does not match the record basis.', 'CSI_CREATE_BASIS_MISMATCH');
+    }
+}
+
+function eventReference(event, eventHash) {
+    return {
+        artifactType: event.envelope.schemaId,
+        artifactId: event.envelope.artifactId,
+        memoryScopeId: event.envelope.memoryScopeId,
+        expectedArtifactClass: CONTEXT_SHEET_EVENT_ARTIFACT_CLASS,
+        resolutionRequirement: 'EXACT_HASH',
+        immutableHash: eventHash,
+    };
+}
+
+function referenceKey(reference) {
+    return stableStringify(reference);
+}
+
+function normalizeLifecycleStateRefs(refs) {
+    const normalized = new Map();
+    if (!refs) {
+        return normalized;
+    }
+
+    if (refs instanceof Map) {
+        for (const [contextSheetId, reference] of refs.entries()) {
+            normalized.set(contextSheetId, reference);
+        }
+        return normalized;
+    }
+
+    if (Array.isArray(refs)) {
+        for (const item of refs) {
+            if (item?.contextSheetId && item?.exactStateRef) {
+                normalized.set(item.contextSheetId, item.exactStateRef);
+            }
+        }
+        return normalized;
+    }
+
+    for (const [contextSheetId, reference] of Object.entries(refs)) {
+        normalized.set(contextSheetId, reference);
+    }
+    return normalized;
+}
+
+function findCreatedRecordByContextSheetId(entries, scopeId, contextSheetId) {
+    return entries.find((entry) => entry.scopeId === scopeId
+        && entry.operation === CONTEXT_SHEET_CREATE_RECORD_OPERATION
+        && entry.artifactSchemaId === CONTEXT_SHEET_RECORD_SCHEMA_ID
+        && entry.artifact?.contextSheetId === contextSheetId) || null;
+}
+
+function findAuthorityBasisRef(envelope, reference) {
+    return Array.isArray(envelope.authorityBasisRefs)
+        && envelope.authorityBasisRefs.some((basisRef) => sameReference(basisRef, reference));
+}
+
+function assertLifecycleStateRef(contextSheetId, exactStateRef, lifecycleStateRefsByContextSheetId, operation) {
+    const trustedRef = lifecycleStateRefsByContextSheetId.get(contextSheetId);
+    if (!trustedRef) {
+        throw createError(
+            409,
+            `Context Sheet Identity ${operation} lacks exact lifecycle state custody for ${contextSheetId}.`,
+            `CSI_${operation}_SOURCE_STATE_MISSING`,
+        );
+    }
+    if (!sameReference(exactStateRef, trustedRef)) {
+        throw createError(
+            409,
+            `Context Sheet Identity ${operation} lifecycle state reference for ${contextSheetId} is stale or mismatched.`,
+            `CSI_${operation}_SOURCE_STATE_STALE`,
+        );
+    }
+}
+
+function assertMergeEventCustody(entries, event, options) {
+    const scopeId = event.envelope.memoryScopeId;
+    if (event.memoryScopeId !== scopeId) {
+        throw createError(400, 'Context Sheet Identity MERGE crosses memory scopes.', 'CSI_MERGE_SCOPE_MISMATCH');
+    }
+    if (!findAuthorityBasisRef(event.envelope, event.mergeAuthorityRef)) {
+        throw createError(400, 'Context Sheet Identity MERGE authority ref is not carried by the event envelope.', 'CSI_MERGE_AUTHORITY_REF_MISSING');
+    }
+
+    const lifecycleStateRefs = normalizeLifecycleStateRefs(options.lifecycleStateRefsByContextSheetId);
+    const sourceIds = new Set(event.sourceSheets.map((sourceSheet) => sourceSheet.contextSheetId));
+    if (!sourceIds.has(event.survivingContextSheetId)) {
+        throw createError(400, 'Context Sheet Identity MERGE survivor is not one of the source sheets.', 'CSI_MERGE_SURVIVOR_NOT_SOURCE');
+    }
+
+    for (const sourceSheet of event.sourceSheets) {
+        assertLifecycleStateRef(sourceSheet.contextSheetId, sourceSheet.exactStateRef, lifecycleStateRefs, CONTEXT_SHEET_MERGE_OPERATION);
+        const recordEntry = findCreatedRecordByContextSheetId(entries, scopeId, sourceSheet.contextSheetId);
+        if (!recordEntry) {
+            throw createError(409, 'Context Sheet Identity MERGE source sheet has no durable creation record.', 'CSI_MERGE_SOURCE_RECORD_MISSING');
+        }
+        const record = recordEntry.artifact;
+        if (record.memoryScopeId !== scopeId
+            || record.sheetType !== event.sheetType
+            || record.anchorState !== sourceSheet.anchorState
+            || record.canonicalAnchorId !== event.sharedCanonicalAnchorId
+            || record.anchorJurisdiction?.jurisdictionId !== event.anchorJurisdictionId) {
+            throw createError(409, 'Context Sheet Identity MERGE source sheet record does not match the merge event identity basis.', 'CSI_MERGE_SOURCE_RECORD_MISMATCH');
+        }
+    }
+}
+
+function assertSplitEventCustody(entries, event, options) {
+    const scopeId = event.envelope.memoryScopeId;
+    const sourceSheet = event.sourceSheet;
+    if (!findAuthorityBasisRef(event.envelope, event.splitAuthorityRef)) {
+        throw createError(400, 'Context Sheet Identity SPLIT authority ref is not carried by the event envelope.', 'CSI_SPLIT_AUTHORITY_REF_MISSING');
+    }
+
+    const lifecycleStateRefs = normalizeLifecycleStateRefs(options.lifecycleStateRefsByContextSheetId);
+    assertLifecycleStateRef(sourceSheet.contextSheetId, sourceSheet.exactStateRef, lifecycleStateRefs, CONTEXT_SHEET_SPLIT_OPERATION);
+
+    const sourceRecordEntry = findCreatedRecordByContextSheetId(entries, scopeId, sourceSheet.contextSheetId);
+    if (!sourceRecordEntry) {
+        throw createError(409, 'Context Sheet Identity SPLIT source sheet has no durable creation record.', 'CSI_SPLIT_SOURCE_RECORD_MISSING');
+    }
+
+    const targetIds = new Set();
+    const targetCanonicalAnchorIds = new Set();
+    for (const targetSheet of event.targetSheets) {
+        if (targetIds.has(targetSheet.contextSheetId)) {
+            throw createError(400, 'Context Sheet Identity SPLIT target sheet appears more than once.', 'CSI_SPLIT_TARGET_DUPLICATE');
+        }
+        if (targetCanonicalAnchorIds.has(targetSheet.canonicalAnchorId)) {
+            throw createError(400, 'Context Sheet Identity SPLIT target canonical anchor appears more than once.', 'CSI_SPLIT_TARGET_ANCHOR_DUPLICATE');
+        }
+        targetIds.add(targetSheet.contextSheetId);
+        targetCanonicalAnchorIds.add(targetSheet.canonicalAnchorId);
+
+        const targetRecordEntry = findCreatedRecordByContextSheetId(entries, scopeId, targetSheet.contextSheetId);
+        if (!targetRecordEntry) {
+            throw createError(409, 'Context Sheet Identity SPLIT target sheet has no durable creation record.', 'CSI_SPLIT_TARGET_RECORD_MISSING');
+        }
+        const targetRecord = targetRecordEntry.artifact;
+        if (targetRecord.memoryScopeId !== scopeId
+            || targetRecord.sheetType !== targetSheet.sheetType
+            || targetRecord.canonicalAnchorId !== targetSheet.canonicalAnchorId
+            || targetRecord.anchorJurisdiction?.jurisdictionId !== targetSheet.anchorJurisdictionId
+            || !sameReference(targetRecord.identityAuthorityRef, targetSheet.identityAuthorityRef)) {
+            throw createError(409, 'Context Sheet Identity SPLIT target sheet record does not match the split event identity basis.', 'CSI_SPLIT_TARGET_RECORD_MISMATCH');
+        }
+    }
+
+    const seenAssignedSourceItems = new Map();
+    for (const assignment of event.partitionManifest.assignments) {
+        if (assignment.disposition === 'ASSIGNED' && !targetIds.has(assignment.targetContextSheetId)) {
+            throw createError(400, 'Context Sheet Identity SPLIT assignment targets an unknown sheet.', 'CSI_SPLIT_ASSIGNMENT_TARGET_UNKNOWN');
+        }
+        if (assignment.disposition === 'ASSIGNED') {
+            const itemKey = referenceKey(assignment.sourceItemRef);
+            const previousTarget = seenAssignedSourceItems.get(itemKey);
+            if (previousTarget && previousTarget !== assignment.targetContextSheetId) {
+                throw createError(400, 'Context Sheet Identity SPLIT partition duplicates one source item across targets.', 'CSI_SPLIT_PARTITION_DUPLICATE');
+            }
+            seenAssignedSourceItems.set(itemKey, assignment.targetContextSheetId);
+        }
     }
 }
 
@@ -302,6 +505,59 @@ function findCreationEntry(entries, scopeId, operation, schemaId, idempotencyKey
         && entry.idempotencyKey === idempotencyKey) || null;
 }
 
+function findLifecycleEventEntry(entries, scopeId, operation, schemaId, idempotencyKey) {
+    return entries.find((entry) => entry.scopeId === scopeId
+        && entry.operation === operation
+        && entry.artifactSchemaId === schemaId
+        && entry.idempotencyKey === idempotencyKey) || null;
+}
+
+function admitContextSheetLifecycleEvent(paths, artifact, options, config) {
+    const validation = config.validate(artifact);
+    if (!validation.valid) {
+        throw createError(400, `Context Sheet ${config.label} event artifact failed schema validation.`, `CSI_${config.operation}_SCHEMA_INVALID`, { errors: validation.errors });
+    }
+    if (artifact.envelope.schemaId !== config.schemaId
+        || artifact.envelope.artifactClass !== CONTEXT_SHEET_EVENT_ARTIFACT_CLASS) {
+        throw createError(400, `Context Sheet ${config.label} event envelope does not match the ${config.operation} operation mapping.`, `CSI_${config.operation}_OPERATION_MISMATCH`);
+    }
+    assertKnownBindings(artifact.envelope, config.operation, config.policyBinding, artifact[config.policyVersionField]);
+
+    const idempotencyKey = artifact.envelope.idempotencyKey;
+    const scopeId = artifact.envelope.memoryScopeId;
+    const artifactHash = computeContextSheetIdentityArtifactHash(artifact);
+
+    ensureStorageRoot(paths.storageRoot);
+    acquireContextSheetIdentityLedgerLock(paths);
+    try {
+        const entries = readContextSheetIdentityLedgerEntries(paths.contextSheetIdentityLedgerPath);
+        const existingEntry = findLifecycleEventEntry(entries, scopeId, config.operation, config.schemaId, idempotencyKey);
+        if (existingEntry) {
+            if (existingEntry.artifactHash === artifactHash) {
+                return { eventEntry: existingEntry, appended: false };
+            }
+            throw createError(409, `Context Sheet ${config.label} idempotency key collision with different artifact content.`, `CSI_${config.operation}_IDEMPOTENCY_COLLISION`);
+        }
+
+        config.assertCustody(entries, artifact, options);
+
+        const eventEntry = createLedgerEntry(
+            entries,
+            config.operation,
+            config.schemaId,
+            CONTEXT_SHEET_EVENT_ARTIFACT_CLASS,
+            artifact,
+            artifactHash,
+            idempotencyKey,
+            options,
+        );
+        appendLedgerEntriesDurably(paths.contextSheetIdentityLedgerPath, [eventEntry]);
+        return { eventEntry, eventRef: eventReference(artifact, artifactHash), appended: true };
+    } finally {
+        releaseContextSheetIdentityLedgerLock(paths);
+    }
+}
+
 export function admitContextSheetCreation(paths, recordArtifact, creationEventArtifact, options = {}) {
     const recordValidation = validateContextSheetRecordArtifact(recordArtifact);
     if (!recordValidation.valid) {
@@ -317,12 +573,12 @@ export function admitContextSheetCreation(paths, recordArtifact, creationEventAr
         throw createError(400, 'Context Sheet record envelope does not match the CREATE_RECORD operation mapping.', 'CSI_CREATE_RECORD_OPERATION_MISMATCH');
     }
     if (creationEventArtifact.envelope.schemaId !== CONTEXT_SHEET_CREATION_EVENT_SCHEMA_ID
-        || creationEventArtifact.envelope.artifactClass !== CONTEXT_SHEET_CREATION_EVENT_ARTIFACT_CLASS) {
+        || creationEventArtifact.envelope.artifactClass !== CONTEXT_SHEET_EVENT_ARTIFACT_CLASS) {
         throw createError(400, 'Context Sheet creation event envelope does not match the CREATE_EVENT operation mapping.', 'CSI_CREATE_EVENT_OPERATION_MISMATCH');
     }
 
-    assertKnownBindings(recordArtifact.envelope, CONTEXT_SHEET_CREATE_RECORD_OPERATION, recordArtifact.identityPolicyVersion);
-    assertKnownBindings(creationEventArtifact.envelope, CONTEXT_SHEET_CREATE_EVENT_OPERATION);
+    assertKnownBindings(recordArtifact.envelope, CONTEXT_SHEET_CREATE_RECORD_OPERATION, KNOWN_CONTEXT_SHEET_IDENTITY_POLICY_BINDING, recordArtifact.identityPolicyVersion);
+    assertKnownBindings(creationEventArtifact.envelope, CONTEXT_SHEET_CREATE_EVENT_OPERATION, KNOWN_CONTEXT_SHEET_IDENTITY_POLICY_BINDING);
 
     const idempotencyKey = creationEventArtifact.envelope.idempotencyKey;
     const scopeId = creationEventArtifact.envelope.memoryScopeId;
@@ -360,7 +616,7 @@ export function admitContextSheetCreation(paths, recordArtifact, creationEventAr
             [...entries, recordEntry],
             CONTEXT_SHEET_CREATE_EVENT_OPERATION,
             CONTEXT_SHEET_CREATION_EVENT_SCHEMA_ID,
-            CONTEXT_SHEET_CREATION_EVENT_ARTIFACT_CLASS,
+            CONTEXT_SHEET_EVENT_ARTIFACT_CLASS,
             creationEventArtifact,
             eventHash,
             idempotencyKey,
@@ -371,4 +627,28 @@ export function admitContextSheetCreation(paths, recordArtifact, creationEventAr
     } finally {
         releaseContextSheetIdentityLedgerLock(paths);
     }
+}
+
+export function admitContextSheetMerge(paths, mergeEventArtifact, options = {}) {
+    return admitContextSheetLifecycleEvent(paths, mergeEventArtifact, options, {
+        operation: CONTEXT_SHEET_MERGE_OPERATION,
+        label: 'merge',
+        schemaId: CONTEXT_SHEET_MERGE_EVENT_SCHEMA_ID,
+        policyBinding: KNOWN_CONTEXT_SHEET_MERGE_POLICY_BINDING,
+        policyVersionField: 'mergePolicyVersion',
+        validate: validateContextSheetMergeEventArtifact,
+        assertCustody: assertMergeEventCustody,
+    });
+}
+
+export function admitContextSheetSplit(paths, splitEventArtifact, options = {}) {
+    return admitContextSheetLifecycleEvent(paths, splitEventArtifact, options, {
+        operation: CONTEXT_SHEET_SPLIT_OPERATION,
+        label: 'split',
+        schemaId: CONTEXT_SHEET_SPLIT_EVENT_SCHEMA_ID,
+        policyBinding: KNOWN_CONTEXT_SHEET_SPLIT_POLICY_BINDING,
+        policyVersionField: 'splitPolicyVersion',
+        validate: validateContextSheetSplitEventArtifact,
+        assertCustody: assertSplitEventCustody,
+    });
 }
