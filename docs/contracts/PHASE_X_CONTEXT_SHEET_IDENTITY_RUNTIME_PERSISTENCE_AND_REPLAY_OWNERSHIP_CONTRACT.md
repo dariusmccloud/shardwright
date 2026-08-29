@@ -1,8 +1,9 @@
 # Phase X: Context Sheet Identity Runtime Persistence And Replay Ownership Contract
 
-**Version:** 0.1.0
-**Status:** ENTERED - runtime persistence, replay ownership, and failure boundaries are
-normative; writers, routes, migrations, projections, and UI remain unauthorized.
+**Version:** 0.2.0
+**Status:** ENTERED - runtime persistence, replay ownership, failure boundaries, and
+the bounded read-only creation-identity resolver are normative; additional writers,
+routes, migrations, projections, and UI remain unauthorized.
 **Parent:** `PHASE_X_CONTEXT_SHEET_ANCHOR_IDENTITY_AND_LIFECYCLE_CONTRACT.md`
 
 ## 1. Problem
@@ -134,6 +135,31 @@ Only after exact merge/split custody is proven may Membership Link `IMPACT_DECID
 resume. `IMPACT_DECIDE` MUST bind an exact `context-sheet-merge-event-v1` or
 `context-sheet-split-event-v1` ledger entry by hash; it MUST NOT bind a schema-shaped
 placeholder, lifecycle projection, graph edge, title change, or UI state.
+
+### 5.1 Bounded Creation-Identity Read
+
+The Identity service MAY expose one read-only resolver for an exact Context Sheet
+creation record:
+
+```text
+GET /context-sheet-identity/:contextSheetId?memoryScopeId=<scope-id>
+```
+
+The resolver MUST require the exact `contextSheetId` and `memoryScopeId`, read only
+from the Context Sheet Identity ledger, and return the immutable creation-record
+fields already admitted by `context-sheet-record-v1`. It MAY include an explicit
+`lifecycleCoverage: CREATION_RECORD_ONLY` marker so consumers cannot mistake the
+result for a complete current-lifecycle projection.
+
+Unknown or scope-mismatched identity MUST refuse without mutation. Malformed,
+hash-invalid, or otherwise unreplayable Identity ledger custody MUST fail closed using
+the existing Identity replay errors. The resolver MUST NOT infer a title, alias,
+identity, lifecycle state, redirect, merge, split, retirement, or restoration from
+membership links, catalog records, graph state, database rows, or UI state.
+
+This slice does not authorize alias/title-history resolution, complete lifecycle
+projection, catalog-record summary resolution, or ordinary UI behavior. Those require
+their own bounded contracts and proofs.
 
 ## 6. Write Admission And Idempotency
 
@@ -311,7 +337,8 @@ use.
 
 This contract does not authorize:
 
-- creation of the ledger, routes, writers, tables, migrations, or projections;
+- creation of the ledger, additional routes, writers, tables, migrations, or
+  projections beyond the bounded creation-identity read in Section 5.1;
 - model prompts, thresholds, automatic matching, or cluster-based identity decisions;
 - entity-resolution implementation outside exact referenced authority;
 - Memory Catalog, Membership Link, dossier, governance, or publication mutation;
