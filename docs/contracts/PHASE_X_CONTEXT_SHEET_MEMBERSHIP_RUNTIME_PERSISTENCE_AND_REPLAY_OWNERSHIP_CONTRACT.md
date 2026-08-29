@@ -1,6 +1,6 @@
 # Phase X: Context-Sheet Membership Runtime Persistence And Replay Ownership Contract
 
-**Version:** 0.1.0
+**Version:** 0.2.0
 **Status:** ENTERED — runtime persistence, replay ownership, and failure boundaries are
 normative; routes, writers, storage migration, and projections remain unauthorized.
 **Parent:** `PHASE_X_CONTEXT_SHEET_MEMBERSHIP_LINK_CONTRACT.md`
@@ -123,6 +123,54 @@ Structural reference completeness is not semantic validation. In particular, a v
 write of a `NOMINATE` artifact does not establish that a catalog claim, anchor, or
 relationship is true; that remains the later validation boundary.
 
+### 5.1 Write Lease Recovery
+
+The membership-ledger write lease is append-safety infrastructure only. It has no
+membership authority and cannot prove that an artifact was accepted, refused, failed,
+or partially written.
+
+A recoverable lease MUST record service-local metadata sufficient to distinguish an
+active writer from a stale guard:
+
+```text
+leaseVersion
+leaseId
+ownerProcessId
+acquiredAt
+heartbeatAt
+operation
+scopeId
+idempotencyKey
+artifactHash
+```
+
+`artifactHash` is advisory lock metadata only. The membership ledger entry remains the
+sole authority for accepted artifact custody.
+
+If the lease is absent, the writer may acquire it. If the lease exists and is active,
+the writer MUST refuse as lock-held. If the lease exists and satisfies the entered
+stale criteria, the service may reclaim only the lease and then MUST replay the ledger
+and apply the normal idempotency rules under the newly acquired guard. Recovery MUST
+NOT infer whether the interrupted write succeeded from the lease.
+
+If the lease metadata is malformed, missing required fields, future-dated, owned by a
+possibly active writer, or otherwise ambiguous, the service MUST fail closed for write
+admission and leave the lease in place for operator recovery. It MUST NOT delete an
+ambiguous lease automatically.
+
+Stale reclamation requires all of the following:
+
+1. `heartbeatAt` is older than the configured stale threshold;
+2. process liveness checking is unavailable or reports that `ownerProcessId` is not
+   currently live for this service host;
+3. the membership ledger replays without malformed JSONL, duplicate/non-monotonic
+   sequence, or artifact-hash mismatch;
+4. the reclaiming writer records a non-authoritative lease recovery report outside
+   `context-sheet-membership-ledger.jsonl`.
+
+Lease recovery reports are diagnostic artifacts only. They MUST NOT be used as
+membership authority, schema custody, current-use truth, or semantic evidence.
+
 ## 6. Projection Boundary
 
 Any SQLite tables, caches, indexes, graph edges, dossier inputs, or UI lists derived
@@ -174,6 +222,8 @@ The following fail closed for the affected scope or artifact:
   event custody;
 - broken successor or merge/split lineage;
 - projection that disagrees with replayed authority.
+- malformed, missing, future-dated, or ambiguous membership-ledger write lease
+  metadata.
 
 The service MUST preserve the ledger bytes and all referenced authority. It may expose
 a quarantine/reconciliation result and rebuild only disposable projections. Unaffected
