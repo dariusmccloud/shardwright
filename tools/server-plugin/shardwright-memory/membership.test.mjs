@@ -62,6 +62,32 @@ function readBytes(filePath) {
     return fs.readFileSync(filePath);
 }
 
+function writeMembershipLock(paths, overrides = {}) {
+    fs.mkdirSync(paths.contextSheetMembershipLockPath, { recursive: true });
+    const lease = {
+        leaseVersion: 1,
+        leaseId: 'csmlease_test',
+        ownerProcessId: 999999,
+        acquiredAt: '2026-08-29T00:00:00.000Z',
+        heartbeatAt: '2026-08-29T00:00:00.000Z',
+        operation: 'NOMINATE',
+        scopeId: 'scope:phase-x-membership',
+        idempotencyKey: 'idempotency:nominate-operator-direct',
+        artifactHash: `sha256:${'a'.repeat(64)}`,
+        ...overrides,
+    };
+    fs.writeFileSync(path.join(paths.contextSheetMembershipLockPath, 'lease.json'), `${JSON.stringify(lease, null, 2)}\n`, 'utf8');
+    return lease;
+}
+
+function membershipLeaseRecoveryReports(paths) {
+    const reportsRoot = path.join(paths.storageRoot, 'context-sheet-membership-diagnostics', 'lease-recovery');
+    if (!fs.existsSync(reportsRoot)) {
+        return [];
+    }
+    return fs.readdirSync(reportsRoot).sort();
+}
+
 function makeExactNominationReference(nominationEntry) {
     return {
         artifactType: 'context-sheet-membership-nomination-v1',
@@ -691,6 +717,74 @@ test('same idempotency key and same artifact returns the original entry without 
 
     const entries = readContextSheetMembershipLedger(paths);
     assert.equal(entries.length, 1);
+});
+
+test('stale membership write lease is reclaimed without treating the lease as authority', () => {
+    const root = makeTempRoot();
+    const paths = getStoragePaths(root);
+    const artifact = loadFixture('context-sheet-membership-nomination-v1.valid-operator-direct');
+    const first = nominateContextSheetMembership(paths, artifact, { now: Date.parse('2026-08-29T00:01:00.000Z') });
+    const beforeLedger = readBytes(paths.contextSheetMembershipLedgerPath);
+    writeMembershipLock(paths, {
+        acquiredAt: '2026-08-29T00:00:00.000Z',
+        heartbeatAt: '2026-08-29T00:00:00.000Z',
+        artifactHash: computeMembershipArtifactHash(artifact),
+    });
+
+    const second = nominateContextSheetMembership(paths, artifact, {
+        now: Date.parse('2026-08-29T00:10:00.000Z'),
+        staleLeaseMs: 1000,
+    });
+
+    assert.equal(second.appended, false);
+    assert.deepEqual(second.entry, first.entry);
+    assert.deepEqual(readBytes(paths.contextSheetMembershipLedgerPath), beforeLedger);
+    assert.equal(fs.existsSync(paths.contextSheetMembershipLockPath), false);
+    const reports = membershipLeaseRecoveryReports(paths);
+    assert.equal(reports.length, 1);
+    const report = JSON.parse(fs.readFileSync(path.join(paths.storageRoot, 'context-sheet-membership-diagnostics', 'lease-recovery', reports[0]), 'utf8'));
+    assert.equal(report.reportAuthority, 'NON_AUTHORITATIVE_DIAGNOSTIC');
+    assert.equal(report.reason, 'STALE_LEASE_RECLAIMED');
+});
+
+test('active membership write lease refuses admission without mutating authority', () => {
+    const root = makeTempRoot();
+    const paths = getStoragePaths(root);
+    const artifact = loadFixture('context-sheet-membership-nomination-v1.valid-operator-direct');
+    writeMembershipLock(paths, {
+        acquiredAt: '2026-08-29T00:09:59.000Z',
+        heartbeatAt: '2026-08-29T00:09:59.000Z',
+    });
+
+    assert.throws(
+        () => nominateContextSheetMembership(paths, artifact, {
+            now: Date.parse('2026-08-29T00:10:00.000Z'),
+            staleLeaseMs: 60 * 1000,
+        }),
+        (error) => error.code === 'CSM_LEDGER_LOCK_HELD',
+    );
+    assert.equal(fs.existsSync(paths.contextSheetMembershipLedgerPath), false);
+    assert.equal(fs.existsSync(paths.contextSheetMembershipLockPath), true);
+    assert.deepEqual(membershipLeaseRecoveryReports(paths), []);
+});
+
+test('ambiguous membership write lease fails closed and leaves the lock for operator recovery', () => {
+    const root = makeTempRoot();
+    const paths = getStoragePaths(root);
+    const artifact = loadFixture('context-sheet-membership-nomination-v1.valid-operator-direct');
+    fs.mkdirSync(paths.contextSheetMembershipLockPath, { recursive: true });
+    fs.writeFileSync(path.join(paths.contextSheetMembershipLockPath, 'lease.json'), '{not-json}\n', 'utf8');
+
+    assert.throws(
+        () => nominateContextSheetMembership(paths, artifact, {
+            now: Date.parse('2026-08-29T00:10:00.000Z'),
+            staleLeaseMs: 1000,
+        }),
+        (error) => error.code === 'CSM_LEDGER_LOCK_AMBIGUOUS',
+    );
+    assert.equal(fs.existsSync(paths.contextSheetMembershipLedgerPath), false);
+    assert.equal(fs.existsSync(paths.contextSheetMembershipLockPath), true);
+    assert.deepEqual(membershipLeaseRecoveryReports(paths), []);
 });
 
 test('same idempotency key with different immutable content refuses without append', () => {

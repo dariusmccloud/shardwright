@@ -3,8 +3,9 @@
 // Bounded by docs/contracts/PHASE_X_CONTEXT_SHEET_MEMBERSHIP_RUNTIME_PERSISTENCE_AND_REPLAY_OWNERSHIP_CONTRACT.md.
 // This module owns only the context-sheet-membership-ledger.jsonl append/read boundary for the
 // NOMINATE, durable VALIDATE-event, immutable LINK, SUCCEED-event, IMPACT_DECIDE-event,
-// RECONCILE-result admission, and disposable current-use replay boundary. Semantic validation,
-// persisted projections, UI, and authority repair remain unauthorized and out of scope.
+// RECONCILE-result admission, disposable current-use replay boundary, persisted current-use
+// projection rebuild, and write-lease recovery diagnostics. Semantic validation, UI, and
+// authority repair remain unauthorized and out of scope.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -39,6 +40,9 @@ const MEMBERSHIP_IMPACT_DECIDE_OPERATION = 'IMPACT_DECIDE';
 const MEMBERSHIP_IMPACT_DECISION_ARTIFACT_CLASS = 'EVENT';
 const MEMBERSHIP_RECONCILE_OPERATION = 'RECONCILE';
 const MEMBERSHIP_RECONCILIATION_RESULT_ARTIFACT_CLASS = 'RESULT';
+const MEMBERSHIP_LOCK_LEASE_VERSION = 1;
+const MEMBERSHIP_LOCK_STALE_MS = 5 * 60 * 1000;
+const MEMBERSHIP_LOCK_METADATA_FILE = 'lease.json';
 
 // This slice recognizes exactly one governing contract binding for membership operations. NOMINATE
 // has no applicable policy binding yet; VALIDATE, LINK, and SUCCEED require the recognized
@@ -199,17 +203,179 @@ export function computeMembershipArtifactHash(artifact) {
     return `sha256:${crypto.createHash('sha256').update(canonicalPayload).digest('hex')}`;
 }
 
-function acquireMembershipLedgerLock(paths) {
-    ensureStorageRoot(paths.locksRoot);
+function membershipLockMetadataPath(paths) {
+    return path.join(paths.contextSheetMembershipLockPath, MEMBERSHIP_LOCK_METADATA_FILE);
+}
+
+function membershipLockDiagnosticsRoot(paths) {
+    return path.join(paths.storageRoot, 'context-sheet-membership-diagnostics', 'lease-recovery');
+}
+
+function parseMembershipLeaseTimestamp(value, fieldName) {
+    const timestamp = Date.parse(value);
+    if (!Number.isFinite(timestamp)) {
+        throw createError(409, `Context Sheet membership ledger lock has invalid ${fieldName}.`, 'CSM_LEDGER_LOCK_AMBIGUOUS');
+    }
+    return timestamp;
+}
+
+function isProcessLive(processId) {
+    if (!Number.isInteger(processId) || processId <= 0) {
+        return true;
+    }
     try {
-        fs.mkdirSync(paths.contextSheetMembershipLockPath);
+        process.kill(processId, 0);
+        return true;
     } catch (error) {
-        if (error && error.code === 'EEXIST') {
+        return error?.code === 'EPERM';
+    }
+}
+
+function readMembershipLeaseMetadata(paths) {
+    const metadataPath = membershipLockMetadataPath(paths);
+    if (!fs.existsSync(metadataPath)) {
+        throw createError(
+            409,
+            'Context Sheet membership ledger lock is missing required lease metadata.',
+            'CSM_LEDGER_LOCK_AMBIGUOUS',
+        );
+    }
+    let lease;
+    try {
+        lease = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+    } catch {
+        throw createError(
+            409,
+            'Context Sheet membership ledger lock metadata is malformed.',
+            'CSM_LEDGER_LOCK_AMBIGUOUS',
+        );
+    }
+    const requiredFields = ['leaseVersion', 'leaseId', 'ownerProcessId', 'acquiredAt', 'heartbeatAt', 'operation', 'scopeId', 'idempotencyKey', 'artifactHash'];
+    for (const field of requiredFields) {
+        if (lease[field] === undefined || lease[field] === null || lease[field] === '') {
             throw createError(
                 409,
-                'Another Context Sheet membership ledger append is already in progress.',
-                'CSM_LEDGER_LOCK_HELD',
+                'Context Sheet membership ledger lock metadata is missing required fields.',
+                'CSM_LEDGER_LOCK_AMBIGUOUS',
+                { field },
             );
+        }
+    }
+    if (lease.leaseVersion !== MEMBERSHIP_LOCK_LEASE_VERSION) {
+        throw createError(
+            409,
+            'Context Sheet membership ledger lock metadata uses an unsupported lease version.',
+            'CSM_LEDGER_LOCK_AMBIGUOUS',
+        );
+    }
+    return lease;
+}
+
+function writeMembershipLeaseRecoveryReport(paths, staleLease, newLease, options) {
+    const recoveredAt = new Date(nowTimestamp(options.now)).toISOString();
+    const report = {
+        reportType: 'context-sheet-membership-lease-recovery-v1',
+        reportAuthority: 'NON_AUTHORITATIVE_DIAGNOSTIC',
+        recoveredAt,
+        reason: 'STALE_LEASE_RECLAIMED',
+        staleLease: cloneJson(staleLease),
+        newLease: cloneJson(newLease),
+        sourceLedger: 'context-sheet-membership-ledger.jsonl',
+    };
+    const content = `${JSON.stringify(report, null, 2)}\n`;
+    const reportHash = `sha256:${crypto.createHash('sha256').update(Buffer.from(content, 'utf8')).digest('hex')}`;
+    const reportRoot = membershipLockDiagnosticsRoot(paths);
+    fs.mkdirSync(reportRoot, { recursive: true });
+    const reportPath = path.join(reportRoot, `${newLease.leaseId}.json`);
+    atomicWriteFile(reportPath, content);
+    return { path: reportPath, hash: reportHash };
+}
+
+function createMembershipLease(paths, context, options) {
+    const timestamp = new Date(nowTimestamp(options.now)).toISOString();
+    return {
+        leaseVersion: MEMBERSHIP_LOCK_LEASE_VERSION,
+        leaseId: createId('csmlease'),
+        ownerProcessId: process.pid,
+        acquiredAt: timestamp,
+        heartbeatAt: timestamp,
+        operation: context.operation,
+        scopeId: context.scopeId,
+        idempotencyKey: context.idempotencyKey,
+        artifactHash: context.artifactHash,
+    };
+}
+
+function assertMembershipLeaseReclaimable(paths, lease, options) {
+    const now = nowTimestamp(options.now);
+    const acquiredAt = parseMembershipLeaseTimestamp(lease.acquiredAt, 'acquiredAt');
+    const heartbeatAt = parseMembershipLeaseTimestamp(lease.heartbeatAt, 'heartbeatAt');
+    if (acquiredAt > now || heartbeatAt > now) {
+        throw createError(
+            409,
+            'Context Sheet membership ledger lock metadata is future-dated.',
+            'CSM_LEDGER_LOCK_AMBIGUOUS',
+        );
+    }
+    const staleLeaseMs = Number.isFinite(options.staleLeaseMs) ? Number(options.staleLeaseMs) : MEMBERSHIP_LOCK_STALE_MS;
+    if (now - heartbeatAt <= staleLeaseMs) {
+        throw createError(
+            409,
+            'Another Context Sheet membership ledger append is already in progress.',
+            'CSM_LEDGER_LOCK_HELD',
+        );
+    }
+    if (isProcessLive(lease.ownerProcessId)) {
+        throw createError(
+            409,
+            'Context Sheet membership ledger lock is stale by timestamp but owner process may still be active.',
+            'CSM_LEDGER_LOCK_AMBIGUOUS',
+        );
+    }
+    readMembershipLedgerEntries(paths.contextSheetMembershipLedgerPath);
+}
+
+function writeMembershipLeaseMetadata(paths, lease) {
+    atomicWriteFile(membershipLockMetadataPath(paths), `${JSON.stringify(lease, null, 2)}\n`);
+}
+
+function acquireMembershipLedgerLock(paths, context = {}, options = {}) {
+    ensureStorageRoot(paths.locksRoot);
+    const lease = createMembershipLease(paths, context, options);
+    try {
+        fs.mkdirSync(paths.contextSheetMembershipLockPath);
+        try {
+            writeMembershipLeaseMetadata(paths, lease);
+            return { lease, recovered: false };
+        } catch (metadataError) {
+            releaseMembershipLedgerLock(paths);
+            throw metadataError;
+        }
+    } catch (error) {
+        if (error && error.code === 'EEXIST') {
+            const staleLease = readMembershipLeaseMetadata(paths);
+            assertMembershipLeaseReclaimable(paths, staleLease, options);
+            fs.rmSync(paths.contextSheetMembershipLockPath, { recursive: true, force: true });
+            let acquiredReplacement = false;
+            try {
+                fs.mkdirSync(paths.contextSheetMembershipLockPath);
+                acquiredReplacement = true;
+                writeMembershipLeaseMetadata(paths, lease);
+                const recoveryReport = writeMembershipLeaseRecoveryReport(paths, staleLease, lease, options);
+                return { lease, recovered: true, recoveryReport };
+            } catch (reacquireError) {
+                if (reacquireError && reacquireError.code === 'EEXIST') {
+                    throw createError(
+                        409,
+                        'Another Context Sheet membership ledger append is already in progress.',
+                        'CSM_LEDGER_LOCK_HELD',
+                    );
+                }
+                if (acquiredReplacement) {
+                    releaseMembershipLedgerLock(paths);
+                }
+                throw reacquireError;
+            }
         }
         throw error;
     }
@@ -748,7 +914,7 @@ export function nominateContextSheetMembership(paths, artifact, options = {}) {
     const artifactHash = computeMembershipArtifactHash(artifact);
 
     ensureStorageRoot(paths.storageRoot);
-    acquireMembershipLedgerLock(paths);
+    acquireMembershipLedgerLock(paths, { operation: MEMBERSHIP_NOMINATION_OPERATION, scopeId, idempotencyKey, artifactHash }, options);
     try {
         const entries = readMembershipLedgerEntries(paths.contextSheetMembershipLedgerPath);
         const existing = findExistingOperation(entries, scopeId, MEMBERSHIP_NOMINATION_OPERATION, MEMBERSHIP_NOMINATION_SCHEMA_ID, idempotencyKey);
@@ -814,7 +980,7 @@ export function admitContextSheetMembershipValidation(paths, artifact, options =
     const artifactHash = computeMembershipArtifactHash(artifact);
 
     ensureStorageRoot(paths.storageRoot);
-    acquireMembershipLedgerLock(paths);
+    acquireMembershipLedgerLock(paths, { operation: MEMBERSHIP_VALIDATION_OPERATION, scopeId, idempotencyKey, artifactHash }, options);
     try {
         const entries = readMembershipLedgerEntries(paths.contextSheetMembershipLedgerPath);
         assertValidationNominationCustody(entries, artifact);
@@ -869,7 +1035,7 @@ export function admitContextSheetMembershipLink(paths, artifact, options = {}) {
     const idempotencyKey = envelope.idempotencyKey;
     const artifactHash = computeMembershipArtifactHash(artifact);
     ensureStorageRoot(paths.storageRoot);
-    acquireMembershipLedgerLock(paths);
+    acquireMembershipLedgerLock(paths, { operation: MEMBERSHIP_LINK_OPERATION, scopeId, idempotencyKey, artifactHash }, options);
     try {
         const entries = readMembershipLedgerEntries(paths.contextSheetMembershipLedgerPath);
         assertLinkValidationCustody(entries, artifact);
@@ -920,7 +1086,7 @@ export function admitContextSheetMembershipSuccessor(paths, artifact, options = 
     const idempotencyKey = envelope.idempotencyKey;
     const artifactHash = computeMembershipArtifactHash(artifact);
     ensureStorageRoot(paths.storageRoot);
-    acquireMembershipLedgerLock(paths);
+    acquireMembershipLedgerLock(paths, { operation: MEMBERSHIP_SUCCESSOR_OPERATION, scopeId, idempotencyKey, artifactHash }, options);
     try {
         const entries = readMembershipLedgerEntries(paths.contextSheetMembershipLedgerPath);
         assertSuccessorLinkCustody(entries, artifact);
@@ -968,7 +1134,7 @@ export function admitContextSheetMembershipImpactDecision(paths, artifact, optio
     const idempotencyKey = envelope.idempotencyKey;
     const artifactHash = computeMembershipArtifactHash(artifact);
     ensureStorageRoot(paths.storageRoot);
-    acquireMembershipLedgerLock(paths);
+    acquireMembershipLedgerLock(paths, { operation: MEMBERSHIP_IMPACT_DECIDE_OPERATION, scopeId, idempotencyKey, artifactHash }, options);
     try {
         const entries = readMembershipLedgerEntries(paths.contextSheetMembershipLedgerPath);
         const existing = findExistingOperation(entries, scopeId, MEMBERSHIP_IMPACT_DECIDE_OPERATION, MEMBERSHIP_IMPACT_DECISION_SCHEMA_ID, idempotencyKey);
@@ -1118,7 +1284,7 @@ export function admitContextSheetMembershipReconciliationResult(paths, artifact,
     const idempotencyKey = envelope.artifactId;
     const artifactHash = computeMembershipArtifactHash(artifact);
     ensureStorageRoot(paths.storageRoot);
-    acquireMembershipLedgerLock(paths);
+    acquireMembershipLedgerLock(paths, { operation: MEMBERSHIP_RECONCILE_OPERATION, scopeId, idempotencyKey, artifactHash }, options);
     try {
         const entries = readMembershipLedgerEntries(paths.contextSheetMembershipLedgerPath);
         const existing = findExistingOperation(entries, scopeId, MEMBERSHIP_RECONCILE_OPERATION, MEMBERSHIP_RECONCILIATION_RESULT_SCHEMA_ID, idempotencyKey);

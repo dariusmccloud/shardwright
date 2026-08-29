@@ -1,8 +1,9 @@
 # Phase X: Context-Sheet Membership Runtime Persistence And Replay Ownership Contract
 
 **Version:** 0.2.0
-**Status:** ENTERED — runtime persistence, replay ownership, and failure boundaries are
-normative; routes, writers, storage migration, and projections remain unauthorized.
+**Status:** ENTERED — runtime persistence, replay ownership, failure boundaries, and
+write-lease recovery policy are normative; new routes, storage migration, UI, and
+additional projection classes remain unauthorized without a separately proven slice.
 **Parent:** `PHASE_X_CONTEXT_SHEET_MEMBERSHIP_LINK_CONTRACT.md`
 
 ## 1. Problem
@@ -18,8 +19,8 @@ make relationship organization look like continuity publication. A mutable SQLit
 or UI state would make replay unable to distinguish a lawful decision from a later
 projection.
 
-This contract establishes a separate durable Membership Link authority ledger and its
-replay ownership before any runtime writer or route exists.
+This contract establishes a separate durable Membership Link authority ledger, replay
+ownership, and append-safety lease policy before broader runtime surfaces exist.
 
 ## 2. Governing Authority
 
@@ -262,7 +263,7 @@ association is false, current, or safe to use.
 
 This contract does not authorize:
 
-- creation of the ledger, routes, writers, tables, migrations, or projections;
+- creation of new routes, tables, migrations, UI, or additional projection classes;
 - automatic nomination or semantic validation;
 - catalog, Context Sheet, dossier, governance, or publication mutation;
 - migration of historical associations;
