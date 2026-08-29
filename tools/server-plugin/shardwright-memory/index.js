@@ -77,6 +77,7 @@ import {
     upsertInterpretiveSynthesisPolicy,
 } from './interpretive.js';
 import {
+    rebuildContextSheetMembershipCurrentUseProjection,
     replayContextSheetMembershipCurrentUse,
 } from './membership.js';
 import {
@@ -170,6 +171,15 @@ export async function init(router) {
         }
     });
 
+    router.post('/context-sheet-membership/current-use/rebuild', async (request, response) => {
+        try {
+            const paths = getStoragePaths(getAuthenticatedUserRoot(request));
+            const result = rebuildContextSheetMembershipCurrentUseProjection(paths, { now: request.body?.now });
+            return response.send({ ok: true, ...result });
+        } catch (error) {
+            return handleError(response, error);
+        }
+    });
     router.post('/upgrade/replay', async (request, response) => {
         try {
             const result = replayGovernedMemoryState(request, {

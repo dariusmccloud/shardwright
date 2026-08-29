@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 
 import Ajv2020 from 'ajv/dist/2020.js';
 
-import { cloneJson, createError, createId, ensureStorageRoot, nowTimestamp, stableStringify } from './core.js';
+import { atomicWriteFile, cloneJson, createError, createId, ensureStorageRoot, nowTimestamp, stableStringify } from './core.js';
 import { readContextSheetIdentityLedger } from './identity.js';
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
@@ -1144,4 +1144,31 @@ export function admitContextSheetMembershipReconciliationResult(paths, artifact,
     } finally {
         releaseMembershipLedgerLock(paths);
     }
+}
+
+export function rebuildContextSheetMembershipCurrentUseProjection(paths, options = {}) {
+    ensureStorageRoot(paths.storageRoot);
+    const projection = replayContextSheetMembershipCurrentUse(paths);
+    const rebuiltAt = new Date(nowTimestamp(options.now)).toISOString();
+    const artifact = {
+        projectionType: 'context-sheet-membership-current-use-persisted-v1',
+        projectionAuthority: 'DISPOSABLE_REPLAY_DERIVED',
+        sourceLedger: projection.sourceLedger,
+        rebuiltAt,
+        projection,
+    };
+    const content = `${JSON.stringify(artifact, null, 2)}\n`;
+    const projectionHash = `sha256:${crypto.createHash('sha256').update(Buffer.from(content, 'utf8')).digest('hex')}`;
+    fs.mkdirSync(path.dirname(paths.contextSheetMembershipCurrentUseProjectionPath), { recursive: true });
+    atomicWriteFile(paths.contextSheetMembershipCurrentUseProjectionPath, content);
+    return {
+        projection,
+        persistedProjection: {
+            projectionType: artifact.projectionType,
+            projectionAuthority: artifact.projectionAuthority,
+            path: paths.contextSheetMembershipCurrentUseProjectionPath,
+            hash: projectionHash,
+            rebuiltAt,
+        },
+    };
 }

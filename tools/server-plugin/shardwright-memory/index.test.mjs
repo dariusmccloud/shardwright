@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -333,6 +334,7 @@ test('route surface exposes candidate lifecycle routes and separate promotion ro
 
     assert.equal(router.routes.get.has('/upgrade/preflight'), true);
     assert.equal(router.routes.get.has('/context-sheet-membership/current-use'), true);
+    assert.equal(router.routes.post.has('/context-sheet-membership/current-use/rebuild'), true);
     assert.equal(router.routes.post.has('/upgrade/replay'), true);
     assert.equal(router.routes.get.has('/rebuild/candidate/report/:reconstructionRunId'), true);
     assert.equal(router.routes.get.has('/rebuild/candidate/runs/:memoryScopeId'), true);
@@ -410,6 +412,62 @@ test('membership current-use route returns disposable replay projection without 
     assert.equal(readContextSheetMembershipLedger(paths).length, 3);
 });
 
+test('membership current-use rebuild route persists disposable projection without mutating authority', async () => {
+    const root = makeTempRoot();
+    const paths = getStoragePaths(root);
+    seedAcceptedMembershipLink(paths);
+    const beforeLedger = fs.readFileSync(paths.contextSheetMembershipLedgerPath, 'utf8');
+    const router = createMockRouter();
+    await init(router);
+
+    const result = await invoke(
+        router.routes.post.get('/context-sheet-membership/current-use/rebuild'),
+        buildRequest(root, { body: { now: 1788000000000 } }),
+    );
+
+    assert.equal(result.statusCode, 200);
+    assert.equal(result.payload.ok, true);
+    assert.equal(result.payload.projection.projectionType, 'context-sheet-membership-current-use-v1');
+    assert.equal(result.payload.persistedProjection.projectionType, 'context-sheet-membership-current-use-persisted-v1');
+    assert.equal(result.payload.persistedProjection.projectionAuthority, 'DISPOSABLE_REPLAY_DERIVED');
+    assert.equal(result.payload.persistedProjection.path, paths.contextSheetMembershipCurrentUseProjectionPath);
+    assert.equal(result.payload.persistedProjection.rebuiltAt, '2026-08-29T10:40:00.000Z');
+    assert.equal(fs.existsSync(paths.contextSheetMembershipCurrentUseProjectionPath), true);
+    const projectionBytes = fs.readFileSync(paths.contextSheetMembershipCurrentUseProjectionPath);
+    assert.equal(
+        result.payload.persistedProjection.hash,
+        `sha256:${crypto.createHash('sha256').update(projectionBytes).digest('hex')}`,
+    );
+    const persisted = JSON.parse(projectionBytes.toString('utf8'));
+    assert.deepEqual(persisted.projection, result.payload.projection);
+    assert.equal(fs.readFileSync(paths.contextSheetMembershipLedgerPath, 'utf8'), beforeLedger);
+    assert.equal(readContextSheetMembershipLedger(paths).length, 3);
+});
+
+test('membership current-use rebuild route fails closed without replacing the last projection', async () => {
+    const root = makeTempRoot();
+    const paths = getStoragePaths(root);
+    seedAcceptedMembershipLink(paths);
+    const router = createMockRouter();
+    await init(router);
+    const first = await invoke(
+        router.routes.post.get('/context-sheet-membership/current-use/rebuild'),
+        buildRequest(root, { body: { now: 1788000000000 } }),
+    );
+    const beforeProjection = fs.readFileSync(paths.contextSheetMembershipCurrentUseProjectionPath, 'utf8');
+    fs.appendFileSync(paths.contextSheetMembershipLedgerPath, '{"entryId":', 'utf8');
+
+    const failed = await invoke(
+        router.routes.post.get('/context-sheet-membership/current-use/rebuild'),
+        buildRequest(root, { body: { now: 1788000001000 } }),
+    );
+
+    assert.equal(first.statusCode, 200);
+    assert.equal(failed.statusCode, 409);
+    assert.equal(failed.payload.ok, false);
+    assert.equal(failed.payload.code, 'CSM_LEDGER_MALFORMED');
+    assert.equal(fs.readFileSync(paths.contextSheetMembershipCurrentUseProjectionPath, 'utf8'), beforeProjection);
+});
 test('membership current-use route fails closed on unreadable replay authority', async () => {
     const root = makeTempRoot();
     const paths = getStoragePaths(root);

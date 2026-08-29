@@ -158,7 +158,7 @@
     },
     {
       "relativePath": "core.js",
-      "sha256": "ff7ee9830387b9fd7566225b4ca06670857d08375d0126e7afb13c6442499fae"
+      "sha256": "48125166e92b086c995e0334e674179889931d784e6a15d9052e4390f3b3f701"
     },
     {
       "relativePath": "identity.js",
@@ -166,7 +166,7 @@
     },
     {
       "relativePath": "index.js",
-      "sha256": "c1202fbb8ef8d98eaf05af9545d06beea4c290d87dd3ba2feb3d996fbe117e86"
+      "sha256": "62e01d2339d6dae08a0806e3abd2e8a5a0e103e03f0573a9197d0f0f405b46c8"
     },
     {
       "relativePath": "interpretive.js",
@@ -274,7 +274,7 @@
     },
     {
       "relativePath": "membership.js",
-      "sha256": "958e97c3312fb7c86cbc57f4ab516817d99cb6384306025b8156dd6a9f1f12b3"
+      "sha256": "2ff130cb8da5373a84b06e0789cd7299319ca3dee436f7a6eaf9983a98dfe93a"
     },
     {
       "relativePath": "package.json",

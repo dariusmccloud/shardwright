@@ -190,6 +190,8 @@ function buildStoragePaths(userRoot, storageDirectoryName) {
     const interpretiveGovernanceLedgerPath = path.join(storageRoot, 'interpretive-governance-ledger.jsonl');
     const dnmPublicationLedgerPath = path.join(storageRoot, 'dnm-publication-ledger.jsonl');
     const contextSheetMembershipLedgerPath = path.join(storageRoot, 'context-sheet-membership-ledger.jsonl');
+    const contextSheetMembershipProjectionsRoot = path.join(storageRoot, 'context-sheet-membership-projections');
+    const contextSheetMembershipCurrentUseProjectionPath = path.join(contextSheetMembershipProjectionsRoot, 'current-use.json');
     const contextSheetIdentityLedgerPath = path.join(storageRoot, 'context-sheet-identity-ledger.jsonl');
     const architecturalReplayArtifactsRoot = path.join(storageRoot, 'architectural-replay-artifacts');
     const architecturalReplayLedgerPath = path.join(storageRoot, 'architectural-shard-replay-ledger.jsonl');
@@ -209,6 +211,8 @@ function buildStoragePaths(userRoot, storageDirectoryName) {
         interpretiveGovernanceLedgerPath,
         dnmPublicationLedgerPath,
         contextSheetMembershipLedgerPath,
+        contextSheetMembershipProjectionsRoot,
+        contextSheetMembershipCurrentUseProjectionPath,
         contextSheetIdentityLedgerPath,
         architecturalReplayArtifactsRoot,
         architecturalReplayLedgerPath,
