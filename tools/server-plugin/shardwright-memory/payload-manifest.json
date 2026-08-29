@@ -9,6 +9,8 @@
     "core.js",
     "architectural-replay.js",
     "interpretive.js",
+    "identity.js",
+    "membership.js",
     "subject-scoped-proposal-policy.js",
     "promotion.js",
     "rebuild.js",
@@ -156,15 +158,19 @@
     },
     {
       "relativePath": "core.js",
-      "sha256": "744e34c2a2839e8c60d0d1b9328fc82d2862d56117eed09cc859b2723167c9d3"
+      "sha256": "ff7ee9830387b9fd7566225b4ca06670857d08375d0126e7afb13c6442499fae"
+    },
+    {
+      "relativePath": "identity.js",
+      "sha256": "70b985c2db7a0aa200373da62fcce23cebe163f6d861cd838fcb0456c66a74d5"
     },
     {
       "relativePath": "index.js",
-      "sha256": "c8788f99030c834c412faf60f907132132c5e0299fbed2a0fbd1bcbf568ab802"
+      "sha256": "c1202fbb8ef8d98eaf05af9545d06beea4c290d87dd3ba2feb3d996fbe117e86"
     },
     {
       "relativePath": "interpretive.js",
-      "sha256": "a5c6c72e587238dd50e0cdc01b2474a99317d02a896f1f76163dbcce1b6d2a4e"
+      "sha256": "0f631f98cf8eb0f4998dc0fb267fce186f531ac0ea8e5d2ef0567cb7b97fa731"
     },
     {
       "relativePath": "lib/core/api/structured-output.js",
@@ -267,6 +273,10 @@
       "sha256": "ff1a866297805909abe025fa62d1193abded90b622d627a129e2c8e19bd5a5ef"
     },
     {
+      "relativePath": "membership.js",
+      "sha256": "958e97c3312fb7c86cbc57f4ab516817d99cb6384306025b8156dd6a9f1f12b3"
+    },
+    {
       "relativePath": "package.json",
       "sha256": "67adf49ca0fa88bd1ca07acacfd7fe4c653d826b02c681c83287dde18221780d"
     },
@@ -284,7 +294,7 @@
     },
     {
       "relativePath": "schema.js",
-      "sha256": "e994ea2eb745d0660c0d1053e4ac50da75df2d42334a2312442f8778c0590599"
+      "sha256": "699ce49d618c739e3545ad2a7953fa6adf5546519170993ebcaecc35adaa7d1b"
     },
     {
       "relativePath": "sqlite-bun.js",
@@ -296,7 +306,7 @@
     },
     {
       "relativePath": "subject-scoped-proposal-policy.js",
-      "sha256": "699d1f1d3211153c260bea3dc0ad55867fd85e284b7be3ef839931a3b808431d"
+      "sha256": "43c17028240b3c87ade0e8675706eb9ad6aef0d747bf6489b3129171db1dc4f5"
     },
     {
       "relativePath": "upgrade.js",

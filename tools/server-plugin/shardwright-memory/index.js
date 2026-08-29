@@ -77,6 +77,9 @@ import {
     upsertInterpretiveSynthesisPolicy,
 } from './interpretive.js';
 import {
+    replayContextSheetMembershipCurrentUse,
+} from './membership.js';
+import {
     assignSubjectScopedProposalPolicyProfile,
     bindAuthenticatedAccountToSemanticEntity,
     declareSubjectScopedProposalFact,
@@ -152,6 +155,16 @@ export async function init(router) {
             const paths = getStoragePaths(getAuthenticatedUserRoot(request));
             const preflight = getUpgradeReplayPreflight(paths);
             return response.send(preflight);
+        } catch (error) {
+            return handleError(response, error);
+        }
+    });
+
+    router.get('/context-sheet-membership/current-use', async (request, response) => {
+        try {
+            const paths = getStoragePaths(getAuthenticatedUserRoot(request));
+            const projection = replayContextSheetMembershipCurrentUse(paths);
+            return response.send({ ok: true, projection });
         } catch (error) {
             return handleError(response, error);
         }

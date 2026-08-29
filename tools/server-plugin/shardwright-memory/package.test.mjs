@@ -356,6 +356,8 @@ test('packaged plugin stages only declared payload and resolves runtime imports 
     const payloadManifest = JSON.parse(fs.readFileSync(payloadManifestPath, 'utf8'));
     assert.equal(payloadManifest.pluginId, 'shardwright-memory');
     assert.equal(path.basename(staged.pluginRoot), 'shardwright-memory');
+    assert.equal(payloadManifest.staticPayloadFiles.includes('identity.js'), true);
+    assert.equal(payloadManifest.staticPayloadFiles.includes('membership.js'), true);
     assert.equal(payloadManifest.staticPayloadFiles.includes('subject-scoped-proposal-policy.js'), true);
     const resolvedFiles = assertImportsStayWithinRoot(path.join(staged.pluginRoot, 'index.js'), staged.pluginRoot);
     assert.equal(resolvedFiles.some((filePath) => filePath.includes('OneDrive')), false);

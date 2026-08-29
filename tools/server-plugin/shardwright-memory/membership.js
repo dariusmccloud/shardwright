@@ -1,10 +1,10 @@
-// Context Sheet Membership: durable NOMINATE, VALIDATE, LINK, SUCCEED, and IMPACT_DECIDE ledger foundation.
+// Context Sheet Membership: durable NOMINATE, VALIDATE, LINK, SUCCEED, IMPACT_DECIDE, and RECONCILE ledger foundation.
 //
 // Bounded by docs/contracts/PHASE_X_CONTEXT_SHEET_MEMBERSHIP_RUNTIME_PERSISTENCE_AND_REPLAY_OWNERSHIP_CONTRACT.md.
 // This module owns only the context-sheet-membership-ledger.jsonl append/read boundary for the
-// NOMINATE, durable VALIDATE-event, immutable LINK, SUCCEED-event, and IMPACT_DECIDE-event
-// admission. RECONCILE, routes, projections, semantic validation, and UI remain unauthorized
-// and out of scope for this slice.
+// NOMINATE, durable VALIDATE-event, immutable LINK, SUCCEED-event, IMPACT_DECIDE-event,
+// RECONCILE-result admission, and disposable current-use replay boundary. Semantic validation,
+// persisted projections, UI, and authority repair remain unauthorized and out of scope.
 
 import fs from 'node:fs';
 import path from 'node:path';

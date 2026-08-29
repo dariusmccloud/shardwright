@@ -15,6 +15,8 @@ const STATIC_PAYLOAD_FILES = Object.freeze([
     'core.js',
     'architectural-replay.js',
     'interpretive.js',
+    'identity.js',
+    'membership.js',
     'subject-scoped-proposal-policy.js',
     'promotion.js',
     'rebuild.js',

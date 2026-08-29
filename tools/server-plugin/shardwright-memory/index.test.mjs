@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { buildManagedShardManifest } from './lib/core/summarization/shard-integrity-core.js';
 import { renderFinalizedArchitecturalPayload } from './lib/core/summarization/architectural-finalized-semantic.js';
@@ -14,9 +15,19 @@ import {
     openOperationalDatabase,
 } from './core.js';
 import { info, init } from './index.js';
+import {
+    admitContextSheetMembershipValidation,
+    admitContextSheetMembershipLink,
+    nominateContextSheetMembership,
+    readContextSheetMembershipLedger,
+} from './membership.js';
 import { initCandidateRebuildRun, runCandidateRebuild } from './rebuild.js';
 import { createPromotionAuthorization, executePromotionAuthorization } from './promotion.js';
 import { replayInterpretiveLedger } from './interpretive.js';
+
+const currentDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(currentDir, '..', '..', '..');
+const fixtureDir = path.join(repoRoot, 'docs', 'schemas', 'memory-catalog', 'fixtures');
 
 function makeTempRoot() {
     return fs.mkdtempSync(path.join(os.tmpdir(), 'summary-sharder-routes-'));
@@ -26,6 +37,81 @@ function makeMessageId(suffix) {
     return `msg_${suffix.padEnd(32, '0').slice(0, 32)}`;
 }
 
+function loadMembershipFixture(name) {
+    return JSON.parse(fs.readFileSync(path.join(fixtureDir, `${name}.json`), 'utf8'));
+}
+
+function clone(value) {
+    return JSON.parse(JSON.stringify(value));
+}
+
+function makeExactNominationReference(nominationEntry) {
+    return {
+        artifactType: 'context-sheet-membership-nomination-v1',
+        artifactId: nominationEntry.artifactId,
+        memoryScopeId: nominationEntry.scopeId,
+        expectedArtifactClass: 'NOMINATION',
+        resolutionRequirement: 'EXACT_HASH',
+        immutableHash: nominationEntry.artifactHash,
+    };
+}
+
+function makeExactValidationReference(validationEntry) {
+    return {
+        artifactType: 'context-sheet-membership-validation-event-v1',
+        artifactId: validationEntry.artifactId,
+        memoryScopeId: validationEntry.scopeId,
+        expectedArtifactClass: 'EVENT',
+        resolutionRequirement: 'EXACT_HASH',
+        immutableHash: validationEntry.artifactHash,
+    };
+}
+
+function makeMembershipValidationArtifact(nominationEntry) {
+    const artifact = loadMembershipFixture('context-sheet-membership-validation-event-v1.valid-accepted');
+    const nominationRef = makeExactNominationReference(nominationEntry);
+    artifact.envelope.memoryScopeId = nominationEntry.scopeId;
+    artifact.envelope.authorityBasisRefs = [nominationRef];
+    artifact.nominationRef = nominationRef;
+    artifact.evaluatedCatalogRecordRef.memoryScopeId = nominationEntry.scopeId;
+    artifact.evaluatedContextSheetRef.memoryScopeId = nominationEntry.scopeId;
+    return artifact;
+}
+
+function makeMembershipLinkArtifact(nominationEntry, validationEntry) {
+    const validation = validationEntry.artifact;
+    const artifact = loadMembershipFixture('context-sheet-membership-link-v1.valid-direct');
+    const validationRef = makeExactValidationReference(validationEntry);
+    artifact.envelope.memoryScopeId = nominationEntry.scopeId;
+    artifact.envelope.authorityBasisRefs = [validationRef];
+    artifact.catalogRecordRef = clone(validation.evaluatedCatalogRecordRef);
+    artifact.contextSheetRef.memoryScopeId = nominationEntry.scopeId;
+    artifact.contextSheetLifecycleRef = clone(validation.evaluatedContextSheetRef);
+    artifact.catalogClaimIds = [...validation.claimBasis.catalogClaimIds];
+    artifact.linkType = validation.validatedLinkType;
+    artifact.targetClaimIds = [...validation.claimBasis.targetClaimIds];
+    artifact.claimBasisHash = validation.claimBasis.basisHash;
+    artifact.boundedMeaning = validation.claimBasis.boundedMeaning;
+    artifact.limitations = [...validation.claimBasis.limitations];
+    artifact.jurisdiction.memoryScopeId = nominationEntry.scopeId;
+    artifact.validationMethod = validation.validationMethod;
+    artifact.governingPolicyVersion = validation.governingPolicyVersion;
+    artifact.createdFromNominationRef = makeExactNominationReference(nominationEntry);
+    artifact.validatedBy = clone(validation.validator);
+    artifact.validatedAt = validation.occurredAt;
+    artifact.validationEventRef = validationRef;
+    return artifact;
+}
+
+function seedAcceptedMembershipLink(paths) {
+    const nomination = nominateContextSheetMembership(
+        paths,
+        loadMembershipFixture('context-sheet-membership-nomination-v1.valid-operator-direct'),
+    );
+    const validation = admitContextSheetMembershipValidation(paths, makeMembershipValidationArtifact(nomination.entry));
+    const link = admitContextSheetMembershipLink(paths, makeMembershipLinkArtifact(nomination.entry, validation.entry));
+    return { nomination: nomination.entry, validation: validation.entry, link: link.entry };
+}
 async function writeArchitecturalChat(root, options = {}) {
     const memoryScopeId = options.memoryScopeId || 'scope_alpha';
     const chatInstanceId = options.chatInstanceId || 'chat_alpha';
@@ -246,6 +332,7 @@ test('route surface exposes candidate lifecycle routes and separate promotion ro
     await init(router);
 
     assert.equal(router.routes.get.has('/upgrade/preflight'), true);
+    assert.equal(router.routes.get.has('/context-sheet-membership/current-use'), true);
     assert.equal(router.routes.post.has('/upgrade/replay'), true);
     assert.equal(router.routes.get.has('/rebuild/candidate/report/:reconstructionRunId'), true);
     assert.equal(router.routes.get.has('/rebuild/candidate/runs/:memoryScopeId'), true);
@@ -293,6 +380,52 @@ test('route surface exposes candidate lifecycle routes and separate promotion ro
     assert.equal(router.routes.post.has('/interpretive/candidates/:interpretationRevisionId/revisions'), true);
     assert.equal(router.routes.post.has('/interpretive/candidates/:interpretationRevisionId/publication-qualifications'), true);
     assert.equal(router.routes.post.has('/interpretive/candidates/:interpretationRevisionId/publication-publish'), true);
+});
+
+test('membership current-use route returns disposable replay projection without mutating authority', async () => {
+    const root = makeTempRoot();
+    const paths = getStoragePaths(root);
+    const { link } = seedAcceptedMembershipLink(paths);
+    const beforeLedger = fs.readFileSync(paths.contextSheetMembershipLedgerPath, 'utf8');
+    const router = createMockRouter();
+    await init(router);
+
+    const result = await invoke(
+        router.routes.get.get('/context-sheet-membership/current-use'),
+        buildRequest(root),
+    );
+
+    assert.equal(result.statusCode, 200);
+    assert.equal(result.payload.ok, true);
+    assert.equal(result.payload.projection.projectionType, 'context-sheet-membership-current-use-v1');
+    assert.equal(result.payload.projection.projectionAuthority, 'DISPOSABLE_REPLAY_DERIVED');
+    assert.equal(result.payload.projection.sourceLedger, 'context-sheet-membership-ledger.jsonl');
+    assert.equal(result.payload.projection.entriesReplayed, 3);
+    assert.equal(result.payload.projection.links.length, 1);
+    assert.equal(result.payload.projection.links[0].membershipLinkId, link.artifact.membershipLinkId);
+    assert.equal(result.payload.projection.links[0].currentUseState, 'CURRENT');
+    assert.equal(result.payload.projection.currentLinks.length, 1);
+    assert.deepEqual(result.payload.projection.blockedLinks, []);
+    assert.equal(fs.readFileSync(paths.contextSheetMembershipLedgerPath, 'utf8'), beforeLedger);
+    assert.equal(readContextSheetMembershipLedger(paths).length, 3);
+});
+
+test('membership current-use route fails closed on unreadable replay authority', async () => {
+    const root = makeTempRoot();
+    const paths = getStoragePaths(root);
+    seedAcceptedMembershipLink(paths);
+    fs.appendFileSync(paths.contextSheetMembershipLedgerPath, '{"entryId":', 'utf8');
+    const router = createMockRouter();
+    await init(router);
+
+    const result = await invoke(
+        router.routes.get.get('/context-sheet-membership/current-use'),
+        buildRequest(root),
+    );
+
+    assert.equal(result.statusCode, 409);
+    assert.equal(result.payload.ok, false);
+    assert.equal(result.payload.code, 'CSM_LEDGER_MALFORMED');
 });
 
 test('capabilities and candidate lifecycle routes report no promotion and support report, pin, and cleanup', async () => {
