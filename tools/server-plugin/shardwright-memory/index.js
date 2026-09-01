@@ -80,6 +80,7 @@ import {
     rebuildContextSheetMembershipCurrentUseProjection,
     replayContextSheetMembershipCurrentUse,
 } from './membership.js';
+import { readContextSheetIdentityCreationRecord } from './identity.js';
 import {
     assignSubjectScopedProposalPolicyProfile,
     bindAuthenticatedAccountToSemanticEntity,
@@ -175,6 +176,24 @@ export async function init(router) {
         try {
             const paths = getStoragePaths(getAuthenticatedUserRoot(request));
             const result = rebuildContextSheetMembershipCurrentUseProjection(paths, { now: request.body?.now });
+            return response.send({ ok: true, ...result });
+        } catch (error) {
+            return handleError(response, error);
+        }
+    });
+
+    router.get('/context-sheet-identity/:contextSheetId', async (request, response) => {
+        try {
+            const memoryScopeId = request.query?.memoryScopeId;
+            if (typeof memoryScopeId !== 'string' || memoryScopeId.length === 0) {
+                throw createError(400, 'memoryScopeId is required for Context Sheet Identity lookup.', 'CSI_CONTEXT_SHEET_SCOPE_REQUIRED');
+            }
+            const paths = getStoragePaths(getAuthenticatedUserRoot(request));
+            const result = readContextSheetIdentityCreationRecord(
+                paths,
+                request.params?.contextSheetId,
+                memoryScopeId,
+            );
             return response.send({ ok: true, ...result });
         } catch (error) {
             return handleError(response, error);

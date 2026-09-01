@@ -2,8 +2,9 @@
 
 **Version:** 0.2.0
 **Status:** ENTERED - runtime persistence, replay ownership, failure boundaries, and
-the bounded read-only creation-identity resolver are normative; additional writers,
-routes, migrations, projections, and UI remain unauthorized.
+the bounded read-only creation-identity resolver are normative; the resolver is
+implemented and proven; additional writers, routes, migrations, projections, and UI
+remain unauthorized.
 **Parent:** `PHASE_X_CONTEXT_SHEET_ANCHOR_IDENTITY_AND_LIFECYCLE_CONTRACT.md`
 
 ## 1. Problem
@@ -350,4 +351,6 @@ Each requires a separately authorized slice with the proof named above.
 ## 13. Status
 
 Context Sheet Identity runtime persistence and replay ownership are **ENTERED**.
-Production behavior remains unchanged.
+The bounded creation-identity read resolver is implemented and proven. Alias/title
+history, complete lifecycle projection, catalog-summary resolution, additional routes,
+and UI remain open.

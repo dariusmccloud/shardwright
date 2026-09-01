@@ -258,6 +258,46 @@ export function readContextSheetIdentityLedger(paths) {
     return readContextSheetIdentityLedgerEntries(paths.contextSheetIdentityLedgerPath);
 }
 
+export function readContextSheetIdentityCreationRecord(paths, contextSheetId, memoryScopeId) {
+    const entries = readContextSheetIdentityLedger(paths);
+    const recordEntry = entries.find((entry) => entry.operation === CONTEXT_SHEET_CREATE_RECORD_OPERATION
+        && entry.artifactSchemaId === CONTEXT_SHEET_RECORD_SCHEMA_ID
+        && entry.scopeId === memoryScopeId
+        && entry.artifact?.contextSheetId === contextSheetId);
+
+    if (!recordEntry) {
+        throw createError(
+            404,
+            `Context Sheet Identity ${contextSheetId} was not found in memory scope ${memoryScopeId}.`,
+            'CSI_CONTEXT_SHEET_NOT_FOUND',
+        );
+    }
+
+    const creationEvent = entries.find((entry) => entry.operation === CONTEXT_SHEET_CREATE_EVENT_OPERATION
+        && entry.artifactSchemaId === CONTEXT_SHEET_CREATION_EVENT_SCHEMA_ID
+        && entry.scopeId === memoryScopeId
+        && entry.artifact?.envelope?.artifactId === recordEntry.artifact?.creationEventRef?.artifactId
+        && entry.artifact?.envelope?.memoryScopeId === recordEntry.artifact?.creationEventRef?.memoryScopeId
+        && entry.artifact?.contextSheetRef?.artifactId === recordEntry.artifact?.envelope?.artifactId
+        && entry.artifact?.contextSheetRef?.immutableHash === recordEntry.artifactHash);
+
+    if (!creationEvent) {
+        throw createError(
+            409,
+            `Context Sheet Identity ${contextSheetId} has incomplete creation-event custody.`,
+            'CSI_CONTEXT_SHEET_CREATION_INCOMPLETE',
+        );
+    }
+
+    return {
+        identity: cloneJson(recordEntry.artifact),
+        lifecycleCoverage: 'CREATION_RECORD_ONLY',
+        sourceLedger: 'context-sheet-identity-ledger.jsonl',
+        creationRecordEntryId: recordEntry.entryId,
+        creationEventEntryId: creationEvent.entryId,
+    };
+}
+
 function sameReference(left, right) {
     return left?.artifactType === right?.artifactType
         && left?.artifactId === right?.artifactId

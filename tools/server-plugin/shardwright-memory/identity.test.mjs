@@ -12,6 +12,7 @@ import {
     admitContextSheetMerge,
     admitContextSheetSplit,
     computeContextSheetIdentityArtifactHash,
+    readContextSheetIdentityCreationRecord,
     readContextSheetIdentityLedger,
     validateContextSheetCreationEventArtifact,
     validateContextSheetMergeEventArtifact,
@@ -447,6 +448,80 @@ test('a hash-mismatched identity ledger entry refuses replay without mutation', 
     assert.throws(
         () => readContextSheetIdentityLedger(paths),
         (error) => error.code === 'CSI_LEDGER_HASH_MISMATCH',
+    );
+});
+
+test('creation identity read resolves the exact scope-bound record and exposes its coverage boundary', () => {
+    const root = makeTempRoot();
+    const paths = getStoragePaths(root);
+    const contextSheetId = 'context-sheet:jeep';
+    const memoryScopeId = 'scope:architectural';
+    const { recordEntry } = admitSheet(paths, {
+        contextSheetId,
+        scopeId: memoryScopeId,
+        sheetType: 'ENTITY',
+        preferredTitle: 'Jeep',
+        canonicalAnchorId: 'canonical-anchor:jeep',
+        anchorJurisdictionId: 'subject:jeep',
+        identityAuthorityRef: makeCreationPair().record.identityAuthorityRef,
+        suffix: 'a1b2',
+    });
+
+    const result = readContextSheetIdentityCreationRecord(paths, contextSheetId, memoryScopeId);
+
+    assert.equal(result.identity.contextSheetId, contextSheetId);
+    assert.equal(result.identity.memoryScopeId, memoryScopeId);
+    assert.equal(result.identity.preferredTitle, 'Jeep');
+    assert.equal(result.identity.sheetType, 'ENTITY');
+    assert.equal(result.lifecycleCoverage, 'CREATION_RECORD_ONLY');
+    assert.equal(result.sourceLedger, 'context-sheet-identity-ledger.jsonl');
+    assert.equal(result.creationRecordEntryId, recordEntry.entryId);
+});
+
+test('creation identity read refuses an unknown or cross-scope record without mutation', () => {
+    const root = makeTempRoot();
+    const paths = getStoragePaths(root);
+    admitSheet(paths, {
+        contextSheetId: 'context-sheet:jeep',
+        scopeId: 'scope:architectural',
+        sheetType: 'ENTITY',
+        preferredTitle: 'Jeep',
+        canonicalAnchorId: 'canonical-anchor:jeep',
+        anchorJurisdictionId: 'subject:jeep',
+        identityAuthorityRef: makeCreationPair().record.identityAuthorityRef,
+        suffix: 'c3d4',
+    });
+    const before = fs.readFileSync(paths.contextSheetIdentityLedgerPath);
+
+    assert.throws(
+        () => readContextSheetIdentityCreationRecord(paths, 'context-sheet:jeep', 'scope:other'),
+        (error) => error.code === 'CSI_CONTEXT_SHEET_NOT_FOUND',
+    );
+    assert.throws(
+        () => readContextSheetIdentityCreationRecord(paths, 'context-sheet:unknown', 'scope:architectural'),
+        (error) => error.code === 'CSI_CONTEXT_SHEET_NOT_FOUND',
+    );
+    assert.deepEqual(fs.readFileSync(paths.contextSheetIdentityLedgerPath), before);
+});
+
+test('creation identity read fails closed when the creation event custody is incomplete', () => {
+    const root = makeTempRoot();
+    const paths = getStoragePaths(root);
+    const { recordEntry } = admitSheet(paths, {
+        contextSheetId: 'context-sheet:partial',
+        scopeId: 'scope:architectural',
+        sheetType: 'ENTITY',
+        preferredTitle: 'Partial',
+        canonicalAnchorId: 'canonical-anchor:partial',
+        anchorJurisdictionId: 'subject:partial',
+        identityAuthorityRef: makeCreationPair().record.identityAuthorityRef,
+        suffix: 'e5f6',
+    });
+    fs.writeFileSync(paths.contextSheetIdentityLedgerPath, `${JSON.stringify(recordEntry)}\n`, 'utf8');
+
+    assert.throws(
+        () => readContextSheetIdentityCreationRecord(paths, 'context-sheet:partial', 'scope:architectural'),
+        (error) => error.code === 'CSI_CONTEXT_SHEET_CREATION_INCOMPLETE',
     );
 });
 
