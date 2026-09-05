@@ -16,3 +16,5 @@ tools/sqlite-tools-win-x64/
 tmp-architectural-memory-readonly.db
 
 
+cspell.config.yaml
+cspell.json
