@@ -62,7 +62,6 @@ import {
 import { registerHostCapacityReceiptObserver } from './core/transcript/host-capacity-receipt.js';
 import { installTranscriptRecallPlanningDeclineCapability } from './core/transcript/host-context-planning.js';
 import { installTranscriptCharacterBindingCapability } from './core/transcript/host-character-binding.js';
-import { installTranscriptCharacterBindingCapability } from './core/transcript/host-character-binding.js';
 
 const MODULE_NAME = 'shardwright';
 const defaultSettings = getDefaultSettings();
