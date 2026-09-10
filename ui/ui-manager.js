@@ -26,6 +26,11 @@ import { openDebugExportModal } from './modals/configuration/debug-export-modal.
 import { updateApiStatusDisplays } from './common/api-status-state.js';
 import { log } from '../core/logger.js';
 import {
+    applyCatalogIntegerEdit,
+    getEditableCatalogEntry,
+} from '../core/settings-catalog-ui.js';
+import { resolveTranscriptCapacityProfile } from '../core/transcript/capacity-profile.js';
+import {
     ARCHITECTURAL_DISPLAY_NAME,
     ARCHITECTURAL_PROFILE,
     NARRATIVE_DISPLAY_NAME,
@@ -500,6 +505,19 @@ export function renderSettingsUI(settings, callbacks) {
                         </div>
                     </div>
 
+                    <div class="shardwright-review-accordion shardwright-settings-accordion" data-settings-section="transcript-recall">
+                        <div class="shardwright-accordion-header" role="button" tabindex="0" aria-expanded="false">
+                            <span class="shardwright-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
+                            <span class="shardwright-accordion-title">Transcript Recall</span>
+                        </div>
+                        <div class="shardwright-accordion-content shardwright-hidden">
+                            <div class="shardwright-block">
+                                <p class="shardwright-hint">Capacity reserves account for prompt space only. They do not determine which records are relevant, sufficient, or authoritative.</p>
+                                <div id="shardwright-transcript-recall-capacity-controls"></div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="shardwright-review-accordion shardwright-settings-accordion" data-settings-section="debug">
                         <div class="shardwright-accordion-header" role="button" tabindex="0" aria-expanded="false">
                             <span class="shardwright-accordion-toggle"><i class="fa-solid fa-chevron-right"></i></span>
@@ -568,6 +586,41 @@ export function renderSettingsUI(settings, callbacks) {
         return settings.summaryReview;
     };
 
+    const mountCatalogCapacityControls = () => {
+        const host = document.getElementById('shardwright-transcript-recall-capacity-controls');
+        const entry = getEditableCatalogEntry('transcript-recall-capacity-profile');
+        const profile = settings.transcriptRecall?.capacityProfile;
+        const profileState = resolveTranscriptCapacityProfile(profile);
+        if (!host || !entry || profileState.state !== 'PROFILE_AVAILABLE') {
+            if (host) host.textContent = 'Transcript Recall capacity settings are unavailable.';
+            return;
+        }
+
+        const fragment = document.createDocumentFragment();
+        for (const field of entry.settings) {
+            const row = document.createElement('div');
+            row.className = 'shardwright-block';
+            const inputId = `shardwright-${entry.id}-${field.key}`;
+            row.innerHTML = `
+                <label for="${inputId}">${field.label}</label>
+                <input id="${inputId}" class="text_pole" type="number" min="${field.minimum}" max="${field.maximum}" step="${field.ui.step}" value="${profile[field.key]}" />
+                <p class="shardwright-hint">${field.help}</p>
+            `;
+            const input = row.querySelector('input');
+            input.addEventListener('change', () => {
+                const result = applyCatalogIntegerEdit(settings, entry.id, field.key, input.value);
+                if (!result.accepted) {
+                    input.value = String(profile[field.key]);
+                    toastr.warning('Enter a whole number within the allowed range. The previous setting was kept.');
+                    return;
+                }
+                saveSettings(settings);
+            });
+            fragment.append(row);
+        }
+        host.replaceChildren(fragment);
+    };
+
     const container = document.getElementById('extensions_settings2') || document.getElementById('extensions_settings');
     if (!container) {
         log.error('Could not find extensions settings container');
@@ -579,6 +632,7 @@ export function renderSettingsUI(settings, callbacks) {
     // Localize hint mounting to the container so we don't pollute the global document
     // with multiple listeners if settings are re-rendered.
     mountInfoHints(container);
+    mountCatalogCapacityControls();
 
     const modeToggle = mountSegmentedToggle(
         'shardwright-mode-mount',
