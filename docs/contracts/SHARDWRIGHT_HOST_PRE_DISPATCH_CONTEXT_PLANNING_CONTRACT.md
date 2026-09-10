@@ -1,6 +1,6 @@
 # Shardwright Host Pre-Dispatch Context Planning Contract
 
-**Version:** 0.4.0
+**Version:** 0.4.1
 **Status:** ENTERED — governs a bounded runtime fallback; no retrieval, selection, injection, or memory authority is authorized by it.
 **Classification:** Parallel operational-continuity track; not Phase X memory-governance authority.
 
@@ -624,3 +624,6 @@ request-bound proposal constructor. The bundle text is hashed under the same req
 and profile boundary; mutable, empty, or non-bundle input refuses before measurement.
 Focused external host proof is `node --test scripts/shardwright-context-planning.test.mjs`
 (32/32).
+The host planning module and binding capability are packaged under the tracked
+Shardwright extension tree. Baseline host imports resolve that packaged module; no
+untracked root-level companion file is required for a clean deployment.
