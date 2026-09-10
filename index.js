@@ -940,7 +940,6 @@ jQuery(async () => {
     }
     installTranscriptRecallPlanningDeclineCapability(globalThis);
     installTranscriptCharacterBindingCapability(globalThis);
-    installTranscriptCharacterBindingCapability(globalThis);
 
     // Initialize RAG collection lifecycle (cleanup on chat delete)
     initCollectionLifecycle();
