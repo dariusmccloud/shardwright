@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs'; import os from 'node:os'; import path from 'node:path'; import test from 'node:test';
+import { getStoragePaths } from './core.js';
+import { createTranscriptCharacterInstance } from './transcript-character-binding.js';
+import { observeRegisteredTranscriptSource } from './transcript-source-observer.js';
+import { admitTranscriptSourceObservation, readTranscriptSourceRevisionLedger } from './transcript-source-revision.js';
+import { registerTranscriptSource, TranscriptSourceClass } from './transcript-source-registry.js';
+
+function fixture() {
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'shardwright-transcript-revision-')); const userRoot=path.join(root,'user'); const chats=path.join(userRoot,'chats'); const groupChats=path.join(userRoot,'group chats'); fs.mkdirSync(path.join(chats,'Jeep'),{recursive:true}); fs.mkdirSync(groupChats,{recursive:true}); const paths=getStoragePaths(userRoot); const instance=createTranscriptCharacterInstance(paths,{bindingToken:'host:jeep',operatorActionId:'create',recordedAt:'2026-09-06T18:00:00.000Z'}).entry.payload.characterInstanceId; const source=registerTranscriptSource(paths,{characterInstanceId:instance,sourceClass:TranscriptSourceClass.DIRECT,hostLocator:'Jeep/current',sourceResolutionLocator:{kind:TranscriptSourceClass.DIRECT,avatarUrl:'Jeep.png',chatLocator:'current'},operatorActionId:'register',recordedAt:'2026-09-06T18:00:01.000Z'}).entry.payload; return {paths,request:{user:{directories:{root:userRoot,chats,groupChats}}},source,file:path.join(chats,'Jeep','current.jsonl')};
+}
+function observe(v,time='2026-09-06T18:01:00.000Z'){return observeRegisteredTranscriptSource(v.paths,v.request,v.source.sourceLogicalId,{observedAt:time});}
+
+test('appends one observed source revision and makes unchanged observation a no-op',()=>{const v=fixture();fs.writeFileSync(v.file,'{"mes":"one"}\n');const first=admitTranscriptSourceObservation(v.paths,observe(v));const same=admitTranscriptSourceObservation(v.paths,observe(v,'2026-09-06T18:02:00.000Z'));assert.equal(first.appended,true);assert.equal(same.appended,false);assert.equal(readTranscriptSourceRevisionLedger(v.paths).length,1);});
+test('changed observed bytes append a new immutable revision',()=>{const v=fixture();fs.writeFileSync(v.file,'{"mes":"one"}\n');const first=admitTranscriptSourceObservation(v.paths,observe(v));fs.writeFileSync(v.file,'{"mes":"two"}\n');const second=admitTranscriptSourceObservation(v.paths,observe(v,'2026-09-06T18:03:00.000Z'));assert.equal(second.appended,true);assert.notEqual(first.entry.receipt.sourceRevisionHash,second.entry.receipt.sourceRevisionHash);assert.equal(readTranscriptSourceRevisionLedger(v.paths).length,2);});
+test('missing or custody-mismatched receipts never append a revision',()=>{const v=fixture();const missing=observe(v);assert.throws(()=>admitTranscriptSourceObservation(v.paths,missing),(error)=>error?.code==='TIR_REVISION_RECEIPT_INELIGIBLE');fs.writeFileSync(v.file,'{"mes":"one"}\n');const mismatched={...observe(v),characterInstanceId:'transcript_character_other'};assert.throws(()=>admitTranscriptSourceObservation(v.paths,mismatched),(error)=>error?.code==='TIR_REVISION_RECEIPT_CUSTODY_MISMATCH');assert.equal(readTranscriptSourceRevisionLedger(v.paths).length,0);});

@@ -59,6 +59,9 @@ import {
     getChatBinding,
     initBackend,
 } from './core/rag/index.js';
+import { registerHostCapacityReceiptObserver } from './core/transcript/host-capacity-receipt.js';
+import { installTranscriptRecallPlanningDeclineCapability } from './core/transcript/host-context-planning.js';
+import { installTranscriptCharacterBindingCapability } from './core/transcript/host-character-binding.js';
 
 const MODULE_NAME = 'shardwright';
 const defaultSettings = getDefaultSettings();
@@ -932,6 +935,11 @@ jQuery(async () => {
     if (event_types.MESSAGE_UPDATED) {
         eventSource.on(event_types.MESSAGE_UPDATED, onMessageUpdated);
     }
+    if (event_types.GENERATE_AFTER_DATA) {
+        registerHostCapacityReceiptObserver(eventSource, event_types.GENERATE_AFTER_DATA);
+    }
+    installTranscriptRecallPlanningDeclineCapability(globalThis);
+    installTranscriptCharacterBindingCapability(globalThis);
 
     // Initialize RAG collection lifecycle (cleanup on chat delete)
     initCollectionLifecycle();

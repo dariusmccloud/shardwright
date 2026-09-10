@@ -384,6 +384,7 @@ test('route surface exposes candidate lifecycle routes and separate promotion ro
     assert.equal(router.routes.post.has('/interpretive/candidates/:interpretationRevisionId/publication-publish'), true);
 });
 
+
 test('membership current-use route returns disposable replay projection without mutating authority', async () => {
     const root = makeTempRoot();
     const paths = getStoragePaths(root);

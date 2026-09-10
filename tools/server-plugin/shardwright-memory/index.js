@@ -81,6 +81,14 @@ import {
     replayContextSheetMembershipCurrentUse,
 } from './membership.js';
 import { readContextSheetIdentityCreationRecord } from './identity.js';
+import { registerContextPlanningDigestRoute } from './context-planning-digest-route.js';
+import { registerTranscriptFtsCandidateRoute } from './transcript-fts-candidate-route.js';
+import { registerTranscriptContextWindowRoute } from './transcript-context-window-route.js';
+import { registerTranscriptAnchorResolutionRoute } from './transcript-anchor-resolution-route.js';
+import { registerTranscriptCandidateWindowAssemblyRoute } from './transcript-candidate-window-assembly-route.js';
+import { registerTranscriptRecallBundleRoute } from './transcript-recall-bundle-route.js';
+import { registerTranscriptCharacterBindingRoute } from './transcript-character-binding-route.js';
+import { registerTranscriptCharacterBindingRegistrationRoute } from './transcript-character-binding-registration-route.js';
 import {
     assignSubjectScopedProposalPolicyProfile,
     bindAuthenticatedAccountToSemanticEntity,
@@ -101,6 +109,15 @@ export const info = {
 };
 
 export async function init(router) {
+    registerContextPlanningDigestRoute(router);
+    registerTranscriptFtsCandidateRoute(router);
+    registerTranscriptContextWindowRoute(router);
+    registerTranscriptAnchorResolutionRoute(router);
+    registerTranscriptCandidateWindowAssemblyRoute(router);
+    registerTranscriptRecallBundleRoute(router);
+    registerTranscriptCharacterBindingRoute(router);
+    registerTranscriptCharacterBindingRegistrationRoute(router);
+
     router.post('/architectural/replay-artifacts', async (request, response) => {
         try {
             const result = await persistArchitecturalReplayArtifact(

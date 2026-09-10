@@ -110,6 +110,19 @@ export const CAPABILITIES = Object.freeze({
     c2: false,
 });
 
+export const CONTEXT_PLANNING_CANONICAL_PAYLOAD_MAX_BYTES = 524288;
+
+/** Hashes exact canonical UTF-8 bytes without parsing or retaining the payload. */
+export function hashContextPlanningCanonicalPayload(payload) {
+    if (typeof payload !== 'string' || payload.length === 0) {
+        throw createError(400, 'Canonical planning payload must be a non-empty string.', 'CONTEXT_PLANNING_PAYLOAD_INVALID');
+    }
+    if (Buffer.byteLength(payload, 'utf8') > CONTEXT_PLANNING_CANONICAL_PAYLOAD_MAX_BYTES) {
+        throw createError(413, 'Canonical planning payload exceeds the maximum size.', 'CONTEXT_PLANNING_PAYLOAD_TOO_LARGE');
+    }
+    return `sha256:${crypto.createHash('sha256').update(payload, 'utf8').digest('hex')}`;
+}
+
 export const MESSAGE_IDENTITY_SCAN_SCHEMA = Object.freeze({
     namespace: 'shardwright',
     messageIdentityPath: 'extra.shardwright.messageIdentity',
@@ -193,6 +206,12 @@ function buildStoragePaths(userRoot, storageDirectoryName) {
     const contextSheetMembershipProjectionsRoot = path.join(storageRoot, 'context-sheet-membership-projections');
     const contextSheetMembershipCurrentUseProjectionPath = path.join(contextSheetMembershipProjectionsRoot, 'current-use.json');
     const contextSheetIdentityLedgerPath = path.join(storageRoot, 'context-sheet-identity-ledger.jsonl');
+    const transcriptCharacterBindingLedgerPath = path.join(storageRoot, 'transcript-character-binding-ledger.jsonl');
+    const transcriptSourceRegistryLedgerPath = path.join(storageRoot, 'transcript-source-registry-ledger.jsonl');
+    const transcriptSourceRevisionLedgerPath = path.join(storageRoot, 'transcript-source-revision-ledger.jsonl');
+    const transcriptMessageLedgerPath = path.join(storageRoot, 'transcript-message-ledger.jsonl');
+    const transcriptVisibilityLedgerPath = path.join(storageRoot, 'transcript-visibility-ledger.jsonl');
+    const transcriptIndexDbPath = path.join(storageRoot, 'transcript-index.db');
     const architecturalReplayArtifactsRoot = path.join(storageRoot, 'architectural-replay-artifacts');
     const architecturalReplayLedgerPath = path.join(storageRoot, 'architectural-shard-replay-ledger.jsonl');
     const generationsRoot = path.join(storageRoot, 'generations');
@@ -203,6 +222,12 @@ function buildStoragePaths(userRoot, storageDirectoryName) {
     const authorityTransitionLockPath = path.join(locksRoot, 'authority-transition.lock');
     const contextSheetMembershipLockPath = path.join(locksRoot, 'context-sheet-membership-ledger.lock');
     const contextSheetIdentityLockPath = path.join(locksRoot, 'context-sheet-identity-ledger.lock');
+    const transcriptCharacterBindingLockPath = path.join(locksRoot, 'transcript-character-binding-ledger.lock');
+    const transcriptSourceRegistryLockPath = path.join(locksRoot, 'transcript-source-registry-ledger.lock');
+    const transcriptSourceRevisionLockPath = path.join(locksRoot, 'transcript-source-revision-ledger.lock');
+    const transcriptMessageLockPath = path.join(locksRoot, 'transcript-message-ledger.lock');
+    const transcriptVisibilityLockPath = path.join(locksRoot, 'transcript-visibility-ledger.lock');
+    const transcriptIndexLockPath = path.join(locksRoot, 'transcript-index.lock');
     return {
         storageRoot,
         dbPath,
@@ -214,6 +239,12 @@ function buildStoragePaths(userRoot, storageDirectoryName) {
         contextSheetMembershipProjectionsRoot,
         contextSheetMembershipCurrentUseProjectionPath,
         contextSheetIdentityLedgerPath,
+        transcriptCharacterBindingLedgerPath,
+        transcriptSourceRegistryLedgerPath,
+        transcriptSourceRevisionLedgerPath,
+        transcriptMessageLedgerPath,
+        transcriptVisibilityLedgerPath,
+        transcriptIndexDbPath,
         architecturalReplayArtifactsRoot,
         architecturalReplayLedgerPath,
         generationsRoot,
@@ -224,6 +255,12 @@ function buildStoragePaths(userRoot, storageDirectoryName) {
         authorityTransitionLockPath,
         contextSheetMembershipLockPath,
         contextSheetIdentityLockPath,
+        transcriptCharacterBindingLockPath,
+        transcriptSourceRegistryLockPath,
+        transcriptSourceRevisionLockPath,
+        transcriptMessageLockPath,
+        transcriptVisibilityLockPath,
+        transcriptIndexLockPath,
     };
 }
 
