@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+    announceLoadProfilingBypass,
     beginLoadTrace,
     clearLoadTraces,
     finishLoadTrace,
@@ -25,4 +26,13 @@ test('load profiler sanitizes cyclic structures without throwing', () => {
     assert.equal(saved.meta.self, '[Circular]');
     assert.equal(saved.extra.loop, '[Circular]');
     assert.equal(saved.extra.nested.self, '[Circular]');
+});
+
+test('profiling bypass identifies Shardwright rather than its upstream in operator diagnostics', () => {
+    const warnings = [];
+    const target = { localStorage: { getItem: () => '1' } };
+    assert.equal(announceLoadProfilingBypass({ warn: (message) => warnings.push(message) }, target), true);
+    assert.deepEqual(warnings, [
+        '[Shardwright] Profiling bypass active. CHAT_CHANGED load processing will be skipped for measurement.',
+    ]);
 });

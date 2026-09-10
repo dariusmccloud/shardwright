@@ -1,0 +1,8 @@
+{
+  "name": "charmemory-continuity-bridge",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "index.js",
+  "private": true,
+  "description": "Read-only, revision-preserving CharMemory retrieval bridge for SillyTavern."
+}

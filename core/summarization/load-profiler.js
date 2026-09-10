@@ -202,7 +202,7 @@ export function announceLoadProfilingBypass(logger = console, target = globalThi
 
     bypassAnnouncementSent = true;
     logger?.warn?.(
-        '[SummarySharder] Profiling bypass active. CHAT_CHANGED load processing will be skipped for measurement.'
+        '[Shardwright] Profiling bypass active. CHAT_CHANGED load processing will be skipped for measurement.'
     );
     return active;
 }

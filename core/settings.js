@@ -18,6 +18,10 @@ import { migrateRecognizedRagInjectionSettings } from './rag/collection-identity
 import { migrateShardwrightThemeVariables } from './shardwright-settings-migration.js';
 import { getShardCollectionId, getStandardCollectionId } from './rag/collection-manager.js';
 import { NARRATIVE_PROFILE, normalizeSharderProfile } from './summarization/sharder-section-registry.js';
+import {
+    createDefaultTranscriptCapacityProfile,
+    ensureTranscriptCapacityProfileSettings,
+} from './transcript/capacity-profile.js';
 
 let settingsSaveTraceCount = 0;
 
@@ -58,6 +62,10 @@ export function getDefaultSettings() {
         collectionBindings: {   // Multi-collection assignment registry
             characters: {},     // { [avatar]: { collections, primaryCollection } }
             chats: {},          // { [chatId]: { collections, primaryCollection, includeOwn } }
+        },
+        // Transcript recall capacity is intentionally independent from RAG.
+        transcriptRecall: {
+            capacityProfile: createDefaultTranscriptCapacityProfile(),
         },
         queueDelay: 0,          // Delay in seconds between API calls in queue mode
         // summarizedRanges moved to per-chat metadata (chat_metadata.shardwright.summarizedRanges)
@@ -661,6 +669,11 @@ export function migrateSettings(settings) {
     if (settings.ragStandard === undefined) {
         settings.ragStandard = getDefaultSettings().ragStandard;
         log.debug('Added ragStandard settings block');
+        migrated = true;
+    }
+
+    if (ensureTranscriptCapacityProfileSettings(settings)) {
+        log.debug('Added transcript recall capacity profile');
         migrated = true;
     }
 

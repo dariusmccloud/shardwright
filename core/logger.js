@@ -1,6 +1,6 @@
 import { extension_settings } from '../../../../extensions.js';
 
-const PREFIX = '[SummarySharder]';
+const PREFIX = '[Shardwright]';
 
 export function isDebugEnabled() {
     try {
@@ -15,7 +15,7 @@ export function isDebugEnabled() {
 }
 
 function makeLogger(tag) {
-    const prefix = tag ? `[SummarySharder:${tag}]` : PREFIX;
+    const prefix = tag ? `[Shardwright:${tag}]` : PREFIX;
     return {
         log: (...args) => console.log(prefix, ...args),
         warn: (...args) => console.warn(prefix, ...args),

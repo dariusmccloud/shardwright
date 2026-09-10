@@ -1,0 +1,22 @@
+.charmemory-continuity-bridge-status {
+    align-items: center;
+    border-left: 3px solid var(--SmartThemeQuoteColor, #75a5c7);
+    color: var(--SmartThemeBodyColor, inherit);
+    display: flex;
+    font-size: 0.85em;
+    line-height: 1.35;
+    margin: 6px 0 10px;
+    padding: 4px 8px;
+}
+
+.charmemory-continuity-bridge-status[data-tone="success"] {
+    border-left-color: #76b67a;
+}
+
+.charmemory-continuity-bridge-status[data-tone="warning"] {
+    border-left-color: #d7a143;
+}
+
+.charmemory-continuity-bridge-status[data-tone="error"] {
+    border-left-color: #c96868;
+}
