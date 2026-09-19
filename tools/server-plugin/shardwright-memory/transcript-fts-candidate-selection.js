@@ -13,6 +13,9 @@ export const TranscriptRetrievalPosture = Object.freeze({
     ARCHAEOLOGY: 'ARCHAEOLOGY',
 });
 
+export const TRANSCRIPT_CANDIDATE_LIMIT_DEFAULT = 50;
+export const TRANSCRIPT_CANDIDATE_LIMIT_MAX = 256;
+
 function scopesForPosture(posture) {
     if (posture === TranscriptRetrievalPosture.CONTINUITY) return [TranscriptFtsAdmissionScope.ORDINARY];
     if (posture === TranscriptRetrievalPosture.ARCHAEOLOGY) return [TranscriptFtsAdmissionScope.ORDINARY, TranscriptFtsAdmissionScope.ARCHAEOLOGY_ONLY];
@@ -28,8 +31,8 @@ function assertRequest(request) {
     if (!request || typeof request.characterInstanceId !== 'string' || request.characterInstanceId.trim() === '') {
         throw createError(400, 'A character instance identity is required for FTS selection.', 'TIR_FTS_CHARACTER_REQUIRED');
     }
-    if (!Number.isInteger(request.candidateLimit) || request.candidateLimit < 1) {
-        throw createError(400, 'Candidate selection requires a positive explicit limit.', 'TIR_FTS_LIMIT_INVALID');
+    if (!Number.isInteger(request.candidateLimit) || request.candidateLimit < 1 || request.candidateLimit > TRANSCRIPT_CANDIDATE_LIMIT_MAX) {
+        throw createError(400, `Candidate selection requires an integer limit from 1 to ${TRANSCRIPT_CANDIDATE_LIMIT_MAX}.`, 'TIR_FTS_LIMIT_INVALID');
     }
     return Object.freeze({
         characterInstanceId: request.characterInstanceId,

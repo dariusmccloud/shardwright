@@ -158,6 +158,7 @@ function buildSettingsPanel(snapshot) {
             actionBtn('open-themes', 'fa-palette', 'Themes'),
             actionBtn('open-prompts', 'fa-file-lines', 'Prompts'),
             actionBtn('open-clean-context', 'fa-filter-circle-xmark', 'Cleanup'),
+            actionBtn('open-character-association', 'fa-id-card', 'Character Identity'),
         ]
     };
 

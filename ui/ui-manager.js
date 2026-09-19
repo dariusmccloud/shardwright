@@ -618,6 +618,29 @@ export function renderSettingsUI(settings, callbacks) {
             });
             fragment.append(row);
         }
+        const candidateEntry = getEditableCatalogEntry('transcript-recall-candidate-limit');
+        const candidateSetting = candidateEntry?.settings[0];
+        if (candidateEntry && candidateSetting && settings.transcriptRecall) {
+            const row = document.createElement('div');
+            row.className = 'shardwright-block';
+            const inputId = `shardwright-${candidateEntry.id}-${candidateSetting.key}`;
+            row.innerHTML = `
+                <label for="${inputId}">${candidateSetting.label}</label>
+                <input id="${inputId}" class="text_pole" type="number" min="${candidateSetting.minimum}" max="${candidateSetting.maximum}" step="${candidateSetting.ui.step}" value="${settings.transcriptRecall.candidateLimit}" />
+                <p class="shardwright-hint">${candidateSetting.help}</p>
+            `;
+            const input = row.querySelector('input');
+            input.addEventListener('change', () => {
+                const result = applyCatalogIntegerEdit(settings, candidateEntry.id, candidateSetting.key, input.value);
+                if (!result.accepted) {
+                    input.value = String(settings.transcriptRecall.candidateLimit);
+                    toastr.warning('Enter a whole number within the allowed range. The previous setting was kept.');
+                    return;
+                }
+                saveSettings(settings);
+            });
+            fragment.append(row);
+        }
         host.replaceChildren(fragment);
     };
 

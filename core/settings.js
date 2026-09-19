@@ -22,6 +22,7 @@ import {
     createDefaultTranscriptCapacityProfile,
     ensureTranscriptCapacityProfileSettings,
 } from './transcript/capacity-profile.js';
+import { TRANSCRIPT_CANDIDATE_LIMIT_DEFAULT } from './settings-catalog.js';
 
 let settingsSaveTraceCount = 0;
 
@@ -66,6 +67,9 @@ export function getDefaultSettings() {
         // Transcript recall capacity is intentionally independent from RAG.
         transcriptRecall: {
             capacityProfile: createDefaultTranscriptCapacityProfile(),
+            candidateLimit: TRANSCRIPT_CANDIDATE_LIMIT_DEFAULT,
+            characterBindingTokens: {},
+            characterIdentityAliases: {},
         },
         queueDelay: 0,          // Delay in seconds between API calls in queue mode
         // summarizedRanges moved to per-chat metadata (chat_metadata.shardwright.summarizedRanges)
@@ -674,6 +678,14 @@ export function migrateSettings(settings) {
 
     if (ensureTranscriptCapacityProfileSettings(settings)) {
         log.debug('Added transcript recall capacity profile');
+        migrated = true;
+    }
+    if (settings.transcriptRecall && !Object.prototype.hasOwnProperty.call(settings.transcriptRecall, 'characterBindingTokens')) {
+        settings.transcriptRecall.characterBindingTokens = {};
+        migrated = true;
+    }
+    if (settings.transcriptRecall && !Object.prototype.hasOwnProperty.call(settings.transcriptRecall, 'candidateLimit')) {
+        settings.transcriptRecall.candidateLimit = TRANSCRIPT_CANDIDATE_LIMIT_DEFAULT;
         migrated = true;
     }
 

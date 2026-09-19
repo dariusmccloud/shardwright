@@ -1,3 +1,5 @@
+import { rerankTranscriptWindows } from './transcript-reranker-adapter.js';
+
 export const SHARDWRIGHT_TRANSCRIPT_RECALL_TARGET = Object.freeze({
     kind: 'extension_prompt',
     tag: '5_shardwright_transcript_recall',
@@ -141,7 +143,31 @@ export async function requestShardwrightCharacterInstanceId(bindingToken, fetchI
     }
 }
 
-export async function requestShardwrightTranscriptCandidates({ request, posture = 'CONTINUITY', candidateLimit = 24, fetchImpl = globalThis.fetch } = {}) {
+export async function ensureShardwrightTranscriptProjectionCurrent({ request, posture = 'CONTINUITY', fetchImpl = globalThis.fetch } = {}) {
+    if (!request || !Object.isFrozen(request) || typeof request.characterInstanceId !== 'string'
+        || !request.characterInstanceId.trim() || typeof fetchImpl !== 'function') {
+        return Object.freeze({ state: 'PROJECTION_UNAVAILABLE', reason: 'PROJECTION_INPUT_INVALID' });
+    }
+    try {
+        const csrfResponse = await fetchImpl('/csrf-token', { method: 'GET', headers: { 'Cache-Control': 'no-store' } });
+        const csrfPayload = csrfResponse.ok ? await csrfResponse.json() : null;
+        const headers = { 'Content-Type': 'application/json' };
+        if (csrfPayload?.token && csrfPayload.token !== 'disabled') headers['x-csrf-token'] = csrfPayload.token;
+        const response = await fetchImpl('/api/plugins/shardwright-memory/transcript-recall/projection/catch-up', {
+            method: 'POST', headers,
+            body: JSON.stringify({ characterInstanceId: request.characterInstanceId, posture }),
+        });
+        const result = await response.json();
+        if (!response.ok || result?.ok !== true || result?.state !== 'CURRENT') {
+            return Object.freeze({ state: result?.state || 'PROJECTION_UNAVAILABLE', reason: result?.reason || 'PROJECTION_ROUTE_REFUSED' });
+        }
+        return Object.freeze({ state: 'CURRENT', reason: 'PROJECTION_CURRENT', generation: result.generation || null, projectionHash: result.projectionHash || null });
+    } catch {
+        return Object.freeze({ state: 'PROJECTION_UNAVAILABLE', reason: 'PROJECTION_ROUTE_UNAVAILABLE' });
+    }
+}
+
+export async function requestShardwrightTranscriptCandidates({ request, posture = 'CONTINUITY', candidateLimit = 50, fetchImpl = globalThis.fetch } = {}) {
     if (!request || !Object.isFrozen(request) || typeof request.characterInstanceId !== 'string'
         || !request.characterInstanceId.trim() || typeof request.queryText !== 'string'
         || !request.queryText.trim() || !Number.isSafeInteger(candidateLimit) || candidateLimit <= 0
@@ -157,7 +183,7 @@ export async function requestShardwrightTranscriptCandidates({ request, posture 
         });
         const result = await response.json();
         if (!response.ok || result?.ok !== true || !Array.isArray(result.candidates)) return Object.freeze({ state: 'CANDIDATES_UNAVAILABLE', reason: 'CANDIDATE_ROUTE_REFUSED', candidates: Object.freeze([]) });
-        return Object.freeze({ state: result.state || 'CANDIDATES', reason: 'CANDIDATES_RETRIEVED', characterInstanceId: request.characterInstanceId, candidates: Object.freeze(result.candidates.map((candidate) => Object.freeze({ ...candidate }))), availableCandidateCount: result.availableCandidateCount ?? null, candidateLimit: result.candidateLimit ?? candidateLimit, truncated: result.truncated === true });
+        return Object.freeze({ state: result.state || 'CANDIDATES', reason: 'CANDIDATES_RETRIEVED', characterInstanceId: request.characterInstanceId, posture, candidates: Object.freeze(result.candidates.map((candidate) => Object.freeze({ ...candidate }))), availableCandidateCount: result.availableCandidateCount ?? null, candidateLimit: result.candidateLimit ?? candidateLimit, truncated: result.truncated === true });
     } catch {
         return Object.freeze({ state: 'CANDIDATES_UNAVAILABLE', reason: 'CANDIDATE_ROUTE_UNAVAILABLE', candidates: Object.freeze([]) });
     }
@@ -174,12 +200,24 @@ export async function requestShardwrightTranscriptAnchors({ selection, anchorOcc
         if (csrfPayload?.token && csrfPayload.token !== 'disabled') headers['x-csrf-token'] = csrfPayload.token;
         const response = await fetchImpl('/api/plugins/shardwright-memory/transcript-recall/anchors', { method: 'POST', headers, body: JSON.stringify({ selection, anchorOccurrenceLimit }) });
         const result = await response.json();
-        if (!response.ok || result?.ok !== true) return Object.freeze({ state: 'ANCHORS_UNAVAILABLE', reason: 'ANCHOR_ROUTE_REFUSED' });
+        if (!response.ok || result?.ok !== true) return Object.freeze({ state: 'ANCHORS_UNAVAILABLE', reason: 'ANCHOR_ROUTE_REFUSED', code: result?.code || null, error: result?.error || null });
         const { ok, ...payload } = result;
         return Object.freeze(payload);
     } catch {
         return Object.freeze({ state: 'ANCHORS_UNAVAILABLE', reason: 'ANCHOR_ROUTE_UNAVAILABLE' });
     }
+}
+
+export async function requestShardwrightTranscriptPolicy({ selection, anchors, fetchImpl = globalThis.fetch } = {}) {
+    if (!selection || !Object.isFrozen(selection) || !anchors || !Object.isFrozen(anchors) || typeof fetchImpl !== 'function') return Object.freeze({ state: 'POLICY_UNAVAILABLE', reason: 'POLICY_INPUT_INVALID' });
+    try {
+        const csrfResponse = await fetchImpl('/csrf-token', { method: 'GET', headers: { 'Cache-Control': 'no-store' } });
+        const csrfPayload = csrfResponse.ok ? await csrfResponse.json() : null;
+        const headers = { 'Content-Type': 'application/json' }; if (csrfPayload?.token && csrfPayload.token !== 'disabled') headers['x-csrf-token'] = csrfPayload.token;
+        const response = await fetchImpl('/api/plugins/shardwright-memory/transcript-recall/policy', { method: 'POST', headers, body: JSON.stringify({ selection, anchors }) });
+        const result = await response.json(); if (!response.ok || result?.ok !== true) return Object.freeze({ state: 'POLICY_UNAVAILABLE', reason: 'POLICY_ROUTE_REFUSED' });
+        const { ok, ...payload } = result; return Object.freeze(payload);
+    } catch { return Object.freeze({ state: 'POLICY_UNAVAILABLE', reason: 'POLICY_ROUTE_UNAVAILABLE' }); }
 }
 
 export async function requestShardwrightTranscriptContextWindow({ characterInstanceId, documentId, anchorMessageRecordId, posture = 'CONTINUITY', before = 2, after = 2, fetchImpl = globalThis.fetch } = {}) {
@@ -200,7 +238,17 @@ export async function requestShardwrightTranscriptContextWindow({ characterInsta
 }
 
 export async function requestShardwrightTranscriptWindowAssembly({ selection, anchors, before = 2, after = 2, fetchImpl = globalThis.fetch } = {}) {
-    if (!selection || !Object.isFrozen(selection) || !Array.isArray(anchors) || !anchors.length || !Number.isInteger(before) || before < 0 || !Number.isInteger(after) || after < 0 || typeof fetchImpl !== 'function') return Object.freeze({ state: 'WINDOW_ASSEMBLY_UNAVAILABLE', reason: 'WINDOW_ASSEMBLY_INPUT_INVALID' });
+    if (!selection || !Object.isFrozen(selection) || !Array.isArray(anchors) || !anchors.length || !Number.isInteger(before) || before < 0 || !Number.isInteger(after) || after < 0 || typeof fetchImpl !== 'function') {
+        const flags = [
+            `selection_frozen=${Object.isFrozen(selection)}`,
+            `anchors_array=${Array.isArray(anchors)}`,
+            `anchors_length=${Array.isArray(anchors) ? anchors.length : -1}`,
+            `before=${before}`,
+            `after=${after}`,
+            `fetch=${typeof fetchImpl}`,
+        ].join(',');
+        return Object.freeze({ state: 'WINDOW_ASSEMBLY_UNAVAILABLE', reason: `WINDOW_ASSEMBLY_INPUT_INVALID:${flags}` });
+    }
     try {
         const csrfResponse = await fetchImpl('/csrf-token', { method: 'GET', headers: { 'Cache-Control': 'no-store' } });
         const csrfPayload = csrfResponse.ok ? await csrfResponse.json() : null;
@@ -494,4 +542,10 @@ export async function materializeShardwrightTranscriptRecallForDispatch({
 
 export async function materializeApprovedShardwrightTranscriptRecall({ request, proposal, approval, stageContribution, restoreTarget, assemblePrompt } = {}) {
     return materializeShardwrightTranscriptRecallForDispatch({ request, proposal, approval, stageContribution, restoreTarget, assemblePrompt });
+}
+
+// Explicit host composition seam: reranking is performed only after window
+// selection, and provider execution remains delegated to the existing RAG client.
+export async function rerankShardwrightTranscriptRecallWindows({ query, windows, rerankDocuments, settings, options } = {}) {
+    return rerankTranscriptWindows(query, windows, rerankDocuments, settings, options);
 }

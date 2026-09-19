@@ -26,7 +26,17 @@ test('observes one registered source through the safe host resolver without inde
     assert.equal(observed.observationState, TranscriptObservationState.OBSERVED);
     assert.equal(observed.byteLength, 16);
     assert.match(observed.sourceRevisionHash, /^sha256:/u);
+    assert.equal(observed.sourceCreationTimestampTier, 'FILESYSTEM_NATIVE');
+    assert.equal(typeof observed.sourceCreationAtMs, 'number');
     assert.equal(Object.hasOwn(observed, 'content'), false);
+});
+
+test('preserves host-native main-chat and bookmark hints without interpreting them', () => {
+    const value = fixture();
+    fs.writeFileSync(value.chatPath, `${JSON.stringify({ chat_metadata: { main_chat: 'parent.jsonl' } })}\n${JSON.stringify({ mes: 'hello', extra: { bookmark_link: 'child-checkpoint.jsonl' } })}\n`, 'utf8');
+    const observed = observeRegisteredTranscriptSource(value.paths, value.request, value.source.sourceLogicalId, { observedAt: '2026-09-06T17:01:00.000Z' });
+    assert.equal(observed.lineageHints.mainChat, 'parent.jsonl');
+    assert.deepEqual(observed.lineageHints.bookmarkLinks, [{ sourceLocalOrder: 1, value: 'child-checkpoint.jsonl' }]);
 });
 
 test('missing source refuses without cache substitution', () => {
@@ -34,6 +44,7 @@ test('missing source refuses without cache substitution', () => {
     const observed = observeRegisteredTranscriptSource(value.paths, value.request, value.source.sourceLogicalId, { observedAt: '2026-09-06T17:01:00.000Z' });
     assert.equal(observed.observationState, TranscriptObservationState.MISSING);
     assert.equal(observed.refusalCode, 'TIR_OBSERVATION_SOURCE_MISSING');
+    assert.equal(Object.hasOwn(observed, 'sourceCreationAtMs'), false);
     assert.equal(Object.hasOwn(observed, 'sourceRevisionHash'), false);
 });
 

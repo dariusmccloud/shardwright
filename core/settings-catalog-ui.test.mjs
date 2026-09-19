@@ -8,10 +8,29 @@ import {
 } from './settings-catalog-ui.js';
 
 const ENTRY_ID = 'transcript-recall-capacity-profile';
+const CANDIDATE_ENTRY_ID = 'transcript-recall-candidate-limit';
 
 function settingsWithProfile(profile = createDefaultTranscriptCapacityProfile()) {
-    return { transcriptRecall: { capacityProfile: profile } };
+    return { transcriptRecall: { capacityProfile: profile, candidateLimit: 50 } };
 }
+
+test('exposes and edits the bounded candidate-limit control', () => {
+    const entry = getEditableCatalogEntry(CANDIDATE_ENTRY_ID);
+    assert.equal(entry.scope, 'global');
+    assert.equal(entry.path.join('.'), 'transcriptRecall');
+    assert.equal(entry.settings[0].key, 'candidateLimit');
+    const settings = settingsWithProfile();
+    assert.deepEqual(applyCatalogIntegerEdit(settings, CANDIDATE_ENTRY_ID, 'candidateLimit', '256'), { accepted: true, value: 256 });
+    assert.equal(settings.transcriptRecall.candidateLimit, 256);
+});
+
+test('rejects candidate limits outside the declared range without mutation', () => {
+    const settings = settingsWithProfile();
+    for (const rawValue of ['0', '257', '1.5', 'words']) {
+        assert.deepEqual(applyCatalogIntegerEdit(settings, CANDIDATE_ENTRY_ID, 'candidateLimit', rawValue), { accepted: false, reason: 'SETTING_VALUE_INVALID' });
+        assert.equal(settings.transcriptRecall.candidateLimit, 50);
+    }
+});
 
 test('exposes only the declared global capacity entry to an editable consumer', () => {
     const entry = getEditableCatalogEntry(ENTRY_ID);

@@ -4,6 +4,7 @@
   "generatedBy": "tools/server-plugin/package-shardwright-memory.mjs",
   "staticPayloadFiles": [
     "package.json",
+    "package-lock.json",
     "README.md",
     "index.js",
     "core.js",
@@ -11,6 +12,9 @@
     "interpretive.js",
     "identity.js",
     "membership.js",
+    "transcript-candidate-policy.js",
+    "transcript-candidate-policy-route.js",
+    "transcript-reranker-admission.js",
     "subject-scoped-proposal-policy.js",
     "promotion.js",
     "rebuild.js",
@@ -158,15 +162,15 @@
     },
     {
       "relativePath": "core.js",
-      "sha256": "48125166e92b086c995e0334e674179889931d784e6a15d9052e4390f3b3f701"
+      "sha256": "3c410ebf54b5364691e40025050a5f8723a9cdf98692335ce15d76b5168cb27a"
     },
     {
       "relativePath": "identity.js",
-      "sha256": "70b985c2db7a0aa200373da62fcce23cebe163f6d861cd838fcb0456c66a74d5"
+      "sha256": "347bbdb2c6491ff796fcfe5e94b827e8fd244f12eb467506e4cf465ac09edf95"
     },
     {
       "relativePath": "index.js",
-      "sha256": "62e01d2339d6dae08a0806e3abd2e8a5a0e103e03f0573a9197d0f0f405b46c8"
+      "sha256": "95bb45cc9e03d672de48a41d33af321aec3e0c13ebffa1f936b9744ddd4a47bd"
     },
     {
       "relativePath": "interpretive.js",
@@ -274,11 +278,15 @@
     },
     {
       "relativePath": "membership.js",
-      "sha256": "2ff130cb8da5373a84b06e0789cd7299319ca3dee436f7a6eaf9983a98dfe93a"
+      "sha256": "f018132a7c7b9c9a3acf320154ff5e84c09c937932bed6fc7c296204d089f1ad"
+    },
+    {
+      "relativePath": "package-lock.json",
+      "sha256": "d1f9907b431bb42f4f8e5d88f8e453585dd05244390d8d23a24be6692f828b98"
     },
     {
       "relativePath": "package.json",
-      "sha256": "67adf49ca0fa88bd1ca07acacfd7fe4c653d826b02c681c83287dde18221780d"
+      "sha256": "f0f371610416b7ee523f58cff8f25b5748fa1f4fbac0cce36ca82e801bb1244a"
     },
     {
       "relativePath": "promotion.js",
@@ -307,6 +315,18 @@
     {
       "relativePath": "subject-scoped-proposal-policy.js",
       "sha256": "43c17028240b3c87ade0e8675706eb9ad6aef0d747bf6489b3129171db1dc4f5"
+    },
+    {
+      "relativePath": "transcript-candidate-policy-route.js",
+      "sha256": "7a7eaff0876be064c181bfdae8f878a5dca2f0a35c8270d2f7ff0b735cd7b119"
+    },
+    {
+      "relativePath": "transcript-candidate-policy.js",
+      "sha256": "fa7eb763893be6bc96123713745934042da501db22c10b3bb9ca5e9451a3ad60"
+    },
+    {
+      "relativePath": "transcript-reranker-admission.js",
+      "sha256": "843e3dc9dc852a0d2868b39d34f46b4cb8e26ce6c279afa865222d48a32c3bdc"
     },
     {
       "relativePath": "upgrade.js",

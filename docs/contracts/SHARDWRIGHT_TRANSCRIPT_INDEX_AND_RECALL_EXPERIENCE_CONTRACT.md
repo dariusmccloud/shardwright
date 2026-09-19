@@ -1,6 +1,6 @@
 # Shardwright Transcript Index And Recall Experience Contract
 
-**Version:** 0.8.17
+**Version:** 0.8.26
 **Status:** ENTERED — governing acceptance boundary; runtime work is permitted only
 through separately declared bounded slices, never by blanket contract authority.
 **Classification:** Parallel operational-continuity track; not Phase X memory-governance authority.
@@ -636,6 +636,78 @@ source's bytes, returns an operational receipt without retaining content, report
 missing source without cached substitution, and marks an invalid typed locator
 `UNRESOLVED` without display-text fallback. It does not persist a source revision,
 parse messages, index content, retrieve evidence, or expose a route or UI.
+
+Version 0.8.18 enters the authenticated source-registry transport for listing,
+registration, and read-only observation. The server route uses the authenticated
+user storage root and the existing typed chat-file resolver; the client transport
+performs the host CSRF handshake and returns explicit refusal on transport failure.
+Browser proof on 2026-09-14 listed two `DIRECT` registrations and observed both the
+Sawyer and Jeep sources successfully: each returned `OBSERVED`, a nonzero
+`byteLength`, `sourceRevisionHash`, and `sourceResolutionLocatorHash`. This proves
+live registration/list/observation roundtrip and source-resolution custody only.
+Observation remains read-only: it does not persist a source revision, change the
+registry's `NOT_SCANNED` coverage state, parse message rows, project SQLite, or
+retrieve evidence.
+
+Version 0.8.19 enters the bounded authenticated source-intake path at
+`POST /transcript-recall/sources/intake`. It re-observes one registered source,
+admits the complete observed revision to the immutable revision ledger, parses and
+admits complete message rows, records the exact visibility projection, and advances
+the rebuildable SQLite projection through the existing incremental projector. A
+non-`OBSERVED` result refuses before intake; an unchanged revision is idempotent.
+Focused proof is `node --test tools/server-plugin/shardwright-memory/transcript-source-intake.test.mjs`
+on 2026-09-14 (2/2): a registered source reaches `CURRENT` with durable message and
+visibility custody, and repeating the same source changes no ledger or projection
+rows. This path does not mutate raw chat files or registry identity, retrieve or
+rank evidence, summarize, or inject prompt material.
+
+Browser proof on 2026-09-14 completed the Jeep intake through the live client
+transport: the registered source returned `CURRENT`, admitted 915 complete message
+rows with zero invalid lines, recorded 915 visibility rows including 25 tombstones,
+and advanced the projection with 915 documents and 915 occurrence links. This closes
+the live source-intake roundtrip only; retrieval, ranking, and prompt injection remain
+separate bounded slices.
+
+Browser proof on 2026-09-14 exercised the read-only candidate transport against the
+populated Jeep projection through `Shardwright.transcript.retrieveCandidates`: the
+query returned `CANDIDATES` with 209 available matches, 24 returned candidates, and
+`truncated: true` under the explicit candidate limit. This proves live character-
+scoped FTS retrieval and honest truncation metadata only; it does not return source
+text, choose anchors, assemble windows, rerank, or inject.
+
+Browser proof on 2026-09-15 exercised the custody-preserving anchor transport for
+the Jeep selection: all 24 returned candidate families resolved to `SOLE_ANCHOR`
+with exactly one eligible occurrence each. No occurrence was selected by title,
+similarity, or write order; no source text was returned. Context-window assembly,
+reranking, and injection remain separate bounded slices.
+
+Browser proof on 2026-09-15 reconstructed contextual windows for the same Jeep
+selection through the explicit window-assembly transport: the result returned
+`WINDOWS` with 24 windows, preserved `CONTINUITY`, retained the 209 available / 24
+returned candidate counts, and carried `truncated: true`. This proves custody-bound
+window reconstruction only; bundle presentation, reranking, capacity measurement,
+and injection remain separate bounded slices.
+
+Browser proof on 2026-09-15 exercised deterministic bundle presentation for the
+assembled Jeep windows: the transport returned `BUNDLE` in `CONTINUITY` posture
+with 24 windows and 120 rendered rows. The bundle preserved the explicit window and
+row custody boundary without selecting, reranking, truncating, or injecting prompt
+material. Capacity measurement and host materialization remain separate slices.
+
+Browser proof on 2026-09-15 exercised the live planner with a broad Jeep query:
+the projection exposed 209 eligible matches while the bounded selection returned
+24 and marked `truncated: true`; the sufficiency policy consequently returned
+`INSUFFICIENT_EVIDENCE` before capacity measurement. This confirms that a bounded
+Continuity retrieval remains evidence-adequate for inspection but is not presented
+as sufficient when the eligible result set is truncated. Whether architecture and
+lineage requests may explicitly raise the candidate limit is a separate operator
+policy decision; no automatic expansion is authorized here.
+
+The bounded candidate profile is now explicit: ordinary retrieval defaults to 50
+candidate families, and the server refuses an explicit limit above 256. These are
+candidate-count controls only; assembled rows and prompt tokens remain governed by
+the separate window and host-capacity boundaries. The 256 ceiling is an operator
+selection bound, not an authority or sufficiency claim.
 
 The immutable source-revision ledger is `PROVEN` by
 `node --test tools/server-plugin/shardwright-memory/transcript-source-revision.test.mjs`

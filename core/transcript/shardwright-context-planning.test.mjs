@@ -20,16 +20,31 @@ import {
     measureAndFinalizeShardwrightTranscriptRecallProposal,
     materializeApprovedShardwrightTranscriptRecall,
     requestShardwrightCharacterInstanceId,
+    ensureShardwrightTranscriptProjectionCurrent,
     SHARDWRIGHT_TRANSCRIPT_RECALL_TARGET,
 } from './shardwright-context-planning.js';
+
+test('ensures the service-owned transcript projection is current before recall', async () => {
+    const calls = [];
+    const fetchImpl = async (url, options = {}) => { calls.push({ url, options }); return { ok: true, async json() { return url === '/csrf-token' ? { token: 'csrf' } : { ok: true, state: 'CURRENT', generation: 'sha256:g', projectionHash: 'sha256:p' }; } }; };
+    const result = await ensureShardwrightTranscriptProjectionCurrent({ request: request(), posture: 'CONTINUITY', fetchImpl });
+    assert.equal(result.state, 'CURRENT');
+    assert.equal(calls[1].url, '/api/plugins/shardwright-memory/transcript-recall/projection/catch-up');
+    assert.deepEqual(JSON.parse(calls[1].options.body), { characterInstanceId: 'character:jeep', posture: 'CONTINUITY' });
+});
+
+test('maps pending or unavailable projection state to an explicit refusal', async () => {
+    const refused = await ensureShardwrightTranscriptProjectionCurrent({ request: request(), fetchImpl: async (url) => ({ ok: true, async json() { return url === '/csrf-token' ? { token: 'csrf' } : { ok: true, state: 'PROJECTION_PENDING', reason: 'WAITING_FOR_PREREQUISITE' }; } }) });
+    assert.deepEqual(refused, { state: 'PROJECTION_PENDING', reason: 'WAITING_FOR_PREREQUISITE' });
+});
 
 test('retrieves character-scoped candidates through the authenticated route only', async () => {
     const calls = [];
     const fetchImpl = async (url, options = {}) => { calls.push({ url, options }); return { ok: true, async json() { return url === '/csrf-token' ? { token: 'csrf' } : { ok: true, state: 'CANDIDATES', candidates: [{ documentId: 'doc-1' }], availableCandidateCount: 1, candidateLimit: 24, truncated: false }; } }; };
     const result = await requestShardwrightTranscriptCandidates({ request: request(), fetchImpl });
-    assert.equal(result.state, 'CANDIDATES'); assert.equal(result.candidates.length, 1);
+    assert.equal(result.state, 'CANDIDATES'); assert.equal(result.posture, 'CONTINUITY'); assert.equal(result.candidates.length, 1);
     assert.equal(calls[1].url, '/api/plugins/shardwright-memory/transcript-recall/candidates');
-    assert.deepEqual(JSON.parse(calls[1].options.body), { characterInstanceId: 'character:jeep', queryText: 'current user message', posture: 'CONTINUITY', candidateLimit: 24 });
+    assert.deepEqual(JSON.parse(calls[1].options.body), { characterInstanceId: 'character:jeep', queryText: 'current user message', posture: 'CONTINUITY', candidateLimit: 50 });
 });
 
 test('refuses candidate retrieval without a frozen bound request or route success', async () => {
@@ -76,7 +91,7 @@ test('transports complete explicit selection, anchors, and bounds to window asse
 });
 
 test('refuses incomplete assembly input or route refusal', async () => {
-    assert.equal((await requestShardwrightTranscriptWindowAssembly({ selection: Object.freeze({}) })).reason, 'WINDOW_ASSEMBLY_INPUT_INVALID');
+    assert.match((await requestShardwrightTranscriptWindowAssembly({ selection: Object.freeze({}) })).reason, /^WINDOW_ASSEMBLY_INPUT_INVALID/);
     const selection = Object.freeze({ posture: 'CONTINUITY', candidates: Object.freeze([]) }); const refused = await requestShardwrightTranscriptWindowAssembly({ selection, anchors: [{ documentId: 'd', anchorMessageRecordId: 'm' }], fetchImpl: async (url) => ({ ok: url === '/csrf-token', async json() { return {}; } }) }); assert.equal(refused.reason, 'WINDOW_ASSEMBLY_ROUTE_REFUSED');
 });
 

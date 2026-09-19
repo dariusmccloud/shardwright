@@ -1,6 +1,6 @@
 # Shardwright Operator Settings Catalog Contract
 
-**Version:** 0.2.0  
+**Version:** 0.6.1
 **Status:** ENTERED — governing catalog boundary; individual settings and UI work
 require separately declared slices.
 
@@ -46,7 +46,7 @@ display-only metadata.
 | Scope | Persisted authority | Editing rule |
 | --- | --- | --- |
 | `global` | `extension_settings.shardwright` | May be edited only through the extension-settings authority. |
-| `character` | No owner yet declared | MUST refuse editing/persistence until a separate contract declares a character-owned store. It MUST NOT fall back to global state. |
+| `character` | `extension_settings.shardwright.transcriptRecall.characterBindingTokens` | May persist only an explicit binding-token mapping keyed by a trustworthy host-supplied stable character identifier. Missing, malformed, or ambiguous identifiers MUST remain unresolved; no display/path fallback is permitted. |
 | `chat` | `chat_metadata.shardwright` | May be edited only through the current chat-metadata authority. |
 | `session` | None | May exist only in runtime memory and MUST NOT be persisted. |
 | unknown | None | MUST refuse. |
@@ -67,10 +67,30 @@ invalid result rather than silently replace it with a guessed default.
 ## 6. Initial entry and boundary
 
 The initial catalog entry is the global Transcript Recall capacity profile. It declares
-the retrieval ceiling and one explicit additional-safety-headroom value. Its two controls may be rendered
+the retrieval ceiling, one explicit additional-safety-headroom value, and the bounded
+candidate-family limit. The candidate limit defaults to 50 and accepts values through
+256. These controls may be rendered
 only through the declared global owner and may persist only accepted values. This
 does not create a generic renderer, catalog legacy settings, or authorize transcript
 selection or injection.
+
+Version 0.3.0 additionally declares the Shardwright-owned character binding-token
+mapping used to restore an explicit transcript binding. The mapping is an operator
+preference, not character identity authority: the server binding ledger remains
+authoritative for `bindingToken -> characterInstanceId`. Hosts may use it only when
+they supply an explicit structured stable identifier. Conflicting mappings refuse
+rather than overwrite, and absent or ambiguous mappings remain unresolved.
+
+Version 0.4.0 additionally declares `transcriptRecall.characterIdentityAliases` as
+a global Shardwright-owned display projection. An alias is keyed only by an
+authoritative `characterInstanceId`; it is never an identity anchor, binding,
+custody claim, or merge instruction. Missing or invalid aliases fall back to the
+opaque identity.
+
+Version 0.5.0 adds the existing association modal as the explicit editor for
+these aliases. Save and clear operations mutate only the global settings
+projection through the existing settings owner; they do not write identity
+markers, binding-ledger records, or audit custody.
 
 ## 7. Required proof
 
@@ -107,3 +127,8 @@ The revised catalog, UI adapter, and profile migration are `PROVEN` by
 `node --test core/settings-catalog.test.mjs core/settings-catalog-ui.test.mjs core/transcript/capacity-profile.test.mjs`
 on 2026-09-07 (14/14). This does not authorize host settings mutation or generic
 settings rendering.
+
+The explicit character binding mapping and fail-closed identifier semantics are
+`PROVEN` by `node --test core/transcript/transcript-character-binding-settings.test.mjs
+core/settings-catalog.test.mjs` on 2026-09-11 (7/7). This covers record/resolve,
+missing or malformed identifiers, conflicting mappings, and character-scope ownership.

@@ -6,6 +6,7 @@ import { initializeThemes } from './ui/modals/themes-modal.js';
 import {
     eventSource,
     event_types,
+    setExtensionPrompt,
 } from '../../../../script.js';
 
 import {
@@ -62,6 +63,30 @@ import {
 import { registerHostCapacityReceiptObserver } from './core/transcript/host-capacity-receipt.js';
 import { installTranscriptRecallPlanningDeclineCapability } from './core/transcript/host-context-planning.js';
 import { installTranscriptCharacterBindingCapability } from './core/transcript/host-character-binding.js';
+import { installGenerationBoundaryProbe, installGenerationBoundaryProbeCapability } from './core/transcript/generation-boundary-probe.js';
+import { installTranscriptGenerationInvocationAdapter, installTranscriptGenerationInvocationCapability } from './core/transcript/generation-invocation-context.js';
+import { resolveHostGenerationInvocation } from './core/transcript/host-generation-resolver.js';
+import { getLatestTranscriptGenerationDispatchInvocation } from './core/transcript/generation-invocation-context.js';
+import { createHostRecallPlanningRequest } from './core/transcript/host-recall-planning-request.js';
+import { installHostRecallBeforeDispatch } from './core/transcript/host-recall-before-dispatch.js';
+import { stageTranscriptRecallSentinel, clearTranscriptRecallSentinel } from './core/transcript/host-recall-sentinel-stage.js';
+import { planHostTranscriptRecall } from './core/transcript/host-recall-planner-provider.js';
+import { measureHostRecallProposal } from './core/transcript/host-recall-capacity-transaction.js';
+import {
+    ensureShardwrightTranscriptProjectionCurrent,
+    requestShardwrightTranscriptCandidates,
+    requestShardwrightTranscriptAnchors,
+    requestShardwrightTranscriptWindowAssembly,
+    requestShardwrightTranscriptPolicy,
+    requestShardwrightTranscriptBundle,
+} from './core/transcript/shardwright-context-planning.js';
+import { installHostCharacterIdentityAssociationCapability } from './core/transcript/host-character-identity-association.js';
+import { recordCharacterAssociationAudit } from './core/transcript/character-association-audit-transport.js';
+import { requestTranscriptCoverage } from './core/transcript/transcript-coverage-transport.js';
+import { registerCurrentTranscriptSource, observeTranscriptSource, listTranscriptSources } from './core/transcript/transcript-source-registration-transport.js';
+import { intakeTranscriptSource } from './core/transcript/transcript-source-intake-transport.js';
+import { listBranchLineageDecisions, appendBranchLineageDecision, suggestBranchLineage } from './core/transcript/branch-lineage-transport.js';
+import { prepareLineageDecision } from './core/transcript/branch-lineage-decision.js';
 
 const MODULE_NAME = 'shardwright';
 const defaultSettings = getDefaultSettings();
@@ -737,6 +762,10 @@ jQuery(async () => {
             await runSharderQueue(ranges, settings, batchConfig);
         },
         onStop: () => stopSummarization(),
+        onOpenCharacterAssociation: async () => {
+            const { openCharacterAssociationModal } = await import('./ui/modals/management/character-association-modal.js');
+            await openCharacterAssociationModal(settings, saveSettings);
+        },
         onSummarize: () => runManualSummarizeUI(settings),
         onVectorize: async () => {
             if (!getActiveRagSettings(settings)?.enabled) {
@@ -940,6 +969,177 @@ jQuery(async () => {
     }
     installTranscriptRecallPlanningDeclineCapability(globalThis);
     installTranscriptCharacterBindingCapability(globalThis);
+    globalThis.Shardwright.transcript.getCoverage = async (characterInstanceId = null) => {
+        const context = SillyTavern.getContext?.() || {};
+        const marker = context.characters?.[context.characterId]?.data?.extensions?.shardwright;
+        return requestTranscriptCoverage(characterInstanceId || marker?.characterInstanceId);
+    };
+    globalThis.Shardwright.transcript.registerCurrentSource = async ({ operatorActionId = globalThis.crypto?.randomUUID?.(), recordedAt = new Date().toISOString() } = {}) => {
+        const context = SillyTavern.getContext?.() || {};
+        const character = context.characters?.[context.characterId];
+        const marker = character?.data?.extensions?.shardwright;
+        return registerCurrentTranscriptSource({
+            characterInstanceId: marker?.characterInstanceId,
+            avatarUrl: character?.avatar,
+            chatLocator: context.chatId,
+            operatorActionId,
+            recordedAt,
+        });
+    };
+    globalThis.Shardwright.transcript.observeSource = observeTranscriptSource;
+    globalThis.Shardwright.transcript.listSources = listTranscriptSources;
+    globalThis.Shardwright.transcript.intakeSource = intakeTranscriptSource;
+    globalThis.Shardwright.transcript.listBranchLineage = listBranchLineageDecisions;
+    globalThis.Shardwright.transcript.appendBranchLineage = appendBranchLineageDecision;
+    globalThis.Shardwright.transcript.suggestBranchLineage = suggestBranchLineage;
+    globalThis.Shardwright.transcript.prepareBranchLineageDecision = prepareLineageDecision;
+    globalThis.Shardwright.transcript.retrieveCandidates = ({ characterInstanceId, queryText, posture = 'CONTINUITY', candidateLimit = 50 } = {}) => requestShardwrightTranscriptCandidates({
+        request: Object.freeze({ characterInstanceId, queryText }),
+        posture,
+        candidateLimit,
+    });
+    globalThis.Shardwright.transcript.resolveAnchors = ({ selection, anchorOccurrenceLimit = 1 } = {}) => requestShardwrightTranscriptAnchors({
+        selection,
+        anchorOccurrenceLimit,
+    });
+    globalThis.Shardwright.transcript.assembleWindows = ({ selection, anchors, before = 2, after = 2 } = {}) => requestShardwrightTranscriptWindowAssembly({
+        selection,
+        anchors,
+        before,
+        after,
+    });
+    globalThis.Shardwright.transcript.presentBundle = ({ assembly } = {}) => requestShardwrightTranscriptBundle({ assembly });
+    let associationMarkerWritten = null;
+    installHostCharacterIdentityAssociationCapability({
+        target: globalThis,
+        contextResolver: () => SillyTavern.getContext?.() || {},
+        writeExtensionField: (...args) => {
+            const context = SillyTavern.getContext?.();
+            if (typeof context?.writeExtensionField !== 'function') throw new Error('HOST_EXTENSION_FIELD_WRITER_UNAVAILABLE');
+            associationMarkerWritten = args[2] ?? null;
+            return context.writeExtensionField.apply(context, args);
+        },
+        clearExtensionField: async (...args) => {
+            const context = SillyTavern.getContext?.();
+            if (typeof context?.clearExtensionField === 'function') {
+                associationMarkerWritten = null;
+                return context.clearExtensionField.apply(context, args);
+            }
+            throw new Error('HOST_EXTENSION_FIELD_CLEAR_UNAVAILABLE');
+        },
+        auditDecision: async (decision) => {
+            const marker = decision.decision === 'RESET_MARKER'
+                ? decision.cardMarker
+                : associationMarkerWritten || decision.cardMarker;
+            return recordCharacterAssociationAudit({
+                decision: decision.decision,
+                characterSelector: marker?.copyUuid ? { hostCharacterId: `shardwright-card:${marker.copyUuid}` } : null,
+                idempotencyKey: decision.operatorActionId,
+                basis: decision.basis,
+                recordedAt: decision.recordedAt,
+                cardMarkerBefore: decision.cardMarker,
+                targetCharacterInstanceId: decision.targetCharacterInstanceId,
+            });
+        },
+    });
+    if (event_types.GENERATION_AFTER_COMMANDS) {
+        installGenerationBoundaryProbeCapability(globalThis);
+        installTranscriptGenerationInvocationCapability(globalThis);
+        installGenerationBoundaryProbe({
+            eventSource,
+            eventType: event_types.GENERATION_AFTER_COMMANDS,
+            resolveContext: () => {
+                const context = SillyTavern.getContext?.();
+                const activeCharacter = context?.characters?.[context?.characterId];
+                const latestMessage = Array.isArray(context?.chat) ? context.chat.at(-1) : null;
+                return {
+                    ...(context && typeof context === 'object' ? Object.fromEntries(Object.keys(context).map((key) => [`host:${key}`, true])) : {}),
+                    ...(activeCharacter && typeof activeCharacter === 'object' ? Object.fromEntries(Object.keys(activeCharacter).map((key) => [`character:${key}`, true])) : {}),
+                    ...(latestMessage && typeof latestMessage === 'object' ? Object.fromEntries(Object.keys(latestMessage).map((key) => [`message:${key}`, true])) : {}),
+                };
+            },
+        });
+        eventSource.on(event_types.GENERATION_AFTER_COMMANDS, (_type, options, dryRun) => {
+            if (dryRun === true || options?.quiet_prompt === true || options?.quietImage === true) return;
+            stageTranscriptRecallSentinel(setExtensionPrompt);
+        });
+        installTranscriptGenerationInvocationAdapter({
+            eventSource,
+            eventType: event_types.GENERATION_AFTER_COMMANDS,
+            isEligible: (options) => options?.quiet_prompt !== true && options?.quietImage !== true,
+            resolveContext: (options) => resolveHostGenerationInvocation({ options, context: SillyTavern.getContext?.() }),
+            onInvocation: () => {},
+        });
+    }
+
+    if (event_types.GENERATE_AFTER_DATA) {
+        eventSource.on(event_types.GENERATE_AFTER_DATA, () => {
+            // The dedicated slot is transient; never let a sentinel survive a
+            // completed generation or a failed provider dispatch.
+            clearTranscriptRecallSentinel(setExtensionPrompt);
+        });
+    }
+
+    // Preferred live recall seam: planning is attempted against the immutable
+    // generation invocation, and only an explicitly approved bundle may replace
+    // the host sentinel. The default planner currently declines fail-closed.
+    if (event_types.GENERATE_BEFORE_DISPATCH) {
+        installHostRecallBeforeDispatch({
+            eventSource,
+            eventType: event_types.GENERATE_BEFORE_DISPATCH,
+            getInvocation: getLatestTranscriptGenerationDispatchInvocation,
+            prepare: async ({ invocation, payload }) => {
+                const context = SillyTavern.getContext?.() || {};
+                const requestResult = createHostRecallPlanningRequest({
+                    invocation,
+                    hostContext: {
+                        mainApi: context.mainApi,
+                        tokenizerModel: context.getTokenizerModel?.() || context.tokenizerModel,
+                        maxContext: context.maxContext,
+                    },
+                });
+                if (requestResult.state !== 'READY') return requestResult;
+                const proposal = await planHostTranscriptRecall({
+                    request: requestResult.request,
+                    transports: {
+                        ensureProjectionCurrent: ensureShardwrightTranscriptProjectionCurrent,
+                        requestCandidates: requestShardwrightTranscriptCandidates,
+                        requestAnchors: requestShardwrightTranscriptAnchors,
+                        requestWindowAssembly: requestShardwrightTranscriptWindowAssembly,
+                        requestPolicy: requestShardwrightTranscriptPolicy,
+                        requestBundle: requestShardwrightTranscriptBundle,
+                    },
+                    capacityProfile: settings.transcriptRecall?.capacityProfile,
+                    candidateLimit: settings.transcriptRecall?.candidateLimit,
+                });
+                if (proposal.state !== 'PROPOSAL') {
+                    globalThis.Shardwright?.contextPlanning?.recordHostResult?.(Object.freeze({
+                        ...proposal,
+                        injectionTarget: Object.freeze({ kind: 'extension_prompt', tag: '5_shardwright_transcript_recall' }),
+                    }));
+                    return proposal;
+                }
+                globalThis.Shardwright?.contextPlanning?.recordHostResult?.(proposal);
+                const measured = await measureHostRecallProposal({
+                    request: requestResult.request,
+                    proposal,
+                    payload,
+                    countPrompt: payload.countPrompt,
+                    capacityProfile: settings.transcriptRecall?.capacityProfile,
+                });
+                if (measured.state !== 'APPROVED') {
+                    globalThis.Shardwright?.contextPlanning?.recordHostResult?.(Object.freeze({
+                        ...measured,
+                        injectionTarget: proposal.injectionTarget,
+                    }));
+                    return measured;
+                }
+                const approved = Object.freeze({ ...measured, state: 'APPROVED', bundleText: proposal.bundleText, bundleHash: proposal.bundleHash, requestId: requestResult.request.requestId, injectionTarget: proposal.injectionTarget });
+                globalThis.Shardwright?.contextPlanning?.recordHostResult?.(approved);
+                return approved;
+            },
+        });
+    }
 
     // Initialize RAG collection lifecycle (cleanup on chat delete)
     initCollectionLifecycle();

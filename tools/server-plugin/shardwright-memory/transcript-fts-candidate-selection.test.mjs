@@ -7,7 +7,7 @@ import test from 'node:test';
 import { getStoragePaths } from './core.js';
 import { TranscriptFtsAdmissionScope } from './transcript-exact-content-equivalence.js';
 import { buildTranscriptFtsDocuments, materializeTranscriptFtsDocuments } from './transcript-fts-document-projection.js';
-import { selectTranscriptFtsCandidates, TranscriptRetrievalPosture } from './transcript-fts-candidate-selection.js';
+import { selectTranscriptFtsCandidates, TranscriptRetrievalPosture, TRANSCRIPT_CANDIDATE_LIMIT_DEFAULT, TRANSCRIPT_CANDIDATE_LIMIT_MAX } from './transcript-fts-candidate-selection.js';
 
 function occurrence(messageRecordId, visibilityState, admissionScope) {
     return { messageRecordId, characterInstanceId: 'character:jeep', sourceLogicalId: `source:${messageRecordId}`, sourceRevisionHash: `sha256:${messageRecordId}`, sourceLocalOrder: 0, visibilityState, admissionScope };
@@ -27,6 +27,11 @@ function readyPaths() {
     materializeTranscriptFtsDocuments(paths, buildTranscriptFtsDocuments(equivalence, 'character:jeep'));
     return paths;
 }
+
+test('declares the bounded retrieval profile', () => {
+    assert.equal(TRANSCRIPT_CANDIDATE_LIMIT_DEFAULT, 50);
+    assert.equal(TRANSCRIPT_CANDIDATE_LIMIT_MAX, 256);
+});
 
 test('returns NO_QUERY without requiring or touching an FTS database', () => {
     const paths = getStoragePaths(fs.mkdtempSync(path.join(os.tmpdir(), 'sw-fts-no-query-')));
@@ -56,4 +61,8 @@ test('archaeology exposes ordinary and archaeology-only candidates while exclude
 test('refuses candidate selection when the FTS projection does not exist', () => {
     const paths = getStoragePaths(fs.mkdtempSync(path.join(os.tmpdir(), 'sw-fts-missing-')));
     assert.throws(() => selectTranscriptFtsCandidates(paths, { characterInstanceId: 'character:jeep', posture: TranscriptRetrievalPosture.CONTINUITY, queryText: 'CSP', candidateLimit: 4 }), (error) => error?.code === 'TIR_FTS_INDEX_UNAVAILABLE');
+});
+
+test('refuses a candidate limit above the explicit ceiling', () => {
+    assert.throws(() => selectTranscriptFtsCandidates(readyPaths(), { characterInstanceId: 'character:jeep', posture: TranscriptRetrievalPosture.CONTINUITY, queryText: 'CSP', candidateLimit: TRANSCRIPT_CANDIDATE_LIMIT_MAX + 1 }), (error) => error?.code === 'TIR_FTS_LIMIT_INVALID');
 });

@@ -89,6 +89,13 @@ import { registerTranscriptCandidateWindowAssemblyRoute } from './transcript-can
 import { registerTranscriptRecallBundleRoute } from './transcript-recall-bundle-route.js';
 import { registerTranscriptCharacterBindingRoute } from './transcript-character-binding-route.js';
 import { registerTranscriptCharacterBindingRegistrationRoute } from './transcript-character-binding-registration-route.js';
+import { registerTranscriptCandidatePolicyRoute } from './transcript-candidate-policy-route.js';
+import { registerTranscriptProjectionRoute } from './transcript-projection-route.js';
+import { registerTranscriptCoverageDiagnosticRoute } from './transcript-coverage-diagnostic-route.js';
+import { registerTranscriptSourceRoute } from './transcript-source-route.js';
+import { registerTranscriptSourceIntakeRoute } from './transcript-source-intake-route.js';
+import { registerBranchLineageRoute } from './branch-lineage-route.js';
+import { registerCharacterAssociationAuditRoute } from './character-association-audit-route.js';
 import {
     assignSubjectScopedProposalPolicyProfile,
     bindAuthenticatedAccountToSemanticEntity,
@@ -117,6 +124,13 @@ export async function init(router) {
     registerTranscriptRecallBundleRoute(router);
     registerTranscriptCharacterBindingRoute(router);
     registerTranscriptCharacterBindingRegistrationRoute(router);
+    registerCharacterAssociationAuditRoute(router);
+    registerTranscriptCandidatePolicyRoute(router);
+    registerTranscriptProjectionRoute(router);
+    registerTranscriptCoverageDiagnosticRoute(router);
+    registerTranscriptSourceRoute(router);
+    registerTranscriptSourceIntakeRoute(router);
+    registerBranchLineageRoute(router);
 
     router.post('/architectural/replay-artifacts', async (request, response) => {
         try {

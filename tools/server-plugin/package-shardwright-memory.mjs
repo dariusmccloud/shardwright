@@ -10,6 +10,7 @@ const SOURCE_PLUGIN_ROOT = path.join(__dirname, 'shardwright-memory');
 
 const STATIC_PAYLOAD_FILES = Object.freeze([
     'package.json',
+    'package-lock.json',
     'README.md',
     'index.js',
     'core.js',
@@ -17,6 +18,9 @@ const STATIC_PAYLOAD_FILES = Object.freeze([
     'interpretive.js',
     'identity.js',
     'membership.js',
+    'transcript-candidate-policy.js',
+    'transcript-candidate-policy-route.js',
+    'transcript-reranker-admission.js',
     'subject-scoped-proposal-policy.js',
     'promotion.js',
     'rebuild.js',

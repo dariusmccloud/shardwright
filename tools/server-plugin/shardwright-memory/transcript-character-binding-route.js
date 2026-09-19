@@ -2,7 +2,7 @@
 // The token is the only accepted lookup key; display names and locators are ignored.
 
 import { getAuthenticatedUserRoot, getStoragePaths, handleError } from './core.js';
-import { resolveTranscriptCharacterInstance } from './transcript-character-binding.js';
+import { listTranscriptCharacterInstances, resolveTranscriptCharacterInstance } from './transcript-character-binding.js';
 
 export function registerTranscriptCharacterBindingRoute(router) {
     router.post('/transcript-recall/character-binding', async (request, response) => {
@@ -14,5 +14,9 @@ export function registerTranscriptCharacterBindingRoute(router) {
         } catch (error) {
             return handleError(response, error);
         }
+    });
+    router.post('/transcript-recall/character-binding/list', async (request, response) => {
+        try { return response.send({ ok: true, characterInstances: listTranscriptCharacterInstances(getStoragePaths(getAuthenticatedUserRoot(request))) }); }
+        catch (error) { return handleError(response, error); }
     });
 }

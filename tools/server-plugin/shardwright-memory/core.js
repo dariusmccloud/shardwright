@@ -207,10 +207,12 @@ function buildStoragePaths(userRoot, storageDirectoryName) {
     const contextSheetMembershipCurrentUseProjectionPath = path.join(contextSheetMembershipProjectionsRoot, 'current-use.json');
     const contextSheetIdentityLedgerPath = path.join(storageRoot, 'context-sheet-identity-ledger.jsonl');
     const transcriptCharacterBindingLedgerPath = path.join(storageRoot, 'transcript-character-binding-ledger.jsonl');
+    const characterAssociationAuditLedgerPath = path.join(storageRoot, 'character-association-audit-ledger.jsonl');
     const transcriptSourceRegistryLedgerPath = path.join(storageRoot, 'transcript-source-registry-ledger.jsonl');
     const transcriptSourceRevisionLedgerPath = path.join(storageRoot, 'transcript-source-revision-ledger.jsonl');
     const transcriptMessageLedgerPath = path.join(storageRoot, 'transcript-message-ledger.jsonl');
     const transcriptVisibilityLedgerPath = path.join(storageRoot, 'transcript-visibility-ledger.jsonl');
+    const branchLineageLedgerPath = path.join(storageRoot, 'branch-lineage-ledger.jsonl');
     const transcriptIndexDbPath = path.join(storageRoot, 'transcript-index.db');
     const architecturalReplayArtifactsRoot = path.join(storageRoot, 'architectural-replay-artifacts');
     const architecturalReplayLedgerPath = path.join(storageRoot, 'architectural-shard-replay-ledger.jsonl');
@@ -227,6 +229,7 @@ function buildStoragePaths(userRoot, storageDirectoryName) {
     const transcriptSourceRevisionLockPath = path.join(locksRoot, 'transcript-source-revision-ledger.lock');
     const transcriptMessageLockPath = path.join(locksRoot, 'transcript-message-ledger.lock');
     const transcriptVisibilityLockPath = path.join(locksRoot, 'transcript-visibility-ledger.lock');
+    const branchLineageLockPath = path.join(locksRoot, 'branch-lineage-ledger.lock');
     const transcriptIndexLockPath = path.join(locksRoot, 'transcript-index.lock');
     return {
         storageRoot,
@@ -240,10 +243,12 @@ function buildStoragePaths(userRoot, storageDirectoryName) {
         contextSheetMembershipCurrentUseProjectionPath,
         contextSheetIdentityLedgerPath,
         transcriptCharacterBindingLedgerPath,
+        characterAssociationAuditLedgerPath,
         transcriptSourceRegistryLedgerPath,
         transcriptSourceRevisionLedgerPath,
         transcriptMessageLedgerPath,
         transcriptVisibilityLedgerPath,
+        branchLineageLedgerPath,
         transcriptIndexDbPath,
         architecturalReplayArtifactsRoot,
         architecturalReplayLedgerPath,
@@ -260,6 +265,7 @@ function buildStoragePaths(userRoot, storageDirectoryName) {
         transcriptSourceRevisionLockPath,
         transcriptMessageLockPath,
         transcriptVisibilityLockPath,
+        branchLineageLockPath,
         transcriptIndexLockPath,
     };
 }

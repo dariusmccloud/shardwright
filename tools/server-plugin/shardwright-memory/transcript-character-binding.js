@@ -280,3 +280,12 @@ export function resolveTranscriptCharacterInstance(paths, bindingToken) {
     const current = replay.byBindingToken.get(requiredString(bindingToken, 'bindingToken'));
     return current ? current.payload.characterInstanceId : null;
 }
+
+export function listTranscriptCharacterInstances(paths) {
+    const replay = replayTranscriptCharacterBindings(readTranscriptCharacterBindingLedger(paths));
+    return [...replay.byCharacterInstanceId.values()].map((entry) => Object.freeze({
+        characterInstanceId: entry.payload.characterInstanceId,
+        bindingToken: entry.payload.bindingToken,
+        recordedAt: entry.payload.recordedAt,
+    }));
+}

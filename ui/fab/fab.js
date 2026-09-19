@@ -661,6 +661,10 @@ async function handleAction(action, button) {
                 closePanels();
                 await callbacksRef.onOpenCleanContext?.();
                 break;
+            case 'open-character-association':
+                closePanels();
+                await callbacksRef.onOpenCharacterAssociation?.();
+                break;
             default:
                 break;
         }

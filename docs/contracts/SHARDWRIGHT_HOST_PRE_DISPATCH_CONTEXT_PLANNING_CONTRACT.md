@@ -1,7 +1,7 @@
 # Shardwright Host Pre-Dispatch Context Planning Contract
 
-**Version:** 0.4.1
-**Status:** ENTERED — governs a bounded runtime fallback; no retrieval, selection, injection, or memory authority is authorized by it.
+**Version:** 0.4.2
+**Status:** ENTERED — invocation-context adapter, host-shape probe, marker-bound generation resolver, and live diagnostic composition are proven; latest-event diagnostics remain observable while a separate dispatch accessor preserves the most recent non-dry-run invocation without inferring identity.
 **Classification:** Parallel operational-continuity track; not Phase X memory-governance authority.
 
 ## 1. Purpose And Causal Bridge
@@ -61,6 +61,31 @@ this version. A host implementation MUST stage a candidate contribution only for
 the measurement rebuild, then restore the exact prior target state before ordinary
 dispatch or any refusal is returned.
 
+### 3.2 Generation Invocation Context
+
+The host MUST capture one immutable invocation context synchronously at the
+`GENERATION_AFTER_COMMANDS` boundary, before any asynchronous projection catch-up,
+identity lookup, or retrieval call. The context MUST contain, where supplied by the
+host, a generation/attempt identity, generation type, resolved speaking-character
+identity, relevant source-message identity, and chat identity. These values are
+generation-scoped inputs; Shardwright MUST NOT re-query mutable ambient host state
+after an await and MUST NOT substitute display names, avatar filenames, chat titles,
+or paths for an identity-bearing field.
+
+The host declares which generation types are eligible for Transcript Recall. An
+ineligible or intentionally excluded invocation returns `NOT_APPLICABLE` and leaves
+ordinary host generation unchanged. An eligible invocation whose bound character,
+source message, chat identity, or projection cannot be resolved returns an explicit
+refusal/diagnostic state; it MUST NOT silently become `NOT_APPLICABLE`. Recall remains
+non-mandatory to provider dispatch, so the host may continue ordinary generation
+after recording that refusal according to its failure policy.
+
+The diagnostic surface MUST distinguish the latest observed event from the latest
+non-dry-run dispatch attempt. Cleanup or preflight events may therefore make
+`getLastGenerationInvocation()` return `NOT_APPLICABLE` with `DRY_RUN`; callers
+that need the last eligible dispatch attempt MUST use the separate
+`getLastGenerationDispatchInvocation()` accessor.
+
 ## 4. Planning Request
 
 The host-owned planning request MUST be frozen and contain at least:
@@ -73,7 +98,7 @@ The host-owned planning request MUST be frozen and contain at least:
   "tokenizerModel": "active tokenizer identifier",
   "contextWindowTokens": 0,
   "characterInstanceId": "bound opaque Shardwright character instance",
-  "queryText": "current user message text",
+  "queryText": "query text derived from the captured invocation context",
   "injectionTarget": {
     "kind": "extension_prompt",
     "tag": "5_shardwright_transcript_recall"
@@ -87,8 +112,9 @@ It MUST NOT expose a mutable final prompt object for Shardwright to alter direct
 Version 0.3.0 makes the two retrieval inputs explicit. `characterInstanceId` MUST
 come from an installed Shardwright character-binding capability; the host MUST NOT
 derive it from a display name, avatar filename, chat title, path, or similarity.
-`queryText` MUST be the current user message text supplied by the host, not an
-arbitrary assembled prompt or prior assistant output. Missing or blank values
+`queryText` MUST be supplied by the captured invocation context, using the relevant
+source message for the declared generation type; it MUST NOT be an arbitrary
+assembled prompt or prior assistant output. Missing or blank values
 refuse request creation with `CHARACTER_INSTANCE_UNAVAILABLE` or `QUERY_UNAVAILABLE`.
 These fields authorize handoff only; they do not authorize retrieval, selection,
 reranking, window assembly, bundle construction, or injection.
@@ -223,7 +249,10 @@ An implementation slice may close only when it proves:
 4. an over-capacity complete proposal refuses without partial injection or selection mutation;
 5. a malformed explicit profile refuses without repair;
 6. a non-Shardwright generation follows ordinary host dispatch unchanged; and
-7. the receipt is visible to Shardwright diagnostics but never persisted as memory, preference, or governance state.
+7. the receipt is visible to Shardwright diagnostics but never persisted as memory, preference, or governance state; and
+8. an eligible generation captures its invocation context before awaiting, does not
+   re-read mutable ambient identity afterward, and distinguishes `NOT_APPLICABLE`
+   from an eligible-generation refusal.
 
 ## 9. Explicit Non-Scope
 
@@ -511,9 +540,11 @@ and missing/oversize refusal. The host focused proof is
 scripts/shardwright-context-override.test.mjs
 scripts/shardwright-capacity-resolution.test.mjs` (18/18) in the SillyTavern public
 root, including the no-Web-Crypto server-digest path. `node --test index.test.mjs`
-cannot currently begin because the local server-plugin installation is missing
-`node_modules/ajv/dist/2020.js`; that environment blocker is not repaired or masked
-by this slice.
+previously could not begin because the local server-plugin installation was missing
+`node_modules/ajv/dist/2020.js`. The plugin package now declares AJV as a runtime
+dependency and ships its lockfile; the current checkout's existing dependency
+directory remains Windows-locked, so local install execution is still an environment
+concern rather than a package-declaration gap.
 
 Live proof completed on 2026-09-08 after the server restart and browser hard
 refresh. The controlled planner returned `APPROVED` with

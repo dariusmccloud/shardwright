@@ -17,6 +17,8 @@ function freezeCatalog(value) {
 }
 
 export const TRANSCRIPT_CAPACITY_PROFILE_SCHEMA_VERSION = 2;
+export const TRANSCRIPT_CANDIDATE_LIMIT_DEFAULT = 50;
+export const TRANSCRIPT_CANDIDATE_LIMIT_MAX = 256;
 
 export const SETTINGS_CATALOG_SCOPES = freezeCatalog({
     GLOBAL: 'global',
@@ -31,8 +33,8 @@ const SETTINGS_SCOPE_DEFINITIONS = freezeCatalog({
         editAuthority: 'extension-settings',
     },
     [SETTINGS_CATALOG_SCOPES.CHARACTER]: {
-        persistenceAuthority: null,
-        editAuthority: null,
+        persistenceAuthority: 'extension_settings.shardwright.transcriptRecall.characterBindingTokens',
+        editAuthority: 'extension-settings-character-binding',
     },
     [SETTINGS_CATALOG_SCOPES.CHAT]: {
         persistenceAuthority: 'chat_metadata.shardwright',
@@ -45,6 +47,24 @@ const SETTINGS_SCOPE_DEFINITIONS = freezeCatalog({
 });
 
 export const OPERATOR_SETTINGS_CATALOG = freezeCatalog([
+    {
+        id: 'transcript-recall-candidate-limit',
+        path: ['transcriptRecall'],
+        scope: SETTINGS_CATALOG_SCOPES.GLOBAL,
+        section: 'Transcript Recall',
+        label: 'Candidate limit',
+        help: 'Maximum candidate families selected for one retrieval request. This is not a token limit or a sufficiency claim.',
+        settings: [{
+            key: 'candidateLimit',
+            type: 'integer',
+            minimum: 1,
+            maximum: TRANSCRIPT_CANDIDATE_LIMIT_MAX,
+            defaultValue: TRANSCRIPT_CANDIDATE_LIMIT_DEFAULT,
+            label: 'Candidate families per retrieval',
+            help: 'Maximum candidate families selected for one retrieval request. This is not a token limit or a sufficiency claim.',
+            ui: { control: 'number', step: 1, advanced: true },
+        }],
+    },
     {
         id: 'transcript-recall-capacity-profile',
         path: ['transcriptRecall', 'capacityProfile'],
@@ -75,6 +95,16 @@ export const OPERATOR_SETTINGS_CATALOG = freezeCatalog([
             },
         ],
     },
+    {
+        id: 'transcript-recall-character-identity-aliases',
+        path: ['transcriptRecall', 'characterIdentityAliases'],
+        scope: SETTINGS_CATALOG_SCOPES.GLOBAL,
+        section: 'Transcript Recall',
+        label: 'Character identity aliases',
+        help: 'Display-only labels for authoritative character identities. Aliases never establish, merge, or replace identity.',
+        settings: [],
+        ui: { control: 'identity-alias-map', advanced: true },
+    },
 ]);
 
 export function getSettingsCatalogEntry(id) {
@@ -83,8 +113,8 @@ export function getSettingsCatalogEntry(id) {
 
 /**
  * A scope identifies storage and editing jurisdiction; it is never merely a
- * display label. Character scope remains unavailable until a separate owner is
- * declared, so consumers can refuse instead of falling back to global state.
+ * display label. Character scope is owned only by the explicit binding-token map;
+ * consumers must still refuse when no trustworthy host identifier is supplied.
  */
 export function getSettingsScopeDefinition(scope) {
     return SETTINGS_SCOPE_DEFINITIONS[scope] ?? null;

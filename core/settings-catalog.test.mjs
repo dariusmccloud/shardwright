@@ -34,8 +34,8 @@ test('treats scope as editing and storage jurisdiction, never display metadata',
     });
     assert.equal(canEditCatalogEntry(entry), true);
 
-    assert.equal(getSettingsScopeDefinition(SETTINGS_CATALOG_SCOPES.CHARACTER).persistenceAuthority, null);
-    assert.equal(canEditCatalogEntry({ scope: SETTINGS_CATALOG_SCOPES.CHARACTER }), false);
+    assert.equal(getSettingsScopeDefinition(SETTINGS_CATALOG_SCOPES.CHARACTER).persistenceAuthority, 'extension_settings.shardwright.transcriptRecall.characterBindingTokens');
+    assert.equal(canEditCatalogEntry({ scope: SETTINGS_CATALOG_SCOPES.CHARACTER }), true);
     assert.equal(canEditCatalogEntry({ scope: 'unknown' }), false);
 });
 
@@ -53,4 +53,21 @@ test('validates values only against the declared catalog bounds', () => {
     assert.equal(isValidCatalogValue(setting, -1), false);
     assert.equal(isValidCatalogValue(setting, 1.5), false);
     assert.equal(isValidCatalogValue(setting, Number.MAX_SAFE_INTEGER + 1), false);
+});
+
+test('declares identity aliases as global display-only metadata', () => {
+    const entry = getSettingsCatalogEntry('transcript-recall-character-identity-aliases');
+    assert.deepEqual(entry.path, ['transcriptRecall', 'characterIdentityAliases']);
+    assert.equal(entry.scope, SETTINGS_CATALOG_SCOPES.GLOBAL);
+    assert.equal(entry.ui.control, 'identity-alias-map');
+    assert.equal(entry.settings.length, 0);
+});
+
+test('declares the bounded candidate-limit setting once', () => {
+    const entry = getSettingsCatalogEntry('transcript-recall-candidate-limit');
+    assert.deepEqual(entry.path, ['transcriptRecall']);
+    assert.equal(entry.settings[0].defaultValue, 50);
+    assert.equal(entry.settings[0].maximum, 256);
+    assert.equal(isValidCatalogValue(entry.settings[0], 256), true);
+    assert.equal(isValidCatalogValue(entry.settings[0], 257), false);
 });

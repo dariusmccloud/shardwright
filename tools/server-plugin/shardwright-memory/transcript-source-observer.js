@@ -15,6 +15,11 @@ export const TranscriptObservationState = Object.freeze({
     ERROR: 'ERROR',
 });
 
+export const TranscriptCreationTimestampTier = Object.freeze({
+    FILESYSTEM_NATIVE: 'FILESYSTEM_NATIVE',
+    UNAVAILABLE: 'UNAVAILABLE',
+});
+
 function hash(value) {
     return `sha256:${crypto.createHash('sha256').update(value).digest('hex')}`;
 }
@@ -55,6 +60,35 @@ function hostLocator(source) {
     return { isGroup: true, groupId: value.groupId, chatLocator: value.chatLocator };
 }
 
+function creationEvidence(chatFilePath) {
+    try {
+        const stat = fs.statSync(chatFilePath);
+        if (Number.isFinite(stat.birthtimeMs) && stat.birthtimeMs >= 0) {
+            return { sourceCreationAtMs: stat.birthtimeMs, sourceCreationTimestampTier: TranscriptCreationTimestampTier.FILESYSTEM_NATIVE };
+        }
+    } catch { /* observation will report the source read result separately */ }
+    return { sourceCreationAtMs: null, sourceCreationTimestampTier: TranscriptCreationTimestampTier.UNAVAILABLE };
+}
+
+function lineageHints(bytes) {
+    const lines = bytes.toString('utf8').split('\n');
+    let header = null;
+    try { header = lines[0]?.trim() ? JSON.parse(lines[0]) : null; } catch { /* preserve observation even when metadata is malformed */ }
+    const bookmarkLinks = [];
+    for (let index = 1; index < lines.length; index += 1) {
+        if (!lines[index]?.trim()) continue;
+        try {
+            const record = JSON.parse(lines[index]);
+            const value = record?.extra?.bookmark_link;
+            if (typeof value === 'string' && value.trim()) bookmarkLinks.push({ sourceLocalOrder: index, value: value.trim() });
+        } catch { /* message parsing remains owned by the intake stage */ }
+    }
+    return Object.freeze({
+        mainChat: typeof header?.chat_metadata?.main_chat === 'string' && header.chat_metadata.main_chat.trim() ? header.chat_metadata.main_chat.trim() : null,
+        bookmarkLinks: Object.freeze(bookmarkLinks.map((entry) => Object.freeze(entry))),
+    });
+}
+
 export function observeRegisteredTranscriptSource(paths, request, sourceLogicalId, options = {}) {
     const source = findSource(paths, sourceLogicalId);
     const observedAt = timestamp(options.observedAt);
@@ -69,9 +103,12 @@ export function observeRegisteredTranscriptSource(paths, request, sourceLogicalI
     }
     try {
         const bytes = fs.readFileSync(resolution.chatFilePath);
+        const creation = creationEvidence(resolution.chatFilePath);
         return receipt(source, observedAt, TranscriptObservationState.OBSERVED, {
             byteLength: bytes.length,
             sourceRevisionHash: hash(bytes),
+            ...creation,
+            lineageHints: lineageHints(bytes),
         });
     } catch (error) {
         return receipt(source, observedAt, TranscriptObservationState.ERROR, { refusalCode: error?.code || 'TIR_OBSERVATION_READ_FAILED' });
