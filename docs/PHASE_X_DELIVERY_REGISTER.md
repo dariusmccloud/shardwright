@@ -121,6 +121,8 @@ writer, projection, replay path, or ordinary UI path by itself.
 
 - **Transcript source inventory UI slice (2026-09-21):** The existing authenticated source-list transport is now exposed through a read-only FAB action and modal for the active character. It displays only registered sources and their coverage/participant-basis status; it performs no discovery, observation, intake, lineage, sharing, or source mutation. Rendering proof passes 3/3, existing FAB action proof passes 3/3, syntax proof passes for the changed UI surfaces, and browser proof confirms the active Jeep character displayed one `DIRECT` source with `NOT_SCANNED` status and the explicit read-only boundary after restart. Runtime source-registration/list behavior remains unchanged.
 
+- **Group source registration transport prerequisite (2026-09-21):** The client transport now carries the server-supported `GROUP` source class, structured `{ groupId, chatLocator }` locator, and required historical participant basis. Focused transport proof passes 4/4, including refusal of incomplete direct/group input. This does not discover, register, intake, or share a group source automatically.
+
 ## Update Protocol
 
 After each bounded slice, update only the row that slice governed:

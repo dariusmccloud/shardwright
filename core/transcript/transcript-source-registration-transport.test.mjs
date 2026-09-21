@@ -23,7 +23,16 @@ test('explicit source registration transport sends structured locator and operat
     assert.equal(body.operatorActionId, 'operator-1');
 });
 
-test('registration transport refuses non-direct or incomplete admission input', async () => {
+test('group registration transport sends the structured group locator and participant basis', async () => {
+    const calls = [];
+    const result = await registerTranscriptSource({ sourceClass: 'GROUP', characterInstanceId: 'character-1', groupId: 'group-1', chatLocator: 'chat-1', historicalParticipantBasis: { groupSourceId: 'group-1', participantId: 'Jeep.png', evidenceHash: 'sha256:evidence' }, operatorActionId: 'operator-2', fetchImpl: fetchMock(calls) });
+    assert.equal(result.state, 'REGISTERED');
+    const body = JSON.parse(calls[1].options.body);
+    assert.deepEqual(body.sourceResolutionLocator, { kind: 'GROUP', groupId: 'group-1', chatLocator: 'chat-1' });
+    assert.deepEqual(body.historicalParticipantBasis, { groupSourceId: 'group-1', participantId: 'Jeep.png', evidenceHash: 'sha256:evidence' });
+});
+
+test('registration transport refuses incomplete direct or group admission input', async () => {
     assert.equal((await registerTranscriptSource({ sourceClass: 'GROUP' })).reason, 'SOURCE_REGISTRATION_INPUT_INVALID');
     assert.equal((await registerTranscriptSource({ characterInstanceId: 'character-1', avatarUrl: 'Jeep.png', chatLocator: 'branch' })).reason, 'SOURCE_REGISTRATION_INPUT_INVALID');
 });
