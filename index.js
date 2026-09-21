@@ -782,6 +782,12 @@ jQuery(async () => {
                 await openBranchDiscoveryModal();
             } catch (error) { toastr.error(`Could not open branch discovery: ${error?.message || error}`); }
         },
+        onOpenSourceInventory: async () => {
+            try {
+                const { openSourceInventoryModal } = await import('./ui/modals/management/source-inventory-modal.js');
+                await openSourceInventoryModal();
+            } catch (error) { toastr.error(`Could not open source inventory: ${error?.message || error}`); }
+        },
         onSummarize: () => runManualSummarizeUI(settings),
         onVectorize: async () => {
             if (!getActiveRagSettings(settings)?.enabled) {

@@ -669,6 +669,10 @@ async function handleAction(action, button) {
                 closePanels();
                 await callbacksRef.onOpenBranchDiscovery?.();
                 break;
+            case 'open-source-inventory':
+                closePanels();
+                await callbacksRef.onOpenSourceInventory?.();
+                break;
             default:
                 break;
         }
