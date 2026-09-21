@@ -1,6 +1,6 @@
 # Shardwright Transcript Index And Recall Experience Contract
 
-**Version:** 0.8.26
+**Version:** 0.8.28
 **Status:** ENTERED — governing acceptance boundary; runtime work is permitted only
 through separately declared bounded slices, never by blanket contract authority.
 **Classification:** Parallel operational-continuity track; not Phase X memory-governance authority.
@@ -254,6 +254,43 @@ Initial intake MAY scan the complete configured corpus. Later intake MUST:
 5. record scan, skip, suspension, refusal, and failure outcomes.
 
 An unchanged corpus MUST NOT be re-indexed for every ordinary generation.
+
+### 6.3.1 Group-source discovery and automated maintenance
+
+Group-source discovery is an adopted read-only capability. A source MAY be
+discovered for a character when the host's participant record establishes that the
+character participated in the group chat. Discovery MUST preserve the participant
+snapshot and its evidence basis, classify the source as `GROUP`, and keep the source
+scoped to each participating `characterInstanceId`. Group participation MUST NOT
+grant access to another character's private corpus, create a sharing grant, or
+establish lineage or identity by itself.
+
+Discovery MAY surface a source as a reviewable candidate, but it MUST NOT silently
+register, observe, intake, merge, or select it. Registration, observation, intake,
+branch decisions, and sharing remain separately governed operations.
+
+Automated maintenance has two distinct forms:
+
+1. **Event-triggered active-source checks.** On active-chat load/change and before an
+   eligible retrieval operation, the system MAY perform a cheap metadata check for
+   the active registered source. It MUST NOT enumerate or parse the full corpus on
+   startup or every turn. Only after metadata indicates a possible revision MAY the
+   system observe/hash the source and request the existing explicit intake path.
+2. **Optional scheduled maintenance.** An operator MAY schedule checks for inactive
+   registered sources or a bounded registered-source set. A schedule MAY perform
+   read-only observation and delta detection, and MAY request the existing explicit
+   intake path according to operator policy.
+
+Neither form may auto-register arbitrary files, infer character identity, infer
+lineage, alter sharing scope, or mutate raw host chat files. Each run MUST record its
+source scope, trigger kind, start/end or open state, cursor or revision boundary,
+outcome, and refusal/failure category. Suspension and resume MUST be explicit,
+auditable events; concurrent or ambiguous source resolution MUST fail closed without
+cached substitution. Manual registry discovery remains separate from both forms.
+
+Scheduled maintenance is subordinate to the same source-revision, visibility,
+projection, and quarantine rules as manual intake. It is a freshness mechanism, not
+an authority mechanism.
 
 ### 6.4 Visibility state
 
@@ -591,6 +628,15 @@ Implementation closure requires accepted and refusal proofs for:
     revisable scoped preference that leaves archaeology and custody unchanged; and
 17. measured active-token capacity, profile safety headroom, `BUDGET_UNAVAILABLE`, and
     over-capacity complete-bundle refusal without heuristic fallback or partial recall.
+18. group discovery with participant-snapshot custody, character-scoped isolation, and
+    refusal to infer sharing or identity;
+19. event-triggered active-source checks that begin with metadata inspection and do not
+    enumerate or parse the full corpus on startup or every turn;
+20. optional scheduled observation and delta maintenance with explicit opt-in,
+    trigger/cursor/revision custody, suspension/resume events, and fail-closed locator
+    or concurrency failure; and
+21. either maintenance form never mutating raw host chat files or silently
+    registering, merging, selecting, or sharing a source.
 
 The current planning audit found 16 direct chat files with 11 represented by current
 Markdown provenance labels, plus 21 resolvable Jeep-participant group revisions with
