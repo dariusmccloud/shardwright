@@ -24,12 +24,24 @@ Operational reading, for this document:
 - Summaries, shards, embeddings, similarity scores, and reranker output are **derived artifacts**. They may help find or read material. They are never authority and never stand in for the source.
 - Summarization remains an inherited capability (Section 3), kept separate from the recall path and labeled as derived.
 
+### Lossless precedence: source and derived material
+
+The combined approach is intentional. Derived material can supply associative context that literal source retrieval alone may not surface. Chris's intent is to keep the literal source in the database, return the source neighborhood that matters to the model, and sometimes include a shard, without hiding, archiving, or replacing the original context.
+
+Amended principle (Codex's wording, adopted here):
+
+> Derived material may accompany source material, including as a literal neighboring transcript row, because it can provide useful associative context. Derived material must be structurally labeled, retain provenance to its originating source range when known, and never replace, rewrite, establish, or independently corroborate source material. Its presence must not increase the authority or evidentiary weight of the source it summarizes.
+
+In short: source is custody and authority. Derived material is associative context. They may coexist. Derived material is labeled, provenance-bound, and non-authoritative, and its presence must not silently boost, merge, or corroborate the source.
+
+**Implementation status: the boundary is not yet enforced.** See Section 4.
+
 ## 3. What the system can do today
 
 Status uses the vocabulary in Section 4. "Verified" means demonstrated by repository code, a contract, or a recorded proof, as recorded in the Register. This assembly spot-checked the rows marked with an asterisk against the repository on 2026-09-21; the rest restate the Register and Codex's draft and were not independently re-tested.
 
 | Capability outcome | Depends on | Ownership | Status | Evidence |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | Register a character or group chat as a transcript source | Source-registration ledger; explicit character identity binding | Shardwright | Verified | `tools/server-plugin/shardwright-memory/` source registration routes and ledger |
 | Observe whether a registered source resolves and has changed | Source-resolution adapter and custody receipt | Shardwright | Verified | Observation receipt with revision hash, byte length, locator hash |
 | Ingest complete source messages without summarizing them | Transcript ledgers, source observation, incremental projector | Shardwright | Verified | Live intake of 915 messages; projection generation `CURRENT` (Register) |
@@ -59,7 +71,7 @@ Status uses the vocabulary in Section 4. "Verified" means demonstrated by reposi
 ## 4. Retrieval boundaries
 
 | Retrieval system | Corpus | Primary purpose | Authority | Default relationship |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | Transcript Recall | Complete captured source messages | Custody-preserving lexical retrieval, anchor resolution, bounded context assembly | Transcript ledgers and governed identity and visibility records | Independent |
 | Shard RAG | Generated shards, summaries, related artifacts | Semantic retrieval and optional reranking | Shard and provenance records; governing memory contracts | Independent |
 | CharMemory Bridge | Human-editable Markdown memory files | Interim compatibility and human-readable continuity | Not canonical; compatibility projection only | Transitional (to be retired) |
@@ -74,9 +86,37 @@ A source may contribute to a generation only through an explicitly identified re
 
 No system may silently treat semantic similarity, matching text, a title, a filename, or a shared summary as proof that two records are the same authoritative occurrence.
 
-Transcript Recall and Shard RAG must not both inject overlapping material by default without an explicit arbitration result. Operator preference may select a retrieval preference, but must not merge custody, suppress Archaeology records, or establish truth.
+Overlap between source and derived material is permitted under the lossless-precedence principle in Section 2, provided the derived material is labeled and is never counted as corroboration of the source. Overlap between two derived or two source copies of the same material, arriving through different paths (for example, the same shard through Transcript Recall and Shard RAG), still requires deduplication or recorded separation. Operator preference may select a retrieval preference, but must not merge custody, suppress Archaeology records, or establish truth.
 
 **Enforcement status: Open.** This is a written rule. No arbitration mechanism was found, and whether both paths can inject overlapping material at once was not tested.
+
+### Derived material in recall bundles: current state and gap
+
+Verified in code on 2026-09-21:
+
+- The summarizer inserts a shard into the chat as a message and explicitly sets `is_system = false` so it stays visible (`core/summarization/output.js:494`).
+- The transcript parser accepts every chat record with a string `mes` field (`transcript-message-parser.js:40`). It does not filter on `is_system`, inspect the shard header, or keep a derived-message marker.
+- The `[MEMORY SHARD:` and `[SUMMARY:` header convention is recognized in the inherited sharder and RAG code, and nowhere in the transcript path.
+
+Consequence: a saved shard is an ordinary transcript row. It can enter FTS, match a query itself, or appear as a neighboring row in an assembled window. The bundle row carries custody metadata (source, revision, order, sender, timestamp, visibility) but not shard identity, `is_system`, `extra`, or source-range provenance. The provenance boundary is therefore not enforced.
+
+The light-test behavior (a shard supplying context beside a matched source message) is **plausible from the code but not proven for that turn.** The recorded `afterlife` proof shows that a Transcript Recall bundle reached the final prompt (`EXACT_CAPACITY_APPROVED`, `bundlePresent: true`). It records only bounded metadata, not a row-level inventory, so it cannot show whether the shard arrived through Transcript Recall, ordinary active-chat context, Shard RAG, or more than one path.
+
+Three different things must stay distinct:
+
+1. **Literal adjacency:** the shard physically neighbors a matched message.
+2. **Ordinary lexical retrieval:** the shard itself contains the query term.
+3. **Derived significance weighting:** a shard's relationship to a source range raises that source's retrieval priority. Not established, and rejected as an implicit signal (it is circular: shard raises source, source retrieves shard, shard appears to corroborate source).
+
+**Metadata a derived row will need (future, contract required):** derived-record or shard ID; source chat and revision; summarized source range; relation type (`NEIGHBOR`, `SUMMARY_OF`, `SEMANTIC_RETRIEVAL`); whether the source range is present, hidden, archived, or unavailable; and whether the row was selected directly or arrived incidentally.
+
+**Visibility edge case:** original range hidden, shard visible, posture CONTINUITY. Continuity may include the shard while omitting the originals. That is not deletion, but from the model's side it can act as replacement. The receipt should be able to say "derived material present; source range not present in this posture." Requiring the full source range to accompany every shard is not adopted as a universal rule (it would remove the compression the active chat relies on); it fits strict Archaeology or verification postures.
+
+### Evidence-envelope states
+
+Implemented (`core/transcript/transcript-evidence-envelope.js`): `EVIDENCE_PRESENT`, `NO_MATCH`, `INSUFFICIENT_EVIDENCE`, `SOURCE_UNAVAILABLE`, `AMBIGUOUS`, `CAPACITY_UNAVAILABLE`.
+
+Proposed, not implemented: a distinct `DELIBERATELY_EXCLUDED` state. Deliberate exclusion exists as a visibility or policy concept but has no dispatch-envelope state of its own.
 
 ### Status vocabulary
 
@@ -90,7 +130,7 @@ Transcript Recall and Shard RAG must not both inject overlapping material by def
 ## 5. Keep / replace / retire
 
 | System | Disposition | Reason | Status | Evidence |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | Transcript index (SQLite FTS5) and recall stack | Keep | Custody-preserving, rebuildable, current with SQLite | Decided | Register; transcript contracts |
 | Sharder, summaries, review, lorebook, chat manager | Keep (derived, non-authoritative) | Inherited product core; must not stand in for source | Open: relationship to Phase X catalog records | README; Rebase contract |
 | `core/rag` behind its seam | Keep | Working and tested; two files isolate the plugin | Open pending D-A and D-B | `vector-client.js`, `reranker-client.js` |
@@ -104,12 +144,15 @@ Transcript Recall and Shard RAG must not both inject overlapping material by def
 ## 6. Open decisions
 
 | ID | Decision | Owner | Evidence needed | Default until decided |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | D-A | Where, if anywhere, semantic retrieval joins transcript recall (none; reranker; second candidate source) | Chris with Codex | Recall-quality baseline (D-1) showing measured lexical gaps | FTS5 only; no semantic injection on the transcript path. A reranker, if added, is advisory and preserves every candidate identity |
 | D-B | Hosting Similharity under project control | Chris | Provenance gate: exact commit, license text, dependency audit, API compatibility test, pinned copy | Keep the current install; do not update it |
-| D-1 | Recall-quality baseline: evaluation set and read-only scoring harness | Chris | Real queries with human-agreed expected messages | No retrieval change |
+| D-1 | Recall-quality baseline: evaluation set and read-only scoring harness, including an associative-neighbor test family (source matches with shard adjacent or absent; shard alone matches; source hidden and shard visible; both visible; source and shard conflict; same shard via Transcript Recall and RAG; repeated shard across windows; shard in a different character or group scope). Measure source recall, useful derived-context recall, correct derived labeling, source-range presence accuracy, duplicate-injection rate, false-corroboration rate, conflict visibility, latency, bundle size | Chris | Real queries with human-agreed expected messages | No retrieval change |
 | D-2 | Tokenizer and FTS configuration as projection identity | Chris with Codex | Baseline comparison of `unicode61` versus `porter unicode61`; confirm rebuild behavior | Keep the current tokenizer |
 | D-F | Duplicate-injection arbitration: mechanism, not just the rule | Chris with Codex | Test whether multiple paths can inject overlapping material | Rule only; no enforcement |
+| D-J | Structural labeling and provenance metadata for derived (shard) rows: how a shard is identified beyond its header text, what relation and source-range fields it carries, and how the receipt reports "derived present, source range not present." Keystone (row identity, ledger, schema), so a contract comes first | Chris with Codex | Observation slice: count shard-header rows in a real corpus and whether any appeared in recorded bundles; then a contract | Shards remain ordinary rows; provenance boundary not enforced |
+| D-K | Associative expansion (seed by query, follow evidence-linked associations, re-evaluate, stop at sufficiency or capacity) | Chris with Codex | Baseline results; overlap check against Phase X anchors and Context Sheets | Open design direction only. If adopted, first as a presentation and expansion behavior, not a candidate-ranking rule. "Shard inclusion" is not a significance signal |
+| D-L | Whether a shard may surface without its source range in Continuity (label-and-allow, versus require the range) | Chris | D-J labeling in place so the receipt can state source-range presence | Codex recommends label-and-allow for Continuity; require-range fits Archaeology or verification. Not yet decided |
 | D-G | Bridge retirement timing | Chris | Transcript index covers the bridge's source type | Bridge remains, labeled interim |
 | D-H | Minimum supported Node version (`node:sqlite` is a release candidate) | Chris | Host's requirement | Undocumented |
 | D-I | Verify the upstream and BananaBread license texts | Chris | Source revisions and license files | Recorded as unverified |
@@ -124,6 +167,7 @@ Transcript Recall and Shard RAG must not both inject overlapping material by def
 
 ## 8. Verification notes
 
-- **Spot-checked against the repository (2026-09-21):** FTS5 projection and candidate selection files exist and use SQLite FTS5; the sentinel is staged through the host `setExtensionPrompt`; no dossier import/export code exists.
+- **Spot-checked against the repository (2026-09-21):** FTS5 projection and candidate selection files exist and use SQLite FTS5; the sentinel is staged through the host `setExtensionPrompt`; no dossier import/export code exists; saved shards set `is_system = false` and enter the transcript parser as ordinary rows, with no shard detection in the transcript path; the evidence envelope defines exactly six states.
+- **Not proven:** which path delivered the shard in the light test. The recorded proof keeps only bounded metadata.
 - **Restated, not re-tested:** every other Verified row comes from the Register and Codex's draft.
 - **Known gaps carried over from the design reviews:** no recall-quality baseline; Similharity provenance gate not run; the wider items Codex raised (failure and retry behavior, model-version rebuilds, per-character authorization, scale) are not yet covered.
