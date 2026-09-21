@@ -1,7 +1,7 @@
 # Shardwright Transcript Candidate Selection Policy Contract
 
-**Version:** 1.0.1
-**Status:** ENTERED — governing policy boundary; implementation requires a separately declared slice.
+**Version:** 1.2.0
+**Status:** ENTERED — governing policy boundary; retrieval-side bounded materialization and operator-scoped preference persistence are implemented as separate pre-host boundaries.
 
 ## 1. Purpose
 
@@ -51,6 +51,28 @@ The host token measurement and capacity approval remain the final admission gate
 bundle that does not fit is refused as a complete bundle; it is never silently reduced
 to fit.
 
+### 5.1 Retrieval-Side Materialization Boundary
+
+Corpus exploration, associative expansion, summary-shard discovery, and candidate
+comparison MUST remain server-side operations. They MUST NOT be treated as prompt
+material merely because they were discovered. Before host measurement, a distinct
+materialization boundary MUST produce one bounded, custody-preserving evidence bundle
+for the declared posture. The host MUST receive only that materialized bundle, never
+the broad intermediate candidate/expansion collection.
+
+Materialization MUST preserve complete retained rows and their custody metadata. It
+MUST NOT silently trim, summarize, deduplicate across custody, or discard materially
+distinct evidence to satisfy an unmeasured prompt budget. If the available evidence
+cannot be reduced to a bounded complete bundle without such loss, materialization
+MUST refuse explicitly and leave host capacity measurement untouched. The operator
+setting `transcriptRecall.capacityProfile.materializationCeilingCharacters` is a raw
+rendered-character safety fuse, defaulting to `1,000,000`; it is configurable through
+the settings catalog and is not a token, sufficiency, relevance, or authority claim.
+When the complete rendered bundle exceeds that ceiling, the server MUST refuse with
+`TIR_MATERIALIZATION_CHARACTER_CEILING_EXCEEDED`. No partial bundle crosses the
+boundary. Host exact token measurement remains the final admission gate after this
+pre-materialization check.
+
 The operational candidate-count profile defaults to 50 candidate families for ordinary
 retrieval and permits an explicit operator limit up to 256. These bounds govern only
 candidate selection; they do not represent token capacity, evidence sufficiency, or
@@ -62,7 +84,23 @@ regardless of which permitted limit was requested.
 An operator may choose a retrieval preference for Continuity when multiple equivalent
 occurrences are eligible. That preference is session/operator scoped, revisable, and
 never a truth claim. It MUST NOT suppress occurrences from Archaeology view or become a
-global custody merge.
+global custody merge. A persisted preference MUST be keyed by the authoritative
+`characterInstanceId` and the exact candidate content family (`contentHash`), and MUST
+name one eligible occurrence by its custody-bearing `messageRecordId`. The preference
+record MUST include an operator action identifier, recording timestamp, and schema
+version. It is stored only in the Shardwright-owned operator-preference mapping under
+`extension_settings.shardwright.transcriptRecall.operatorPreferences`; this mapping is
+an operator-local retrieval projection, not a ledger, identity source, or custody
+authority. It may be replaced or cleared without rewriting source records. A missing,
+malformed, stale, or ineligible preference MUST be ignored with an explicit unresolved
+state; the selector MUST retain the ordinary policy result rather than guessing or
+silently suppressing evidence. Archaeology MUST never read the preference as an
+exclusion or merge. At runtime, a preference may be consulted only after
+custody-bearing anchor resolution and only for Continuity assembly. The resolver MUST
+receive the complete eligible occurrence set for the content family, select the
+explicitly preferred `messageRecordId`, and leave the source selection and Archaeology
+result unchanged. If no valid preference resolves an equivalent multi-occurrence
+family, Continuity MUST refuse as ambiguous rather than choose the first occurrence.
 
 ## 7. Required Refusals
 
@@ -73,8 +111,9 @@ must remain distinguishable from no-match and deliberately excluded evidence.
 ## 8. Out of Scope
 
 No semantic interpretation, memory promotion, dossier editing, identity merge/split,
-automatic operator preference persistence, transcript mutation, or prompt injection is
-authorized by this contract.
+inferred preference selection, transcript mutation, or prompt injection is authorized
+by this contract. The bounded operator-preference mapping and explicit Continuity
+application described in Section 6 are the only preference behaviors authorized here.
 
 ## 9. Required Proof Before Runtime Closure
 
@@ -85,6 +124,8 @@ authorized by this contract.
 5. Adequacy and sufficiency remain distinct in the result.
 6. Operator preference does not alter Archaeology or custody.
 7. Capacity refusal preserves the complete candidate/bundle boundary.
+8. A valid persisted preference selects only its Continuity occurrence; absent or stale
+   preference refuses equivalent anchors without changing the underlying occurrence set.
 
 ## 10. Stop Boundary
 

@@ -1,6 +1,6 @@
 # Shardwright Host Transient Dispatch Diagnostics Contract
 
-**Version:** 0.2.0
+**Version:** 0.3.0
 **Status:** PROVEN — bounded in-memory diagnostic slice.
 **Classification:** Parallel operational-continuity track; not memory authority.
 
@@ -20,6 +20,17 @@ It is replaced by the next generation (or cleared when that generation has no
 Transcript Recall materialization), is never persisted, logged, emitted as an event,
 sent to the Shardwright server, placed in chat metadata, or treated as evidence.
 
+Refusal turns have a separate browser-memory-only evidence snapshot. It records
+the refusal evidence state and verifies that the `no material supplied` envelope
+reached the final local prompt, retaining only bounded metadata such as prompt-item
+count and token count; it never clones the full prompt. It is not a recall snapshot,
+contains no recalled content, and is replaced or cleared on the next planning result.
+`CAPACITY_UNAVAILABLE` specifically means evidence was found but the complete
+bundle could not fit the host's measured capacity; it must not be reported as
+source or index unavailability. When available, the refusal snapshot also retains
+bounded capacity facts (host ceiling, baseline, usable retrieval, shortfall, and
+retrieval ceiling) without retaining the full prompt.
+
 ## Proof
 
 1. A matching materialized dispatch snapshots a cloned final prompt and matching
@@ -28,6 +39,9 @@ sent to the Shardwright server, placed in chat metadata, or treated as evidence.
 3. A later ordinary generation clears the prior snapshot.
 4. The browser exposes the snapshot only beneath the owned
    `globalThis.Shardwright.contextPlanning` namespace.
+5. A refusal-envelope snapshot is exposed separately through
+   `getLastEvidenceDispatchSnapshot()` and never shares the approved-bundle
+   snapshot's authority or schema.
 
 ## Stop Condition
 
@@ -37,9 +51,11 @@ the snapshot matches the controlled bundle and disappears after an ordinary turn
 ## Implementation Evidence
 
 `core/transcript/host-context-planning.js` owns the snapshot beneath
-`globalThis.Shardwright.contextPlanning`; `script.js` records it only at the final
-OpenAI host handoff after a successful approved-bundle materialization, otherwise
-clearing any earlier snapshot. Focused Shardwright ownership/snapshot proof is
+`globalThis.Shardwright.contextPlanning`; the host pre-dispatch adapter records it
+after the verified sentinel replacement, and the legacy final OpenAI handoff may
+also record it for compatibility. Both paths are best-effort diagnostics and do
+not authorize or gate injection; an ordinary generation still clears any earlier
+snapshot. Focused Shardwright ownership/snapshot proof is
 12/12 and focused host planning/materialization proof is 21/21 on 2026-09-08;
 host `script.js` syntax validation passed.
 
@@ -50,3 +66,12 @@ then installed a one-generation decline planner, sent an ordinary message, and
 `getLastDispatchSnapshot()` returned `null`. This proves both final local-handoff
 capture and ordinary-generation clearing. It does not prove remote provider
 processing or create any durable record.
+
+The pre-dispatch recording seam was live-verified on 2026-09-19 with typed query
+`afterlife`: the planner returned `EXACT_CAPACITY_APPROVED`, and the same
+request ID (`0db81a66-5fec-4b63-8985-7705fbb0e070`) and bundle hash were present
+in `getLastDispatchSnapshot()`, with `bundlePresent: true` and
+`promptTokens: 523`. The generated turn completed normally. This proves the
+new adapter path records the transient snapshot for the bundle it actually
+inserted; it does not prove remote provider processing or make the snapshot
+durable.

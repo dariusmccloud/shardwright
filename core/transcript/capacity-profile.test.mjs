@@ -13,6 +13,7 @@ test('creates an independent complete default transcript capacity profile', () =
         schemaVersion: 2,
         retrievalCeilingTokens: 24576,
         safetyHeadroomTokens: 0,
+        materializationCeilingCharacters: 1000000,
     });
     assert.notEqual(profile, createDefaultTranscriptCapacityProfile());
 });
@@ -50,7 +51,24 @@ test('migrates a valid v1 profile without reinterpreting its old reservations', 
         schemaVersion: 2,
         retrievalCeilingTokens: 24576,
         safetyHeadroomTokens: 0,
+        materializationCeilingCharacters: 1000000,
     });
+});
+
+test('adds the new materialization fuse to an existing current profile without changing token controls', () => {
+    const settings = {
+        transcriptRecall: {
+            capacityProfile: {
+                schemaVersion: 2,
+                retrievalCeilingTokens: 24576,
+                safetyHeadroomTokens: 0,
+            },
+        },
+    };
+    assert.equal(ensureTranscriptCapacityProfileSettings(settings), true);
+    assert.equal(settings.transcriptRecall.capacityProfile.materializationCeilingCharacters, 1000000);
+    assert.equal(settings.transcriptRecall.capacityProfile.retrievalCeilingTokens, 24576);
+    assert.equal(resolveTranscriptCapacityProfile(settings.transcriptRecall.capacityProfile).state, 'PROFILE_AVAILABLE');
 });
 
 test('refuses incomplete, negative, fractional, and unsafe profile values', () => {

@@ -4,6 +4,8 @@
 
 import { createError } from './core.js';
 
+export const TRANSCRIPT_MATERIALIZATION_CEILING_DEFAULT = 1_000_000;
+
 function assertWindows(input) {
     if (!input || input.state !== 'WINDOWS' || !Array.isArray(input.windows) || input.windows.length === 0) {
         throw createError(409, 'A non-empty assembled window result is required.', 'TIR_BUNDLE_WINDOWS_REQUIRED');
@@ -24,23 +26,47 @@ function assertWindows(input) {
     return input;
 }
 
-function renderRow(row) {
+function renderRowPrefix(row) {
     const timestamp = row.timestampValue === null || row.timestampValue === undefined ? 'UNAVAILABLE' : String(row.timestampValue);
-    const content = row.contentIncluded ? row.completeContent : '[CONTENT OMITTED: source visibility does not permit continuity presentation]';
-    return `[message ${row.messageRecordId} | source ${row.sourceLogicalId} | revision ${row.sourceRevisionHash} | order ${row.sourceLocalOrder} | sender ${row.senderName} | timestamp ${timestamp} | timestampTier ${row.timestampTier} | visibility ${row.visibilityState}]\n${content}`;
+    return `[message ${row.messageRecordId} | source ${row.sourceLogicalId} | revision ${row.sourceRevisionHash} | order ${row.sourceLocalOrder} | sender ${row.senderName} | timestamp ${timestamp} | timestampTier ${row.timestampTier} | visibility ${row.visibilityState}]\n`;
 }
 
-export function buildTranscriptRecallBundle(assembly) {
+export function buildTranscriptRecallBundle(assembly, materializationCeilingCharacters) {
+    const ceiling = materializationCeilingCharacters === undefined
+        ? TRANSCRIPT_MATERIALIZATION_CEILING_DEFAULT
+        : materializationCeilingCharacters;
+    if (!Number.isSafeInteger(ceiling) || ceiling <= 0) {
+        throw createError(400, 'A positive materialization character ceiling is required.', 'TIR_MATERIALIZATION_CEILING_INVALID');
+    }
     const input = assertWindows(assembly);
     const posture = input.windows[0]?.window?.posture || input.posture || 'UNKNOWN';
-    const sections = input.windows.map((entry, index) => [
-        `[Transcript Recall Window ${index + 1} | document ${entry.documentId} | anchor ${entry.anchorMessageRecordId}]`,
-        ...entry.window.rows.map(renderRow),
-    ].join('\n'));
+    const rowCount = input.windows.reduce((count, entry) => count + entry.window.rows.length, 0);
+    const chunks = [];
+    let renderedLength = 0;
+    const append = (chunk) => {
+        if (renderedLength + chunk.length > ceiling) {
+            throw createError(409, 'The complete custody-preserving bundle exceeds the configured materialization ceiling.', 'TIR_MATERIALIZATION_CHARACTER_CEILING_EXCEEDED');
+        }
+        chunks.push(chunk);
+        renderedLength += chunk.length;
+    };
+    append(`[Transcript Recall Evidence | state EVIDENCE_PRESENT | posture ${posture} | windows ${input.windows.length} | rows ${rowCount}]`);
+    input.windows.forEach((entry, index) => {
+        append(`\n\n[Transcript Recall Window ${index + 1} | document ${entry.documentId} | anchor ${entry.anchorMessageRecordId}]`);
+        entry.window.rows.forEach((row) => {
+            append('\n');
+            append(renderRowPrefix(row));
+            append(row.contentIncluded ? row.completeContent : '[CONTENT OMITTED: source visibility does not permit continuity presentation]');
+        });
+    });
+    const bundleText = chunks.join('');
+    if (renderedLength > ceiling) {
+        throw createError(409, 'The complete custody-preserving bundle exceeds the configured materialization ceiling.', 'TIR_MATERIALIZATION_CHARACTER_CEILING_EXCEEDED');
+    }
     return Object.freeze({
-        state: 'BUNDLE', posture,
+        state: 'BUNDLE', evidenceState: 'EVIDENCE_PRESENT', posture,
         windowCount: input.windows.length,
-        rowCount: input.windows.reduce((count, entry) => count + entry.window.rows.length, 0),
-        bundleText: sections.join('\n\n'),
+        rowCount,
+        bundleText,
     });
 }

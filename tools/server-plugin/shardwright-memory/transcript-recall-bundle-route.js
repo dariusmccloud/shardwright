@@ -8,7 +8,7 @@ export function registerTranscriptRecallBundleRoute(router) {
     router.post('/transcript-recall/bundle', async (request, response) => {
         try {
             getAuthenticatedUserRoot(request);
-            return response.send({ ok: true, ...buildTranscriptRecallBundle(request.body?.assembly) });
+            return response.send({ ok: true, ...buildTranscriptRecallBundle(request.body?.assembly, request.body?.materializationCeilingCharacters) });
         } catch (error) {
             return handleError(response, error);
         }

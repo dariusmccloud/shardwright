@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { appendBranchLineageDecision, readBranchLineageLedger } from './branch-lineage-ledger.js';
+import { appendBranchLineageDecision, readBranchLineageLedger, resolveAcceptedBranchSourceScope } from './branch-lineage-ledger.js';
 
 function stable(value) { if (Array.isArray(value)) return `[${value.map(stable).join(',')}]`; return value && typeof value === 'object' ? `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stable(value[key])}`).join(',')}}` : JSON.stringify(value); }
 function hash(value) { return `sha256:${crypto.createHash('sha256').update(stable(value)).digest('hex')}`; }
@@ -66,4 +66,33 @@ test('malformed ready decisions refuse before any ledger write', () => {
     assert.throws(() => appendBranchLineageDecision(paths, decision({ matchedPrefixLength: 0 })), (error) => error.code === 'TIR_LINEAGE_INVALID_INPUT');
     assert.throws(() => appendBranchLineageDecision(paths, decision({ forkAnchor: { messageIndex: -1, contentHash: '' } })), (error) => error.code === 'TIR_LINEAGE_INVALID_INPUT');
     assert.deepEqual(readBranchLineageLedger(paths), []);
+});
+
+test('accepted lineage resolves active branch scope through governed ancestors only', () => {
+    const paths = fixture();
+    appendBranchLineageDecision(paths, decision());
+    assert.deepEqual(resolveAcceptedBranchSourceScope(paths, 'child'), {
+        state: 'RESOLVED', reason: 'ACCEPTED_LINEAGE_SCOPE', activeSourceLogicalId: 'child', sourceLogicalIds: ['child', 'parent'], sourceScopes: [{ sourceLogicalId: 'child', maxSourceLocalOrder: null }, { sourceLogicalId: 'parent', maxSourceLocalOrder: 1 }], decisionEntryIds: readBranchLineageLedger(paths).map((entry) => entry.entryId),
+    });
+    assert.deepEqual(resolveAcceptedBranchSourceScope(paths, 'parent'), {
+        state: 'UNRESOLVED', reason: 'NO_ACCEPTED_LINEAGE', activeSourceLogicalId: 'parent', sourceLogicalIds: ['parent'], sourceScopes: [{ sourceLogicalId: 'parent', maxSourceLocalOrder: null }], decisionEntryIds: [],
+    });
+});
+
+test('repeated identical parent and anchor decisions are tolerated, conflicts refuse', () => {
+    const paths = fixture();
+    appendBranchLineageDecision(paths, decision());
+    appendBranchLineageDecision(paths, decision({ operatorActionId: 'operator-2' }));
+    assert.equal(resolveAcceptedBranchSourceScope(paths, 'child').sourceScopes[1].maxSourceLocalOrder, 1);
+    const firstEntry = readBranchLineageLedger(paths)[0];
+    const conflictingPayload = { ...firstEntry.payload, operatorActionId: 'operator-3', forkAnchor: { messageIndex: 99, contentHash: 'sha256:conflict' } };
+    const conflictingEntry = { ...firstEntry, sequence: 3, entryId: 'conflict-entry', payload: conflictingPayload, payloadHash: hash(conflictingPayload) };
+    fs.appendFileSync(paths.branchLineageLedgerPath, `${JSON.stringify(conflictingEntry)}\n`);
+    assert.throws(() => resolveAcceptedBranchSourceScope(paths, 'child'), { code: 'TIR_LINEAGE_SCOPE_AMBIGUOUS' });
+});
+
+test('unresolved lineage remains explicit rather than guessing', () => {
+    const paths = fixture();
+    assert.equal(resolveAcceptedBranchSourceScope(paths, 'child').state, 'UNRESOLVED');
+    assert.deepEqual(resolveAcceptedBranchSourceScope(paths, 'missing').sourceLogicalIds, ['missing']);
 });

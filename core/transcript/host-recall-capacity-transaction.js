@@ -29,8 +29,22 @@ export async function measureHostRecallProposal({ request, proposal, payload, co
         return Object.freeze({ state: 'BUDGET_UNAVAILABLE', reason: 'HOST_TOKENIZER_UNAVAILABLE', requestId: request.requestId });
     }
     const contributionTokens = finalTokens - baselineTokens;
-    const usable = Math.min(capacityProfile.retrievalCeilingTokens, Math.max(0, request.contextWindowTokens - baselineTokens - capacityProfile.safetyHeadroomTokens));
-    const base = { requestId: request.requestId, injectionTarget: proposal.injectionTarget, bundleHash: proposal.bundleHash, baselinePromptTokens: baselineTokens, finalPromptTokens: finalTokens, contributionTokens, usableRetrievalTokens: usable };
+    const measuredRemainingTokens = Math.max(0, request.contextWindowTokens - baselineTokens - capacityProfile.safetyHeadroomTokens);
+    const usable = Math.min(capacityProfile.retrievalCeilingTokens, measuredRemainingTokens);
+    const base = {
+        requestId: request.requestId,
+        injectionTarget: proposal.injectionTarget,
+        bundleHash: proposal.bundleHash,
+        baselinePromptTokens: baselineTokens,
+        finalPromptTokens: finalTokens,
+        contributionTokens,
+        promptTokenCeiling: request.contextWindowTokens,
+        capacityProfile,
+        safetyHeadroomTokens: capacityProfile.safetyHeadroomTokens,
+        measuredRemainingTokens,
+        usableRetrievalTokens: usable,
+        shortfallTokens: Math.max(0, contributionTokens - usable),
+    };
     return Object.freeze(contributionTokens <= usable && finalTokens <= request.contextWindowTokens
         ? { state: 'APPROVED', reason: 'EXACT_CAPACITY_APPROVED', ...base, bundleText: proposal.bundleText }
         : { state: 'BUNDLE_OVER_CAPACITY', reason: 'EXACT_CAPACITY_EXCEEDED', ...base, bundleText: proposal.bundleText });

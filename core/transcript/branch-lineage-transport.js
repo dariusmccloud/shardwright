@@ -17,6 +17,15 @@ export async function listBranchLineageDecisions(fetchImpl = globalThis.fetch) {
     } catch { return Object.freeze({ state: 'REFUSED', reason: 'LINEAGE_LIST_ROUTE_UNAVAILABLE' }); }
 }
 
+export async function resolveBranchLineageScope(activeSourceLogicalId, fetchImpl = globalThis.fetch) {
+    if (typeof activeSourceLogicalId !== 'string' || !activeSourceLogicalId.trim() || typeof fetchImpl !== 'function') return Object.freeze({ state: 'REFUSED', reason: 'LINEAGE_SCOPE_INPUT_INVALID' });
+    try {
+        const { response, result } = await requestJson('/api/plugins/shardwright-memory/transcript-recall/branches/lineage/scope', { activeSourceLogicalId }, fetchImpl);
+        if (!response.ok || result?.ok !== true || !Array.isArray(result.sourceLogicalIds)) return Object.freeze({ state: 'REFUSED', reason: result?.code || result?.reason || 'LINEAGE_SCOPE_ROUTE_REFUSED' });
+        return Object.freeze({ state: result.state, reason: result.reason, activeSourceLogicalId: result.activeSourceLogicalId, sourceLogicalIds: Object.freeze([...result.sourceLogicalIds]), sourceScopes: Object.freeze((result.sourceScopes || []).map((scope) => Object.freeze({ ...scope }))), decisionEntryIds: Object.freeze([...(result.decisionEntryIds || [])]) });
+    } catch { return Object.freeze({ state: 'REFUSED', reason: 'LINEAGE_SCOPE_ROUTE_UNAVAILABLE' }); }
+}
+
 export async function appendBranchLineageDecision(decisionRecord, fetchImpl = globalThis.fetch) {
     if (!decisionRecord || decisionRecord.state !== 'DECISION_READY' || typeof fetchImpl !== 'function') return Object.freeze({ state: 'REFUSED', reason: 'LINEAGE_APPEND_INPUT_INVALID' });
     try {
@@ -35,4 +44,12 @@ export async function suggestBranchLineage(sourceLogicalIds, fetchImpl = globalT
         const { response, result } = await requestJson('/api/plugins/shardwright-memory/transcript-recall/branches/suggest', { sourceLogicalIds }, fetchImpl);
         return response.ok && result?.ok === true ? Object.freeze({ ...result }) : Object.freeze({ state: 'REFUSED', reason: result?.code || 'FORK_SUGGESTION_ROUTE_REFUSED' });
     } catch { return Object.freeze({ state: 'REFUSED', reason: 'FORK_SUGGESTION_ROUTE_UNAVAILABLE' }); }
+}
+
+export async function discoverBranchLineage(characterInstanceId, fetchImpl = globalThis.fetch) {
+    if (typeof characterInstanceId !== 'string' || !characterInstanceId.trim() || typeof fetchImpl !== 'function') return Object.freeze({ state: 'REFUSED', reason: 'BRANCH_DISCOVERY_INPUT_INVALID' });
+    try {
+        const { response, result } = await requestJson('/api/plugins/shardwright-memory/transcript-recall/branches/discover', { characterInstanceId }, fetchImpl);
+        return response.ok && result?.ok === true ? Object.freeze({ ...result }) : Object.freeze({ state: 'REFUSED', reason: result?.code || result?.reason || 'BRANCH_DISCOVERY_ROUTE_REFUSED' });
+    } catch { return Object.freeze({ state: 'REFUSED', reason: 'BRANCH_DISCOVERY_ROUTE_UNAVAILABLE' }); }
 }

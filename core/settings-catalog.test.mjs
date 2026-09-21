@@ -14,7 +14,7 @@ test('declares the transcript capacity profile once with operator and UI metadat
     const entry = getSettingsCatalogEntry('transcript-recall-capacity-profile');
     assert.deepEqual(entry.path, ['transcriptRecall', 'capacityProfile']);
     assert.equal(entry.scope, 'global');
-    assert.equal(entry.settings.length, 2);
+    assert.equal(entry.settings.length, 3);
     for (const setting of entry.settings) {
         assert.equal(setting.type, 'integer');
         assert.equal(typeof setting.label, 'string');
@@ -43,6 +43,7 @@ test('derives safe-base defaults from the catalog rather than duplicated literal
     assert.deepEqual(createCatalogDefaults('transcript-recall-capacity-profile'), {
         retrievalCeilingTokens: 24576,
         safetyHeadroomTokens: 0,
+        materializationCeilingCharacters: 1000000,
     });
     assert.equal(createCatalogDefaults('unknown-setting'), null);
 });

@@ -11,8 +11,10 @@ const assembly = { state: 'WINDOWS', posture: 'CONTINUITY', windows: [{ document
 test('bundle preserves every anchored window, full content, and timestamp metadata', () => {
     const result = buildTranscriptRecallBundle(assembly);
     assert.equal(result.state, 'BUNDLE');
+    assert.equal(result.evidenceState, 'EVIDENCE_PRESENT');
     assert.equal(result.windowCount, 2);
     assert.equal(result.rowCount, 2);
+    assert.match(result.bundleText, /Transcript Recall Evidence \| state EVIDENCE_PRESENT \| posture CONTINUITY \| windows 2 \| rows 2/u);
     assert.match(result.bundleText, /2026-09-08T12:00:00\.000Z/u);
     assert.match(result.bundleText, /content for row-1/u);
     assert.match(result.bundleText, /document:one[\s\S]*document:two/u);
@@ -30,4 +32,12 @@ test('route exposes an omitted row without inventing or substituting its content
 test('bundle refuses empty or incomplete assemblies', () => {
     assert.throws(() => buildTranscriptRecallBundle({ state: 'NO_MATCH', windows: [] }), (error) => error?.code === 'TIR_BUNDLE_WINDOWS_REQUIRED');
     assert.throws(() => buildTranscriptRecallBundle({ state: 'WINDOWS', windows: [{ documentId: 'document:one', anchorMessageRecordId: 'message:one', window: { rows: [{}] } }] }), (error) => error?.code === 'TIR_BUNDLE_ROW_INVALID');
+});
+
+test('bundle refuses a complete materialization above the configured character ceiling', () => {
+    assert.throws(() => buildTranscriptRecallBundle(assembly, 10), (error) => error?.code === 'TIR_MATERIALIZATION_CHARACTER_CEILING_EXCEEDED');
+});
+
+test('bundle rejects an invalid materialization ceiling instead of guessing', () => {
+    assert.throws(() => buildTranscriptRecallBundle(assembly, 0), (error) => error?.code === 'TIR_MATERIALIZATION_CEILING_INVALID');
 });

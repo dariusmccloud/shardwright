@@ -7,6 +7,7 @@ function createAttemptId() {
     return `attempt_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 }
 function refusal(reason) { return Object.freeze({ state: 'REFUSED', reason }); }
+const TYPED_QUERY_GENERATION_TYPES = new Set(['normal']);
 function markerFor(character) {
     const candidates = [character?.data?.extensions?.shardwright, character?.json_data?.extensions?.shardwright, character?.extensions?.shardwright].filter(Boolean);
     if (candidates.length === 0) return null;
@@ -17,7 +18,7 @@ function markerFor(character) {
     return { characterInstanceId: [...ids][0], copyUuid: [...copyUuids][0] || null };
 }
 
-export function resolveHostGenerationInvocation({ options = {}, context = {}, attemptId = createAttemptId() } = {}) {
+export function resolveHostGenerationInvocation({ options = {}, context = {}, queryTextOverride, attemptId = createAttemptId() } = {}) {
     if (!context || typeof context !== 'object') return refusal('HOST_CONTEXT_UNAVAILABLE');
     const generationType = text(options?.generationType) || text(options?.type) || 'normal';
     const rawIndex = options?.force_chid ?? context.characterId;
@@ -34,7 +35,9 @@ export function resolveHostGenerationInvocation({ options = {}, context = {}, at
     const queryMessage = Array.isArray(context.chat)
         ? [...context.chat].reverse().find((entry) => entry?.is_user === true && text(entry?.mes))
         : null;
-    const queryText = text(queryMessage?.mes);
+    const typedGeneration = TYPED_QUERY_GENERATION_TYPES.has(generationType.toLowerCase());
+    const queryText = queryTextOverride !== undefined ? text(queryTextOverride) : typedGeneration ? null : text(queryMessage?.mes);
+    if (typedGeneration && !queryText) return refusal('QUERY_UNAVAILABLE');
     const generationId = text(attemptId);
     if (!generationId) return refusal('GENERATION_ID_UNAVAILABLE');
     return Object.freeze({

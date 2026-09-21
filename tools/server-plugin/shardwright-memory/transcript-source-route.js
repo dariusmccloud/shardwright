@@ -2,6 +2,7 @@ import { getAuthenticatedUserRoot, getStoragePaths, handleError } from './core.j
 import { registerTranscriptSource } from './transcript-source-registry.js';
 import { readTranscriptSourceRegistryLedger } from './transcript-source-registry.js';
 import { observeRegisteredTranscriptSource } from './transcript-source-observer.js';
+import { previewTranscriptSource } from './transcript-source-preview.js';
 
 export function registerTranscriptSourceRoute(router) {
     router.post('/transcript-recall/sources/list', async (request, response) => {
@@ -14,6 +15,12 @@ export function registerTranscriptSourceRoute(router) {
         try {
             const result = registerTranscriptSource(getStoragePaths(getAuthenticatedUserRoot(request)), request.body);
             return response.send({ ok: true, ...result });
+        } catch (error) { return handleError(response, error); }
+    });
+
+    router.post('/transcript-recall/sources/preview', async (request, response) => {
+        try {
+            return response.send({ ok: true, ...previewTranscriptSource(request.body, request) });
         } catch (error) { return handleError(response, error); }
     });
 

@@ -13,6 +13,7 @@ import {
     normalizeShardwrightPlanningResponse,
     requestShardwrightTranscriptRecallPlan,
     requestShardwrightTranscriptCandidates,
+    requestShardwrightBranchScopedTranscriptCandidates,
     requestShardwrightTranscriptAnchors,
     requestShardwrightTranscriptContextWindow,
     requestShardwrightTranscriptWindowAssembly,
@@ -47,11 +48,29 @@ test('retrieves character-scoped candidates through the authenticated route only
     assert.deepEqual(JSON.parse(calls[1].options.body), { characterInstanceId: 'character:jeep', queryText: 'current user message', posture: 'CONTINUITY', candidateLimit: 50 });
 });
 
+test('forwards an explicit governed source scope without inferring lineage', async () => {
+    const calls = [];
+    const fetchImpl = async (url, options = {}) => { calls.push({ url, options }); return { ok: true, async json() { return url === '/csrf-token' ? { token: 'csrf' } : { ok: true, state: 'CANDIDATES', candidates: [], availableCandidateCount: 0, candidateLimit: 50, truncated: false }; } }; };
+    const result = await requestShardwrightTranscriptCandidates({ request: Object.freeze({ ...request(), sourceLogicalIds: Object.freeze(['source:parent', 'source:branch']) }), fetchImpl });
+    assert.equal(result.state, 'CANDIDATES');
+    assert.deepEqual(JSON.parse(calls[1].options.body), { characterInstanceId: 'character:jeep', queryText: 'current user message', posture: 'CONTINUITY', candidateLimit: 50, sourceLogicalIds: ['source:parent', 'source:branch'] });
+});
+
 test('refuses candidate retrieval without a frozen bound request or route success', async () => {
     const invalid = await requestShardwrightTranscriptCandidates({ request: { characterInstanceId: 'character:jeep', queryText: 'x' } });
     assert.equal(invalid.reason, 'CANDIDATE_INPUT_INVALID');
     const refused = await requestShardwrightTranscriptCandidates({ request: request(), fetchImpl: async (url) => ({ ok: url === '/csrf-token', async json() { return {}; } }) });
     assert.equal(refused.reason, 'CANDIDATE_ROUTE_REFUSED');
+});
+
+test('requires accepted lineage before composing branch-scoped candidates', async () => {
+    const requestValue = Object.freeze({ characterInstanceId: 'character:jeep', queryText: 'current user message' });
+    const unresolved = await requestShardwrightBranchScopedTranscriptCandidates({ request: requestValue, activeSourceLogicalId: 'source:independent', resolveScope: async () => ({ state: 'UNRESOLVED', reason: 'NO_ACCEPTED_LINEAGE' }) });
+    assert.equal(unresolved.reason, 'BRANCH_SCOPE_UNRESOLVED');
+    const calls = [];
+    const fetched = await requestShardwrightBranchScopedTranscriptCandidates({ request: requestValue, activeSourceLogicalId: 'source:child', resolveScope: async () => ({ state: 'RESOLVED', sourceScopes: [{ sourceLogicalId: 'source:child', maxSourceLocalOrder: null }, { sourceLogicalId: 'source:parent', maxSourceLocalOrder: 1 }] }), fetchImpl: async (url, options = {}) => { calls.push({ url, options }); return { ok: true, async json() { return url === '/csrf-token' ? { token: 'csrf' } : { ok: true, state: 'CANDIDATES', candidates: [], availableCandidateCount: 0, candidateLimit: 50, truncated: false }; } }; } });
+    assert.equal(fetched.state, 'CANDIDATES');
+    assert.deepEqual(JSON.parse(calls[1].options.body).sourceScopes, [{ sourceLogicalId: 'source:child', maxSourceLocalOrder: null }, { sourceLogicalId: 'source:parent', maxSourceLocalOrder: 1 }]);
 });
 
 test('transports only an explicit frozen selection and anchor limit', async () => {
@@ -98,7 +117,7 @@ test('refuses incomplete assembly input or route refusal', async () => {
 test('transports only a frozen assembled-window result to bundle presentation', async () => {
     const assembly = Object.freeze({ state: 'WINDOWS_ASSEMBLED', windows: Object.freeze([]) }); const calls = [];
     const fetchImpl = async (url, options = {}) => { calls.push({ url, options }); return { ok: true, async json() { return url === '/csrf-token' ? { token: 'csrf' } : { ok: true, state: 'BUNDLE_PRESENTED', bundleText: 'assembled text' }; } }; };
-    const result = await requestShardwrightTranscriptBundle({ assembly, fetchImpl }); assert.equal(result.state, 'BUNDLE_PRESENTED'); assert.deepEqual(JSON.parse(calls[1].options.body), { assembly });
+    const result = await requestShardwrightTranscriptBundle({ assembly, materializationCeilingCharacters: 1000000, fetchImpl }); assert.equal(result.state, 'BUNDLE_PRESENTED'); assert.deepEqual(JSON.parse(calls[1].options.body), { assembly, materializationCeilingCharacters: 1000000 });
 });
 
 test('refuses mutable bundle input or presentation refusal', async () => {

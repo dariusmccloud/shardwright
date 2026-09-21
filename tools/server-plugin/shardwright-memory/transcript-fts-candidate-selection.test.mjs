@@ -7,10 +7,13 @@ import test from 'node:test';
 import { getStoragePaths } from './core.js';
 import { TranscriptFtsAdmissionScope } from './transcript-exact-content-equivalence.js';
 import { buildTranscriptFtsDocuments, materializeTranscriptFtsDocuments } from './transcript-fts-document-projection.js';
-import { selectTranscriptFtsCandidates, TranscriptRetrievalPosture, TRANSCRIPT_CANDIDATE_LIMIT_DEFAULT, TRANSCRIPT_CANDIDATE_LIMIT_MAX } from './transcript-fts-candidate-selection.js';
+import { normalizeTranscriptRecallQuery, selectTranscriptFtsCandidates, TranscriptRetrievalPosture, TRANSCRIPT_CANDIDATE_LIMIT_DEFAULT, TRANSCRIPT_CANDIDATE_LIMIT_MAX } from './transcript-fts-candidate-selection.js';
 
 function occurrence(messageRecordId, visibilityState, admissionScope) {
     return { messageRecordId, characterInstanceId: 'character:jeep', sourceLogicalId: `source:${messageRecordId}`, sourceRevisionHash: `sha256:${messageRecordId}`, sourceLocalOrder: 0, visibilityState, admissionScope };
+}
+function rangedOccurrence(messageRecordId, sourceLogicalId, sourceLocalOrder) {
+    return { messageRecordId, characterInstanceId: 'character:jeep', sourceLogicalId, sourceRevisionHash: `sha256:${sourceLogicalId}`, sourceLocalOrder, visibilityState: 'VISIBLE', admissionScope: TranscriptFtsAdmissionScope.ORDINARY };
 }
 function readyPaths() {
     const paths = getStoragePaths(fs.mkdtempSync(path.join(os.tmpdir(), 'sw-fts-select-')));
@@ -40,6 +43,20 @@ test('returns NO_QUERY without requiring or touching an FTS database', () => {
     assert.equal(fs.existsSync(paths.transcriptIndexDbPath), false);
 });
 
+test('removes only leading balanced host envelopes and preserves the actual query', () => {
+    assert.equal(normalizeTranscriptRecallQuery('[TD] Saturday Sep 19, 2026 16:55 [/TD]\nbolt cutters'), 'bolt cutters');
+    assert.equal(normalizeTranscriptRecallQuery('[QR] quick reply [/QR] [TD] stamp [/TD] CSP'), 'CSP');
+    assert.equal(normalizeTranscriptRecallQuery('Use [literal]brackets[/literal] in the evidence'), 'Use [literal]brackets[/literal] in the evidence');
+    assert.equal(normalizeTranscriptRecallQuery('[OTHER] metadata [/OTHER] CSP'), 'CSP');
+    assert.equal(normalizeTranscriptRecallQuery('`[TD] canonical [/TD]` CSP'), '`[TD] canonical [/TD]` CSP');
+});
+
+test('candidate diagnostics retain raw and normalized query text', () => {
+    const result = selectTranscriptFtsCandidates(readyPaths(), { characterInstanceId: 'character:jeep', posture: TranscriptRetrievalPosture.CONTINUITY, queryText: '[TD] stamp [/TD] CSP Angela', candidateLimit: 4 });
+    assert.equal(result.rawQueryText, '[TD] stamp [/TD] CSP Angela');
+    assert.equal(result.normalizedQueryText, 'CSP Angela');
+});
+
 test('continuity returns ordinary document identity and occurrence custody without source text', () => {
     const result = selectTranscriptFtsCandidates(readyPaths(), { characterInstanceId: 'character:jeep', posture: TranscriptRetrievalPosture.CONTINUITY, queryText: 'CSP Angela', candidateLimit: 4 });
     assert.equal(result.state, 'CANDIDATES');
@@ -47,6 +64,28 @@ test('continuity returns ordinary document identity and occurrence custody witho
     assert.equal(result.candidates[0].admissionScope, TranscriptFtsAdmissionScope.ORDINARY);
     assert.equal(Object.hasOwn(result.candidates[0], 'completeContent'), false);
     assert.deepEqual(result.candidates[0].occurrenceLinks.map((link) => link.messageRecordId).sort(), ['archived', 'deleted', 'ordinary']);
+});
+
+test('explicit branch source scope limits candidates without changing custody links', () => {
+    const result = selectTranscriptFtsCandidates(readyPaths(), { characterInstanceId: 'character:jeep', posture: TranscriptRetrievalPosture.CONTINUITY, queryText: 'CSP Angela', candidateLimit: 4, sourceLogicalIds: ['source:ordinary'] });
+    assert.equal(result.state, 'CANDIDATES');
+    assert.equal(result.availableCandidateCount, 1);
+    assert.deepEqual(result.candidates[0].occurrenceLinks.map((link) => link.messageRecordId).sort(), ['archived', 'deleted', 'ordinary']);
+});
+
+test('invalid branch source scope refuses instead of inferring a branch', () => {
+    assert.throws(() => selectTranscriptFtsCandidates(readyPaths(), { characterInstanceId: 'character:jeep', posture: TranscriptRetrievalPosture.CONTINUITY, queryText: 'CSP', candidateLimit: 4, sourceLogicalIds: [] }), (error) => error?.code === 'TIR_FTS_SOURCE_SCOPE_INVALID');
+});
+
+test('accepted fork ranges exclude a parent divergent suffix while retaining links', () => {
+    const paths = getStoragePaths(fs.mkdtempSync(path.join(os.tmpdir(), 'sw-fts-range-')));
+    const equivalence = { families: [{ contentHash: 'sha256:parent-suffix', completeContent: 'parent divergent suffix', occurrences: [rangedOccurrence('parent-2', 'source:parent', 2)] }] };
+    materializeTranscriptFtsDocuments(paths, buildTranscriptFtsDocuments(equivalence, 'character:jeep'));
+    const excluded = selectTranscriptFtsCandidates(paths, { characterInstanceId: 'character:jeep', posture: TranscriptRetrievalPosture.CONTINUITY, queryText: 'parent divergent', candidateLimit: 4, sourceScopes: [{ sourceLogicalId: 'source:parent', maxSourceLocalOrder: 1 }] });
+    assert.equal(excluded.state, 'NO_MATCH');
+    const included = selectTranscriptFtsCandidates(paths, { characterInstanceId: 'character:jeep', posture: TranscriptRetrievalPosture.CONTINUITY, queryText: 'parent divergent', candidateLimit: 4, sourceScopes: [{ sourceLogicalId: 'source:parent', maxSourceLocalOrder: 2 }] });
+    assert.equal(included.state, 'CANDIDATES');
+    assert.deepEqual(included.candidates[0].occurrenceLinks.map((link) => link.messageRecordId), ['parent-2']);
 });
 
 test('archaeology exposes ordinary and archaeology-only candidates while excluded-only text never matches', () => {

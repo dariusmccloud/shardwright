@@ -1,6 +1,6 @@
 # Shardwright Operator Settings Catalog Contract
 
-**Version:** 0.6.1
+**Version:** 0.6.2
 **Status:** ENTERED — governing catalog boundary; individual settings and UI work
 require separately declared slices.
 
@@ -109,15 +109,18 @@ or catalog coverage of legacy settings.
 The initial control surface is `PROVEN` by
 `node --test core/settings-catalog.test.mjs core/settings-catalog-ui.test.mjs core/transcript/capacity-profile.test.mjs`
 on 2026-09-07 (13/13), plus a live local-panel inspection on the same date. It
-renders exactly the four declared global capacity fields. Invalid field values and
+renders exactly the five declared global capacity fields. Invalid field values and
 malformed explicit profiles refuse before mutation; persistence remains the existing
 global settings caller's responsibility. This proof does not establish a generic
 renderer, a character-scoped owner, or catalog coverage of legacy settings.
 
 ## 9. Capacity-profile correction and migration proof
 
-Version 0.2.0 replaces the ambiguous three-reservation profile with a two-field
-profile: `retrievalCeilingTokens` and `safetyHeadroomTokens`. The latter is an
+Version 0.6.2 adds the pre-host materialization safety fuse to the capacity profile,
+which now contains `retrievalCeilingTokens`, `safetyHeadroomTokens`, and
+`materializationCeilingCharacters`. The latter is a raw rendered-character ceiling,
+defaulting to 1,000,000; it refuses complete oversized bundles without trimming or
+summarizing and is independent of host token capacity. `safetyHeadroomTokens` is an
 optional, plainly named cushion after the host has already measured assembled
 prompt content and reserved its configured reply limit. A valid v1 profile is
 migrated once to v2 with headroom zero and its exact old values retained at

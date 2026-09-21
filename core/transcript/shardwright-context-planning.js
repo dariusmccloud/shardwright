@@ -1,4 +1,5 @@
 import { rerankTranscriptWindows } from './transcript-reranker-adapter.js';
+import { resolveBranchLineageScope } from './branch-lineage-transport.js';
 
 export const SHARDWRIGHT_TRANSCRIPT_RECALL_TARGET = Object.freeze({
     kind: 'extension_prompt',
@@ -179,14 +180,21 @@ export async function requestShardwrightTranscriptCandidates({ request, posture 
         if (csrfPayload?.token && csrfPayload.token !== 'disabled') headers['x-csrf-token'] = csrfPayload.token;
         const response = await fetchImpl('/api/plugins/shardwright-memory/transcript-recall/candidates', {
             method: 'POST', headers,
-            body: JSON.stringify({ characterInstanceId: request.characterInstanceId, queryText: request.queryText, posture, candidateLimit }),
+            body: JSON.stringify({ characterInstanceId: request.characterInstanceId, queryText: request.queryText, posture, candidateLimit, ...(Array.isArray(request.sourceScopes) ? { sourceScopes: request.sourceScopes } : Array.isArray(request.sourceLogicalIds) ? { sourceLogicalIds: request.sourceLogicalIds } : {}) }),
         });
         const result = await response.json();
         if (!response.ok || result?.ok !== true || !Array.isArray(result.candidates)) return Object.freeze({ state: 'CANDIDATES_UNAVAILABLE', reason: 'CANDIDATE_ROUTE_REFUSED', candidates: Object.freeze([]) });
-        return Object.freeze({ state: result.state || 'CANDIDATES', reason: 'CANDIDATES_RETRIEVED', characterInstanceId: request.characterInstanceId, posture, candidates: Object.freeze(result.candidates.map((candidate) => Object.freeze({ ...candidate }))), availableCandidateCount: result.availableCandidateCount ?? null, candidateLimit: result.candidateLimit ?? candidateLimit, truncated: result.truncated === true });
+        return Object.freeze({ state: result.state || 'CANDIDATES', reason: 'CANDIDATES_RETRIEVED', characterInstanceId: request.characterInstanceId, posture, rawQueryText: result.rawQueryText ?? request.queryText, normalizedQueryText: result.normalizedQueryText ?? request.queryText, candidates: Object.freeze(result.candidates.map((candidate) => Object.freeze({ ...candidate }))), availableCandidateCount: result.availableCandidateCount ?? null, candidateLimit: result.candidateLimit ?? candidateLimit, truncated: result.truncated === true });
     } catch {
         return Object.freeze({ state: 'CANDIDATES_UNAVAILABLE', reason: 'CANDIDATE_ROUTE_UNAVAILABLE', candidates: Object.freeze([]) });
     }
+}
+
+export async function requestShardwrightBranchScopedTranscriptCandidates({ request, activeSourceLogicalId, posture = 'CONTINUITY', candidateLimit = 50, fetchImpl = globalThis.fetch, resolveScope = resolveBranchLineageScope } = {}) {
+    if (typeof activeSourceLogicalId !== 'string' || !activeSourceLogicalId.trim() || typeof resolveScope !== 'function') return Object.freeze({ state: 'REFUSED', reason: 'BRANCH_SCOPE_INPUT_INVALID', candidates: Object.freeze([]) });
+    const scope = await resolveScope(activeSourceLogicalId, fetchImpl);
+    if (scope?.state !== 'RESOLVED' || !Array.isArray(scope.sourceScopes) || scope.sourceScopes.length < 2) return Object.freeze({ state: 'REFUSED', reason: scope?.reason === 'NO_ACCEPTED_LINEAGE' ? 'BRANCH_SCOPE_UNRESOLVED' : (scope?.reason || 'BRANCH_SCOPE_UNAVAILABLE'), candidates: Object.freeze([]) });
+    return requestShardwrightTranscriptCandidates({ request: Object.freeze({ ...(request || {}), sourceScopes: Object.freeze(scope.sourceScopes.map((entry) => Object.freeze({ ...entry }))) }), posture, candidateLimit, fetchImpl });
 }
 
 export async function requestShardwrightTranscriptAnchors({ selection, anchorOccurrenceLimit = 1, fetchImpl = globalThis.fetch } = {}) {
@@ -259,14 +267,14 @@ export async function requestShardwrightTranscriptWindowAssembly({ selection, an
     } catch { return Object.freeze({ state: 'WINDOW_ASSEMBLY_UNAVAILABLE', reason: 'WINDOW_ASSEMBLY_ROUTE_UNAVAILABLE' }); }
 }
 
-export async function requestShardwrightTranscriptBundle({ assembly, fetchImpl = globalThis.fetch } = {}) {
+export async function requestShardwrightTranscriptBundle({ assembly, materializationCeilingCharacters = 1_000_000, fetchImpl = globalThis.fetch } = {}) {
     if (!assembly || !Object.isFrozen(assembly) || typeof fetchImpl !== 'function') return Object.freeze({ state: 'BUNDLE_UNAVAILABLE', reason: 'BUNDLE_INPUT_INVALID' });
     try {
         const csrfResponse = await fetchImpl('/csrf-token', { method: 'GET', headers: { 'Cache-Control': 'no-store' } });
         const csrfPayload = csrfResponse.ok ? await csrfResponse.json() : null;
         const headers = { 'Content-Type': 'application/json' }; if (csrfPayload?.token && csrfPayload.token !== 'disabled') headers['x-csrf-token'] = csrfPayload.token;
-        const response = await fetchImpl('/api/plugins/shardwright-memory/transcript-recall/bundle', { method: 'POST', headers, body: JSON.stringify({ assembly }) });
-        const result = await response.json(); if (!response.ok || result?.ok !== true) return Object.freeze({ state: 'BUNDLE_UNAVAILABLE', reason: 'BUNDLE_ROUTE_REFUSED' });
+        const response = await fetchImpl('/api/plugins/shardwright-memory/transcript-recall/bundle', { method: 'POST', headers, body: JSON.stringify({ assembly, materializationCeilingCharacters }) });
+        const result = await response.json(); if (!response.ok || result?.ok !== true) return Object.freeze({ state: 'BUNDLE_UNAVAILABLE', reason: result?.code || result?.error || 'BUNDLE_ROUTE_REFUSED' });
         const { ok, ...payload } = result; return Object.freeze(payload);
     } catch { return Object.freeze({ state: 'BUNDLE_UNAVAILABLE', reason: 'BUNDLE_ROUTE_UNAVAILABLE' }); }
 }

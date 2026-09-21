@@ -80,6 +80,46 @@ export function readBranchLineageLedger(paths) {
     }));
 }
 
+export function resolveAcceptedBranchSourceScope(paths, activeSourceLogicalId) {
+    const active = required(activeSourceLogicalId, 'activeSourceLogicalId');
+    const entries = readBranchLineageLedger(paths);
+    const parentByChild = new Map();
+    const decisionByChild = new Map();
+    for (const entry of entries) {
+        const payload = entry.payload;
+        if (!['ACCEPT_PROPOSED', 'CHOOSE_PARENT'].includes(payload?.decision)) continue;
+        const child = String(payload.proposedChildSourceLogicalId || '').trim();
+        const parent = String(payload.parentSourceLogicalId || '').trim();
+        const sourceIds = Array.isArray(payload.sourceLogicalIds) ? payload.sourceLogicalIds : [];
+        if (!child || !parent || child === parent || !sourceIds.includes(child) || !sourceIds.includes(parent)) {
+            throw createError(409, 'Accepted lineage decision lacks a valid parent/child source pair.', 'TIR_LINEAGE_SCOPE_INVALID');
+        }
+        const maxSourceLocalOrder = payload.forkAnchor.messageIndex;
+        const prior = parentByChild.get(child);
+        if (prior && (prior.parent !== parent || prior.maxSourceLocalOrder !== maxSourceLocalOrder)) throw createError(409, 'Active source has conflicting accepted parent anchors.', 'TIR_LINEAGE_SCOPE_AMBIGUOUS');
+        if (!prior) {
+            parentByChild.set(child, { parent, maxSourceLocalOrder });
+            decisionByChild.set(child, entry.entryId);
+        }
+    }
+    const sourceLogicalIds = [active];
+    const sourceScopes = [{ sourceLogicalId: active, maxSourceLocalOrder: null }];
+    const decisionEntryIds = [];
+    const seen = new Set([active]);
+    let current = active;
+    while (parentByChild.has(current)) {
+        const edge = parentByChild.get(current);
+        const parent = edge.parent;
+        if (seen.has(parent)) throw createError(409, 'Accepted lineage contains a cycle.', 'TIR_LINEAGE_SCOPE_CYCLE');
+        seen.add(parent);
+        sourceLogicalIds.push(parent);
+        sourceScopes.push({ sourceLogicalId: parent, maxSourceLocalOrder: edge.maxSourceLocalOrder });
+        decisionEntryIds.push(decisionByChild.get(current));
+        current = parent;
+    }
+    return Object.freeze({ state: sourceLogicalIds.length > 1 ? 'RESOLVED' : 'UNRESOLVED', reason: sourceLogicalIds.length > 1 ? 'ACCEPTED_LINEAGE_SCOPE' : 'NO_ACCEPTED_LINEAGE', activeSourceLogicalId: active, sourceLogicalIds: Object.freeze(sourceLogicalIds), sourceScopes: Object.freeze(sourceScopes.map((scope) => Object.freeze(scope))), decisionEntryIds: Object.freeze(decisionEntryIds) });
+}
+
 export function appendBranchLineageDecision(paths, decisionRecord) {
     if (!decisionRecord || decisionRecord.state !== 'DECISION_READY') throw createError(400, 'An append-ready lineage decision is required.', 'TIR_LINEAGE_DECISION_NOT_READY');
     validateDecisionShape(decisionRecord);

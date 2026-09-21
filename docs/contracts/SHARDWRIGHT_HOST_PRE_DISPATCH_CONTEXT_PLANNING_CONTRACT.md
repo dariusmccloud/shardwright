@@ -1,7 +1,7 @@
 # Shardwright Host Pre-Dispatch Context Planning Contract
 
-**Version:** 0.4.2
-**Status:** ENTERED — invocation-context adapter, host-shape probe, marker-bound generation resolver, and live diagnostic composition are proven; latest-event diagnostics remain observable while a separate dispatch accessor preserves the most recent non-dry-run invocation without inferring identity.
+**Version:** 0.4.4
+**Status:** PROVEN — invocation-context adapter, host-shape probe, marker-bound generation resolver, typed-input capture at the pre-message host boundary, live capacity-approved planning, pre-dispatch evidence-state envelopes, and separate refusal-envelope snapshots are proven; dispatch diagnostics remain non-authoritative and are not required for request binding.
 **Classification:** Parallel operational-continuity track; not Phase X memory-governance authority.
 
 ## 1. Purpose And Causal Bridge
@@ -86,6 +86,17 @@ non-dry-run dispatch attempt. Cleanup or preflight events may therefore make
 that need the last eligible dispatch attempt MUST use the separate
 `getLastGenerationDispatchInvocation()` accessor.
 
+### 3.3 Pre-Dispatch Evidence State
+
+When an eligible invocation has no approved recall material, the host MUST NOT
+leave the dedicated sentinel in the provider prompt and MUST NOT invent recalled
+content. If the staged sentinel is available, the adapter replaces it with a
+concise evidence envelope declaring one of `NO_MATCH`, `INSUFFICIENT_EVIDENCE`,
+`SOURCE_UNAVAILABLE`, `AMBIGUOUS`, or `CAPACITY_UNAVAILABLE`, plus `no material supplied`. This envelope
+describes the retrieval state only; it is not evidence, authority, or a substitute
+for a bundle. The adapter still returns its explicit refusal state and ordinary
+provider generation remains non-mandatory recall behavior.
+
 ## 4. Planning Request
 
 The host-owned planning request MUST be frozen and contain at least:
@@ -112,9 +123,12 @@ It MUST NOT expose a mutable final prompt object for Shardwright to alter direct
 Version 0.3.0 makes the two retrieval inputs explicit. `characterInstanceId` MUST
 come from an installed Shardwright character-binding capability; the host MUST NOT
 derive it from a display name, avatar filename, chat title, path, or similarity.
-`queryText` MUST be supplied by the captured invocation context, using the relevant
-source message for the declared generation type; it MUST NOT be an arbitrary
-assembled prompt or prior assistant output. Missing or blank values
+`queryText` MUST be supplied by the captured invocation context, using the
+current host input captured synchronously at `GENERATION_AFTER_COMMANDS` for
+normal typed generations (before SillyTavern inserts that user message into
+chat), with the relevant chat message as the fallback for generation types that
+do not have typed input. It MUST NOT be an arbitrary assembled prompt or prior
+assistant output. Missing or blank values
 refuse request creation with `CHARACTER_INSTANCE_UNAVAILABLE` or `QUERY_UNAVAILABLE`.
 These fields authorize handoff only; they do not authorize retrieval, selection,
 reranking, window assembly, bundle construction, or injection.

@@ -665,6 +665,10 @@ async function handleAction(action, button) {
                 closePanels();
                 await callbacksRef.onOpenCharacterAssociation?.();
                 break;
+            case 'open-branch-discovery':
+                closePanels();
+                await callbacksRef.onOpenBranchDiscovery?.();
+                break;
             default:
                 break;
         }

@@ -159,6 +159,7 @@ function buildSettingsPanel(snapshot) {
             actionBtn('open-prompts', 'fa-file-lines', 'Prompts'),
             actionBtn('open-clean-context', 'fa-filter-circle-xmark', 'Cleanup'),
             actionBtn('open-character-association', 'fa-id-card', 'Character Identity'),
+            actionBtn('open-branch-discovery', 'fa-code-branch', 'Branch Discovery'),
         ]
     };
 

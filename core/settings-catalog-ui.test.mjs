@@ -38,6 +38,7 @@ test('exposes only the declared global capacity entry to an editable consumer', 
     assert.deepEqual(entry.settings.map((setting) => setting.key), [
         'retrievalCeilingTokens',
         'safetyHeadroomTokens',
+        'materializationCeilingCharacters',
     ]);
     assert.equal(getEditableCatalogEntry('unknown'), null);
 });

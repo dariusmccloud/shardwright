@@ -6,6 +6,7 @@ import { initializeThemes } from './ui/modals/themes-modal.js';
 import {
     eventSource,
     event_types,
+    saveChatConditional,
     setExtensionPrompt,
 } from '../../../../script.js';
 
@@ -75,6 +76,7 @@ import { measureHostRecallProposal } from './core/transcript/host-recall-capacit
 import {
     ensureShardwrightTranscriptProjectionCurrent,
     requestShardwrightTranscriptCandidates,
+    requestShardwrightBranchScopedTranscriptCandidates,
     requestShardwrightTranscriptAnchors,
     requestShardwrightTranscriptWindowAssembly,
     requestShardwrightTranscriptPolicy,
@@ -83,10 +85,18 @@ import {
 import { installHostCharacterIdentityAssociationCapability } from './core/transcript/host-character-identity-association.js';
 import { recordCharacterAssociationAudit } from './core/transcript/character-association-audit-transport.js';
 import { requestTranscriptCoverage } from './core/transcript/transcript-coverage-transport.js';
-import { registerCurrentTranscriptSource, observeTranscriptSource, listTranscriptSources } from './core/transcript/transcript-source-registration-transport.js';
+import { registerCurrentTranscriptSource, registerTranscriptSource, observeTranscriptSource, listTranscriptSources, previewTranscriptSource } from './core/transcript/transcript-source-registration-transport.js';
 import { intakeTranscriptSource } from './core/transcript/transcript-source-intake-transport.js';
-import { listBranchLineageDecisions, appendBranchLineageDecision, suggestBranchLineage } from './core/transcript/branch-lineage-transport.js';
+import { listBranchLineageDecisions, appendBranchLineageDecision, discoverBranchLineage, resolveBranchLineageScope, suggestBranchLineage } from './core/transcript/branch-lineage-transport.js';
 import { prepareLineageDecision } from './core/transcript/branch-lineage-decision.js';
+import { installRuntimeMessageIdentityCaptureAdapter, installRuntimeMessageIdentityCaptureCapability } from './core/transcript/runtime-message-identity-capture.js';
+import { diagnoseTranscriptRecall } from './core/transcript/transcript-retrieval-parity-diagnostic.js';
+import { resolveTranscriptCapacityProfile } from './core/transcript/capacity-profile.js';
+import {
+    recordContinuityRetrievalPreference,
+    clearContinuityRetrievalPreference,
+    resolveContinuityRetrievalPreference,
+} from './core/transcript/operator-retrieval-preferences.js';
 
 const MODULE_NAME = 'shardwright';
 const defaultSettings = getDefaultSettings();
@@ -766,6 +776,12 @@ jQuery(async () => {
             const { openCharacterAssociationModal } = await import('./ui/modals/management/character-association-modal.js');
             await openCharacterAssociationModal(settings, saveSettings);
         },
+        onOpenBranchDiscovery: async () => {
+            try {
+                const { openBranchDiscoveryModal } = await import('./ui/modals/management/branch-discovery-modal.js');
+                await openBranchDiscoveryModal();
+            } catch (error) { toastr.error(`Could not open branch discovery: ${error?.message || error}`); }
+        },
         onSummarize: () => runManualSummarizeUI(settings),
         onVectorize: async () => {
             if (!getActiveRagSettings(settings)?.enabled) {
@@ -987,12 +1003,34 @@ jQuery(async () => {
         });
     };
     globalThis.Shardwright.transcript.observeSource = observeTranscriptSource;
+    globalThis.Shardwright.transcript.previewSource = previewTranscriptSource;
+    globalThis.Shardwright.transcript.registerSource = registerTranscriptSource;
     globalThis.Shardwright.transcript.listSources = listTranscriptSources;
     globalThis.Shardwright.transcript.intakeSource = intakeTranscriptSource;
     globalThis.Shardwright.transcript.listBranchLineage = listBranchLineageDecisions;
+    globalThis.Shardwright.transcript.resolveBranchLineageScope = resolveBranchLineageScope;
+    globalThis.Shardwright.transcript.retrieveBranchScopedCandidates = requestShardwrightBranchScopedTranscriptCandidates;
     globalThis.Shardwright.transcript.appendBranchLineage = appendBranchLineageDecision;
     globalThis.Shardwright.transcript.suggestBranchLineage = suggestBranchLineage;
+    globalThis.Shardwright.transcript.discoverBranchLineage = discoverBranchLineage;
     globalThis.Shardwright.transcript.prepareBranchLineageDecision = prepareLineageDecision;
+    globalThis.Shardwright.transcript.recordContinuityRetrievalPreference = (input = {}) => {
+        const result = recordContinuityRetrievalPreference(settings, input);
+        if (result.state === 'RECORDED') {
+            settings = result.settings;
+            saveSettings(settings);
+        }
+        return result;
+    };
+    globalThis.Shardwright.transcript.clearContinuityRetrievalPreference = (input = {}) => {
+        const result = clearContinuityRetrievalPreference(settings, input);
+        if (result.state === 'CLEARED') {
+            settings = result.settings;
+            saveSettings(settings);
+        }
+        return result;
+    };
+    globalThis.Shardwright.transcript.resolveContinuityRetrievalPreference = (input = {}) => resolveContinuityRetrievalPreference(settings, input);
     globalThis.Shardwright.transcript.retrieveCandidates = ({ characterInstanceId, queryText, posture = 'CONTINUITY', candidateLimit = 50 } = {}) => requestShardwrightTranscriptCandidates({
         request: Object.freeze({ characterInstanceId, queryText }),
         posture,
@@ -1008,7 +1046,30 @@ jQuery(async () => {
         before,
         after,
     });
-    globalThis.Shardwright.transcript.presentBundle = ({ assembly } = {}) => requestShardwrightTranscriptBundle({ assembly });
+    globalThis.Shardwright.transcript.presentBundle = ({ assembly } = {}) => {
+        const profile = resolveTranscriptCapacityProfile(settings.transcriptRecall?.capacityProfile);
+        return requestShardwrightTranscriptBundle({ assembly, materializationCeilingCharacters: profile.state === 'PROFILE_AVAILABLE' ? profile.materializationCeilingCharacters : 1_000_000 });
+    };
+    globalThis.Shardwright.transcript.diagnoseRecall = ({ characterInstanceId, queryText, posture = 'CONTINUITY', candidateLimit = 50, anchorOccurrenceLimit = 1, before = 2, after = 2, requestId = globalThis.crypto?.randomUUID?.() } = {}) => {
+        const request = Object.freeze({ requestId, characterInstanceId, queryText });
+        const resolvedCapacityProfile = resolveTranscriptCapacityProfile(settings.transcriptRecall?.capacityProfile);
+        const materializationCeilingCharacters = resolvedCapacityProfile.state === 'PROFILE_AVAILABLE' ? resolvedCapacityProfile.materializationCeilingCharacters : 1_000_000;
+        return diagnoseTranscriptRecall({
+            request, posture, candidateLimit, anchorOccurrenceLimit, before, after, materializationCeilingCharacters,
+            preferenceResolver: (input = {}) => resolveContinuityRetrievalPreference(settings, input),
+            transports: {
+                ensureProjectionCurrent: ({ request: value, posture: selectedPosture }) => ensureShardwrightTranscriptProjectionCurrent({ request: value, posture: selectedPosture }),
+                requestCandidates: ({ request: value, posture: selectedPosture, candidateLimit: limit }) => requestShardwrightTranscriptCandidates({ request: value, posture: selectedPosture, candidateLimit: limit }),
+                requestAnchors: ({ selection, anchorOccurrenceLimit: limit }) => requestShardwrightTranscriptAnchors({ selection, anchorOccurrenceLimit: limit }),
+                requestWindowAssembly: ({ selection, anchors, before: leading, after: trailing }) => requestShardwrightTranscriptWindowAssembly({ selection, anchors, before: leading, after: trailing }),
+                requestPolicy: ({ selection, anchors }) => requestShardwrightTranscriptPolicy({ selection, anchors }),
+                requestBundle: ({ assembly }) => {
+                    const profile = resolveTranscriptCapacityProfile(settings.transcriptRecall?.capacityProfile);
+                    return requestShardwrightTranscriptBundle({ assembly, materializationCeilingCharacters: profile.state === 'PROFILE_AVAILABLE' ? profile.materializationCeilingCharacters : 1_000_000 });
+                },
+            },
+        });
+    };
     let associationMarkerWritten = null;
     installHostCharacterIdentityAssociationCapability({
         target: globalThis,
@@ -1045,6 +1106,20 @@ jQuery(async () => {
     if (event_types.GENERATION_AFTER_COMMANDS) {
         installGenerationBoundaryProbeCapability(globalThis);
         installTranscriptGenerationInvocationCapability(globalThis);
+        installRuntimeMessageIdentityCaptureCapability(globalThis);
+        installRuntimeMessageIdentityCaptureAdapter({
+            eventSource,
+            eventType: event_types.GENERATION_AFTER_COMMANDS,
+            isEligible: (options) => options?.quiet_prompt !== true && options?.quietImage !== true,
+            resolveContext: () => {
+                const context = SillyTavern.getContext?.() || {};
+                const sourceMessage = context.sourceMessage || context.latestMessage || context.message || null;
+                return { ...context, sourceMessage };
+            },
+            persist: async () => {
+                await saveChatConditional();
+            },
+        });
         installGenerationBoundaryProbe({
             eventSource,
             eventType: event_types.GENERATION_AFTER_COMMANDS,
@@ -1067,7 +1142,11 @@ jQuery(async () => {
             eventSource,
             eventType: event_types.GENERATION_AFTER_COMMANDS,
             isEligible: (options) => options?.quiet_prompt !== true && options?.quietImage !== true,
-            resolveContext: (options) => resolveHostGenerationInvocation({ options, context: SillyTavern.getContext?.() }),
+            resolveContext: (options) => resolveHostGenerationInvocation({
+                options,
+                context: SillyTavern.getContext?.(),
+                queryTextOverride: document.querySelector('#send_textarea')?.value || '',
+            }),
             onInvocation: () => {},
         });
     }
@@ -1088,6 +1167,17 @@ jQuery(async () => {
             eventSource,
             eventType: event_types.GENERATE_BEFORE_DISPATCH,
             getInvocation: getLatestTranscriptGenerationDispatchInvocation,
+            recordSnapshot: ({ prepared, payload }) => globalThis.Shardwright?.contextPlanning?.recordHostDispatchSnapshot?.({
+                context: prepared,
+                prompt: payload?.generateData?.prompt,
+                promptTokens: payload?.promptCounts?.oaiPromptTokens ?? null,
+            }),
+            recordEvidenceSnapshot: ({ result, envelope, payload }) => globalThis.Shardwright?.contextPlanning?.recordHostEvidenceDispatchSnapshot?.({
+                result,
+                envelope,
+                prompt: payload?.generateData?.prompt,
+                promptTokens: payload?.promptCounts?.oaiPromptTokens ?? null,
+            }),
             prepare: async ({ invocation, payload }) => {
                 const context = SillyTavern.getContext?.() || {};
                 const requestResult = createHostRecallPlanningRequest({
@@ -1099,6 +1189,18 @@ jQuery(async () => {
                     },
                 });
                 if (requestResult.state !== 'READY') return requestResult;
+                const resolvedCapacityProfile = resolveTranscriptCapacityProfile(settings.transcriptRecall?.capacityProfile);
+                if (resolvedCapacityProfile.state !== 'PROFILE_AVAILABLE') {
+                    return Object.freeze({
+                        state: 'BUDGET_UNAVAILABLE',
+                        reason: resolvedCapacityProfile.reason,
+                        requestId: requestResult.request.requestId,
+                    });
+                }
+                const proposalCapacityProfile = Object.freeze({
+                    retrievalCeilingTokens: resolvedCapacityProfile.retrievalCeilingTokens,
+                    safetyHeadroomTokens: resolvedCapacityProfile.safetyHeadroomTokens,
+                });
                 const proposal = await planHostTranscriptRecall({
                     request: requestResult.request,
                     transports: {
@@ -1109,7 +1211,9 @@ jQuery(async () => {
                         requestPolicy: requestShardwrightTranscriptPolicy,
                         requestBundle: requestShardwrightTranscriptBundle,
                     },
-                    capacityProfile: settings.transcriptRecall?.capacityProfile,
+                    capacityProfile: proposalCapacityProfile,
+                    materializationCeilingCharacters: resolvedCapacityProfile.materializationCeilingCharacters,
+                    preferenceResolver: (input = {}) => resolveContinuityRetrievalPreference(settings, input),
                     candidateLimit: settings.transcriptRecall?.candidateLimit,
                 });
                 if (proposal.state !== 'PROPOSAL') {
@@ -1125,7 +1229,7 @@ jQuery(async () => {
                     proposal,
                     payload,
                     countPrompt: payload.countPrompt,
-                    capacityProfile: settings.transcriptRecall?.capacityProfile,
+                    capacityProfile: proposalCapacityProfile,
                 });
                 if (measured.state !== 'APPROVED') {
                     globalThis.Shardwright?.contextPlanning?.recordHostResult?.(Object.freeze({

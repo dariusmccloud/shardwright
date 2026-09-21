@@ -7,6 +7,7 @@ export const TRANSCRIPT_RECALL_PLANNING_TARGET = Object.freeze({
 
 let latestPlanResult = Object.freeze({ state: 'NOT_REQUESTED' });
 let latestDispatchSnapshot = null;
+let latestEvidenceDispatchSnapshot = null;
 
 function isMatchingPlanningRequest(request) {
     return Boolean(request
@@ -55,6 +56,55 @@ export function getLatestTranscriptRecallDispatchSnapshot() {
 export function clearTranscriptRecallDispatchSnapshot() {
     latestDispatchSnapshot = null;
     return latestDispatchSnapshot;
+}
+
+export function getLatestTranscriptRecallEvidenceDispatchSnapshot() {
+    return latestEvidenceDispatchSnapshot;
+}
+
+export function clearTranscriptRecallEvidenceDispatchSnapshot() {
+    latestEvidenceDispatchSnapshot = null;
+    return latestEvidenceDispatchSnapshot;
+}
+
+export function recordHostTranscriptRecallEvidenceDispatchSnapshot({ result, envelope, prompt, promptTokens = null } = {}) {
+    const validState = ['NO_MATCH', 'INSUFFICIENT_EVIDENCE', 'SOURCE_UNAVAILABLE', 'AMBIGUOUS', 'CAPACITY_UNAVAILABLE'].includes(result?.evidenceState);
+    if (!result || result.state !== 'REFUSED' || !validState || typeof envelope !== 'string' || !envelope.length || !Array.isArray(prompt)) {
+        latestEvidenceDispatchSnapshot = Object.freeze({ state: 'SNAPSHOT_UNAVAILABLE', reason: 'EVIDENCE_SNAPSHOT_INPUT_INVALID' });
+        return latestEvidenceDispatchSnapshot;
+    }
+    try {
+        const envelopePresent = prompt.some((message) => typeof message?.content === 'string' && message.content.includes(envelope));
+        if (!envelopePresent) {
+            latestEvidenceDispatchSnapshot = Object.freeze({ state: 'SNAPSHOT_UNAVAILABLE', reason: 'EVIDENCE_ENVELOPE_NOT_IN_FINAL_PROMPT' });
+            return latestEvidenceDispatchSnapshot;
+        }
+        latestEvidenceDispatchSnapshot = Object.freeze({
+            state: 'EVIDENCE_DISPATCH_SNAPSHOT',
+            requestId: result.requestId || null,
+            injectionTarget: TRANSCRIPT_RECALL_PLANNING_TARGET,
+            evidenceState: result.evidenceState,
+            envelope,
+            promptTokens: Number.isSafeInteger(promptTokens) && promptTokens >= 0 ? promptTokens : null,
+            promptItemCount: prompt.length,
+            envelopePresent: true,
+            ...(Number.isSafeInteger(result.promptTokenCeiling) ? { hostCeiling: result.promptTokenCeiling } : {}),
+            ...(Number.isSafeInteger(result.baselinePromptTokens) ? { baselinePromptTokens: result.baselinePromptTokens } : {}),
+            ...(Number.isSafeInteger(result.contributionTokens) ? { contributionTokens: result.contributionTokens } : {}),
+            ...(Number.isSafeInteger(result.usableRetrievalTokens) ? { usableRetrievalTokens: result.usableRetrievalTokens } : {}),
+            ...(Number.isSafeInteger(result.shortfallTokens) ? { shortfallTokens: result.shortfallTokens } : {}),
+            ...(result.capacityProfile && typeof result.capacityProfile === 'object' ? {
+                capacityProfile: Object.freeze({
+                    retrievalCeilingTokens: result.capacityProfile.retrievalCeilingTokens,
+                    safetyHeadroomTokens: result.capacityProfile.safetyHeadroomTokens,
+                }),
+            } : {}),
+        });
+        return latestEvidenceDispatchSnapshot;
+    } catch {
+        latestEvidenceDispatchSnapshot = Object.freeze({ state: 'SNAPSHOT_UNAVAILABLE', reason: 'EVIDENCE_SNAPSHOT_CLONE_FAILED' });
+        return latestEvidenceDispatchSnapshot;
+    }
 }
 
 export function recordHostTranscriptRecallDispatchSnapshot({ context, prompt, promptTokens = null } = {}) {
@@ -109,6 +159,7 @@ export function recordHostTranscriptRecallPlanResult(result) {
         return latestPlanResult;
     }
     latestPlanResult = result;
+    latestEvidenceDispatchSnapshot = null;
     return latestPlanResult;
 }
 
@@ -122,7 +173,10 @@ export function installTranscriptRecallPlanningDeclineCapability(target = global
     }
     if ((namespace.getLastDispatchSnapshot !== undefined && namespace.getLastDispatchSnapshot !== getLatestTranscriptRecallDispatchSnapshot)
         || (namespace.recordHostDispatchSnapshot !== undefined && namespace.recordHostDispatchSnapshot !== recordHostTranscriptRecallDispatchSnapshot)
-        || (namespace.clearLastDispatchSnapshot !== undefined && namespace.clearLastDispatchSnapshot !== clearTranscriptRecallDispatchSnapshot)) {
+        || (namespace.clearLastDispatchSnapshot !== undefined && namespace.clearLastDispatchSnapshot !== clearTranscriptRecallDispatchSnapshot)
+        || (namespace.getLastEvidenceDispatchSnapshot !== undefined && namespace.getLastEvidenceDispatchSnapshot !== getLatestTranscriptRecallEvidenceDispatchSnapshot)
+        || (namespace.recordHostEvidenceDispatchSnapshot !== undefined && namespace.recordHostEvidenceDispatchSnapshot !== recordHostTranscriptRecallEvidenceDispatchSnapshot)
+        || (namespace.clearLastEvidenceDispatchSnapshot !== undefined && namespace.clearLastEvidenceDispatchSnapshot !== clearTranscriptRecallEvidenceDispatchSnapshot)) {
         throw new Error('Shardwright context-planning dispatch diagnostics are already owned by an incompatible handler.');
     }
     namespace.plan = declineTranscriptRecallPlan;
@@ -131,5 +185,8 @@ export function installTranscriptRecallPlanningDeclineCapability(target = global
     namespace.getLastDispatchSnapshot = getLatestTranscriptRecallDispatchSnapshot;
     namespace.recordHostDispatchSnapshot = recordHostTranscriptRecallDispatchSnapshot;
     namespace.clearLastDispatchSnapshot = clearTranscriptRecallDispatchSnapshot;
+    namespace.getLastEvidenceDispatchSnapshot = getLatestTranscriptRecallEvidenceDispatchSnapshot;
+    namespace.recordHostEvidenceDispatchSnapshot = recordHostTranscriptRecallEvidenceDispatchSnapshot;
+    namespace.clearLastEvidenceDispatchSnapshot = clearTranscriptRecallEvidenceDispatchSnapshot;
     return namespace.plan;
 }

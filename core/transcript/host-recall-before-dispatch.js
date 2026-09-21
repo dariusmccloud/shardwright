@@ -1,4 +1,5 @@
 import { replaceTranscriptRecallSentinel, verifyTranscriptRecallReplacement, TRANSCRIPT_RECALL_SENTINEL } from './host-dispatch-sentinel.js';
+import { buildTranscriptEvidenceEnvelope, classifyTranscriptEvidenceState } from './transcript-evidence-envelope.js';
 
 export const HostRecallBeforeDispatchState = Object.freeze({
     NOT_APPLICABLE: 'NOT_APPLICABLE',
@@ -15,6 +16,8 @@ export async function handleHostRecallBeforeDispatch(payload, {
     getInvocation,
     prepare,
     recordResult,
+    recordSnapshot,
+    recordEvidenceSnapshot,
     sentinel = TRANSCRIPT_RECALL_SENTINEL,
 } = {}) {
     if (dryRun === true) return result(HostRecallBeforeDispatchState.NOT_APPLICABLE, 'DRY_RUN');
@@ -25,7 +28,24 @@ export async function handleHostRecallBeforeDispatch(payload, {
     let prepared;
     try { prepared = await prepare({ invocation, payload }); } catch { prepared = null; }
     if (!prepared || prepared.state !== 'APPROVED' || typeof prepared.bundleText !== 'string' || !prepared.bundleText.length) {
-        const refused = result(HostRecallBeforeDispatchState.REFUSED, prepared?.reason || 'PLANNING_NOT_APPROVED', { requestId: prepared?.requestId || '' });
+        const refusalReason = prepared?.reason || 'PLANNING_NOT_APPROVED';
+        const envelope = buildTranscriptEvidenceEnvelope(prepared || { reason: refusalReason });
+        const envelopeReplacement = replaceTranscriptRecallSentinel(payload.generateData, { sentinel, bundleText: envelope });
+        const refused = result(HostRecallBeforeDispatchState.REFUSED, refusalReason, {
+            requestId: prepared?.requestId || '',
+            ...(envelopeReplacement.state === 'REPLACED' ? { evidenceState: classifyTranscriptEvidenceState(prepared || { reason: refusalReason }) } : {}),
+            ...(prepared && typeof prepared === 'object' ? {
+                ...(Number.isSafeInteger(prepared.promptTokenCeiling) ? { promptTokenCeiling: prepared.promptTokenCeiling } : {}),
+                ...(Number.isSafeInteger(prepared.baselinePromptTokens) ? { baselinePromptTokens: prepared.baselinePromptTokens } : {}),
+                ...(Number.isSafeInteger(prepared.contributionTokens) ? { contributionTokens: prepared.contributionTokens } : {}),
+                ...(Number.isSafeInteger(prepared.usableRetrievalTokens) ? { usableRetrievalTokens: prepared.usableRetrievalTokens } : {}),
+                ...(Number.isSafeInteger(prepared.shortfallTokens) ? { shortfallTokens: prepared.shortfallTokens } : {}),
+                ...(prepared.capacityProfile && typeof prepared.capacityProfile === 'object' ? { capacityProfile: prepared.capacityProfile } : {}),
+            } : {}),
+        });
+        if (envelopeReplacement.state === 'REPLACED') {
+            try { await recordEvidenceSnapshot?.({ result: refused, envelope, payload }); } catch { /* diagnostics remain best-effort */ }
+        }
         try { recordResult?.(refused); } catch { /* diagnostics are best effort */ }
         return refused;
     }
@@ -41,14 +61,15 @@ export async function handleHostRecallBeforeDispatch(payload, {
         try { recordResult?.(refused); } catch { /* diagnostics are best effort */ }
         return refused;
     }
+    try { await recordSnapshot?.({ prepared, payload }); } catch { /* diagnostics remain best-effort */ }
     const injected = result(HostRecallBeforeDispatchState.INJECTED, 'SENTINEL_REPLACED_AND_VERIFIED', { requestId: prepared.requestId || '', bundleHash: prepared.bundleHash || null });
     try { recordResult?.(injected); } catch { /* diagnostics are best effort */ }
     return injected;
 }
 
-export function installHostRecallBeforeDispatch({ eventSource, eventType, getInvocation, prepare, recordResult, sentinel = TRANSCRIPT_RECALL_SENTINEL } = {}) {
+export function installHostRecallBeforeDispatch({ eventSource, eventType, getInvocation, prepare, recordResult, recordSnapshot, recordEvidenceSnapshot, sentinel = TRANSCRIPT_RECALL_SENTINEL } = {}) {
     if (!eventSource || typeof eventSource.on !== 'function' || !eventType) return false;
-    const handler = (payload) => handleHostRecallBeforeDispatch(payload, { getInvocation, prepare, recordResult, sentinel });
+    const handler = (payload) => handleHostRecallBeforeDispatch(payload, { getInvocation, prepare, recordResult, recordSnapshot, recordEvidenceSnapshot, sentinel });
     if (typeof eventSource.makeLast === 'function') eventSource.makeLast(eventType, handler);
     else eventSource.on(eventType, handler);
     return true;

@@ -3,6 +3,9 @@ import test from 'node:test';
 import {
     declineTranscriptRecallPlan,
     clearTranscriptRecallDispatchSnapshot,
+    clearTranscriptRecallEvidenceDispatchSnapshot,
+    getLatestTranscriptRecallEvidenceDispatchSnapshot,
+    recordHostTranscriptRecallEvidenceDispatchSnapshot,
     getLatestTranscriptRecallDispatchSnapshot,
     getLatestTranscriptRecallPlanResult,
     installTranscriptRecallPlanningDeclineCapability,
@@ -111,4 +114,40 @@ test('refuses invalid dispatch snapshot input and clears on the next ordinary ge
     assert.equal(getLatestTranscriptRecallDispatchSnapshot().reason, 'DISPATCH_SNAPSHOT_INPUT_INVALID');
     clearTranscriptRecallDispatchSnapshot();
     assert.equal(getLatestTranscriptRecallDispatchSnapshot(), null);
+});
+
+test('captures a separate transient refusal-envelope snapshot', () => {
+    clearTranscriptRecallEvidenceDispatchSnapshot();
+    const prompt = [{ role: 'system', content: '[Transcript Recall Evidence | state NO_MATCH | no material supplied | reason NO_MATCH]' }];
+    const snapshot = recordHostTranscriptRecallEvidenceDispatchSnapshot({
+        result: Object.freeze({ state: 'REFUSED', requestId: 'request-6', evidenceState: 'NO_MATCH' }),
+        envelope: prompt[0].content,
+        prompt,
+        promptTokens: 11,
+    });
+    assert.equal(snapshot.state, 'EVIDENCE_DISPATCH_SNAPSHOT');
+    assert.equal(snapshot.envelopePresent, true);
+    assert.equal(snapshot.evidenceState, 'NO_MATCH');
+    assert.equal(snapshot.promptItemCount, 1);
+    assert.equal('prompt' in snapshot, false);
+    clearTranscriptRecallEvidenceDispatchSnapshot();
+    assert.equal(getLatestTranscriptRecallEvidenceDispatchSnapshot(), null);
+});
+
+test('retains bounded capacity facts on a capacity refusal without retaining the prompt', () => {
+    const prompt = [{ role: 'system', content: '[Transcript Recall Evidence | state CAPACITY_UNAVAILABLE | no material supplied | reason EXACT_CAPACITY_EXCEEDED]' }];
+    const snapshot = recordHostTranscriptRecallEvidenceDispatchSnapshot({
+        result: Object.freeze({
+            state: 'REFUSED', requestId: 'request-7', evidenceState: 'CAPACITY_UNAVAILABLE',
+            promptTokenCeiling: 101928, baselinePromptTokens: 90000, contributionTokens: 15000,
+            usableRetrievalTokens: 11928, shortfallTokens: 3072,
+            capacityProfile: Object.freeze({ retrievalCeilingTokens: 24576, safetyHeadroomTokens: 0 }),
+        }),
+        envelope: prompt[0].content,
+        prompt,
+    });
+    assert.equal(snapshot.hostCeiling, 101928);
+    assert.equal(snapshot.baselinePromptTokens, 90000);
+    assert.equal(snapshot.capacityProfile.retrievalCeilingTokens, 24576);
+    assert.equal('prompt' in snapshot, false);
 });

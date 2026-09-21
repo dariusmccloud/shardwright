@@ -13,6 +13,9 @@ test('measures a cloned candidate and returns an approval without mutating the l
     const payload = { generateData: { prompt: [{ role: 'system', content: TRANSCRIPT_RECALL_SENTINEL }] } };
     const result = await measureHostRecallProposal({ request, proposal, payload, countPrompt: async (prompt) => Array.isArray(prompt) ? 100 + (prompt[0]?.content?.length || 0) : 0 });
     assert.equal(result.state, 'APPROVED');
+    assert.equal(result.promptTokenCeiling, 1000);
+    assert.equal(result.capacityProfile.retrievalCeilingTokens, 90);
+    assert.equal(result.shortfallTokens, 0);
     assert.match(payload.generateData.prompt[0].content, /sentinel/);
 });
 

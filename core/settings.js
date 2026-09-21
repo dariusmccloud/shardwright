@@ -70,6 +70,7 @@ export function getDefaultSettings() {
             candidateLimit: TRANSCRIPT_CANDIDATE_LIMIT_DEFAULT,
             characterBindingTokens: {},
             characterIdentityAliases: {},
+            operatorPreferences: {},
         },
         queueDelay: 0,          // Delay in seconds between API calls in queue mode
         // summarizedRanges moved to per-chat metadata (chat_metadata.shardwright.summarizedRanges)
@@ -686,6 +687,10 @@ export function migrateSettings(settings) {
     }
     if (settings.transcriptRecall && !Object.prototype.hasOwnProperty.call(settings.transcriptRecall, 'candidateLimit')) {
         settings.transcriptRecall.candidateLimit = TRANSCRIPT_CANDIDATE_LIMIT_DEFAULT;
+        migrated = true;
+    }
+    if (settings.transcriptRecall && !Object.prototype.hasOwnProperty.call(settings.transcriptRecall, 'operatorPreferences')) {
+        settings.transcriptRecall.operatorPreferences = {};
         migrated = true;
     }
 

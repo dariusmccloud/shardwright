@@ -1,7 +1,7 @@
 # Shardwright Branch Lineage and Deduplication Contract
 
-**Version:** 0.1.1
-**Status:** ENTERED — governing historical-branch and duplicate-representation policy; implementation requires separately declared slices.
+**Version:** 0.1.3
+**Status:** ENTERED — governing historical-branch and duplicate-representation policy; explicit governed source-scope retrieval and read-only source admission preview are implemented as projection boundaries. Further implementation requires separately declared slices.
 
 ## 1. Purpose and boundary
 
@@ -113,6 +113,57 @@ Visibility, hidden state, archive state, and deletion tombstones are scoped to
 the relevant source occurrence or branch link. A state change in one branch
 MUST NOT silently mutate the corresponding occurrence in another branch.
 
+A caller MAY supply an explicit `sourceLogicalIds` or bounded `sourceScopes`
+scope derived from a governed branch/source-sequence projection. A bounded scope
+may cap an inherited source at its accepted fork-anchor message index. Candidate selection MAY use that scope only as
+a read-only family-eligibility filter. It MUST NOT infer scope from names,
+filenames, paths, timestamps, or similarity. Returned occurrence links MUST
+retain every custody-bearing occurrence for each selected content family; the
+scope MUST NOT transfer visibility or deduplicate custody. A missing, malformed,
+or empty scope MUST refuse rather than widen implicitly. An unreviewed possible
+fork remains unresolved and MUST NOT silently merge or widen the scope.
+
+The scope resolver MUST derive inherited source IDs only from accepted
+`ACCEPT_PROPOSED` or `CHOOSE_PARENT` lineage decisions in the append-only
+lineage ledger. Review suggestions, rejected decisions, independent outcomes,
+and absent decisions MUST return an unresolved result rather than a guessed
+scope. Conflicting parent assignments or lineage cycles MUST refuse.
+
+A caller-facing retrieval helper MAY compose this resolver with candidate
+selection, but it MUST require the caller's active `sourceLogicalId` and MUST
+refuse when accepted lineage scope is unavailable. It MUST NOT infer the active
+source from chat names, paths, filenames, or ambient host state.
+
+Character-scoped discovery MAY run automatically as a read-only projection. It
+MAY detect exact-prefix candidates, host lineage hints, and timestamp evidence,
+but MUST return review-required suggestions and MUST NOT append lineage, choose
+a parent, mutate source scope, or alter custody.
+
+The operator surface MAY expose those discovery results, but it MUST present
+them as evidence and review candidates only. Mutation controls belong to a
+separate explicit decision surface. That decision surface MUST prepare and
+append only the selected operator outcome; it MUST never mutate source files or
+silently apply retrieval scope.
+
+Discovery MAY report direct chat files that are visible under the authenticated
+host chat directory but absent from the source-registration ledger. Such files
+MUST be labeled `NOT_SCANNED`; discovery MUST NOT register, observe, ingest, or
+derive identity from them.
+
+An operator MAY request an admission preview for a discovered source. The
+preview MUST resolve the structured locator, distinguish missing, unresolved,
+unreadable, and malformed JSONL sources, and report custody facts including
+byte length and revision hash when readable. A preview MUST NOT append a
+registration event or ingest messages. Registration remains a separate,
+explicit operator action and MUST use the same structured locator rather than
+any display-only path or title.
+
+After registration, observation and message intake MUST remain separate
+explicit actions. Registration MUST NOT observe the file, and observation MUST
+NOT ingest or project message rows. Intake MAY be offered only after an
+observation receipt, and any refusal MUST leave the source ledger and raw file
+unchanged.
+
 ## 8. Host-native lineage evidence
 
 SillyTavern-compatible chat headers and message metadata MAY carry native
@@ -145,7 +196,14 @@ Any implementation slice against this contract MUST prove, at minimum:
 4. historical fork suggestions expose evidence and remain unresolved until an
    operator decision;
 5. accepted lineage appends a decision without mutating source content; and
-6. explicit branch metadata outranks timestamp-based ordering.
+6. explicit branch metadata outranks timestamp-based ordering; and
+7. an explicit governed source scope, including accepted fork-anchor ranges,
+   limits candidate families while retaining complete occurrence custody and
+   refusing malformed scope; and
+8. accepted lineage scope resolves only governed ancestors, while unresolved,
+   conflicting, or cyclic lineage refuses without widening retrieval.
+9. admission preview distinguishes readable JSONL from missing, unresolved,
+   unreadable, and malformed sources without registering or ingesting.
 
 Until those proofs are recorded, this contract claims policy only, not branch
 inference or deduplication runtime behavior.

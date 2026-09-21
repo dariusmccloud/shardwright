@@ -93,6 +93,16 @@ export const OPERATOR_SETTINGS_CATALOG = freezeCatalog([
                 help: 'Optional extra prompt capacity held back after the host has already measured the assembled prompt and reserved its configured reply limit.',
                 ui: { control: 'number', step: 256, advanced: true },
             },
+            {
+                key: 'materializationCeilingCharacters',
+                type: 'integer',
+                minimum: 1,
+                maximum: MAX_SAFE_INTEGER,
+                defaultValue: 1_000_000,
+                label: 'Complete bundle character ceiling',
+                help: 'Refuse a complete transcript bundle before host token measurement if its rendered text exceeds this size. Nothing is trimmed or summarized.',
+                ui: { control: 'number', step: 10_000, advanced: true },
+            },
         ],
     },
     {

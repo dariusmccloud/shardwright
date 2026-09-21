@@ -9,14 +9,14 @@ const transports = {
     requestAnchors: async () => ({ state: 'ANCHOR_RESOLUTIONS', resolutions: [] }),
     requestWindowAssembly: async () => ({ state: 'WINDOWS_ASSEMBLED', windows: [] }),
     requestPolicy: async () => ({ state: 'POLICY_EVALUATED', sufficiency: 'SUFFICIENT' }),
-    requestBundle: async () => ({ state: 'BUNDLE_PRESENTED', bundleText: 'recall bundle' }),
+    requestBundle: async ({ materializationCeilingCharacters }) => ({ state: 'BUNDLE_PRESENTED', bundleText: `recall bundle ${materializationCeilingCharacters ?? 'none'}` }),
 };
 
 test('builds a request-bound proposal from the retrieval orchestrator', async () => {
-    const result = await planHostTranscriptRecall({ request, transports, capacityProfile: profile, cryptoApi: { subtle: { digest: async () => new Uint8Array(32) } } });
+    const result = await planHostTranscriptRecall({ request, transports, materializationCeilingCharacters: 1000000, capacityProfile: profile, cryptoApi: { subtle: { digest: async () => new Uint8Array(32) } } });
     assert.equal(result.state, 'PROPOSAL');
     assert.equal(result.requestId, 'g1');
-    assert.equal(result.bundleText, 'recall bundle');
+    assert.equal(result.bundleText, 'recall bundle 1000000');
     assert.equal(result.injectionTarget.tag, '5_shardwright_transcript_recall');
 });
 

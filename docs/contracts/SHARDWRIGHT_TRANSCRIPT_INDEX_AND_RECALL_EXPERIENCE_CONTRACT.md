@@ -859,13 +859,16 @@ It returned separately anchored windows for each selected document and refused a
 missing anchor without replacement. This proves assembly transport only, not
 reranking, bundle shaping, host planning, injection, or persistence.
 
-Version 0.8.16 enters a deterministic bundle-presentation boundary:
+Version 0.8.17 enters an explicit evidence-envelope refinement to the deterministic
+bundle-presentation boundary:
 `POST /transcript-recall/bundle`. It accepts only already assembled windows and
-renders every retained row with its source, revision, order, sender, timestamp tier,
-visibility, and complete content (or an explicit omission marker). The projection
-MUST preserve window and row order, must not deduplicate, summarize, rank, truncate,
-interpret, or infer authority, and does not compute the host proposal hash or mutate
-host prompt state. Empty or incomplete assemblies refuse closed.
+renders an `EVIDENCE_PRESENT` envelope before every retained row with its posture,
+window count, and row count, followed by source, revision, order, sender, timestamp
+tier, visibility, and complete content (or an explicit omission marker). The envelope
+describes the returned projection; it is not a truth or authority claim. The
+projection MUST preserve window and row order, must not deduplicate, summarize, rank,
+truncate, interpret, or infer authority, and does not compute the host proposal hash
+or mutate host prompt state. Empty or incomplete assemblies refuse closed.
 
 The bundle projection is `PROVEN` by
 `node --test tools/server-plugin/shardwright-memory/transcript-recall-bundle.test.mjs tools/server-plugin/shardwright-memory/transcript-candidate-window-assembly-route.test.mjs tools/server-plugin/shardwright-memory/transcript-candidate-window-assembly.test.mjs tools/server-plugin/shardwright-memory/transcript-context-window.test.mjs`

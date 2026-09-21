@@ -77,6 +77,14 @@ export function ensureTranscriptCapacityProfileSettings(settings) {
     }
 
     const profile = settings.transcriptRecall.capacityProfile;
+    if (isPlainObject(profile)
+        && profile.schemaVersion === TRANSCRIPT_CAPACITY_PROFILE_SCHEMA_VERSION
+        && Object.hasOwn(profile, 'retrievalCeilingTokens')
+        && Object.hasOwn(profile, 'safetyHeadroomTokens')
+        && !Object.hasOwn(profile, 'materializationCeilingCharacters')) {
+        profile.materializationCeilingCharacters = createCatalogDefaults(PROFILE_CATALOG_ENTRY_ID).materializationCeilingCharacters;
+        return true;
+    }
     if (!isMigratableLegacyProfile(profile)) return false;
 
     if (settings.transcriptRecall.legacyCapacityProfileV1 === undefined) {
@@ -86,6 +94,7 @@ export function ensureTranscriptCapacityProfileSettings(settings) {
         schemaVersion: TRANSCRIPT_CAPACITY_PROFILE_SCHEMA_VERSION,
         retrievalCeilingTokens: profile.retrievalCeilingTokens,
         safetyHeadroomTokens: 0,
+        materializationCeilingCharacters: createCatalogDefaults(PROFILE_CATALOG_ENTRY_ID).materializationCeilingCharacters,
     };
     return true;
 }
@@ -127,5 +136,6 @@ export function resolveTranscriptCapacityProfile(profile) {
         schemaVersion: TRANSCRIPT_CAPACITY_PROFILE_SCHEMA_VERSION,
         retrievalCeilingTokens: profile.retrievalCeilingTokens,
         safetyHeadroomTokens: profile.safetyHeadroomTokens,
+        materializationCeilingCharacters: profile.materializationCeilingCharacters,
     });
 }

@@ -1,7 +1,8 @@
 import { getAuthenticatedUserRoot, getStoragePaths, handleError } from './core.js';
-import { appendBranchLineageDecision, readBranchLineageLedger } from './branch-lineage-ledger.js';
+import { appendBranchLineageDecision, readBranchLineageLedger, resolveAcceptedBranchSourceScope } from './branch-lineage-ledger.js';
 import { projectTranscriptBranchSourceSequences } from './transcript-branch-source-sequences.js';
 import { suggestHistoricalFork, suggestHistoricalForkSet } from './transcript-branch-lineage-suggestion.js';
+import { discoverTranscriptCharacterBranches } from './transcript-branch-discovery.js';
 
 export function registerBranchLineageRoute(router) {
     router.post('/transcript-recall/branches/suggest', async (request, response) => {
@@ -21,10 +22,22 @@ export function registerBranchLineageRoute(router) {
         } catch (error) { return handleError(response, error); }
     });
 
+    router.post('/transcript-recall/branches/discover', async (request, response) => {
+        try {
+            return response.send({ ok: true, ...discoverTranscriptCharacterBranches(getStoragePaths(getAuthenticatedUserRoot(request)), request.body?.characterInstanceId, request) });
+        } catch (error) { return handleError(response, error); }
+    });
+
     router.post('/transcript-recall/branches/lineage/list', async (request, response) => {
         try {
             const entries = readBranchLineageLedger(getStoragePaths(getAuthenticatedUserRoot(request)));
             return response.send({ ok: true, entries });
+        } catch (error) { return handleError(response, error); }
+    });
+
+    router.post('/transcript-recall/branches/lineage/scope', async (request, response) => {
+        try {
+            return response.send({ ok: true, ...resolveAcceptedBranchSourceScope(getStoragePaths(getAuthenticatedUserRoot(request)), request.body?.activeSourceLogicalId) });
         } catch (error) { return handleError(response, error); }
     });
 
