@@ -46,10 +46,12 @@ export async function suggestBranchLineage(sourceLogicalIds, fetchImpl = globalT
     } catch { return Object.freeze({ state: 'REFUSED', reason: 'FORK_SUGGESTION_ROUTE_UNAVAILABLE' }); }
 }
 
-export async function discoverBranchLineage(characterInstanceId, fetchImpl = globalThis.fetch) {
+export async function discoverBranchLineage(characterInstanceId, fetchImpl = globalThis.fetch, { avatarUrl } = {}) {
     if (typeof characterInstanceId !== 'string' || !characterInstanceId.trim() || typeof fetchImpl !== 'function') return Object.freeze({ state: 'REFUSED', reason: 'BRANCH_DISCOVERY_INPUT_INVALID' });
     try {
-        const { response, result } = await requestJson('/api/plugins/shardwright-memory/transcript-recall/branches/discover', { characterInstanceId }, fetchImpl);
+        const body = { characterInstanceId };
+        if (typeof avatarUrl === 'string' && avatarUrl.trim()) body.avatarUrl = avatarUrl;
+        const { response, result } = await requestJson('/api/plugins/shardwright-memory/transcript-recall/branches/discover', body, fetchImpl);
         return response.ok && result?.ok === true ? Object.freeze({ ...result }) : Object.freeze({ state: 'REFUSED', reason: result?.code || result?.reason || 'BRANCH_DISCOVERY_ROUTE_REFUSED' });
     } catch { return Object.freeze({ state: 'REFUSED', reason: 'BRANCH_DISCOVERY_ROUTE_UNAVAILABLE' }); }
 }

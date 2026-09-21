@@ -35,3 +35,19 @@ test('does not infer across characters or mutate lineage', () => {
     fs.mkdirSync(paths.storageRoot, { recursive: true });
     assert.deepEqual(discoverTranscriptCharacterBranches(paths, 'character-unknown'), { state: 'NO_DISCOVERY', reason: 'INSUFFICIENT_SOURCES', characterInstanceId: 'character-unknown', sourceCount: 0, sourceLogicalIds: [], suggestions: [], coverage: { registeredCount: 0, unregisteredCount: 0, state: 'REGISTERED_ONLY' }, unregisteredSources: [] });
 });
+
+test('discovers unregistered group sources from explicit participant evidence only', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'shardwright-group-discovery-'));
+    const userRoot = path.join(root, 'user');
+    const groupChats = path.join(userRoot, 'group chats');
+    const paths = getStoragePaths(userRoot);
+    fs.mkdirSync(groupChats, { recursive: true });
+    fs.writeFileSync(path.join(groupChats, 'group-1.jsonl'), `${JSON.stringify({ chat_metadata: { groupId: 'group-1' } })}\n${JSON.stringify({ name: 'Jeep', force_avatar: 'Jeep.png', send_date: '2026-09-21T12:00:00.000Z', mes: 'hello' })}\n`);
+    fs.writeFileSync(path.join(groupChats, 'group-2.jsonl'), `${JSON.stringify({ chat_metadata: { groupId: 'group-2' } })}\n${JSON.stringify({ name: 'Other', force_avatar: 'Other.png', mes: 'not Jeep' })}\n`);
+    const result = discoverTranscriptCharacterBranches(paths, 'character-1', { user: { directories: { groupChats } } }, 'Jeep.png');
+    assert.equal(result.coverage.unregisteredCount, 1);
+    assert.equal(result.unregisteredSources[0].sourceClass, 'GROUP');
+    assert.equal(result.unregisteredSources[0].groupId, 'group-1');
+    assert.equal(result.unregisteredSources[0].coverageState, 'NOT_SCANNED');
+    assert.equal(result.unregisteredSources[0].historicalParticipantBasis.participantId, 'Jeep.png');
+});

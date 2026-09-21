@@ -123,6 +123,8 @@ writer, projection, replay path, or ordinary UI path by itself.
 
 - **Group source registration transport prerequisite (2026-09-21):** The client transport now carries the server-supported `GROUP` source class, structured `{ groupId, chatLocator }` locator, and required historical participant basis. Focused transport proof passes 4/4, including refusal of incomplete direct/group input. This does not discover, register, intake, or share a group source automatically.
 
+- **Read-only group-source discovery slice (2026-09-21):** Branch discovery now inspects group JSONL files only when an active character host locator is supplied, matches explicit avatar participation fields, and returns unregistered `GROUP` candidates with historical participant evidence and `NOT_SCANNED` coverage. Nonparticipants are excluded; registered group sources are not duplicated; no source is registered, ingested, shared, or assigned lineage. Focused discovery and transport proof passes 9/9; syntax and diff checks pass. Browser proof remains unclaimed.
+
 ## Update Protocol
 
 After each bounded slice, update only the row that slice governed:

@@ -24,7 +24,7 @@ export function registerBranchLineageRoute(router) {
 
     router.post('/transcript-recall/branches/discover', async (request, response) => {
         try {
-            return response.send({ ok: true, ...discoverTranscriptCharacterBranches(getStoragePaths(getAuthenticatedUserRoot(request)), request.body?.characterInstanceId, request) });
+            return response.send({ ok: true, ...discoverTranscriptCharacterBranches(getStoragePaths(getAuthenticatedUserRoot(request)), request.body?.characterInstanceId, request, request.body?.avatarUrl) });
         } catch (error) { return handleError(response, error); }
     });
 
