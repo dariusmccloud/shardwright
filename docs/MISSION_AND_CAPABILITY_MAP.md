@@ -34,6 +34,8 @@ Amended principle (Codex's wording, adopted here):
 
 In short: source is custody and authority. Derived material is associative context. They may coexist. Derived material is labeled, provenance-bound, and non-authoritative, and its presence must not silently boost, merge, or corroborate the source.
 
+**Decided (D-L, 2026-09-21):** in Continuity, a shard may surface without its source range, provided it is labeled as derived and the receipt states whether the source range is present. Requiring the range remains an option for Archaeology or verification postures.
+
 **Implementation status: the boundary is not yet enforced.** See Section 4.
 
 ## 3. What the system can do today
@@ -152,7 +154,7 @@ Proposed, not implemented: a distinct `DELIBERATELY_EXCLUDED` state. Deliberate 
 | D-F | Duplicate-injection arbitration: mechanism, not just the rule | Chris with Codex | Test whether multiple paths can inject overlapping material | Rule only; no enforcement |
 | D-J | Structural labeling and provenance metadata for derived (shard) rows: how a shard is identified beyond its header text, what relation and source-range fields it carries, and how the receipt reports "derived present, source range not present." Keystone (row identity, ledger, schema), so a contract comes first | Chris with Codex | Observation slice: count shard-header rows in a real corpus and whether any appeared in recorded bundles; then a contract | Shards remain ordinary rows; provenance boundary not enforced |
 | D-K | Associative expansion (seed by query, follow evidence-linked associations, re-evaluate, stop at sufficiency or capacity) | Chris with Codex | Baseline results; overlap check against Phase X anchors and Context Sheets | Open design direction only. If adopted, first as a presentation and expansion behavior, not a candidate-ranking rule. "Shard inclusion" is not a significance signal |
-| D-L | Whether a shard may surface without its source range in Continuity (label-and-allow, versus require the range) | Chris | D-J labeling in place so the receipt can state source-range presence | Codex recommends label-and-allow for Continuity; require-range fits Archaeology or verification. Not yet decided |
+| D-L | **DECIDED 2026-09-21 (Chris):** a shard may surface without its source range in Continuity (label-and-allow). Rationale: memory connections are local, but the link can reach far to other related memories and give a fuller picture. Require-range remains available for Archaeology or verification postures. Conditions: the row is labeled derived, it never corroborates or replaces source, and the receipt states whether its source range is present. The last two depend on D-J | Chris | Implementation waits on D-J (labeling and provenance metadata) | Until D-J exists, shards remain unlabeled ordinary rows, so the condition "labeled derived" is not yet met |
 | D-G | Bridge retirement timing | Chris | Transcript index covers the bridge's source type | Bridge remains, labeled interim |
 | D-H | Minimum supported Node version (`node:sqlite` is a release candidate) | Chris | Host's requirement | Undocumented |
 | D-I | Verify the upstream and BananaBread license texts | Chris | Source revisions and license files | Recorded as unverified |
