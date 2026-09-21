@@ -1,6 +1,6 @@
 # Shardwright Transcript Index And Recall Experience Contract
 
-**Version:** 0.8.28
+**Version:** 0.8.29
 **Status:** ENTERED — governing acceptance boundary; runtime work is permitted only
 through separately declared bounded slices, never by blanket contract authority.
 **Classification:** Parallel operational-continuity track; not Phase X memory-governance authority.
@@ -291,6 +291,25 @@ cached substitution. Manual registry discovery remains separate from both forms.
 Scheduled maintenance is subordinate to the same source-revision, visibility,
 projection, and quarantine rules as manual intake. It is a freshness mechanism, not
 an authority mechanism.
+
+### 6.3.2 Human-facing maintenance progress
+
+Any discovery or maintenance operation that examines more than the active source
+MUST expose human-facing progress while it runs. The progress surface MUST report,
+when known, the operation kind, source scope, discovered/expected total, current
+position, and a terminal outcome. For example: `Found 42 registered sources;
+checking 17 of 42`.
+
+The surface MUST distinguish `RUNNING`, `COMPLETED`, `SUSPENDED`, `FAILED`, and
+`REFUSED`, and MUST identify skipped, unreadable, unresolved, or changed sources
+without implying that an unexamined source was clean. A failure MUST retain the
+completed count and failure category. A cancellation or suspension MUST retain the
+last completed position and record the deliberate gap.
+
+Cheap active-source metadata checks MAY use a compact transient indicator rather
+than a long progress panel, but MUST NOT appear to have completed a corpus-wide
+check. Progress is a human-facing projection only; it does not establish identity,
+lineage, sharing, visibility, or source truth.
 
 ### 6.4 Visibility state
 
@@ -636,7 +655,9 @@ Implementation closure requires accepted and refusal proofs for:
     trigger/cursor/revision custody, suspension/resume events, and fail-closed locator
     or concurrency failure; and
 21. either maintenance form never mutating raw host chat files or silently
-    registering, merging, selecting, or sharing a source.
+    registering, merging, selecting, or sharing a source; and
+22. human-facing progress for discovery and multi-source maintenance, including
+    totals, current position, terminal state, failures, and deliberate gaps.
 
 The current planning audit found 16 direct chat files with 11 represented by current
 Markdown provenance labels, plus 21 resolvable Jeep-participant group revisions with
