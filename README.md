@@ -1,50 +1,59 @@
 # Shardwright
 
-**Structured continuity for long-form roleplay.**
+**Conversational continuity that survives the context window.**
 
 ![SillyTavern Extension](https://img.shields.io/badge/SillyTavern-Extension-8865e0)
-![Version](https://img.shields.io/badge/version-0.9-blue)
+![Version](https://img.shields.io/badge/version-0.10.0-blue)
 
 ## Table of Contents
+- [What Is It?](#what-is-it)
 - [Key Features](#key-features)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
-- [Config Overview](#configuration-overview)
-- [Troubleshooting](#Troubleshootig)
+- [Configuration Overview](#configuration-overview)
+- [Documentation](#documentation)
+- [Troubleshooting](#troubleshooting)
 - [Credits](#credits)
 
 ---
 
 ## What Is It?
 
-Shardwright is a SillyTavern extension that captures chat history before it falls out of context. It summarizes message ranges into structured "Memory Shards" with 16 labeled sections, manages message visibility, and routes output to system messages or lorebook entries — so nothing important is forgotten. The Memory Sharding concept is based on the Memory Shard prompt by [TheLonelyDevil](https://github.com/TheLonelyDevil9/).
+Shardwright is a SillyTavern extension that keeps a model able to read what was actually said after it has fallen out of context. It captures complete transcripts without summarizing them, and retrieves the original source messages on demand, with the custody details (which source, which revision, which position) needed to verify them.
 
-An optional **RAG pipeline** vectorizes shards and automatically injects relevant memories into future generations. Shoutout to [Coneja-Chibi](https://github.com/Coneja-Chibi) for the Similharity plugin that made this part possible.
+The failure it prevents is the gap between *knowing* you once told me something and being able to *read* what you said. Recovered context must be checkable against its source, not reconstructed from inference.
+
+**Source and derived material.** The literal transcript is the authority. Summaries, shards, embeddings, and rankings are derived aids. They may accompany source material because they can supply useful associated context, but they never replace, rewrite, or vouch for it.
+
+> Status: active development. The recall path is implemented and proven in stages; some parts described in the design documents are not built yet. See [Documentation](#documentation) for exactly what is and is not proven.
 
 ---
 
 ## Key Features
 
-- **Basic Summary** — Prose summaries of selected message ranges
-- **Sharder Mode** — Structured 16-section Memory Shards with scene codes for cross-referencing
-- **Review Pipeline** — Curate events before generation, edit/weight/prune sections after
-- **RAG Integration** — Vectorize shards (Vectra, LanceDB, Qdrant, Milvus) with BM25/hybrid scoring and scene expansion
-- **Chat Manager** — Browse, export, delete, and cross-chat summarize from any character
-- **Visibility Controls** — Hide or collapse summarized ranges with per-range speaker ignore lists
-- **Lorebook Output** — Save to World Info with auto-keywords, naming templates, and entry type control
-- **Per-Feature APIs** — Different endpoints/settings for summary, sharder, events, and chat manager
-- **Context Cleanup** — Strip HTML, code blocks, URLs, emojis, reasoning blocks, and custom regex
-- **Batch Processing** — Queue multiple ranges for sequential sharder processing
-- **Themes** — 8 built-in themes plus custom theme creation/import/export
-- **FAB** — Draggable floating action button with quick access to all features
+**Transcript Recall** (Shardwright-owned)
+- Register a character or group chat as a transcript source
+- Ingest complete messages, preserving hidden, archived, and deleted state
+- Lexical search (SQLite FTS5) with explicit candidate limits
+- Resolve matches to custody anchors and assemble bounded context windows
+- Build a complete recall bundle, or refuse with a stated reason; it never truncates silently
+- Ask SillyTavern to measure the prompt before anything is inserted
 
-> 📖 **[Full Feature Documentation →](docs/FEATURES.md)**
+**Summaries and Shards** (inherited from Summary-Sharder)
+- Prose summaries and structured 16-section Memory Shards with scene codes
+- Review, edit, weight, and prune before saving; output to system messages or lorebook entries
+- Visibility controls, chat manager, batch processing, per-feature APIs, themes, FAB
+
+**Optional semantic shard retrieval** (external dependency)
+- Vectorize shards through the Similharity plugin and a vector backend (Vectra, LanceDB, Qdrant, Milvus)
+
+**Not built yet:** the Markdown dossier, and automatic recall injection beyond the proven staging path.
 
 ---
 
 ## Installation
 
-### Via SillyTavern Extension Installer (Recommended)
+### Via SillyTavern Extension Installer
 
 1. Open SillyTavern
 2. Go to **Extensions** (stacked boxes icon) → **Install Extension**
@@ -55,28 +64,20 @@ An optional **RAG pipeline** vectorizes shards and automatically injects relevan
 
 Clone into `data/<user-data>/extensions/third-party/shardwright` and restart SillyTavern.
 
+### Server plugin
+
+Transcript Recall needs the Shardwright server plugin in `tools/server-plugin/shardwright-memory/`. Its installation steps are not yet documented here.
+
 ---
 
 ## Quick Start
 
 1. Open the **Extensions** panel and enable **Shardwright**
-2. The FAB (floating action button) appears — drag it where you like
+2. The FAB (floating action button) appears; drag it where you like
+3. Summaries and shards: select a message range and run **Summarize** or **Run Sharder**, review, and save
+4. Transcript Recall: see the [capability map](docs/MISSION_AND_CAPABILITY_MAP.md) for what is available today and how it is governed
 
-### Basic Summary
-- Open a chat and enter a message range → click **Summarize**
-- Review/edit if enabled → saved as system message or lorebook entry
-
-### Sharder Mode
-- Enable **Sharder Mode** in settings
-- Select a range → click **Run Sharder**
-- Review the 16-section shard → edit, weight, prune → save
-
-### RAG
-1. **Install Prerequisite Plugin** [Similharity](https://github.com/Coneja-Chibi/VectHare/tree/Similharity-Plugin)
-2. Choose backend/embedding server/reranker ([Bananabread by Prolix](https://github.com/prolix-oc/BananaBread/tree/main/bananabread) is a great local embedding option.)
-- Enable RAG in settings → choose a vector DB backend
-- Vectorize existing shards → new shards auto-vectorize
-- Relevant memories inject automatically during generation
+Optional semantic shard retrieval needs the Similharity plugin. Its original repository is no longer available; the plan for hosting a preserved copy is in the [design review](docs/reviews/DESIGN_REVIEW_PILOT_MISSION_AND_CAPABILITY_INVENTORY.md). [BananaBread](https://github.com/prolix-oc/BananaBread) is a local embedding and reranking option.
 
 ---
 
@@ -84,17 +85,22 @@ Clone into `data/<user-data>/extensions/third-party/shardwright` and restart Sil
 
 | Category | Key Settings |
 |----------|-------------|
-| **Mode** | Auto/Manual, auto-interval (1–100 messages) |
-| **Output** | System messages or Lorebook entries |
-| **Sharder** | 16-section structured shards with scene codes |
-| **Review** | Pre-edit events, post-summary review with weights |
-| **RAG** | Backend, scoring method, insert count, score threshold |
-| **APIs** | Independent endpoint/temp/tokens per feature |
-| **Cleanup** | HTML, code, URLs, emojis, reasoning blocks, custom regex |
-| **Visibility** | Per-range hide/collapse, speaker ignore lists |
-| **Themes** | 8 built-in + custom (33 CSS variables) |
+| **Transcript Recall** | Retrieval ceiling, optional safety headroom, candidate-family limit (default 50, maximum 256) |
+| **Summaries and shards** | Auto/manual mode, interval, output target, review and weighting |
+| **RAG (optional)** | Backend, scoring method, insert count, score threshold |
+| **APIs** | Independent endpoint, temperature, and tokens per feature |
+| **Cleanup and visibility** | HTML, code, URLs, reasoning blocks; per-range hide/collapse |
 
-> 📖 **[Full configuration reference →](docs/FEATURES.md#configuration-reference)**
+> The full reference for the inherited summary features is in [docs/FEATURES.md](docs/FEATURES.md), which predates the recall work.
+
+---
+
+## Documentation
+
+- [Mission and capability map](docs/MISSION_AND_CAPABILITY_MAP.md): what the system does, who owns each part, and open decisions
+- [Phase X Delivery Register](docs/PHASE_X_DELIVERY_REGISTER.md): what is defined, implemented, and proven
+- [Contracts](docs/contracts/): the governing rules
+- [Design reviews](docs/reviews/): advisory reviews of the retrieval stack and dependencies
 
 ---
 
@@ -103,23 +109,22 @@ Clone into `data/<user-data>/extensions/third-party/shardwright` and restart Sil
 | Issue | Solution |
 |-------|----------|
 | Extension not appearing | Verify path is `data/<user-data>/extensions/third-party/shardwright/` and restart |
-| RAG not injecting | Ensure your Backend and Embedding servers are configured according to their docs. |
-| Visibility delay on load | ~1 second delay is expected while the DOM initializes |
-| API errors | Each feature may use a different endpoint — check per-feature API config |
+| Recall refuses with a stated reason | The refusal is deliberate: the system reports *why* (for example, no match, insufficient evidence, or capacity) rather than guessing |
+| Semantic retrieval not injecting | Confirm the Similharity plugin, a backend, and an embedding server are configured per their own documentation |
+| API errors | Each feature may use a different endpoint; check per-feature API config |
 
 ---
 
-
-## 🙌 Credits
+## Credits
 
 - **Upstream lineage:** Shardwright is derived from [Promansis/summary-sharder](https://github.com/Promansis/summary-sharder), originally authored by Promansis. Shardwright is an independently named and maintained fork; this credit does not identify Promansis as its current author.
-- [TheLonelyDevil](https://github.com/TheLonelyDevil9/) - For listening to my rambling and stopping (trying to) my scope drift and distractions
-- [Coneja-Chibi](https://github.com/Coneja-Chibi) - Similharity and VectHare creator - Started my RAG journey with Vecthare, Similharity is a lifesaver.
+- The Memory Sharding concept is based on the Memory Shard prompt by [TheLonelyDevil](https://github.com/TheLonelyDevil9/), who also helps keep scope drift in check.
+- [Coneja-Chibi](https://github.com/Coneja-Chibi): creator of VectHare and the Similharity plugin behind the optional semantic retrieval path.
+- [Prolix](https://github.com/prolix-oc): BananaBread, a local embedding and reranking server.
 
 ## Author
 
 - [Darius McCloud](https://github.com/dariusmccloud)
-
 
 ## License
 
