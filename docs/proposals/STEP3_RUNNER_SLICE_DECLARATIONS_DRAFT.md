@@ -180,6 +180,20 @@ Same four files. Tests 1–9 still pass, with test 4 rewritten to use a real ear
 13. **Proof timeout:** a proof command that runs past its limit is stopped and the run halts with `PROOF_TIMEOUT` (neither PASS nor FAIL). The limit is `proof.timeoutMs` if the entry sets it, otherwise the entry's agent timeout.
 14. **No self-review deferral (decided by Chris, 2026-09-25):** `SELF_REVIEW_DEFERRED` is withdrawn (amendment §8). A reviewer document carrying that verdict is refused, whoever authored it, and nothing is recorded. An unavailable reviewer halts the run. The runner writes no review-debt file. Test 8 is rewritten to assert all three. The planned review backlog (amendment §8) is a separate later slice, 3e, and is **not** part of this round.
 
+**3c review, round 2 (2026-09-25): FAIL.** Reviewer: Claude. All round-1 findings are fixed: restart skips a PASS whose recorded fingerprint still matches, returning `REVIEW_REQUIRED` or `STALE_REVIEW` otherwise; bad verdicts are rejected before any file is written, and an orphan is removed if the ledger append fails; empty governing contracts are refused; proof commands time out with `PROOF_TIMEOUT`; `SELF_REVIEW_DEFERRED` is refused with nothing recorded. Test 4 now seeds a real prior PASS. Proof rerun: 14 of 14; full slice-runner suite 43 of 43. Scope: `runner.js` and `runner.test.mjs` changed; nothing leaked into the repository.
+
+**Finding (confirmed by probe, severity high): a restart bypasses the human decision gate.** Run 1: the reviewer returns `ESCALATE / NEEDS_HUMAN_ACTION` and the run stops as `ESCALATED`. Run 2 on the same queue, with no human decision recorded anywhere, dispatched the implementer for round 2 and recorded a PASS; the ledger reads `ESCALATE -> PASS`. The cause: the human wait exists only in memory, and on restart a latest verdict of `ESCALATE` is treated like `FAIL` (next round, re-dispatch). This defeats the amendment's core rule that `ESCALATE` stops for Chris. The declaration's test 10 specified restart behavior after PASS and FAIL only, so the gap is partly in the declaration.
+
+Reconciliation note: Codex reported that amendment §8 still allowed `SELF_REVIEW_DEFERRED`. Verified: the file on disk and at `e777235` says it is withdrawn; the report reflected a read made before that commit. No change needed.
+
+Noted for 3d, not required here: a proof timeout kills only the direct child process. On Windows, a timed-out command that launched its own children (for example `node --test`, which runs test files in child processes) can leave them running.
+
+### 3c round 3 requirement
+
+Same two files (`runner.js`, `runner.test.mjs`). Tests 1–14 still pass, plus:
+
+15. **Escalation survives restart:** if a slice's latest valid verdict is `ESCALATE` (any subtype), a restarted run does not dispatch the implementer or reviewer for it. It returns `AWAITING_DECISION`, naming the slice, the escalated round, and the recorded decision brief, and it dispatches no later queue entries. The slice resumes only when its queue entry's `approvalRecord.recordedAt` is later than the `ESCALATE` ledger row's `recordedAt`, meaning Chris re-approved it after the escalation. The test covers: a restart with no re-approval blocks; a re-approval dated *before* the escalation still blocks; a later re-approval resumes at the next round; and the later queue entry is not dispatched while the slice is blocked.
+
 ## Slice 3d: Real CLI adapters (later, separate authorization)
 
 - **Problem:** the fake adapters prove control flow, not the real agents.
