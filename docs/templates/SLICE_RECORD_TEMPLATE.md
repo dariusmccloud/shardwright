@@ -1,17 +1,20 @@
 # Slice Record Template
 
-Copy this file to `docs/slices/<slice-id>.md` (folder does not exist yet — create it on first use) and fill it in. Defined by [AGENTS_AMENDMENT_SPLIT_GATE_DRAFT.md](../proposals/AGENTS_AMENDMENT_SPLIT_GATE_DRAFT.md) §7. Inactive today: nothing reads or enforces this format until the runner (Step 3) exists.
+Copy this file to `docs/slices/<slice-id>.md` (folder does not exist yet — create it on first use) and fill it in. Defined by [AGENTS_AMENDMENT_SPLIT_GATE_DRAFT.md](../proposals/AGENTS_AMENDMENT_SPLIT_GATE_DRAFT.md) §7, tightened per Codex's second review (2026-09-25). Inactive today: nothing reads or enforces this format until the runner (Step 3) exists.
 
-**Once a verdict is recorded on this file (see VERDICT_TEMPLATE.md), this file becomes append-only.** Do not edit it in place afterward; add a dated addendum instead. This is what makes a recorded proof or a FAIL tamper-evident (amendment §7, §3a).
+**Once a verdict is recorded (see VERDICT_TEMPLATE.md and `docs/verdicts/LEDGER.md`), this file becomes append-only.** Do not edit it in place; add a dated addendum section at the bottom instead. The ledger's hash check is what makes an undisclosed edit detectable.
+
+**Each field below is labeled with who authors it** (Codex's correction 9), so the implementer cannot fill in a field only the reviewer or runner is supposed to prove.
 
 ```markdown
 # Slice: <slice-id>
 
-**Risk class:** Ordinary | Integration | Keystone
-**Implementer:** <agent + model/session>
-**Started / Finished:** <timestamps>
+**Status:** ACTIVE | PROVEN | STALE_REVIEW | REVIEW_DEBT | BLOCKED   *(runner-authored once it exists; implementer sets ACTIVE at creation)*
+**Risk class:** Ordinary | Integration | Keystone   *(implementer proposes; reviewer may raise, never lower)*
+**Implementer:** <agent + model/session>   *(implementer-authored)*
+**Started / Finished:** <timestamps>   *(implementer-authored)*
 
-## Declaration
+## Declaration   *(implementer-authored)*
 (Same fields the Method Contract already requires — this does not replace them, it records them alongside the evidence.)
 
 - **Problem:**
@@ -22,48 +25,53 @@ Copy this file to `docs/slices/<slice-id>.md` (folder does not exist yet — cre
 - **Proof required:**
 - **Stop condition:**
 
-## Governing contracts depended on
+## Governing contracts depended on   *(implementer-authored; reviewer verifies)*
 | Contract | Version/hash at approval |
 |---|---|
-| <name> | <version or content hash> |
+| `AGENTS.md` / Method Contract | <version or content hash — always listed> |
+| `AGENTS_AMENDMENT_SPLIT_GATE_DRAFT.md` (if this slice is activation-workstream related) | <version/hash> |
+| <project contract(s) this slice implements> | <version or content hash> |
 
-(If any of these change before this slice is dispatched or reviewed, the queue entry becomes `STALE_REVIEW` — amendment §6a.)
+(Codex's correction 4: the governing contract stack itself is dependency evidence — if any row changes before dispatch or review, the entry becomes `STALE_REVIEW`, amendment §6a.)
 
-## Evidence reviewed
-Pick one:
-- **Commit/tree:** `<commit hash>` / `<tree hash>`
-- **Worktree manifest** (used when review happens before a commit):
-  - Baseline fingerprint: `<hash or listing>`
-  - Post-slice fingerprint: `<hash or listing>`
-  - In-scope paths: `<list>`
-  - Out-of-scope paths: `<list>`
+## Evidence: worktree manifest   *(fingerprints computed per WORKTREE_MANIFEST_FORMAT.md)*
+- **Declared baseline fingerprint:** <manifest hash>   *(implementer-authored, before starting)*
+- **Post-slice fingerprint:** <manifest hash>   *(implementer-authored, after finishing)*
+- In-scope paths: `<list>`
+- Out-of-scope paths: `<list>`
+- **Reviewed fingerprint:** <manifest hash>   *(reviewer-authored — independently recomputed from the live tree, never copied from above)*
 
-## Proof
-One row per proof command. The runner captures these directly (amendment §3a, §10) — do not hand-type a result summary in place of this.
+(Once work is committed, a commit hash / tree hash may be recorded instead of the manifest — same independent-recomputation rule applies.)
 
-| Command | Exit code | Output/artifact location | Environment | Input fixture/hash |
-|---|---|---|---|---|
-| | | | | |
+## Proof   *(runner-authored — runner executes the command directly and captures this; the implementer does not hand-type these rows)*
+One row per proof command.
+
+| Command | Exit code | Output hash (SHA-256) | Artifact path | Environment/runtime version | Input fixture/hash | Capture timestamp |
+|---|---|---|---|---|---|---|
+| | | | | | | |
 
 **Runtime/browser proof:** required: yes/no · done: yes/no · location:
 
-## Governing documents reconciled
+## Governing documents reconciled   *(implementer-authored; reviewer verifies)*
 | Document | Result |
 |---|---|
 | | Updated / Already current / Intentionally unchanged |
 
-## Plain-language brief for Chris
+## Plain-language brief for Chris   *(implementer-authored)*
 - **Done:**
 - **Supports:**
 - **Expected outcome:**
 - **Needed from Chris (if anything):**
 
-## Recommended next slice (advisory only — does not authorize anything)
+## Recommended next slice (advisory only — does not authorize anything)   *(implementer-authored)*
 - **Recommend:**
 - **Why:**
 
 ## Unresolved items / review debt
 
 ## Verdict
-See `docs/verdicts/<slice-id>.md` once reviewed. Link it here after review: `<link>`
+Link to `docs/verdicts/<slice-id>.md` after review: `<link>`. Confirm its entry exists in `docs/verdicts/LEDGER.md` before treating this slice as reviewed.
+
+## Addenda
+(Dated entries only. Never edit the sections above after a verdict is recorded.)
 ```

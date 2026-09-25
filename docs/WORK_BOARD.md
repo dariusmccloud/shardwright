@@ -21,11 +21,20 @@
 
 | Item | Status |
 |---|---|
-| Activation-prerequisites workstream (Steps 1–4, per Codex's ordering) | Step 1 (this board) done; Step 2 (verdict/slice-record templates) done; Step 3 (runner) not started |
+| Activation-prerequisites workstream (Steps 1–4, per Codex's ordering) | Step 1 (this board) done; Step 2 (templates, manifest format, verdict ledger) done and revised once per Codex's review; Step 3 (runner) not started |
 
 ## 🟢 Queued (approved, in order)
 
-*(Empty. This column assumes the verification machinery in Steps 2–3 exists; until then, nothing should actually be dispatched from here. Populated by Chris only.)*
+*(Empty. Populated by Chris only.)*
+
+Each entry must carry these fields so a runner can determine what "approved, in order" actually means (Codex's correction 7):
+
+| Position | Slice ID | Risk class | Owner/implementer | Dependencies | Governing contract version/hash | Approval record | Status |
+|---|---|---|---|---|---|---|---|
+| | | | | | | | |
+
+- **Approval record** means: who approved it, when, and a pointer to where that approval is recorded — not just "it appears in this column."
+- **Before activation (Codex's correction 8):** the runner must verify each entry's approval record independently before dispatching it. An entry merely appearing under Queued is not sufficient evidence of approval, since this file is hand-edited and nothing currently stops an agent from adding a row. Until that verification exists, this column is convention only.
 
 ## ⚪ On the table, not yet scoped
 
