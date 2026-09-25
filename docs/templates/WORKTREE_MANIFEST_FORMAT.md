@@ -1,58 +1,107 @@
 # Worktree Manifest Format
 
-Deterministic fingerprint spec so two independent computations (implementer's declared baseline, reviewer's recomputation, runner's dispatch-time recheck) produce identical results for the same tree. Required by [AGENTS_AMENDMENT_SPLIT_GATE_DRAFT.md](../proposals/AGENTS_AMENDMENT_SPLIT_GATE_DRAFT.md) §3a/§3b, tightened per Codex's correction 2. Inactive today — no runner implements this yet.
+Deterministic fingerprint spec so two independent computations (implementer's declared baseline, reviewer's recomputation, runner's dispatch-time recheck) produce identical results for the same tree. Required by [AGENTS_AMENDMENT_SPLIT_GATE_DRAFT.md](../proposals/AGENTS_AMENDMENT_SPLIT_GATE_DRAFT.md) §3a/§3b, tightened per Codex's reviews. Inactive today: no runner implements this yet.
 
-## Per-file entry
+## Current line-ending state (2026-09-25)
 
-For each file path in scope:
+The repository enforces LF through `.gitattributes` (policy v1: `* text=auto eol=lf`, `*.bundle binary`), and the working tree has been normalized: all 863 tracked files are byte-identical on disk and in the index. Byte-exact hashing below is therefore reliable for tracked files. How this state was reached is recorded under [History](#history-line-ending-policy-2026-09-25).
 
-- **path:** repository-root-relative, POSIX forward slashes, no leading `./`.
-- **size:** exact byte count on disk.
-- **content hash:** SHA-256, lowercase hex, over the file's exact bytes as stored — no line-ending normalization, no text decoding.
-- **state:** `PRESENT` or `MISSING`. A declared in-scope path that does not exist is recorded as `MISSING`, never silently omitted — its absence is itself part of the fingerprint.
+## The fingerprint
+
+A **fingerprint** is the pair:
+
+```text
+(policy hash, manifest hash)
+```
+
+- **Policy hash:** SHA-256, lowercase hex, of the exact bytes of the repository-root `.gitattributes`, or the literal `NONE` if the file does not exist.
+- **Manifest hash:** defined below.
+
+Two fingerprints are equal only if **both** values are equal. Comparison outcomes:
+
+| Policy hash | Manifest hash | Result |
+|---|---|---|
+| equal | equal | Match |
+| equal | different | Content changed: revalidation fails and the slice returns to review (amendment §3b) |
+| different | any | `STALE_REVIEW`: the rules changed, so the manifests are not comparable (amendment §6a) |
+
+The policy hash is part of the comparison, not metadata reported alongside it (Codex's third review).
+
+## Path rules
+
+In-scope paths come from the slice declaration and are validated before anything is read:
+
+- Each path is converted to POSIX form (backslashes become `/`) and resolved against the repository root.
+- **Refused, and the whole manifest computation fails:** an absolute path, a drive-letter path (`C:...`), a UNC path (`\\server\...`), or any path whose resolved location lies outside the repository root (for example through `..`). A refused path is an error, never a silently skipped entry.
+- Stored paths are repository-root-relative, POSIX forward slashes, no leading `./`, no trailing `/`.
+- `.git/` is never included, even when nested under an in-scope path.
+
+### Links
+
+Symbolic links and Windows junctions are **never followed**, whether they point inside or outside the repository.
+
+- A link is recorded as its own entry with state `LINK`. Its size is the byte length of its target string (UTF-8, exactly as returned by reading the link), and its content hash is the SHA-256 of that target string.
+- A link to a directory is recorded as a `LINK` entry and its contents are not walked.
+
+## Per-entry fields
+
+- **path:** as above.
+- **state:** `PRESENT`, `MISSING`, or `LINK`.
+- **size:**
+  - `PRESENT`: exact byte count on disk, in decimal with no leading zeros (`0` for an empty file).
+  - `LINK`: byte length of the target string, in decimal.
+  - `MISSING`: the literal `-`.
+- **content hash:**
+  - `PRESENT`: SHA-256, lowercase hex, of the file's exact bytes as stored. No line-ending normalization, no text decoding.
+  - `LINK`: SHA-256 of the target string.
+  - `MISSING`: the empty string.
+
+A declared in-scope path that does not exist is recorded as `MISSING`, never omitted. Its absence is part of the fingerprint.
 
 ## Scope
 
-- Only **declared in-scope paths** (from the slice declaration) are walked and hashed. Out-of-scope paths are not part of the manifest at all — this is what lets unrelated dirty/uncommitted work coexist without affecting the fingerprint (amendment §3a).
-- An in-scope path that is a directory is expanded to every file under it, recursively, including untracked and git-ignored files, unless the slice declaration explicitly excludes a sub-path.
-- `.git/` is never included even if nested under an in-scope path.
+- Only **declared in-scope paths** are walked and hashed. Out-of-scope paths are not part of the manifest at all, which lets unrelated uncommitted work coexist without affecting the fingerprint (amendment §3a).
+- An in-scope directory expands to every file under it, recursively, including untracked and git-ignored files, unless the slice declaration explicitly excludes a sub-path. Links inside it follow the link rules above.
 
-## Ordering and the manifest hash
+## Serialization and the manifest hash
 
-1. Sort entries by `path`, ascending, as a plain byte-wise (UTF-8) string sort.
-2. Build one line per entry: `path\tsize\tstate\tcontent_hash` (`content_hash` empty string when `state` is `MISSING`).
+1. Sort entries by `path`, ascending, as a plain byte-wise (UTF-8) comparison.
+2. Build one line per entry: `path\tsize\tstate\tcontent_hash`.
 3. Join lines with `\n`, no trailing newline.
-4. **Manifest hash** = SHA-256, lowercase hex, of that joined string.
+4. **Manifest hash** = SHA-256, lowercase hex, of that joined string encoded as UTF-8.
 
-The manifest hash is the single value compared for revalidation (amendment §3b: `reviewed fingerprint == dispatch fingerprint`). The full per-file list is retained alongside it so a mismatch can be diffed to find exactly which file changed.
+Exact serialized examples (tab shown as `→`):
 
-## Who computes what (Codex's correction 3 and 9)
+```text
+docs/a.md→12→PRESENT→<64 hex chars>
+docs/gone.md→-→MISSING→
+docs/link→14→LINK→<64 hex chars>
+```
+
+The `MISSING` line ends with a tab followed by nothing. The full per-entry list is retained with the fingerprint so a mismatch can be diffed to find exactly which entry changed.
+
+## Who computes what
 
 | Fingerprint | Computed by | Purpose |
 |---|---|---|
 | Declared baseline | Implementer, before starting | What the slice started from |
 | Post-slice fingerprint | Implementer, after finishing | What the slice produced |
-| **Reviewed fingerprint** | **Reviewer, independently recomputed** — never copied from the slice record | What review verifies |
+| **Reviewed fingerprint** | **Reviewer, independently recomputed**, never copied from the slice record | What review verifies |
 | **Dispatch fingerprint** | **Runner, independently recomputed** immediately before starting the next slice | What revalidation checks against the reviewed fingerprint |
 
-The reviewer and the runner each run the same deterministic algorithm above against the live tree; they do not trust a value written by someone else.
+The reviewer and the runner each run the same algorithm against the live tree. Neither trusts a value written by someone else.
 
-## Open issue: line endings (must be decided before the runner is built)
+## Remaining caveat
 
-**Observed 2026-09-25:** this repository has `core.autocrlf=true` and no `.gitattributes`. Git stores LF but rewrites text files to CRLF in the working tree on checkout. "Hash exact bytes on disk" therefore gives different results for the same content depending on whether a file was freshly written (LF) or checked out (CRLF), and on which machine or git configuration computed it. At the time of observation, `docs/verdicts/LEDGER.md` hashed identically in the working tree and the index only because git had not yet rewritten it.
+`core.autocrlf=true` is still set in the system-wide Git config (`C:/Program Files/Git/etc/gitconfig`). `.gitattributes` overrides it for tracked text on checkout, but an editor or agent can still write a new file with CRLF, and that file differs from its blob until its next checkout. Fingerprints stay consistent on one machine, because the reviewer and the runner hash the same disk bytes. Comparing fingerprints across machines should check line endings first.
 
-That breaks the determinism this spec exists to guarantee. Options:
+## History: line-ending policy (2026-09-25)
 
-1. **Hash git blob content** (`git hash-object` or the index copy) for tracked files: stable across machines, but untracked files have no blob and need a separate rule.
-2. **Normalize line endings before hashing** (CRLF to LF for text files): stable, but requires a reliable text-versus-binary decision.
-3. **Add a `.gitattributes`** that pins line endings (`* text=auto eol=lf`) so the working tree matches the repository: fixes the cause, but is a repository-wide change that touches every contributor's checkout, including Codex's in-progress work.
+*Historical record. The current state is at the top of this file.*
 
-**Decided 2026-09-25: option 3**, recommended by Codex and applied as a policy file only. `.gitattributes` (policy v1: `* text=auto eol=lf`, `*.bundle binary`) was added without rewriting any file.
-
-- **Repository content:** already consistent. All 821 tracked text files are stored as LF in the index, so the repository itself needed no renormalization.
-- **Working tree: not yet normalized, on purpose.** At the time of adoption, 371 files on disk had CRLF and 26 had mixed endings, left over from earlier `autocrlf` checkouts. Five of them were files with uncommitted work in progress by another agent. Git converts each one to LF the next time it writes that file. A bulk re-checkout would rewrite about 400 files at once, so it is a separate, deliberate step that must not run while anyone has uncommitted work.
-- **Until that step runs, byte-exact hashing is not reliable for CRLF files.** The runner must not be treated as trustworthy for fingerprinting until the working tree has been normalized. This is an activation prerequisite.
-- **Normalization completed 2026-09-25**, after Codex committed all in-progress work and the worktree was clean. The 397 differing files were deleted and restored from the index, each only after checking that its difference was line endings alone (0 refused). `git checkout-index --force` was tried first and rewrote nothing, because git's stat cache treated the files as up to date. Proof: disk bytes and index blobs are identical for all 863 tracked files (397 differed before); `git ls-files --eol` shows no `w/crlf` or `w/mixed`; `git status` was clean before and after. No commit was needed for the files themselves, because the repository content did not change.
-- **Remaining caveat:** `core.autocrlf=true` is still set in the system-wide Git config (`C:/Program Files/Git/etc/gitconfig`). The `.gitattributes` rule overrides it for tracked text on checkout, but an editor or agent can still write a new file with CRLF. That file then differs from its blob until its next checkout. Manifests stay consistent within one machine because the reviewer and the runner both hash the same disk bytes. Cross-machine comparison should recheck line endings first.
-
-**Policy binding (Codex's safeguard):** the SHA-256 of `.gitattributes` is part of the fingerprint rules. Record it with every manifest. Changing the line-ending policy can change fingerprints even when no source content changed, so a manifest computed under one policy hash is not comparable to one computed under another. The runner must treat a policy-hash mismatch as `STALE_REVIEW`, not as a content change.
+- **Problem found:** the repository had `core.autocrlf=true` and no `.gitattributes`. Git stored LF but wrote CRLF to the working tree on checkout, so hashing exact disk bytes could give different results for the same content.
+- **Options considered:** hash git blobs instead of disk bytes; normalize line endings before hashing; or add a `.gitattributes` that pins LF.
+- **Decision:** the `.gitattributes` option, recommended by Codex and accepted by Chris, was added as a policy file only. All 821 tracked text files were already LF in the index, so no committed content changed.
+- **Deferred step:** 371 CRLF files and 26 mixed files remained on disk, five of them with another agent's uncommitted work. Normalization waited until the worktree was clean.
+- **Normalization:** after Codex committed its work, the 397 differing files were deleted and restored from the index, each only after checking that its difference was line endings alone (0 refused). `git checkout-index --force` was tried first and rewrote nothing, because git's stat cache treated the files as up to date.
+- **Proof:** disk bytes matched index blobs for 863/863 tracked files (397 differed before); `git ls-files --eol` showed no `w/crlf` or `w/mixed`; `git status` was clean before and after.

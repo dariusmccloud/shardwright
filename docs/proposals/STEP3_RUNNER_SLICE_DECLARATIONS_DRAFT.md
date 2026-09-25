@@ -28,7 +28,7 @@ Location for all four: `tools/slice-runner/`, in Node (`v24.21.0` here), with `n
 
 - **Problem:** the split gate binds verdicts to a fingerprint, but no code computes one. The spec exists only as a document.
 - **Evidence:** [WORKTREE_MANIFEST_FORMAT.md](../templates/WORKTREE_MANIFEST_FORMAT.md) defines the algorithm; nothing implements it.
-- **Target result:** `computeManifest(repoRoot, inScopePaths)` returns the per-file entries and the manifest hash exactly as the spec defines them, plus the `.gitattributes` policy hash.
+- **Target result:** `computeFingerprint(repoRoot, inScopePaths)` returns the per-entry list and the fingerprint pair `(policy hash, manifest hash)` exactly as the spec defines them, and `compareFingerprints(a, b)` returns `MATCH`, `CONTENT_CHANGED`, or `STALE_REVIEW`.
 - **In scope:** `tools/slice-runner/manifest.js` and `manifest.test.mjs`.
 - **Out of scope:** the ledger, the control loop, CLIs, and every existing project file.
 - **Proof required** (`node --test manifest.test.mjs`), each as a named test:
@@ -37,10 +37,13 @@ Location for all four: `tools/slice-runner/`, in Node (`v24.21.0` here), with `n
   3. Changing one byte in an in-scope file changes the hash.
   4. Changing a file outside the declared scope does **not** change the hash.
   5. A declared path that does not exist appears as `MISSING`, and its presence or absence changes the hash.
-  6. An in-scope directory expands recursively; `.git/` is always excluded.
-  7. A different `.gitattributes` hash is reported, so it can be treated as `STALE_REVIEW`.
+  6. **Exact serialization (golden test):** a fixture with one `PRESENT`, one `MISSING`, and one empty file produces a byte-for-byte expected serialized string and a known manifest hash written into the test. `MISSING` serializes as `path\t-\tMISSING\t` and an empty file's size as `0`.
+  7. An in-scope directory expands recursively; `.git/` is always excluded.
   8. Windows paths are normalized to forward slashes.
-- **Stop condition:** all eight tests pass, the result is recorded, and the slice stops.
+  9. **Escaped paths are refused:** `..` escaping the root, an absolute path, a drive-letter path, and a UNC path each make the computation fail with an error; none is silently skipped.
+  10. **Links are not followed:** a symlink or junction (inside the repository or pointing outside it) is recorded as a `LINK` entry hashed from its target string, and a linked directory's contents are not walked. If the test environment cannot create links (Windows without the needed permission), the test is reported as skipped with the reason, not passed.
+  11. **Policy hash participates in comparison:** same policy and same manifest gives `MATCH`; same policy with changed content gives `CONTENT_CHANGED`; a changed `.gitattributes` gives `STALE_REVIEW` even when the manifest hash is unchanged; a missing `.gitattributes` hashes as `NONE`.
+- **Stop condition:** all eleven tests pass (test 10 may be skipped only with a stated reason), the result is recorded, and the slice stops.
 
 ## Slice 3b: Verdict ledger module
 
