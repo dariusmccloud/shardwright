@@ -352,6 +352,10 @@ Carried to the pilot: every git operation refuses to run outside the OS temp dir
 
 Then rerun the live test in both directions. The Claude direction is still untested; its implementer must not be given unrestricted shell access, which could write anywhere regardless of editing-tool limits.
 
+**Decision (Chris, 2026-09-25): approved, with a principle.** Items 1–5 are approved. `-a never` is wanted regardless. Chris's concern is not to harden for hardening's sake: over-hardening causes downstream failures nobody anticipated. The boundary that matters most is the live repository, in the pilot, keeping agents out of everything else on the machine; the outside-temp canary is the test for that. To answer the concern, a guard is added:
+
+6. **The tightened sandbox must not break ordinary work.** The live test also has the implementer run a normal toolchain step inside the sandbox (for example `node --test` on a small fixture test). If temp exclusion breaks it, the fix is **not** to loosen the boundary: give the agent a private scratch directory inside the fixture repository (point `TMP`/`TEMP` there through Codex's environment settings) and show the toolchain step passes. The report states which case applied.
+
 ---
 
 ## Decisions for 3c (decided by Chris, 2026-09-25)
