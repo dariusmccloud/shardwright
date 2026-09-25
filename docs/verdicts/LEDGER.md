@@ -17,7 +17,8 @@ It detects tampering with review verdicts. When a reviewer writes a verdict file
 
 - **One writer at a time.** The ledger does not lock. If two processes append at once, a duplicate round can be written. It is never silently accepted: the next read reports `LEDGER_CORRUPT`. The runner is a single process, so this is not expected in normal use.
 - **An interrupted write needs manual repair.** If a crash leaves a partial last line, the whole ledger reports `LEDGER_CORRUPT` until someone removes that partial line. This is the chosen fail-closed behavior: the ledger never guesses.
-- **Verdict files must use LF line endings** (to be enforced by slice 3b.1). A file saved with CRLF would be rewritten to LF by git on checkout, which changes its hash and would be misreported as tampering.
+- **Verdict files must use LF line endings** (enforced since slice 3b.1: a verdict file containing any carriage return is refused at append). A file saved with CRLF would be rewritten to LF by git on checkout, which changes its hash and would be misreported as tampering.
+- **Each verdict file is recorded once.** A path already in the ledger, for any slice or round, is refused, with letter case ignored (3b.1). This keeps a later round from overwriting an earlier round's evidence.
 
 ## Line format (JSON Lines)
 

@@ -136,6 +136,8 @@ Accepted limits, documented in [LEDGER.md](../verdicts/LEDGER.md): no write lock
   11. **Non-file path:** after the recorded verdict path is replaced by a directory, verification returns `TAMPERED`.
 - **Stop condition:** 11 of 11 pass, counts reported, the slice stops.
 
+**Review (2026-09-25): PASS, no findings.** Reviewer: Claude. Proof rerun independently: 11 of 11. Scope: `ledger.js` and `ledger.test.mjs` only; no real ledger was created. The three original reviewer probes were rerun against the new code: (A) a CRLF verdict is now refused at append with `VERDICT_FILE_LINE_ENDINGS`; (B) reusing round 1's file for round 2 is refused with `VERDICT_PATH_REUSED`, and the edit to round 1 is still caught as `TAMPERED`; (C) a verdict path replaced by a directory now returns `TAMPERED`. Test 9 also acts as a guard on the line-ending policy: it would fail if the project's `.gitattributes` were removed, because checkout would then write CRLF. Reviewed fingerprint: policy `e480bb45…f220`, manifest `7cbc8ad5…97ec`, identical from both implementations.
+
 ## Slice 3c: Runner control loop, with fake agents
 
 **Authorized 2026-09-25 by Chris** ("All authorized unless there's a reason I shouldn't"), with one condition: 3c starts only after 3b.1 has passed review and its commit has been revalidated, because the runner depends on the ledger. Implementer: Codex. Reviewer: Claude. **Not included in this authorization:** 3d (not yet declared; Integration risk), the Step 4 pilot, and activation of the split gate.
