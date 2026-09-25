@@ -165,7 +165,7 @@ A reviewer can be unavailable (usage limits, tool failure). **No agent ever revi
 - each slice built during the outage is committed separately and marked `REVIEW_PENDING`, with its commit hash and fingerprint, and gets no verdict;
 - when the reviewer returns, it first runs a **validation pass** over every pending slice, oldest first, reviewing each at its own commit rather than the current tree, before any new slice starts;
 - if a pending slice fails review, every later pending slice built on top of it returns to review as well;
-- the backlog is capped (proposed: 3 slices) to bound how much work one failure can undo;
+- the backlog is capped (5 slices, set by Chris 2026-09-25; one number in the queue file) to bound how much work one failure can undo;
 - only ordinary-risk slices may enter the backlog; keystone work, and anything touching authority, persistence, lifecycle, replay, schemas, migrations, security, sync, external files, identity, UI state, or user data, halts and waits;
 - `REVIEW_PENDING` never counts as PASS, and no release can close while any slice is pending.
 
@@ -231,7 +231,7 @@ Do **not** replace the Terminal Gate until all of these exist. Activating early 
 2. ~~Where the approved queue lives.~~ **Resolved:** a separate Work Board file, linked from the Register (Section 6, Codex's correction 10).
 3. Runner form and location (script in `tools/`, launched by Chris or scheduled).
 4. Whether `NEEDS_HUMAN_ACTION` items may be pre-approved in bulk (for example the browser skill), so they do not interrupt every run.
-5. Review backlog cap (proposed: 3 slices) and whether it should differ by risk class.
+5. Whether the review backlog cap (currently 5) should differ by risk class; revisit with pilot data.
 6. Whether the Design Review gate has a fixed cadence or only the triggers in Section 9.
 7. Exact manifest/fingerprint mechanism for Section 3a (per-file hash list, `git diff` against a stashed baseline, or something else) — an implementation detail, not a design decision, but needs to be picked before the runner can be built.
 8. Whether `STALE_REVIEW` (Section 6a) requires a full re-review or only a check that the change doesn't touch what the slice depends on.

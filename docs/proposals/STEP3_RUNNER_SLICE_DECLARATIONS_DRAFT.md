@@ -231,8 +231,8 @@ Carried forward to 3d: proof timeouts do not kill child processes; an `ESCALATE`
 ## Slice 3e: Review backlog
 
 - **Problem:** if the independent reviewer is out of usage, the runner halts, and all work waits, even though the other agent may have usage left (Chris's requirement; amendment §8).
-- **Design (amendment §8), with the cap confirmed at 3 by Chris's approval:**
-  - The backlog is **off unless the approved queue enables it**: a top-level `reviewBacklog: { maxPending: 3 }` in the queue file. Without it, an unavailable reviewer halts exactly as today.
+- **Design (amendment §8), with the cap set to 5 by Chris (2026-09-25; raised from the proposed 3 because slices are very small, so 3 would stop early in a long outage; it is one number in the queue file and can be changed at any time):**
+  - The backlog is **off unless the approved queue enables it**: a top-level `reviewBacklog: { maxPending: 5 }` in the queue file. Without it, an unavailable reviewer halts exactly as today.
   - **Entry to the backlog:** after implementation, when the proof ran and **exited 0**, the reviewer is unavailable (error, timeout, or `UNAVAILABLE`), and the entry is ordinary-risk and touches none of amendment §8's excluded categories. A failed proof, or an ineligible entry, halts as today.
   - **What the runner records:** it commits only the entry's in-scope paths in the (fixture) git repository, with a message beginning `REVIEW_PENDING <sliceId>`. It appends a line to a runner-owned, append-only `docs/review-pending.jsonl`: `sliceId`, `commit`, `manifestHash`, `policyHash`, `proofOutputHash`, `recordedAt`, and `dependsOn` (the slice IDs already pending before it). It then continues to the next approved entry. A pending slice has no verdict and never counts as PASS.
   - **Cap:** when the pending count reaches `maxPending`, the run halts with `BACKLOG_FULL`.
@@ -244,7 +244,7 @@ Carried forward to 3d: proof timeouts do not kill child processes; an `ESCALATE`
   18. Backlog disabled: an unavailable reviewer halts, with no commit and no pending record.
   19. Enabled: an unavailable reviewer on an eligible slice with a passing proof creates one commit containing only in-scope paths and one pending record, and the run continues to the next entry.
   20. Not eligible (keystone, an excluded category, or a failed proof): halts, no pending record.
-  21. Cap: the fourth eligible slice with `maxPending: 3` halts `BACKLOG_FULL`.
+  21. Cap: the sixth eligible slice with `maxPending: 5` halts `BACKLOG_FULL`, and a queue with a different `maxPending` (for example 2) is honored.
   22. Validation first: with a pending backlog and the reviewer back, the implementer is not called until every pending slice is reviewed, oldest first, each at its own commit (asserted by the commit the reviewer receives).
   23. Pending record mismatch: a pending record whose fingerprint does not match its commit halts `PENDING_RECORD_MISMATCH`.
   24. Cascade: pending A then B (B depends on A); A fails validation, so B becomes `REVIEW_REQUIRED` with `ANCESTOR_FAILED`, and nothing new is implemented.
