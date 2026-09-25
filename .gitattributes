@@ -1,0 +1,5 @@
+# Line-ending policy (v1, 2026-09-25): store and check out text as LF so
+# worktree-manifest hashes are byte-identical across machines.
+# See docs/templates/WORKTREE_MANIFEST_FORMAT.md.
+* text=auto eol=lf
+*.bundle binary

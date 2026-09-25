@@ -47,4 +47,10 @@ That breaks the determinism this spec exists to guarantee. Options:
 2. **Normalize line endings before hashing** (CRLF to LF for text files): stable, but requires a reliable text-versus-binary decision.
 3. **Add a `.gitattributes`** that pins line endings (`* text=auto eol=lf`) so the working tree matches the repository: fixes the cause, but is a repository-wide change that touches every contributor's checkout, including Codex's in-progress work.
 
-Not decided. Option 3 is the most robust, but it affects the whole repository, so it needs Chris's approval.
+**Decided 2026-09-25: option 3**, recommended by Codex and applied as a policy file only. `.gitattributes` (policy v1: `* text=auto eol=lf`, `*.bundle binary`) was added without rewriting any file.
+
+- **Repository content:** already consistent. All 821 tracked text files are stored as LF in the index, so the repository itself needed no renormalization.
+- **Working tree: not yet normalized, on purpose.** At the time of adoption, 371 files on disk had CRLF and 26 had mixed endings, left over from earlier `autocrlf` checkouts. Five of them were files with uncommitted work in progress by another agent. Git converts each one to LF the next time it writes that file. A bulk re-checkout would rewrite about 400 files at once, so it is a separate, deliberate step that must not run while anyone has uncommitted work.
+- **Until that step runs, byte-exact hashing is not reliable for CRLF files.** The runner must not be treated as trustworthy for fingerprinting until the working tree has been normalized. This is an activation prerequisite.
+
+**Policy binding (Codex's safeguard):** the SHA-256 of `.gitattributes` is part of the fingerprint rules. Record it with every manifest. Changing the line-ending policy can change fingerprints even when no source content changed, so a manifest computed under one policy hash is not comparable to one computed under another. The runner must treat a policy-hash mismatch as `STALE_REVIEW`, not as a content change.
