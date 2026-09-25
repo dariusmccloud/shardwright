@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:sync-store-event-envelope-v1",
+  "title": "ShardwrightSyncStoreEventEnvelopeV1",
+  "description": "An immutable, idempotently importable event emitted by one Shardwright installation. Arrival order is not global lineage authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "eventId", "storeId", "instanceId", "ledgerName", "sequence", "eventType", "emittedAt", "payloadHash", "previousEventHash", "payload"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "eventId": { "type": "string", "pattern": "^swevent_[A-Za-z0-9]{16,64}$" },
+    "storeId": { "type": "string", "pattern": "^swstore_[A-Za-z0-9]{16,64}$" },
+    "instanceId": { "type": "string", "pattern": "^swinstance_[A-Za-z0-9]{16,64}$" },
+    "ledgerName": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9._-]{1,63}$" },
+    "sequence": { "type": "integer", "minimum": 1 },
+    "eventType": { "type": "string", "minLength": 1 },
+    "emittedAt": { "type": "string", "format": "date-time" },
+    "payloadHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "previousEventHash": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+    "payload": { "type": "object", "additionalProperties": true },
+    "signature": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["algorithm", "keyId", "value"],
+      "properties": {
+        "algorithm": { "type": "string", "minLength": 1 },
+        "keyId": { "type": "string", "minLength": 1 },
+        "value": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

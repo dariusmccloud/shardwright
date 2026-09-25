@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:shardwright:schema:v1:sync-store-manifest-v1",
+  "title": "ShardwrightSyncStoreManifestV1",
+  "description": "Immutable identity and mutable display metadata for a Shardwright synchronization store. The manifest is not ledger authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "storeId", "displayName", "manifestRevision", "createdAt", "updatedAt", "authorityModel"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "storeId": { "type": "string", "pattern": "^swstore_[A-Za-z0-9]{16,64}$" },
+    "displayName": { "type": "string", "minLength": 1 },
+    "description": { "type": "string" },
+    "manifestRevision": { "type": "integer", "minimum": 1 },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "authorityModel": { "const": "LEDGER_AUTHORITY_SQLITE_PROJECTION" }
+  }
+}
