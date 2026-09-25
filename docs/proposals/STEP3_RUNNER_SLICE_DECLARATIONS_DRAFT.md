@@ -26,6 +26,8 @@ Location for all four: `tools/slice-runner/`, in Node (`v24.21.0` here), with `n
 
 ## Slice 3a: Worktree manifest module
 
+**Authorized 2026-09-25 by Chris** under the still-active Terminal Gate. Implementer: Codex. Reviewer: Claude, reviewing independently and recomputing the proof. 3b, 3c, and 3d remain unauthorized.
+
 - **Problem:** the split gate binds verdicts to a fingerprint, but no code computes one. The spec exists only as a document.
 - **Evidence:** [WORKTREE_MANIFEST_FORMAT.md](../templates/WORKTREE_MANIFEST_FORMAT.md) defines the algorithm; nothing implements it.
 - **Target result:** `computeFingerprint(repoRoot, inScopePaths)` returns the per-entry list and the fingerprint pair `(policy hash, manifest hash)` exactly as the spec defines them, and `compareFingerprints(a, b)` returns `MATCH`, `CONTENT_CHANGED`, or `STALE_REVIEW`.
