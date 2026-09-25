@@ -7,6 +7,16 @@ import { promisify } from 'node:util';
 import { runAgentWithTimeout } from './agent-adapter.js';
 import { appendVerdict, verifyVerdict } from './ledger.js';
 import { compareFingerprints, computeFingerprint } from './manifest.js';
+import {
+    appendPendingEvent,
+    appendResolvedEvent,
+    commitPendingSlice,
+    findOrphanedPendingCommits,
+    readArchivedProof,
+    replayReviewBacklog,
+    restoreWorkingTreeFromCommit,
+    withCommitWorktree,
+} from './review-backlog.js';
 
 const execFileAsync = promisify(execFile);
 export const DEFAULT_AGENT_TIMEOUT_MS = 15 * 60 * 1000;
@@ -76,7 +86,25 @@ function readQueue(queuePath, repoRoot) {
     if (!queue || typeof queue !== 'object' || !Array.isArray(queue.entries)) {
         throw runnerError('QUEUE_INVALID', 'The queue must contain an entries array.');
     }
-    return queue.entries;
+    if (queue.reviewBacklog !== undefined && (!queue.reviewBacklog
+        || !Number.isSafeInteger(queue.reviewBacklog.maxPending) || queue.reviewBacklog.maxPending < 1)) {
+        throw runnerError('QUEUE_INVALID', 'reviewBacklog.maxPending must be a positive safe integer.');
+    }
+    return { entries: queue.entries, reviewBacklog: queue.reviewBacklog ?? null };
+}
+
+const BACKLOG_EXCLUDED_TOUCHES = new Set([
+    'authority', 'persistence', 'lifecycle', 'replay', 'schema', 'schemas', 'migration', 'migrations',
+    'security', 'sync', 'external files', 'identity', 'ui state', 'user data',
+]);
+
+function backlogEligible(entry) {
+    if (String(entry.riskClass).toLowerCase() !== 'ordinary' || !Array.isArray(entry.touches)) return false;
+    return entry.touches.every((touch) => !BACKLOG_EXCLUDED_TOUCHES.has(String(touch).toLowerCase().replaceAll('_', ' ').replaceAll('-', ' ')));
+}
+
+function resultForBacklogCorrupt(result, error) {
+    return { ...result, state: 'HALTED', reason: 'BACKLOG_CORRUPT', message: error?.message || String(error) };
 }
 
 function isApproved(entry, currentTimeMs) {
@@ -297,6 +325,131 @@ function recordVerdict(repoRoot, ledgerPath, verdictDocument, parsedVerdict) {
     return { recordedAt, verification };
 }
 
+async function validatePendingBacklog({
+    backlogState, entries, repoRoot, ledgerPath, adapters, defaultAgentTimeoutMs, now, result,
+}) {
+    const entriesById = new Map(entries.map((entry) => [entry.sliceId, entry]));
+    for (const pending of backlogState.active) {
+        const entry = entriesById.get(pending.sliceId);
+        if (!entry) return { ...result, state: 'HALTED', reason: 'BACKLOG_CORRUPT', blockedSliceId: pending.sliceId };
+        let timeouts;
+        try { timeouts = validateEntry(entry, defaultAgentTimeoutMs); }
+        catch (error) { return { ...result, state: 'HALTED', reason: error?.code || 'QUEUE_ENTRY_INVALID', blockedSliceId: pending.sliceId }; }
+        if (!governanceIsCurrent(repoRoot, entry.governingContracts)) {
+            return { ...result, state: 'STALE_REVIEW', blockedSliceId: pending.sliceId };
+        }
+        let implementer;
+        try { implementer = getAdapter(adapters, entry.implementerAdapter); }
+        catch (error) { return { ...result, state: 'HALTED', reason: 'AGENT_UNAVAILABLE', phase: 'implementer', message: error.message, blockedSliceId: pending.sliceId }; }
+        let reviewer;
+        try { reviewer = getAdapter(adapters, entry.reviewerAdapter); }
+        catch (error) { return { ...result, state: 'REVIEW_PENDING', reason: 'AGENT_UNAVAILABLE', phase: 'reviewer', message: error.message, blockedSliceId: pending.sliceId }; }
+        if (implementer === reviewer || implementer.id === reviewer.id) {
+            return { ...result, state: 'REFUSED', reason: 'SELF_REVIEW_NOT_ALLOWED', blockedSliceId: pending.sliceId };
+        }
+        const latest = readRecordedVerdict(repoRoot, verifyVerdict(ledgerPath, repoRoot, entry.sliceId), entry.sliceId);
+        if (['LEDGER_CORRUPT', 'TAMPERED', 'RECORDED_VERDICT_INVALID'].includes(latest.state)) {
+            return { ...result, state: 'HALTED', reason: latest.state, blockedSliceId: pending.sliceId };
+        }
+        let currentTimeMs;
+        try { currentTimeMs = now().getTime(); } catch { currentTimeMs = Number.NaN; }
+        if (!Number.isFinite(currentTimeMs) || !isApproved(entry, currentTimeMs)) {
+            return { ...result, state: 'UNAPPROVED', blockedSliceId: entry.sliceId };
+        }
+        if (latest.state === 'VALID' && latest.verdict.verdict === 'ESCALATE') {
+            const approvalTime = Date.parse(entry.approvalRecord.recordedAt);
+            const escalationTime = Date.parse(latest.row.recordedAt);
+            if (!Number.isFinite(escalationTime) || approvalTime <= escalationTime) {
+                const decisionBrief = {
+                    sliceId: entry.sliceId, round: latest.row.round, subtype: latest.verdict.subtype,
+                    details: latest.verdict.body.trim(),
+                    requiredAction: 'Review the decision brief and approve this slice again to resume backlog review.',
+                };
+                return { ...result, state: 'AWAITING_DECISION', blockedSliceId: entry.sliceId,
+                    round: latest.row.round, decisionBrief };
+            }
+        }
+        const round = latest.state === 'VALID' ? latest.row.round + 1 : 1;
+        result.dispatchedSliceIds.push(entry.sliceId);
+        let reviewInput;
+        try {
+            reviewInput = await withCommitWorktree(repoRoot, pending.commit, async (worktree) => {
+                const fingerprint = computeFingerprint(worktree, entry.inScopePaths).fingerprint;
+                if (fingerprint.manifestHash !== pending.manifestHash || fingerprint.policyHash !== pending.policyHash) {
+                    return { mismatch: true, fingerprint };
+                }
+                const proofReceipt = readArchivedProof(repoRoot, pending.sliceId, pending.proofOutputHash, entry.proof.argv);
+                const review = await invokeAdapter(reviewer, {
+                    role: 'reviewer', entry, commit: pending.commit, repoRoot: worktree,
+                    proofReceipt, reviewedFingerprint: fingerprint.manifestHash,
+                    policyHash: fingerprint.policyHash, round,
+                }, timeouts.timeoutMs, 'reviewer');
+                const dispatchFingerprint = computeFingerprint(worktree, entry.inScopePaths).fingerprint;
+                return { worktree, fingerprint, proofReceipt, review, dispatchFingerprint };
+            });
+        } catch (error) {
+            return { ...result, state: error?.code === 'BACKLOG_CORRUPT' ? 'HALTED' : 'HALTED', reason: error?.code || 'PENDING_RECORD_MISMATCH', message: error.message, blockedSliceId: pending.sliceId };
+        }
+        if (reviewInput.mismatch) {
+            return { ...result, state: 'HALTED', reason: 'PENDING_RECORD_MISMATCH', blockedSliceId: pending.sliceId,
+                expectedFingerprint: { manifestHash: pending.manifestHash, policyHash: pending.policyHash }, actualFingerprint: reviewInput.fingerprint };
+        }
+        const review = reviewInput.review;
+        if (review.unavailable) {
+            result.dispatchedSliceIds.pop();
+            return { ...result, state: 'REVIEW_PENDING', reason: review.reason, phase: 'reviewer', message: review.message, blockedSliceId: entry.sliceId };
+        }
+        let verdict;
+        try { verdict = parseVerdictDocument(review.value?.verdictDocument); }
+        catch (error) { return { ...result, state: 'HALTED', reason: 'VERDICT_INVALID', message: error.message, blockedSliceId: entry.sliceId }; }
+        if (verdict.sliceId !== entry.sliceId || verdict.round !== round || verdict.reviewer !== reviewer.id
+            || verdict.reviewedFingerprint !== reviewInput.fingerprint.manifestHash
+            || verdict.policyHash !== reviewInput.fingerprint.policyHash) {
+            return { ...result, state: 'HALTED', reason: 'VERDICT_BINDING_MISMATCH', blockedSliceId: entry.sliceId };
+        }
+        if (compareFingerprints(reviewInput.fingerprint, reviewInput.dispatchFingerprint) !== 'MATCH') {
+            return { ...result, state: 'REVIEW_REQUIRED', reason: 'DISPATCH_FINGERPRINT_CHANGED', blockedSliceId: entry.sliceId };
+        }
+        if (verdict.verdict === 'SELF_REVIEW_DEFERRED') {
+            return { ...result, state: 'REFUSED', reason: 'SELF_REVIEW_DEFERRED_WITHDRAWN', blockedSliceId: entry.sliceId };
+        }
+        let recorded;
+        try { recorded = recordVerdict(repoRoot, ledgerPath, review.value.verdictDocument, verdict); }
+        catch (error) { return { ...result, state: 'HALTED', reason: error?.code || 'LEDGER_WRITE_FAILED', message: error.message, blockedSliceId: entry.sliceId }; }
+        if (recorded.verification.state !== 'VALID') return { ...result, state: 'HALTED', reason: recorded.verification.state, blockedSliceId: entry.sliceId };
+        result.sliceResults.push({ sliceId: entry.sliceId, verdict: verdict.verdict, proofReceipt: reviewInput.proofReceipt, recordedRound: round });
+        if (verdict.verdict === 'ESCALATE') {
+            const decisionBrief = { sliceId: entry.sliceId, round, subtype: verdict.subtype, details: verdict.body.trim(),
+                requiredAction: 'Review the decision brief and choose how work should proceed.' };
+            return { ...result, state: 'AWAITING_DECISION', blockedSliceId: entry.sliceId, round, decisionBrief };
+        }
+        const timestamp = (() => {
+            try { return now().toISOString(); } catch { return new Date().toISOString(); }
+        })();
+        try {
+            appendResolvedEvent(repoRoot, ledgerPath, {
+                event: 'RESOLVED', sliceId: entry.sliceId, commit: pending.commit,
+                outcome: verdict.verdict, ledgerRound: round, recordedAt: timestamp,
+            });
+            if (verdict.verdict === 'FAIL') {
+                const fresh = replayReviewBacklog(repoRoot, ledgerPath);
+                for (const descendant of fresh.active) {
+                    if (descendant.dependsOn.includes(entry.sliceId)) {
+                        appendResolvedEvent(repoRoot, ledgerPath, {
+                            event: 'RESOLVED', sliceId: descendant.sliceId, commit: descendant.commit,
+                            outcome: 'ANCESTOR_FAILED', ledgerRound: null, recordedAt: timestamp,
+                        });
+                    }
+                }
+            }
+        } catch (error) { return resultForBacklogCorrupt(result, error); }
+        if (verdict.verdict === 'FAIL') {
+            return { ...result, state: 'FAIL', nextAction: 'IMPLEMENTER', blockedSliceId: entry.sliceId };
+        }
+    }
+    return null;
+}
+
 /**
  * Run an approved JSON fixture queue. Callers supply isolated repository roots
  * and agent adapters; this slice has no real-CLI integration.
@@ -314,11 +467,54 @@ export async function runQueue({
         throw runnerError('RUNNER_CONFIGURATION_INVALID', 'defaultAgentTimeoutMs must be a positive safe integer.');
     }
     const resolvedRoot = path.resolve(repoRoot);
-    const entries = readQueue(queuePath, resolvedRoot);
+    let queue;
+    try { queue = readQueue(queuePath, resolvedRoot); }
+    catch (error) { return { state: 'REFUSED', reason: error?.code || 'QUEUE_INVALID', message: error.message }; }
+    const { entries, reviewBacklog } = queue;
     const result = { state: 'COMPLETE', dispatchedSliceIds: [], skippedSliceIds: [], sliceResults: [] };
+
+    let backlogState;
+    try { backlogState = replayReviewBacklog(resolvedRoot, ledgerPath); }
+    catch (error) { return resultForBacklogCorrupt(result, error); }
+    try {
+        const orphans = findOrphanedPendingCommits(resolvedRoot, backlogState.events);
+        if (orphans.length > 0) {
+            return { ...result, state: 'HALTED', reason: 'BACKLOG_INCONSISTENT', orphanedCommits: orphans };
+        }
+    } catch (error) {
+        return { ...result, state: 'HALTED', reason: 'BACKLOG_INCONSISTENT', message: error.message };
+    }
+    let reviewerUnavailableInRun = null;
+    if (backlogState.active.length > 0) {
+        const validation = await validatePendingBacklog({ backlogState, entries, repoRoot: resolvedRoot, ledgerPath, adapters,
+            defaultAgentTimeoutMs, now, result });
+        if (validation) {
+            if (reviewBacklog && validation.state === 'REVIEW_PENDING' && validation.phase === 'reviewer') {
+                reviewerUnavailableInRun = { reason: validation.reason, message: validation.message };
+            } else {
+                return validation;
+            }
+        }
+        try { backlogState = replayReviewBacklog(resolvedRoot, ledgerPath); }
+        catch (error) { return resultForBacklogCorrupt(result, error); }
+    }
+    const pendingSliceIds = new Set(backlogState.active.map((pending) => pending.sliceId));
+    const ancestorFailed = new Map(backlogState.resolved
+        .filter(({ event }) => event.outcome === 'ANCESTOR_FAILED')
+        .map(({ event, pending }) => [event.sliceId, pending.dependsOn]));
 
     for (const entry of entries) {
         if (entry?.status !== 'QUEUED') continue;
+        if (pendingSliceIds.has(entry.sliceId)) continue;
+        if (ancestorFailed.has(entry.sliceId)) {
+            const dependenciesPassed = ancestorFailed.get(entry.sliceId).every((dependencyId) => {
+                const dependencyEntry = entries.find((candidate) => candidate.sliceId === dependencyId);
+                if (!dependencyEntry) return false;
+                const dependency = readRecordedVerdict(resolvedRoot, verifyVerdict(ledgerPath, resolvedRoot, dependencyId), dependencyId);
+                return dependency.state === 'VALID' && dependency.verdict.verdict === 'PASS';
+            });
+            if (!dependenciesPassed) return { ...result, state: 'REVIEW_REQUIRED', reason: 'ANCESTOR_FAILED', blockedSliceId: entry.sliceId };
+        }
         if (typeof now !== 'function') {
             return { ...result, state: 'REFUSED', reason: 'RUNNER_CONFIGURATION_INVALID', blockedSliceId: entry?.sliceId || null };
         }
@@ -383,11 +579,11 @@ export async function runQueue({
         let reviewer;
         try {
             implementer = getAdapter(adapters, entry.implementerAdapter);
-            reviewer = getAdapter(adapters, entry.reviewerAdapter);
+            if (!reviewerUnavailableInRun) reviewer = getAdapter(adapters, entry.reviewerAdapter);
         } catch (error) {
             return { ...result, state: 'HALTED', reason: 'AGENT_UNAVAILABLE', message: error.message, blockedSliceId: entry.sliceId };
         }
-        if (implementer === reviewer || implementer.id === reviewer.id) {
+        if (reviewer && (implementer === reviewer || implementer.id === reviewer.id)) {
             return { ...result, state: 'REFUSED', reason: 'SELF_REVIEW_NOT_ALLOWED', blockedSliceId: entry.sliceId };
         }
 
@@ -420,15 +616,56 @@ export async function runQueue({
         }
         const reviewedFingerprint = computeFingerprint(resolvedRoot, entry.inScopePaths).fingerprint;
 
-        const review = await invokeAdapter(reviewer, {
-            role: 'reviewer',
-            entry,
-            proofReceipt,
-            reviewedFingerprint: reviewedFingerprint.manifestHash,
-            policyHash: reviewedFingerprint.policyHash,
-            round: roundInfo.round,
-        }, timeouts.timeoutMs, 'reviewer');
+        const review = reviewerUnavailableInRun
+            ? { unavailable: true, reason: reviewerUnavailableInRun.reason, message: reviewerUnavailableInRun.message, phase: 'reviewer' }
+            : await invokeAdapter(reviewer, {
+                role: 'reviewer',
+                entry,
+                proofReceipt,
+                reviewedFingerprint: reviewedFingerprint.manifestHash,
+                policyHash: reviewedFingerprint.policyHash,
+                round: roundInfo.round,
+            }, timeouts.timeoutMs, 'reviewer');
         if (review.unavailable) {
+            reviewerUnavailableInRun = { reason: review.reason, message: review.message };
+            const latestBacklog = (() => {
+                try { return replayReviewBacklog(resolvedRoot, ledgerPath); }
+                catch (error) { return error; }
+            })();
+            if (latestBacklog instanceof Error) return resultForBacklogCorrupt(result, latestBacklog);
+            const activeCount = latestBacklog.active.length;
+            if (reviewBacklog && backlogEligible(entry) && proofReceipt.exitCode === 0) {
+                if (activeCount >= reviewBacklog.maxPending) {
+                    return { ...result, state: 'HALTED', reason: 'BACKLOG_FULL', blockedSliceId: entry.sliceId };
+                }
+                try {
+                    const commit = commitPendingSlice(resolvedRoot, entry.sliceId, entry.inScopePaths);
+                    const fingerprint = await withCommitWorktree(resolvedRoot, commit, async (worktree) =>
+                        computeFingerprint(worktree, entry.inScopePaths).fingerprint);
+                    restoreWorkingTreeFromCommit(resolvedRoot, commit, entry.inScopePaths);
+                    const workingFingerprint = computeFingerprint(resolvedRoot, entry.inScopePaths).fingerprint;
+                    if (compareFingerprints(fingerprint, workingFingerprint) !== 'MATCH') {
+                        throw runnerError('PENDING_WORKTREE_RESTORE_FAILED', 'The in-scope working tree does not match its parked commit after restoration.');
+                    }
+                    const timestamp = now().toISOString();
+                    appendPendingEvent(resolvedRoot, ledgerPath, {
+                        event: 'PENDING', sliceId: entry.sliceId, commit,
+                        manifestHash: fingerprint.manifestHash,
+                        policyHash: fingerprint.policyHash,
+                        proofOutputHash: proofReceipt.outputHash,
+                        recordedAt: timestamp,
+                        dependsOn: latestBacklog.active.map((item) => item.sliceId),
+                    });
+                    const nextState = replayReviewBacklog(resolvedRoot, ledgerPath);
+                    if (nextState.active.length >= reviewBacklog.maxPending) {
+                        return { ...result, state: 'HALTED', reason: 'BACKLOG_FULL', blockedSliceId: entry.sliceId,
+                            pendingSliceIds: nextState.active.map((item) => item.sliceId) };
+                    }
+                    continue;
+                } catch (error) {
+                    return { ...result, state: 'HALTED', reason: error?.code || 'BACKLOG_WRITE_FAILED', message: error.message, blockedSliceId: entry.sliceId };
+                }
+            }
             return {
                 ...result,
                 state: 'HALTED',
@@ -506,5 +743,22 @@ export async function runQueue({
         }
     }
 
+    try {
+        const remainingBacklog = replayReviewBacklog(resolvedRoot, ledgerPath);
+        if (remainingBacklog.active.length > 0) {
+            return {
+                ...result,
+                state: 'REVIEW_PENDING',
+                pendingSliceIds: remainingBacklog.active.map((item) => item.sliceId),
+                ...(reviewerUnavailableInRun ? {
+                    reason: reviewerUnavailableInRun.reason,
+                    phase: 'reviewer',
+                    message: reviewerUnavailableInRun.message,
+                } : {}),
+            };
+        }
+    } catch (error) {
+        return resultForBacklogCorrupt(result, error);
+    }
     return result;
 }
