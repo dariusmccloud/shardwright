@@ -138,6 +138,8 @@ Accepted limits, documented in [LEDGER.md](../verdicts/LEDGER.md): no write lock
 
 ## Slice 3c: Runner control loop, with fake agents
 
+**Authorized 2026-09-25 by Chris** ("All authorized unless there's a reason I shouldn't"), with one condition: 3c starts only after 3b.1 has passed review and its commit has been revalidated, because the runner depends on the ledger. Implementer: Codex. Reviewer: Claude. **Not included in this authorization:** 3d (not yet declared; Integration risk), the Step 4 pilot, and activation of the split gate.
+
 - **Problem:** nothing enforces the split gate's dispatch rules.
 - **Evidence:** amendment §10 lists seven runner duties; none are implemented.
 - **Target result:** a runner that reads a queue, runs an implementer, captures proof itself, runs a reviewer, verifies the verdict against the ledger, revalidates the fingerprint, and dispatches the next slice only on a valid PASS. All agents are **fake scripts** that return scripted results.
