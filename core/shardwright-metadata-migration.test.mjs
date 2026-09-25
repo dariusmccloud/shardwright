@@ -3,8 +3,16 @@ import assert from 'node:assert/strict';
 
 import {
     METADATA_MIGRATION_MARKER,
+    METADATA_MIGRATION_CONFLICT_CODE,
     migrateShardwrightMetadataIdentity,
+    isMetadataMigrationConflict,
 } from './shardwright-metadata-migration.js';
+
+test('identifies migration conflicts without weakening the strict migration boundary', () => {
+    assert.equal(isMetadataMigrationConflict({ code: METADATA_MIGRATION_CONFLICT_CODE }), true);
+    assert.equal(isMetadataMigrationConflict({ code: 'OTHER_FAILURE' }), false);
+    assert.equal(isMetadataMigrationConflict(null), false);
+});
 
 test('migrates recognized chat and message metadata while preserving legacy sources', async () => {
     const chatMetadata = {

@@ -36,6 +36,7 @@ import { shiftRangesOnDelete, shiftRangesOnInsert, buildRangesFromIndices, range
 import { enforceArchivedPromptExclusion, initArchiveHandler, refreshArchiveDecorations } from './core/chat/archive-manager.js';
 import { isArchivedMessage } from './core/chat/archive-policy.js';
 import { reconcileCurrentChatMessageIdentity } from './core/summarization/message-identity-runtime.js';
+import { isMetadataMigrationConflict } from './core/shardwright-metadata-migration.js';
 import { refreshCurrentChatShardIntegrity } from './core/summarization/shard-integrity-runtime.js';
 import {
     announceLoadProfilingBypass,
@@ -155,13 +156,32 @@ async function reconcileCorpusIntegrity(options = {}) {
         profilingBypassActive: isLoadProfilingBypassEnabled(globalThis),
     });
     let identityResult = null;
+    let identityRefusal = null;
     let integrityResult = null;
     let traceError = null;
 
     try {
-        identityResult = await profileLoadStage(trace, 'message-identity-scan', async () => {
-            return await reconcileCurrentChatMessageIdentity(options);
-        });
+        try {
+            identityResult = await profileLoadStage(trace, 'message-identity-scan', async () => {
+                return await reconcileCurrentChatMessageIdentity(options);
+            });
+        } catch (error) {
+            if (!isMetadataMigrationConflict(error)) {
+                throw error;
+            }
+
+            identityRefusal = {
+                state: 'REFUSED',
+                reason: 'METADATA_MIGRATION_CONFLICT',
+                scope: String(error?.scope || ''),
+                ...(Number.isInteger(error?.messageIndex) ? { messageIndex: error.messageIndex } : {}),
+            };
+            identityResult = identityRefusal;
+            log.warn(
+                'Message identity reconciliation refused; preserving mixed metadata for operator review:',
+                identityRefusal,
+            );
+        }
         await profileLoadStage(trace, 'archive-presentation-sync', async () => {
             await syncArchivePresentation();
             return { saveKind: 'none' };
@@ -180,12 +200,18 @@ async function reconcileCorpusIntegrity(options = {}) {
     } finally {
         finishLoadTrace(trace, {
             identitySaveKind: identityResult?.saveKind || 'none',
+            identityRefusal,
             integritySaveKind: integrityResult?.saveKind || 'none',
             manifestsAdded: integrityResult?.manifestsAdded || 0,
             manifestCount: integrityResult?.manifestCount || 0,
             error: traceError,
         });
     }
+
+    return {
+        identity: identityResult,
+        integrity: integrityResult,
+    };
 }
 
 function isProfilingBypassActive() {

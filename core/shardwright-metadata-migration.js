@@ -4,6 +4,11 @@ export const SHARDWRIGHT_METADATA_NAMESPACE = 'shardwright';
 export const LEGACY_METADATA_NAMESPACE = 'summary_sharder';
 export const METADATA_MIGRATION_MARKER = '__shardwrightIdentityMigration';
 export const METADATA_MIGRATION_POLICY = 'shardwright-metadata-identity-v1';
+export const METADATA_MIGRATION_CONFLICT_CODE = 'SHARDWRIGHT_METADATA_MIGRATION_CONFLICT';
+
+export function isMetadataMigrationConflict(error) {
+    return error?.code === METADATA_MIGRATION_CONFLICT_CODE;
+}
 
 const MESSAGE_FIELDS = Object.freeze([
     'messageIdentity',
@@ -52,7 +57,7 @@ async function hashSnapshot(value, cryptoApi) {
 function createConflict(scope, index = null) {
     const locator = index === null ? 'chat metadata' : `message ${index}`;
     const error = new Error(`Canonical and legacy ${locator} coexist without a completed Shardwright migration marker.`);
-    error.code = 'SHARDWRIGHT_METADATA_MIGRATION_CONFLICT';
+    error.code = METADATA_MIGRATION_CONFLICT_CODE;
     error.scope = scope;
     error.messageIndex = index;
     return error;
