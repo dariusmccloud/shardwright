@@ -92,6 +92,8 @@ import { prepareLineageDecision } from './core/transcript/branch-lineage-decisio
 import { installRuntimeMessageIdentityCaptureAdapter, installRuntimeMessageIdentityCaptureCapability } from './core/transcript/runtime-message-identity-capture.js';
 import { diagnoseTranscriptRecall } from './core/transcript/transcript-retrieval-parity-diagnostic.js';
 import { resolveTranscriptCapacityProfile } from './core/transcript/capacity-profile.js';
+import { ensureShardwrightNamespace } from './core/shardwright-runtime-identity.js';
+import { materializeCompiledContextSources, planCompiledContextSources } from './core/compiled-context/document-projection-transport.js';
 import {
     recordContinuityRetrievalPreference,
     clearContinuityRetrievalPreference,
@@ -996,6 +998,9 @@ jQuery(async () => {
         const marker = context.characters?.[context.characterId]?.data?.extensions?.shardwright;
         return requestTranscriptCoverage(characterInstanceId || marker?.characterInstanceId);
     };
+    const compiledContext = ensureShardwrightNamespace('compiledContext', globalThis);
+    compiledContext.materializeSources = materializeCompiledContextSources;
+    compiledContext.planSources = planCompiledContextSources;
     globalThis.Shardwright.transcript.registerCurrentSource = async ({ operatorActionId = globalThis.crypto?.randomUUID?.(), recordedAt = new Date().toISOString() } = {}) => {
         const context = SillyTavern.getContext?.() || {};
         const character = context.characters?.[context.characterId];

@@ -215,6 +215,7 @@ function buildStoragePaths(userRoot, storageDirectoryName) {
     const transcriptVisibilityLedgerPath = path.join(storageRoot, 'transcript-visibility-ledger.jsonl');
     const branchLineageLedgerPath = path.join(storageRoot, 'branch-lineage-ledger.jsonl');
     const transcriptIndexDbPath = path.join(storageRoot, 'transcript-index.db');
+    const compiledContextIndexDbPath = path.join(storageRoot, 'compiled-context-index.db');
     const architecturalReplayArtifactsRoot = path.join(storageRoot, 'architectural-replay-artifacts');
     const architecturalReplayLedgerPath = path.join(storageRoot, 'architectural-shard-replay-ledger.jsonl');
     const generationsRoot = path.join(storageRoot, 'generations');
@@ -246,11 +247,13 @@ function buildStoragePaths(userRoot, storageDirectoryName) {
         transcriptCharacterBindingLedgerPath,
         characterAssociationAuditLedgerPath,
         transcriptSourceRegistryLedgerPath,
+        transcriptMaintenanceRunLedgerPath,
         transcriptSourceRevisionLedgerPath,
         transcriptMessageLedgerPath,
         transcriptVisibilityLedgerPath,
         branchLineageLedgerPath,
         transcriptIndexDbPath,
+        compiledContextIndexDbPath,
         architecturalReplayArtifactsRoot,
         architecturalReplayLedgerPath,
         generationsRoot,

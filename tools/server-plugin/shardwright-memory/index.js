@@ -96,6 +96,7 @@ import { registerTranscriptSourceRoute } from './transcript-source-route.js';
 import { registerTranscriptSourceIntakeRoute } from './transcript-source-intake-route.js';
 import { registerBranchLineageRoute } from './branch-lineage-route.js';
 import { registerCharacterAssociationAuditRoute } from './character-association-audit-route.js';
+import { registerCompiledContextDocumentRoute } from './compiled-context-document-route.js';
 import {
     assignSubjectScopedProposalPolicyProfile,
     bindAuthenticatedAccountToSemanticEntity,
@@ -125,6 +126,7 @@ export async function init(router) {
     registerTranscriptCharacterBindingRoute(router);
     registerTranscriptCharacterBindingRegistrationRoute(router);
     registerCharacterAssociationAuditRoute(router);
+    registerCompiledContextDocumentRoute(router);
     registerTranscriptCandidatePolicyRoute(router);
     registerTranscriptProjectionRoute(router);
     registerTranscriptCoverageDiagnosticRoute(router);
