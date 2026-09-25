@@ -168,10 +168,19 @@ function assertNextRound(rows, row) {
 export function appendVerdict(ledgerPath, repoRoot, row) {
     validateLedgerPath(ledgerPath);
     validateRow(row, { appendInput: true });
-    const verdictFile = validateVerdictPath(repoRoot, row.verdictPath);
-    const verdictSha256 = sha256(fs.readFileSync(verdictFile));
     const rows = readLedgerRows(ledgerPath);
     assertNextRound(rows, row);
+    const normalizedVerdictPath = row.verdictPath.toLowerCase();
+    if (rows.some((entry) => entry.verdictPath.toLowerCase() === normalizedVerdictPath)) {
+        throw ledgerError('VERDICT_PATH_REUSED', 'Each verdict round must use a unique verdictPath.');
+    }
+
+    const verdictFile = validateVerdictPath(repoRoot, row.verdictPath);
+    const verdictBytes = fs.readFileSync(verdictFile);
+    if (verdictBytes.includes(0x0d)) {
+        throw ledgerError('VERDICT_FILE_LINE_ENDINGS', 'Verdict files must use LF line endings and contain no carriage returns.');
+    }
+    const verdictSha256 = sha256(verdictBytes);
 
     const storedRow = {
         sliceId: row.sliceId,
@@ -220,7 +229,10 @@ export function verifyVerdict(ledgerPath, repoRoot, sliceId, round) {
         const actualHash = sha256(fs.readFileSync(verdictFile));
         if (actualHash !== row.verdictSha256) return Object.freeze({ state: 'TAMPERED', row });
     } catch (error) {
-        if (error?.code === 'VERDICT_FILE_UNAVAILABLE' || error?.code === 'ENOENT') {
+        if (error?.code === 'VERDICT_FILE_UNAVAILABLE'
+            || error?.code === 'VERDICT_FILE_INVALID'
+            || error?.code === 'VERDICT_PATH_INVALID'
+            || error?.code === 'ENOENT') {
             return Object.freeze({ state: 'TAMPERED', row });
         }
         throw error;

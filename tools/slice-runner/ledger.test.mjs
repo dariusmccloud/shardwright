@@ -4,6 +4,8 @@ import * as fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 import { appendVerdict, verifyVerdict } from './ledger.js';
 
@@ -139,5 +141,71 @@ test('malformed JSON or a row missing a required field returns LEDGER_CORRUPT', 
         };
         fs.writeFileSync(ledgerPath, `${JSON.stringify(incomplete)}\n`);
         assert.equal(verifyVerdict(ledgerPath, root, 'slice-a').state, 'LEDGER_CORRUPT');
+    });
+});
+
+test('verdict files reject CR bytes and remain valid after git checkout with project attributes', () => {
+    withFixture(({ root, ledgerPath, verdictPath }) => {
+        const verdictFile = path.join(root, verdictPath);
+        fs.writeFileSync(verdictFile, Buffer.from('# CRLF verdict\r\n', 'utf8'));
+        assert.throws(() => appendVerdict(ledgerPath, root, row()), {
+            code: 'VERDICT_FILE_LINE_ENDINGS',
+        });
+
+        fs.writeFileSync(verdictFile, Buffer.from('# Lone CR\rinside\n', 'utf8'));
+        assert.throws(() => appendVerdict(ledgerPath, root, row()), {
+            code: 'VERDICT_FILE_LINE_ENDINGS',
+        });
+
+        fs.writeFileSync(verdictFile, Buffer.from('# LF verdict\n', 'utf8'));
+        appendVerdict(ledgerPath, root, row());
+
+        const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+        fs.copyFileSync(path.join(projectRoot, '.gitattributes'), path.join(root, '.gitattributes'));
+        execFileSync('git', ['init', '--quiet'], { cwd: root });
+        execFileSync('git', ['config', 'core.autocrlf', 'true'], { cwd: root });
+        execFileSync('git', ['add', '--', '.gitattributes', verdictPath], { cwd: root });
+        execFileSync('git', [
+            '-c', 'user.name=Slice Runner Test',
+            '-c', 'user.email=slice-runner-test@example.invalid',
+            '-c', 'commit.gpgsign=false',
+            'commit', '--quiet', '-m', 'Test LF checkout policy',
+        ], { cwd: root });
+
+        fs.rmSync(verdictFile);
+        execFileSync('git', ['checkout', '--force', 'HEAD', '--', verdictPath], { cwd: root });
+        assert.equal(fs.readFileSync(verdictFile).includes(0x0d), false);
+        assert.equal(verifyVerdict(ledgerPath, root, 'slice-a').state, 'VALID');
+    });
+});
+
+test('verdict paths cannot be reused across rounds, slices, or letter case', () => {
+    withFixture(({ root, ledgerPath }) => {
+        appendVerdict(ledgerPath, root, row());
+
+        assert.throws(() => appendVerdict(ledgerPath, root, row({
+            round: 2,
+            verdict: 'FAIL',
+        })), { code: 'VERDICT_PATH_REUSED' });
+        assert.throws(() => appendVerdict(ledgerPath, root, row({
+            sliceId: 'slice-b',
+        })), { code: 'VERDICT_PATH_REUSED' });
+
+        const caseVariantPath = 'docs/verdicts/Slice-r1.md';
+        fs.writeFileSync(path.join(root, caseVariantPath), '# Case variant\n');
+        assert.throws(() => appendVerdict(ledgerPath, root, row({
+            sliceId: 'slice-c',
+            verdictPath: caseVariantPath,
+        })), { code: 'VERDICT_PATH_REUSED' });
+    });
+});
+
+test('a recorded verdict path replaced by a directory returns TAMPERED', () => {
+    withFixture(({ root, ledgerPath, verdictPath }) => {
+        appendVerdict(ledgerPath, root, row());
+        const verdictFile = path.join(root, verdictPath);
+        fs.rmSync(verdictFile);
+        fs.mkdirSync(verdictFile);
+        assert.equal(verifyVerdict(ledgerPath, root, 'slice-a').state, 'TAMPERED');
     });
 });
