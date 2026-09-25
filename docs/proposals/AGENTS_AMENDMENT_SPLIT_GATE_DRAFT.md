@@ -1,6 +1,6 @@
 # Proposed AGENTS.md Amendment: Split Terminal Gate (DRAFT, INACTIVE)
 
-**Status:** Draft for review by Chris and Codex. **Not in force.** Nothing in `AGENTS.md` has changed, and agents must keep following the current Terminal Gate until this is activated (Section 12).
+**Status:** Both Claude and Codex concur on this text (2026-09-25); no unresolved objections from either reviewer. **Still not in force.** Nothing in `AGENTS.md` has changed, and agents must keep following the current Terminal Gate until this is activated, which requires all of Section 12's prerequisites plus Chris's explicit approval.
 **Drafted:** 2026-09-21 by Claude, from the design discussion with Chris and Codex's independent review.
 **Amended:** 2026-09-25, folding in Codex's ten corrections (worktree-baseline review, evidence binding for uncommitted work, revalidation before dispatch, `NEEDS_HUMAN_ACTION` as an `ESCALATE` subtype, a narrowed external-impact trigger, a stricter repeated-failure rule, an explicit reviewer evidence burden, protected verdict records, queue invalidation on contract change, and a Work Board separated from the Register) plus four tightenings from Claude (runner-captured proof output, hash-bound uncommitted verdicts, cited authorization clauses, and contract-version binding for queue invalidation). Both agents' full reviews are in the session record; this file states only the resulting text.
 **Effect if adopted:** replaces human approval after every proven slice with independent verification, and reserves human authority for decisions.
