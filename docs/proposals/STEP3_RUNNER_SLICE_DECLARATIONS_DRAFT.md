@@ -354,7 +354,29 @@ Then rerun the live test in both directions. The Claude direction is still untes
 
 **Decision (Chris, 2026-09-25): approved, with a principle.** Items 1–5 are approved. `-a never` is wanted regardless. Chris's concern is not to harden for hardening's sake: over-hardening causes downstream failures nobody anticipated. The boundary that matters most is the live repository, in the pilot, keeping agents out of everything else on the machine; the outside-temp canary is the test for that. To answer the concern, a guard is added:
 
-6. **The tightened sandbox must not break ordinary work.** The live test also has the implementer run a normal toolchain step inside the sandbox (for example `node --test` on a small fixture test). If temp exclusion breaks it, the fix is **not** to loosen the boundary: give the agent a private scratch directory inside the fixture repository (point `TMP`/`TEMP` there through Codex's environment settings) and show the toolchain step passes. The report states which case applied.
+6. **The tightened sandbox must not break ordinary work.** (Result, Codex round 2: `node --test` passed using system temp, so no private scratch directory was needed.)
+
+**3d round 2 (Codex, 2026-09-25): stopped before any live call.** Adapter tests 7 of 7. Codex's model-free regression found the in-temp canary **writable** despite both exclusions, so no live direction was run, and Claude's containment remains unverified.
+
+**Reviewer reconciliation (Claude, 2026-09-25), model-free, literal paths, each with a working control:** Codex's regression uses `codex sandbox --permission-profile :workspace`; the reviewer's earlier probe used the legacy `sandbox_mode` configuration. Both were right about different mechanisms:
+
+| Invocation | Fixture | Canary in OS temp | Outside OS temp | User Documents |
+|---|---|---|---|---|
+| legacy `sandbox_mode="workspace-write"` plus both exclusions | allowed | denied | denied | — |
+| legacy `sandbox_mode="workspace-write"`, no exclusions | allowed | allowed | denied | — |
+| `--permission-profile :workspace` plus both exclusions | allowed | **allowed (exclusions ignored)** | — | — |
+| `--permission-profile :workspace`, no exclusions | allowed | allowed | denied | denied |
+
+`codex debug prompt-input` shows the model the same "writable root is the working directory" text with and without the exclusions, so it cannot reveal the enforced policy. Whether production `codex exec --sandbox workspace-write` uses the legacy path or a permission profile cannot be determined without a model call.
+
+**Conclusion:** the boundary that matters most (outside the OS temp directory, including user Documents, where live repositories live) holds under both mechanisms. The temp exclusion **cannot be relied on**: it works under one mechanism and is silently ignored under the other.
+
+**Recommendation (Claude, awaiting Chris's decision; it partly reverses the approved temp exclusion because the evidence shows it cannot be guaranteed):**
+- Keep `-a never`.
+- Keep both exclusion settings as best effort only, never as a claimed boundary.
+- The model-free regression test asserts only what is reliable: the fixture is writable, and the outside-temp and user-Documents canaries are denied, under the exact production invocation. The in-temp result is recorded, not failed.
+- In the live test, the outside-temp canary remains a security stop (`ESCALATE`); the in-temp canary is recorded, not escalated.
+- OS temp is documented as writable by Codex, consistent with Chris's view that temp is scratch space and the live-repository boundary is what matters. Reviews recompute fingerprints from source, so a tampered scratch file would surface as a mismatch rather than a silent pass. The live test also has the implementer run a normal toolchain step inside the sandbox (for example `node --test` on a small fixture test). If temp exclusion breaks it, the fix is **not** to loosen the boundary: give the agent a private scratch directory inside the fixture repository (point `TMP`/`TEMP` there through Codex's environment settings) and show the toolchain step passes. The report states which case applied.
 
 ---
 
