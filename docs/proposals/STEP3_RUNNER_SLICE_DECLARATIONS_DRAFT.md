@@ -159,6 +159,27 @@ Accepted limits, documented in [LEDGER.md](../verdicts/LEDGER.md): no write lock
   9. **Unapproved queue entry:** an entry without an approval record is not dispatched.
 - **Stop condition:** all nine pass, the result is recorded, and the slice stops.
 
+**3c review, round 1 (2026-09-25): FAIL.** Reviewer: Claude. Returned to the implementer under the failed-proof rules. Proof rerun independently: 9 of 9; the full slice-runner suite (manifest, ledger, runner) passes 38 of 38. Scope: the four declared files; no fixture leaked into the repository; no real CLI was called. What holds: the runner captures proof itself and the reviewer sees the real exit code; a verdict must match its slice, round, reviewer, fingerprint, and policy hash; timeouts halt without FAIL; human waits never time out; self-review with one adapter is refused; unapproved entries are never dispatched. Reviewer probes, run in temporary fixture repositories, found:
+
+1. **Restart redoes approved work (confirmed).** Run 1 completes a slice with PASS. Run 2 on the same queue calls the implementer again and records round 2. The runner has no memory of approved slices, so revalidation before dispatch (amendment §3b) never applies across runs.
+2. **Declared test 4 is partly vacuous.** Its name says "already-passed entry becomes STALE_REVIEW", but it sets a `priorVerdict` field the runner never reads, and no earlier PASS exists in its ledger. The declaration requires recognizing an earlier PASS, which depends on finding 1.
+3. **An orphaned verdict file blocks retries (confirmed).** A reviewer document whose front matter parses but whose body contains CRLF is written to `docs/verdicts/<slice>-r1.md`; then the ledger refuses it (`VERDICT_FILE_LINE_ENDINGS`), leaving the file behind. Every retry halts with `EEXIST` until the file is deleted by hand.
+4. **An empty `governingContracts` list dispatches (confirmed).** The templates require `AGENTS.md` to be listed as a governing contract, so an entry with none should be refused.
+5. **The proof command has no timeout (code reading).** `execFile` runs without a time limit, so a hanging proof hangs the runner indefinitely.
+6. **`SELF_REVIEW_DEFERRED` semantics (declaration error).** Test 8 has a *separate* reviewer issue `SELF_REVIEW_DEFERRED`, and the runner accepts it. That is not self-review, and it conflicts with amendment §8, where deferral applies only when the independent reviewer is unavailable. The contradiction originates in this declaration's tests 7 and 8, not in the implementation.
+
+Also noted, not required for round 2: an `ESCALATE` holds the process open indefinitely, so before real use the runner must persist its state and exit rather than wait in memory (3d or pilot concern); `isApproved` checks only that an approval record is present and non-empty, not that Chris made it (known limit from Codex's correction 8; no trusted approval source exists yet).
+
+### 3c round 2 requirements
+
+Same four files. Tests 1–9 still pass, with test 4 rewritten to use a real earlier PASS in the ledger, plus:
+
+10. **Restart awareness:** re-running a queue whose slice already has a VALID latest PASS does not dispatch the implementer. The runner reads that PASS's `reviewed_fingerprint` and `policy_hash` from the verdict file's front matter and compares them with the current tree: `MATCH` skips the slice; `CONTENT_CHANGED` returns `REVIEW_REQUIRED`; `STALE_REVIEW` returns `STALE_REVIEW`. A latest verdict of FAIL re-dispatches the implementer for the next round.
+11. **No orphaned verdict files:** a reviewer document the ledger would refuse (for example CR anywhere in it) is rejected before any file is written; if a ledger append fails after the file was written, the file is removed. A clean retry then succeeds.
+12. **Governing contracts required:** an entry with an empty or missing `governingContracts` list is refused as `QUEUE_ENTRY_INVALID`.
+13. **Proof timeout:** a proof command that runs past its limit is stopped and the run halts with `PROOF_TIMEOUT` (neither PASS nor FAIL). The limit is `proof.timeoutMs` if the entry sets it, otherwise the entry's agent timeout.
+14. **Self-review deferral (pending Chris's decision on the recommended rule):** `SELF_REVIEW_DEFERRED` is accepted only when the independent reviewer is unavailable, the entry sets `selfReviewDeferralAllowed: true`, and the entry is eligible under amendment §8. In that case the implementer adapter authors the verdict, and review debt is recorded. A `SELF_REVIEW_DEFERRED` from a separate reviewer is refused. Without the flag, an unavailable reviewer still halts. Test 8 is rewritten to match.
+
 ## Slice 3d: Real CLI adapters (later, separate authorization)
 
 - **Problem:** the fake adapters prove control flow, not the real agents.

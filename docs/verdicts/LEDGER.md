@@ -33,4 +33,4 @@ One JSON object per line, UTF-8, each line ending in a line feed:
 
 ## Status
 
-Inactive. Nothing writes to or checks a ledger yet. The verdicts for slices 3a and 3a.1 were given in the session and recorded in the Step 3 declarations file, not here, because the ledger code did not exist when they were issued.
+The ledger **code** exists and is tested: `tools/slice-runner/ledger.js` (slices 3b and 3b.1), used by the runner in 3c. The **real ledger file** `docs/verdicts/ledger.jsonl` does not exist yet: the code has only run against temporary test ledgers, and nothing in this repository writes to or checks a real one. Verdicts for the Step 3 slices were given in the session and recorded in the Step 3 declarations file, because the split gate is not active.
