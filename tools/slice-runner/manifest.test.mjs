@@ -308,3 +308,21 @@ test('a declared path passing through a regular file is recorded as missing', ()
         }]);
     });
 });
+
+test('case variants of .git are refused or excluded without matching .git substrings', () => {
+    withTempDirectory((root) => {
+        write(root, '.gitattributes', '* text=auto eol=lf\n');
+        write(root, 'tree/.GIT/secret', 'git metadata');
+        write(root, 'tree/.gitignore', 'ordinary ignore file');
+        write(root, 'tree/x.git', 'ordinary filename');
+
+        for (const candidate of ['.GIT/HEAD', '.Git/config', 'tree/.gIt/x']) {
+            assert.throws(() => computeFingerprint(root, [candidate]), {
+                code: 'MANIFEST_PATH_GIT_METADATA_DECLARED',
+            });
+        }
+
+        const expanded = computeFingerprint(root, ['tree']);
+        assert.deepEqual(expanded.entries.map((entry) => entry.path), ['tree/.gitignore', 'tree/x.git']);
+    });
+});

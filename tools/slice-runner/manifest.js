@@ -47,7 +47,7 @@ export function validateManifestPath(input, { mode = 'declared' } = {}) {
         throw manifestError('MANIFEST_PATH_ABSOLUTE', 'Absolute, drive-letter, and network paths are not allowed in a manifest.');
     }
 
-    if (mode === 'declared' && posixInput.split('/').includes(GIT_METADATA_SEGMENT)) {
+    if (mode === 'declared' && posixInput.split('/').some((segment) => segment.toLowerCase() === GIT_METADATA_SEGMENT)) {
         throw manifestError('MANIFEST_PATH_GIT_METADATA_DECLARED', 'Declared paths cannot contain a .git segment.');
     }
 
@@ -145,7 +145,7 @@ function addMissingEntry(entriesByPath, relativePath, fullPath) {
 }
 
 function shouldExcludeGitPath(relativePath) {
-    return relativePath.split('/').includes(GIT_METADATA_SEGMENT);
+    return relativePath.split('/').some((segment) => segment.toLowerCase() === GIT_METADATA_SEGMENT);
 }
 
 function walkDirectory(repoRoot, fullDirectoryPath, relativeDirectoryPath, entriesByPath) {
