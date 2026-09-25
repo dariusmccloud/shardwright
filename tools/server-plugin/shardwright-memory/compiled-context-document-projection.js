@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { buildCompiledContextPlan } from '../../../core/compiled-context/document-compiler.js';
+import { buildCompiledContextPlan } from './lib/core/compiled-context/document-compiler.js';
 
 const PROJECTION_VERSION = 'compiled-context-document-projection-v1';
 

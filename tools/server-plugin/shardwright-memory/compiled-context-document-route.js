@@ -1,5 +1,5 @@
-import { compileDocumentRegistry } from '../../../core/compiled-context/document-compiler.js';
-import { loadCompiledContextDocumentRegistry } from '../../../core/compiled-context/document-source-loader.js';
+import { compileDocumentRegistry } from './lib/core/compiled-context/document-compiler.js';
+import { loadCompiledContextDocumentRegistry } from './lib/core/compiled-context/document-source-loader.js';
 import {
     createAdapter,
     getAuthenticatedUserRoot,
