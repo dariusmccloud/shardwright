@@ -105,6 +105,7 @@ test('verdict and subtype are separate and only NEEDS_HUMAN_ACTION with ESCALATE
             row({ verdict: 'PASS', subtype: 'NEEDS_HUMAN_ACTION' }),
             row({ subtype: 'OTHER' }),
             row({ verdict: 'UNKNOWN' }),
+            row({ verdict: 'SELF_REVIEW_DEFERRED' }),
         ]) {
             assert.throws(() => appendVerdict(ledgerPath, root, invalid), { code: 'VERDICT_ROW_INVALID' });
         }
@@ -207,5 +208,21 @@ test('a recorded verdict path replaced by a directory returns TAMPERED', () => {
         fs.rmSync(verdictFile);
         fs.mkdirSync(verdictFile);
         assert.equal(verifyVerdict(ledgerPath, root, 'slice-a').state, 'TAMPERED');
+    });
+});
+
+test('SELF_REVIEW_DEFERRED is refused on append and makes an existing ledger corrupt', () => {
+    withFixture(({ root, ledgerPath }) => {
+        assert.throws(() => appendVerdict(ledgerPath, root, row({ verdict: 'SELF_REVIEW_DEFERRED' })), {
+            code: 'VERDICT_ROW_INVALID',
+        });
+        assert.equal(fs.existsSync(ledgerPath), false);
+
+        const legacyRow = {
+            ...row({ verdict: 'SELF_REVIEW_DEFERRED' }),
+            verdictSha256: '0'.repeat(64),
+        };
+        fs.writeFileSync(ledgerPath, `${JSON.stringify(legacyRow)}\n`);
+        assert.equal(verifyVerdict(ledgerPath, root, 'slice-a').state, 'LEDGER_CORRUPT');
     });
 });

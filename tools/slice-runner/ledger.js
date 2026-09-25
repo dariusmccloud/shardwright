@@ -3,7 +3,7 @@ import * as fs from 'node:fs';
 import path from 'node:path';
 import { TextDecoder } from 'node:util';
 
-const VERDICTS = new Set(['PASS', 'FAIL', 'ESCALATE', 'SELF_REVIEW_DEFERRED']);
+const VERDICTS = new Set(['PASS', 'FAIL', 'ESCALATE']);
 const SUBTYPES = new Set([null, 'NEEDS_HUMAN_ACTION']);
 const ROW_FIELDS = [
     'sliceId',
