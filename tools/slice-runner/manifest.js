@@ -24,21 +24,31 @@ function isOutsideRoot(root, target) {
 }
 
 /**
- * Validate and canonicalize a declared path or a discovered relative path.
- * Backslashes are treated as path separators so Windows declarations have the
- * same serialized form as POSIX declarations.
+ * Validate and canonicalize a declared path or discovered relative path.
+ * Only declared paths treat backslashes as path separators; a backslash in a
+ * discovered name is ambiguous across filesystems and is refused.
  */
-export function validateManifestPath(input) {
+export function validateManifestPath(input, { mode = 'declared' } = {}) {
+    if (mode !== 'declared' && mode !== 'discovered') {
+        throw manifestError('MANIFEST_PATH_MODE_INVALID', 'Manifest path mode must be declared or discovered.');
+    }
     if (typeof input !== 'string' || input.length === 0) {
         throw manifestError('MANIFEST_PATH_INVALID', 'A non-empty relative path is required.');
     }
     if (CONTROL_CHARACTER.test(input)) {
         throw manifestError('MANIFEST_PATH_CONTROL_CHARACTER', 'Manifest paths cannot contain control characters.');
     }
+    if (mode === 'discovered' && input.includes('\\')) {
+        throw manifestError('MANIFEST_PATH_BACKSLASH_DISCOVERED', 'Discovered filesystem names cannot contain backslashes.');
+    }
 
-    const posixInput = input.replaceAll('\\', '/');
+    const posixInput = mode === 'declared' ? input.replaceAll('\\', '/') : input;
     if (posixInput.startsWith('/') || posixInput.startsWith('//') || DRIVE_PATH.test(posixInput)) {
         throw manifestError('MANIFEST_PATH_ABSOLUTE', 'Absolute, drive-letter, and network paths are not allowed in a manifest.');
+    }
+
+    if (mode === 'declared' && posixInput.split('/').includes(GIT_METADATA_SEGMENT)) {
+        throw manifestError('MANIFEST_PATH_GIT_METADATA_DECLARED', 'Declared paths cannot contain a .git segment.');
     }
 
     const normalized = path.posix.normalize(posixInput);
@@ -143,6 +153,7 @@ function walkDirectory(repoRoot, fullDirectoryPath, relativeDirectoryPath, entri
     for (const child of children) {
         const relativePath = validateManifestPath(
             relativeDirectoryPath ? `${relativeDirectoryPath}/${child.name}` : child.name,
+            { mode: 'discovered' },
         );
         if (shouldExcludeGitPath(relativePath)) continue;
 
@@ -161,8 +172,6 @@ function walkDirectory(repoRoot, fullDirectoryPath, relativeDirectoryPath, entri
 }
 
 function addDeclaredPath(repoRoot, relativePath, entriesByPath) {
-    if (shouldExcludeGitPath(relativePath)) return;
-
     const targetPath = validateResolvedPath(repoRoot, relativePath);
     const segments = relativePath === '' ? [] : relativePath.split('/');
     let currentPath = repoRoot;

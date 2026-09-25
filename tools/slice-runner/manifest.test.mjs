@@ -211,10 +211,15 @@ test('control and delimiter characters, including a crafted serialization collis
     ];
     for (const candidate of invalid) {
         assert.throws(() => validateManifestPath(candidate), { code: 'MANIFEST_PATH_CONTROL_CHARACTER' });
+        assert.throws(() => validateManifestPath(candidate, { mode: 'discovered' }), {
+            code: 'MANIFEST_PATH_CONTROL_CHARACTER',
+        });
     }
 
     if (process.platform === 'win32') {
-        assert.throws(() => validateManifestPath('filename\twith-control'), { code: 'MANIFEST_PATH_CONTROL_CHARACTER' });
+        assert.throws(() => validateManifestPath('filename\twith-control', { mode: 'discovered' }), {
+            code: 'MANIFEST_PATH_CONTROL_CHARACTER',
+        });
         return;
     }
 
@@ -222,5 +227,84 @@ test('control and delimiter characters, including a crafted serialization collis
         write(root, '.gitattributes', '* text=auto eol=lf\n');
         write(root, 'bad\tname', 'content');
         assert.throws(() => computeFingerprint(root, ['.']), { code: 'MANIFEST_PATH_CONTROL_CHARACTER' });
+    });
+});
+
+test('discovered backslashes are refused while declared backslashes normalize', (t) => {
+    assert.equal(validateManifestPath('a\\b', { mode: 'declared' }), 'a/b');
+    assert.throws(() => validateManifestPath('a\\b', { mode: 'discovered' }), {
+        code: 'MANIFEST_PATH_BACKSLASH_DISCOVERED',
+    });
+
+    if (process.platform === 'win32') {
+        t.diagnostic('Real-file expansion substep skipped: Windows cannot create a filename containing a backslash; discovered-mode validator was exercised directly.');
+        return;
+    }
+
+    withTempDirectory((root) => {
+        write(root, '.gitattributes', '* text=auto eol=lf\n');
+        write(root, 'tree/a\\b', 'ambiguous');
+        assert.throws(() => computeFingerprint(root, ['tree']), {
+            code: 'MANIFEST_PATH_BACKSLASH_DISCOVERED',
+        });
+    });
+});
+
+test('discovered .git files are excluded and declared .git paths are refused', () => {
+    withTempDirectory((root) => {
+        write(root, '.gitattributes', '* text=auto eol=lf\n');
+        write(root, 'tree/ordinary.txt', 'included');
+        write(root, 'tree/nested/.git', 'git worktree marker');
+
+        const expanded = computeFingerprint(root, ['tree']);
+        assert.deepEqual(expanded.entries.map((entry) => entry.path), ['tree/ordinary.txt']);
+        assert.throws(() => computeFingerprint(root, ['tree/.git/config']), {
+            code: 'MANIFEST_PATH_GIT_METADATA_DECLARED',
+        });
+    });
+});
+
+test('overlapping declarations produce one entry and the same fingerprint', () => {
+    withTempDirectory((root) => {
+        write(root, '.gitattributes', '* text=auto eol=lf\n');
+        write(root, 'docs/a.md', 'content');
+
+        const directoryScope = computeFingerprint(root, ['docs']);
+        const overlappingScope = computeFingerprint(root, ['docs', 'docs/a.md']);
+        assert.deepEqual(overlappingScope.entries, directoryScope.entries);
+        assert.equal(overlappingScope.entries.filter((entry) => entry.path === 'docs/a.md').length, 1);
+        assert.deepEqual(overlappingScope.fingerprint, directoryScope.fingerprint);
+    });
+});
+
+test('a declared path through a directory link records only the link prefix', (t) => {
+    withTempDirectory((root) => {
+        write(root, '.gitattributes', '* text=auto eol=lf\n');
+        write(root, 'target/x.txt', 'must not be read through the link');
+        const linkType = process.platform === 'win32' ? 'junction' : 'dir';
+        try {
+            fs.symlinkSync(path.join(root, 'target'), path.join(root, 'link'), linkType);
+        } catch (error) {
+            t.skip(`Cannot create the required directory link in this environment: ${error?.code || error?.message || error}`);
+            return;
+        }
+
+        const result = computeFingerprint(root, ['link/x.txt']);
+        assert.equal(result.entries.length, 1);
+        assert.equal(result.entries[0].path, 'link');
+        assert.equal(result.entries[0].state, 'LINK');
+        assert.equal(result.entries.some((entry) => entry.path.startsWith('link/')), false);
+    });
+});
+
+test('a declared path passing through a regular file is recorded as missing', () => {
+    withTempDirectory((root) => {
+        write(root, '.gitattributes', '* text=auto eol=lf\n');
+        write(root, 'a.txt', 'regular file');
+
+        const result = computeFingerprint(root, ['a.txt/b']);
+        assert.deepEqual(result.entries, [{
+            path: 'a.txt/b', size: '-', state: 'MISSING', contentHash: '',
+        }]);
     });
 });
