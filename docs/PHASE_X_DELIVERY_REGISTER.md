@@ -4,6 +4,8 @@
 **Snapshot:** 2026-09-01.
 **Purpose:** Show what Phase X has defined, implemented, proven, deferred, or still
 needs before release without turning a progress table into an authority source.
+**Operational queue:** approved and pending work is tracked on the [Work Board](WORK_BOARD.md).
+The Work Board is operational state; this Register remains the status index.
 
 ## How To Read This Register
 

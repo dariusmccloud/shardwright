@@ -3,7 +3,7 @@
 **Status:** Tracking board, not yet load-bearing. Populated by hand today; nothing here is enforced by a runner, because the runner does not exist yet (activation prerequisite, [AGENTS_AMENDMENT_SPLIT_GATE_DRAFT.md](proposals/AGENTS_AMENDMENT_SPLIT_GATE_DRAFT.md) Section 12).
 **Authority:** [PHASE_X_DELIVERY_REGISTER.md](PHASE_X_DELIVERY_REGISTER.md) remains the authority for workstream status. This board is the operational queue and "what's pending" view; it does not override the Register or any contract.
 **Rule (per the amendment draft, Section 6):** only Chris adds, approves, reorders, or removes entries in **Queued**. Agents may propose into **On the table but not yet scoped**.
-**Reverse link:** the Register should link back here, but the Register has an in-progress edit (uncommitted) as of 2026-09-25; adding the link is deferred to avoid committing someone else's in-progress work under this change.
+**Reverse link:** the [Delivery Register](PHASE_X_DELIVERY_REGISTER.md) links back here (added 2026-09-25).
 
 ---
 
