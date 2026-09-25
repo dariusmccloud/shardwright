@@ -21,7 +21,7 @@
 
 | Item | Status |
 |---|---|
-| Activation-prerequisites workstream (Steps 1–4, per Codex's ordering) | Step 1 (this board) done; Step 2 (templates, manifest format, verdict ledger) done and revised once per Codex's review; Step 3 (runner) not started |
+| Activation-prerequisites workstream (Steps 1–4, per Codex's ordering) | Step 1 (this board) done; Step 2 (templates, manifest format, verdict ledger) done and revised once per Codex's review; line-ending policy adopted and working tree normalized (863/863 files byte-identical); Codex CLI installed (`0.157.0`); Step 3 drafted in `docs/proposals/STEP3_RUNNER_SLICE_DECLARATIONS_DRAFT.md`, not started |
 
 ## 🟢 Queued (approved, in order)
 
