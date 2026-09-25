@@ -28,7 +28,7 @@ One JSON object per line, UTF-8, each line ending in a line feed:
 {"sliceId":"3a","round":1,"verdictPath":"docs/verdicts/3a-r1.md","verdictSha256":"<64 hex>","verdict":"PASS","subtype":null,"reviewer":"Claude (Opus 5.5)","recordedAt":"2026-09-25T18:00:00Z"}
 ```
 
-- `verdict`: `PASS`, `FAIL`, `ESCALATE`, or `SELF_REVIEW_DEFERRED`.
+- `verdict`: `PASS`, `FAIL`, or `ESCALATE`. The ledger code (3b) still accepts a fourth value, `SELF_REVIEW_DEFERRED`, which was withdrawn on 2026-09-25 (amendment §8). The runner refuses it, so nothing should produce it. Removing it from the ledger code is left for a later cleanup.
 - `subtype`: `NEEDS_HUMAN_ACTION` (only with `ESCALATE`) or `null`.
 
 ## Status

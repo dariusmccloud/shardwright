@@ -3,6 +3,7 @@
 **Status:** Both Claude and Codex concur on this text (2026-09-25); no unresolved objections from either reviewer. **Still not in force.** Nothing in `AGENTS.md` has changed, and agents must keep following the current Terminal Gate until this is activated, which requires all of Section 12's prerequisites plus Chris's explicit approval.
 **Drafted:** 2026-09-21 by Claude, from the design discussion with Chris and Codex's independent review.
 **Amended:** 2026-09-25, folding in Codex's ten corrections (worktree-baseline review, evidence binding for uncommitted work, revalidation before dispatch, `NEEDS_HUMAN_ACTION` as an `ESCALATE` subtype, a narrowed external-impact trigger, a stricter repeated-failure rule, an explicit reviewer evidence burden, protected verdict records, queue invalidation on contract change, and a Work Board separated from the Register) plus four tightenings from Claude (runner-captured proof output, hash-bound uncommitted verdicts, cited authorization clauses, and contract-version binding for queue invalidation). Both agents' full reviews are in the session record; this file states only the resulting text.
+**Changed after sign-off (2026-09-25, Chris):** Section 8 and the Section 13 replacement text. `SELF_REVIEW_DEFERRED` is withdrawn: an unavailable reviewer halts, and a review backlog is planned so the other agent can keep implementing without approving anything. Codex recommended dropping self-review; Claude concurred. This change has not been re-reviewed as part of the full text.
 **Effect if adopted:** replaces human approval after every proven slice with independent verification, and reserves human authority for decisions.
 
 ## 1. Problem
@@ -153,16 +154,22 @@ The after-action report also carries:
 
 ## 8. Reviewer unavailable
 
-A reviewer can be unavailable (usage limits, tool failure). Default: **halt.** Nothing advances unreviewed.
+A reviewer can be unavailable (usage limits, tool failure). **No agent ever reviews its own work.**
 
-`SELF_REVIEW_DEFERRED` is allowed only for slices that are ordinary-risk, reversible, use an existing contract, touch none of authority, persistence, lifecycle, replay, schemas, migrations, security, sync, external files, identity, UI state, or user data, and have exact automated proof. Keystone or ambiguous work never uses it. In addition (Codex's additions to reviewer-availability rules):
+**Decision change (Chris, 2026-09-25):** `SELF_REVIEW_DEFERRED` is withdrawn. The earlier version of this section let an implementer review its own ordinary-risk slice and record review debt. It was dropped because self-review adds little independent assurance, and the 3c round-1 review showed how easily "self-review" could become "a separate reviewer sets a flag." Chris's goal is unchanged: an outage of one agent should not stall all work for days while the other agent has usage left.
 
-- it requires the explicit policy authorization already recorded in this contract (this section) — it is never invoked ad hoc;
-- it creates a visible review-debt item on the **review-debt ledger**, labeled in the Register;
-- a release, or any keystone slice, cannot close while review debt remains;
-- a self-review must never silently become an ordinary `PASS` — it is always labeled `SELF_REVIEW_DEFERRED` until an independent reviewer confirms it.
+**Current rule (interim):** if the independent reviewer is unavailable, the run **halts**. Work continues by hand under the existing human-gated process until the reviewer returns.
 
-Concretely: because it touches persistence and sync by definition, no slice implementing the Sync Store and Multi-Instance contract could ever qualify for `SELF_REVIEW_DEFERRED`, regardless of how small the change looks.
+**Planned replacement: review backlog** (a later runner slice, 3e, to be declared and authorized separately). When the reviewer is unavailable, the other agent may keep **implementing**, but nothing is approved:
+
+- each slice built during the outage is committed separately and marked `REVIEW_PENDING`, with its commit hash and fingerprint, and gets no verdict;
+- when the reviewer returns, it first runs a **validation pass** over every pending slice, oldest first, reviewing each at its own commit rather than the current tree, before any new slice starts;
+- if a pending slice fails review, every later pending slice built on top of it returns to review as well;
+- the backlog is capped (proposed: 3 slices) to bound how much work one failure can undo;
+- only ordinary-risk slices may enter the backlog; keystone work, and anything touching authority, persistence, lifecycle, replay, schemas, migrations, security, sync, external files, identity, UI state, or user data, halts and waits;
+- `REVIEW_PENDING` never counts as PASS, and no release can close while any slice is pending.
+
+No slice implementing the Sync Store and Multi-Instance contract could enter the backlog, because it touches persistence and sync by definition.
 
 ## 9. Design Review gate
 
@@ -216,7 +223,7 @@ Do **not** replace the Terminal Gate until all of these exist. Activating early 
 >
 > Human authorization remains mandatory for authority uncertainty, contract creation or amendment, contract conflict, scope expansion, keystone structures, unresolved reviewer disagreement, a governing contract changing under an approved queue entry, and security, migration, destructive, or external-state effects not already authorized by clause in an existing contract.
 >
-> If no independent reviewer is available, stop. Do not self-approve, except as `SELF_REVIEW_DEFERRED` for the narrow class in Section 8 of the amendment proposal, which never applies to keystone or ambiguous work and never closes a release while it remains open.
+> If no independent reviewer is available, stop. No agent reviews its own work. Implementation may continue only through the review backlog described in Section 8 of the amendment proposal, once that is built; backlog slices are never counted as passed until independently reviewed.
 
 ## 14. Open questions
 
@@ -224,7 +231,7 @@ Do **not** replace the Terminal Gate until all of these exist. Activating early 
 2. ~~Where the approved queue lives.~~ **Resolved:** a separate Work Board file, linked from the Register (Section 6, Codex's correction 10).
 3. Runner form and location (script in `tools/`, launched by Chris or scheduled).
 4. Whether `NEEDS_HUMAN_ACTION` items may be pre-approved in bulk (for example the browser skill), so they do not interrupt every run.
-5. Who owns the review-debt ledger.
+5. Review backlog cap (proposed: 3 slices) and whether it should differ by risk class.
 6. Whether the Design Review gate has a fixed cadence or only the triggers in Section 9.
 7. Exact manifest/fingerprint mechanism for Section 3a (per-file hash list, `git diff` against a stashed baseline, or something else) — an implementation detail, not a design decision, but needs to be picked before the runner can be built.
 8. Whether `STALE_REVIEW` (Section 6a) requires a full re-review or only a check that the change doesn't touch what the slice depends on.

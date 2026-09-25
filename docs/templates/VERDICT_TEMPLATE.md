@@ -10,7 +10,7 @@ Copy to `docs/verdicts/<slice-id>-r<round>.md` (one file per review round; see `
 **Round:** <1 for the first review; previous round + 1 for each re-review after a FAIL>
 **Reviewer:** <agent + model/session, must differ from the implementer>
 **Timestamp:**
-**Verdict:** PASS | FAIL | ESCALATE | SELF_REVIEW_DEFERRED
+**Verdict:** PASS | FAIL | ESCALATE
 **Subtype:** (only when Verdict is ESCALATE) NEEDS_HUMAN_ACTION | <none>
 
 (Machine-readable form per Codex's correction 5 — `verdict` and `subtype` are separate fields, not a combined string. `NEEDS_HUMAN_ACTION` is still a kind of `ESCALATE`, never a fifth top-level verdict.)
@@ -50,11 +50,7 @@ A mismatch is itself a finding (FAIL at minimum; ESCALATE if the cause is unclea
 - **Expected observation:**
 - **What result permits continuation:**
 
-## If SELF_REVIEW_DEFERRED
-Confirm all of amendment §8's conditions before using this — ordinary risk, reversible, existing contract, touches none of: authority, persistence, lifecycle, replay, schemas, migrations, security, sync, external files, identity, UI state, user data. Record the review-debt entry.
-
-- [ ] All conditions above confirmed
-- **Review-debt ledger entry:** `<link>`
+(`SELF_REVIEW_DEFERRED` was withdrawn on 2026-09-25; see amendment §8. A reviewer never issues a verdict on its own work.)
 
 ## What would invalidate this verdict (Codex's correction 10)
 Any of the following, checked at dispatch time or later, voids this verdict and routes the slice back to review (`STALE_REVIEW`):

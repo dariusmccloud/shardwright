@@ -178,7 +178,7 @@ Same four files. Tests 1–9 still pass, with test 4 rewritten to use a real ear
 11. **No orphaned verdict files:** a reviewer document the ledger would refuse (for example CR anywhere in it) is rejected before any file is written; if a ledger append fails after the file was written, the file is removed. A clean retry then succeeds.
 12. **Governing contracts required:** an entry with an empty or missing `governingContracts` list is refused as `QUEUE_ENTRY_INVALID`.
 13. **Proof timeout:** a proof command that runs past its limit is stopped and the run halts with `PROOF_TIMEOUT` (neither PASS nor FAIL). The limit is `proof.timeoutMs` if the entry sets it, otherwise the entry's agent timeout.
-14. **Self-review deferral (pending Chris's decision on the recommended rule):** `SELF_REVIEW_DEFERRED` is accepted only when the independent reviewer is unavailable, the entry sets `selfReviewDeferralAllowed: true`, and the entry is eligible under amendment §8. In that case the implementer adapter authors the verdict, and review debt is recorded. A `SELF_REVIEW_DEFERRED` from a separate reviewer is refused. Without the flag, an unavailable reviewer still halts. Test 8 is rewritten to match.
+14. **No self-review deferral (decided by Chris, 2026-09-25):** `SELF_REVIEW_DEFERRED` is withdrawn (amendment §8). A reviewer document carrying that verdict is refused, whoever authored it, and nothing is recorded. An unavailable reviewer halts the run. The runner writes no review-debt file. Test 8 is rewritten to assert all three. The planned review backlog (amendment §8) is a separate later slice, 3e, and is **not** part of this round.
 
 ## Slice 3d: Real CLI adapters (later, separate authorization)
 
