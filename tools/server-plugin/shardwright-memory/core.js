@@ -228,6 +228,7 @@ function buildStoragePaths(userRoot, storageDirectoryName) {
     const contextSheetIdentityLockPath = path.join(locksRoot, 'context-sheet-identity-ledger.lock');
     const transcriptCharacterBindingLockPath = path.join(locksRoot, 'transcript-character-binding-ledger.lock');
     const transcriptSourceRegistryLockPath = path.join(locksRoot, 'transcript-source-registry-ledger.lock');
+    const transcriptMaintenanceRunLockPath = path.join(locksRoot, 'transcript-maintenance-run-ledger.lock');
     const transcriptSourceRevisionLockPath = path.join(locksRoot, 'transcript-source-revision-ledger.lock');
     const transcriptMessageLockPath = path.join(locksRoot, 'transcript-message-ledger.lock');
     const transcriptVisibilityLockPath = path.join(locksRoot, 'transcript-visibility-ledger.lock');
@@ -266,6 +267,7 @@ function buildStoragePaths(userRoot, storageDirectoryName) {
         contextSheetIdentityLockPath,
         transcriptCharacterBindingLockPath,
         transcriptSourceRegistryLockPath,
+        transcriptMaintenanceRunLockPath,
         transcriptSourceRevisionLockPath,
         transcriptMessageLockPath,
         transcriptVisibilityLockPath,
