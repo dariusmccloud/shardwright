@@ -212,12 +212,65 @@ Same two files. Tests 1–15 still pass, plus:
 
 Carried forward to 3d: proof timeouts do not kill child processes; an `ESCALATE` holds the process open waiting in memory (resumption is now safe through the ledger, but a real deployment should exit instead of waiting indefinitely); approvals cannot be attributed to Chris.
 
-## Slice 3d: Real CLI adapters (later, separate authorization)
+**3c committed** as `1dca3af` by Codex; revalidated against the reviewed fingerprint (manifest `c7cd9449…2ab3`): `MATCH`. 3c is done.
+
+---
+
+## Authorization for 3b.2, 3e, and 3d (2026-09-25)
+
+**Authorized by Chris** ("3d/e both approved + ledger cleanup"), **before their declarations were written**. The declarations below were drafted by Claude afterwards. Because Chris approved them unseen, **Codex reviews each declaration before implementing it**, and raises anything it would change. That gives the declarations the same independent check the code gets. Order: 3b.2, then 3e, then 3d. Each starts only after the previous one passes review and its commit is revalidated. Implementer: Codex. Reviewer: Claude. The Step 4 pilot and split-gate activation remain outside this authorization.
+
+## Slice 3b.2: Remove the withdrawn verdict value from the ledger
+
+- **Problem:** `ledger.js` still accepts `SELF_REVIEW_DEFERRED`, which was withdrawn on 2026-09-25 (amendment §8).
+- **Target result:** the ledger accepts only `PASS`, `FAIL`, and `ESCALATE`. An append with `SELF_REVIEW_DEFERRED` is refused (`VERDICT_ROW_INVALID`), and an existing ledger line carrying it makes the ledger `LEDGER_CORRUPT`. No real ledger file exists yet, so nothing is lost.
+- **In scope:** `tools/slice-runner/ledger.js`, `ledger.test.mjs`. The runner keeps its explicit `SELF_REVIEW_DEFERRED_WITHDRAWN` refusal; it is harmless and gives a clearer reason.
+- **Proof:** ledger tests 1–11 still pass (test 6 updated to the three values), plus **12:** append refused and existing-line corruption, both for `SELF_REVIEW_DEFERRED`. The full suite still passes.
+- **Risk class:** Ordinary.
+
+## Slice 3e: Review backlog
+
+- **Problem:** if the independent reviewer is out of usage, the runner halts, and all work waits, even though the other agent may have usage left (Chris's requirement; amendment §8).
+- **Design (amendment §8), with the cap confirmed at 3 by Chris's approval:**
+  - The backlog is **off unless the approved queue enables it**: a top-level `reviewBacklog: { maxPending: 3 }` in the queue file. Without it, an unavailable reviewer halts exactly as today.
+  - **Entry to the backlog:** after implementation, when the proof ran and **exited 0**, the reviewer is unavailable (error, timeout, or `UNAVAILABLE`), and the entry is ordinary-risk and touches none of amendment §8's excluded categories. A failed proof, or an ineligible entry, halts as today.
+  - **What the runner records:** it commits only the entry's in-scope paths in the (fixture) git repository, with a message beginning `REVIEW_PENDING <sliceId>`. It appends a line to a runner-owned, append-only `docs/review-pending.jsonl`: `sliceId`, `commit`, `manifestHash`, `policyHash`, `proofOutputHash`, `recordedAt`, and `dependsOn` (the slice IDs already pending before it). It then continues to the next approved entry. A pending slice has no verdict and never counts as PASS.
+  - **Cap:** when the pending count reaches `maxPending`, the run halts with `BACKLOG_FULL`.
+  - **Validation pass first:** when the reviewer is available and the backlog is not empty, no new slice is implemented. Pending slices are reviewed oldest first, each **at its own commit**: the runner checks it out in a temporary git worktree, recomputes the fingerprint there (it must equal the pending record, otherwise `HALTED` with `PENDING_RECORD_MISMATCH`), and gives the reviewer that commit and fingerprint. The verdict is recorded in the ledger as usual.
+  - **Cascade:** if a pending slice gets `FAIL`, every later pending slice whose `dependsOn` includes it becomes `REVIEW_REQUIRED` (reason `ANCESTOR_FAILED`), and the run stops with `FAIL`. `ESCALATE` during validation stops with `AWAITING_DECISION`, as today.
+  - **Restart:** a slice with a pending record is not re-implemented; it waits for validation.
+- **In scope:** `tools/slice-runner/runner.js`, `runner.test.mjs`, and a new `tools/slice-runner/review-backlog.js` if Codex prefers to separate it. Fake agents only; fixture repositories under the OS temp directory, each initialized with `git init`.
+- **Proof** (runner tests 1–16 still pass, plus):
+  18. Backlog disabled: an unavailable reviewer halts, with no commit and no pending record.
+  19. Enabled: an unavailable reviewer on an eligible slice with a passing proof creates one commit containing only in-scope paths and one pending record, and the run continues to the next entry.
+  20. Not eligible (keystone, an excluded category, or a failed proof): halts, no pending record.
+  21. Cap: the fourth eligible slice with `maxPending: 3` halts `BACKLOG_FULL`.
+  22. Validation first: with a pending backlog and the reviewer back, the implementer is not called until every pending slice is reviewed, oldest first, each at its own commit (asserted by the commit the reviewer receives).
+  23. Pending record mismatch: a pending record whose fingerprint does not match its commit halts `PENDING_RECORD_MISMATCH`.
+  24. Cascade: pending A then B (B depends on A); A fails validation, so B becomes `REVIEW_REQUIRED` with `ANCESTOR_FAILED`, and nothing new is implemented.
+  25. Restart: a pending slice is not re-implemented on restart.
+  26. A pending slice never appears as PASS in the ledger or the run result.
+- **Risk class:** Ordinary. It runs git in fixture repositories only, and never in this repository.
+
+## Slice 3d: Real CLI adapters
 
 - **Problem:** the fake adapters prove control flow, not the real agents.
-- **CLI prerequisite: met 2026-09-25.** Chris installed the standalone Codex CLI (`codex-cli 0.157.0`) at `C:\Users\chris\AppData\Local\Programs\OpenAI\Codex\bin\codex`, and it is on PATH. The earlier extension-bundled binary was unusable because its path changed with each extension update (`26.908` to `26.917`). Headless sign-in with the ChatGPT plan has not been tested yet; 3d must prove it.
-- **Risk class:** Integration. It launches external processes with repository access.
-- **Not drafted further** until 3a through 3c are proven.
+- **CLI prerequisite: met 2026-09-25.** Chris installed the standalone Codex CLI (`codex-cli 0.157.0`) at `C:\Users\chris\AppData\Local\Programs\OpenAI\Codex\bin\codex`, and it is on PATH. The earlier extension-bundled binary was unusable because its path changed with each extension update (`26.908` to `26.917`).
+- **Risk class:** Integration. It launches real agents that can edit files.
+- **Target result:**
+  - `claude-adapter.js` and `codex-adapter.js`, implementing the existing adapter interface (`id`, `run(input)`), launching `claude -p` and `codex exec` headless on the existing subscription logins, with no API keys. Flags are taken from each CLI's `--help` at implementation time and recorded in the report. Observed options 2026-09-25: Claude `-p`, `--output-format`, `--permission-mode`, `--allowedTools`, `--add-dir`, `--no-session-persistence`; Codex `exec`, `-C/--cd`, `-s/--sandbox` (`read-only`, `workspace-write`, `danger-full-access`), `--json`, `-o/--output-last-message`.
+  - **Least privilege:** each agent runs with its working directory set to the fixture repository and write access limited to it. The implementer may edit files there; the reviewer is read-only (Codex `-s read-only`; Claude with editing tools disallowed). `--dangerously-skip-permissions` and `danger-full-access` are never used.
+  - **Role prompts** built from the queue entry: the implementer receives the declaration and in-scope paths; the reviewer receives the runner-captured proof receipt, the reviewed fingerprint, and the exact front-matter format it must produce. The prompt text is saved with the proof archive.
+  - **Unavailability mapping:** a missing CLI, sign-in failure, usage-limit message, or non-zero exit without a parseable result maps to `UNAVAILABLE`, which halts or, with 3e enabled, feeds the backlog. It is never FAIL.
+  - **Carried from 3c:** (a) a timeout, for an agent or a proof command, stops the **whole process tree** (on Windows `taskkill /T /F`), and the test proves no child survives; (b) with no `humanDecision` handler supplied, an `ESCALATE` returns `ESCALATED` immediately and the process exits instead of waiting in memory. Restart safety through the ledger is already proven.
+- **In scope:** `tools/slice-runner/claude-adapter.js`, `codex-adapter.js`, a shared `process-tree.js` if needed, `runner.js` (the two carried items only), and their tests.
+- **Hard boundary:** agents and the runner are pointed only at fixture repositories under the OS temp directory, **never at this repository**. The pilot on real slices is Step 4 and needs its own approval.
+- **Proof:**
+  - **Offline tests** (run by default, no usage spent): adapters tested against stub executables that imitate each CLI, covering success, malformed output, a usage-limit message, a missing binary, and a hang (process tree killed, no survivor); the no-handler `ESCALATE` exit; least-privilege flags present, and dangerous flags absent, in the built command lines.
+  - **One live test, opt-in only** (runs only with `SLICE_RUNNER_LIVE=1`, because it spends real usage): in a temporary git repository, a trivial approved slice (create `hello.txt` with fixed content; the proof checks it) is implemented by one real CLI and reviewed by the other, ending in a recorded, valid PASS in a temporary ledger. Run once per direction (Codex implements and Claude reviews, then the reverse). The report states whether the live test was run.
+- **Stop condition:** offline tests pass; the live test is run and passes in both directions, or the report says it was not run and why. Reviewing 3d includes Claude rerunning the live test.
+
+**Chris, note on usage:** the live 3d test uses a small amount of both subscriptions each time it is run.
 
 ---
 
