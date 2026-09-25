@@ -50,6 +50,25 @@ Location for all four: `tools/slice-runner/`, in Node (`v24.21.0` here), with `n
 
 **Change after authorization (2026-09-25):** test 12 and the delimiter rule in the spec were added after Chris authorized 3a, at Chris's request, following a CodeRabbit finding that tab or line feed characters in a path could make two different trees serialize identically. Implementation had not started when the change was made.
 
+**Review (2026-09-25): PASS.** Reviewer: Claude. Proof rerun independently: 12 of 12, link test executed (Windows junctions). Golden manifest hash `6fb193f6…8692` reproduced by an independent implementation written from the spec alone. Reviewed fingerprint of the two slice files: policy `e480bb45…f220`, manifest `9513a540…7be0`, identical from both implementations. Findings: one spec-level defect (backslash handling for discovered names), five unstated spec choices, and one missing report disclosure (test 12's Windows expansion case runs through the validator). The first two carry into 3a.1.
+
+## Slice 3a.1: Declared-versus-discovered paths and spec gaps
+
+**Authorized 2026-09-25:** Chris deferred the decision to the reviewer's recommendation, which was to do it. Implementer: Codex (code and tests). Claude amends the spec and reviews. 3b remains unauthorized.
+
+- **Problem:** the spec converted backslashes to `/` for every path, including names found while expanding a directory. On Linux and macOS, a file literally named `a\b` would then serialize the same as `b` inside a directory `a`, so two different trees could compare as `MATCH`. The 3a review also found five behaviors the code chose but the spec did not state, where a second implementation could reasonably differ.
+- **Evidence:** 3a review above; `manifest.js:144` passes discovered names through the same backslash conversion as declared paths.
+- **Target result:** code matches the amended spec (Path rules, [WORKTREE_MANIFEST_FORMAT.md](../templates/WORKTREE_MANIFEST_FORMAT.md)): backslashes converted only in declared paths; a discovered name containing a backslash refused; a declared path containing a `.git` segment refused (it was silently skipped). The other four behaviors are already implemented and are now stated and tested.
+- **In scope:** `tools/slice-runner/manifest.js` and `manifest.test.mjs` (Codex); `docs/templates/WORKTREE_MANIFEST_FORMAT.md` (Claude, done with this declaration).
+- **Out of scope:** 3b and later; any other file.
+- **Proof required** (`node --test tools/slice-runner/manifest.test.mjs`): all 12 existing tests still pass, plus these named tests:
+  13. **Discovered backslash refused:** the path validator, in discovered mode, refuses `a\b`; in declared mode it still converts `a\b` to `a/b`. On Linux or macOS the test also creates a real file named `a\b` and confirms expansion fails. On Windows that real-file step is skipped, with the reason stated in the report, because Windows cannot create such a name.
+  14. **`.git` handling:** a *file* named `.git` inside an in-scope directory is excluded; a declared path containing a `.git` segment (for example `tree/.git/config`) fails with an error.
+  15. **Overlap:** declaring both `docs` and `docs/a.md` yields exactly one entry for `docs/a.md`, and the same fingerprint as declaring `docs` alone.
+  16. **Link prefix:** declaring `link/x.txt`, where `link` is a directory link, yields exactly one `LINK` entry for `link` and reads nothing beyond it. Skipped with a reason if links cannot be created.
+  17. **File prefix:** declaring `a.txt/b`, where `a.txt` is a regular file, yields `MISSING` for `a.txt/b`.
+- **Stop condition:** tests 1–17 pass, except that tests 10 and 16 may be skipped only with a recorded reason, and test 13's real-file step may be skipped on Windows only with a recorded reason. The report states exact counts (for example "17 of 17 passed" or "16 passed, 1 skipped (reason)") and names every step that ran against the validator rather than a real file. Result recorded; the slice stops.
+
 ## Slice 3b: Verdict ledger module
 
 - **Problem:** the ledger at `docs/verdicts/LEDGER.md` is a format with no code, so tamper detection is still only a convention.

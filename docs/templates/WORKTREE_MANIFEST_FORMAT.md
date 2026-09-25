@@ -29,13 +29,17 @@ The policy hash is part of the comparison, not metadata reported alongside it (C
 
 ## Path rules
 
-In-scope paths come from the slice declaration and are validated before anything is read:
+In-scope paths come from the slice declaration and are validated before anything is read. Two kinds of path are handled differently:
 
-- Each path is converted to POSIX form (backslashes become `/`) and resolved against the repository root.
+- **Declared paths** (written in the slice declaration): backslashes are converted to `/`, so `docs\a.md` and `docs/a.md` are the same declaration. Each declared path is then resolved against the repository root.
+- **Discovered paths** (names found while expanding an in-scope directory): used exactly as the filesystem returns them. A discovered name containing a backslash is **refused**, and the computation fails. On Linux and macOS a backslash is an ordinary filename character, so converting it would make a file named `a\b` indistinguishable from a file `b` inside a directory `a`, and two different trees could compare as `MATCH`. Windows cannot produce such a name.
 - **Refused, and the whole manifest computation fails:** an absolute path, a drive-letter path (`C:...`), a UNC path (`\\server\...`), or any path whose resolved location lies outside the repository root (for example through `..`). A refused path is an error, never a silently skipped entry.
 - Stored paths are repository-root-relative, POSIX forward slashes, no leading `./`, no trailing `/`.
 - **Delimiter characters refused:** a path is refused, and the whole manifest computation fails, if any segment contains a control character (U+0000 through U+001F, or U+007F). This includes tab and line feed, the serialization's field and record delimiters. Without this rule, a filename containing them could serialize to the same bytes as several ordinary entries, and two different trees could compare as `MATCH`. The rule applies both to declared in-scope paths and to every file found while expanding an in-scope directory. A matching file found during expansion is an error, not a skipped entry. Windows cannot create such filenames; Linux and macOS can.
-- `.git/` is never included, even when nested under an in-scope path.
+- **`.git` is never included.** Any entry named exactly `.git`, file or directory, at any depth, is excluded during expansion. A `.git` file appears in git worktrees and submodules. A **declared** path containing a `.git` segment is refused with an error rather than silently producing no entry.
+- **Overlapping declarations** (for example `docs` and `docs/a.md`) produce one entry per path, never duplicates.
+- **A declared path passing through a link** (for example `link/x.txt`, where `link` is a symlink or junction) records a single `LINK` entry for the link itself (`link`), and nothing beyond it is read.
+- **A declared path passing through a regular file** (for example `a.txt/b`, where `a.txt` is a file) is recorded as `MISSING` under the declared path.
 
 ### Links
 
