@@ -1,12 +1,13 @@
 # Verdict Template
 
-Copy to `docs/verdicts/<slice-id>.md` (folder exists; see `docs/verdicts/LEDGER.md`). Written by the **reviewer**, never the implementer. Defined by [AGENTS_AMENDMENT_SPLIT_GATE_DRAFT.md](../proposals/AGENTS_AMENDMENT_SPLIT_GATE_DRAFT.md) §3, §4, §6a, tightened per Codex's second review (2026-09-25). Inactive today — see the same note as the slice-record template.
+Copy to `docs/verdicts/<slice-id>-r<round>.md` (one file per review round; see `docs/verdicts/LEDGER.md`). Written by the **reviewer**, never the implementer. Defined by [AGENTS_AMENDMENT_SPLIT_GATE_DRAFT.md](../proposals/AGENTS_AMENDMENT_SPLIT_GATE_DRAFT.md) §3, §4, §6a, tightened per Codex's second review (2026-09-25). Inactive today — see the same note as the slice-record template.
 
-**Immutability mechanism (Codex's correction 1):** editing this file's text does not create a new file — the actual protection is that (a) the file is never edited in place after being written, corrections go in a dated addendum instead, and (b) at write time its SHA-256 hash is appended to `docs/verdicts/LEDGER.md`. The runner rejects any verdict whose current file hash no longer matches its ledger row — that mismatch is treated as tampering, not as a new valid verdict.
+**Immutability mechanism (Codex's correction 1):** editing this file's text does not create a new file — the actual protection is that (a) the file is never edited in place after being written, corrections go in a dated addendum instead, and (b) at write time the ledger code computes its SHA-256 hash and appends it to `docs/verdicts/ledger.jsonl` (format explained in `docs/verdicts/LEDGER.md`). The runner rejects any verdict whose current file hash no longer matches its ledger row — that mismatch is treated as tampering, not as a new valid verdict.
 
 ```markdown
 # Verdict: <slice-id>
 
+**Round:** <1 for the first review; previous round + 1 for each re-review after a FAIL>
 **Reviewer:** <agent + model/session, must differ from the implementer>
 **Timestamp:**
 **Verdict:** PASS | FAIL | ESCALATE | SELF_REVIEW_DEFERRED
@@ -65,5 +66,5 @@ Any of the following, checked at dispatch time or later, voids this verdict and 
 - [ ] The Work Board queue approval for this slice was revoked or changed
 
 ## Ledger entry
-Confirm this file's SHA-256 hash is recorded in `docs/verdicts/LEDGER.md` before this verdict is treated as final.
+Confirm this file has a line in `docs/verdicts/ledger.jsonl` (for this slice and round) before this verdict is treated as final.
 ```

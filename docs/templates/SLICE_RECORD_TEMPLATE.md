@@ -70,7 +70,7 @@ One row per proof command.
 ## Unresolved items / review debt
 
 ## Verdict
-Link to `docs/verdicts/<slice-id>.md` after review: `<link>`. Confirm its entry exists in `docs/verdicts/LEDGER.md` before treating this slice as reviewed.
+Link to each round's `docs/verdicts/<slice-id>-r<round>.md` after review: `<link>`. Confirm each has a line in `docs/verdicts/ledger.jsonl` before treating this slice as reviewed.
 
 ## Addenda
 (Dated entries only. Never edit the sections above after a verdict is recorded.)

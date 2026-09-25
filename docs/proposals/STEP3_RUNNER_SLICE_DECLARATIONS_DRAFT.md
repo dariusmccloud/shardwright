@@ -71,21 +71,42 @@ Location for all four: `tools/slice-runner/`, in Node (`v24.21.0` here), with `n
 
 **Review (2026-09-25): PASS.** Reviewer: Claude. 3a's committed content (`2ab0877`) was first revalidated against the 3a reviewed fingerprint: `MATCH`, byte-identical. 3a.1 proof rerun independently: 17 of 17. Scope limited to the two authorized files. Reviewed fingerprint: policy `e480bb45…f220`, manifest `27d00253…08b1`, identical from the reviewer's separate implementation. Validator-only steps disclosed (test 12's expansion case and test 13's real-file step, both on Windows). Finding: the `.git` match is case-sensitive, so a declared `.GIT/HEAD` is not refused on Windows. The code follows the spec as written; recorded in the spec as a known gap, with a proposed 3a.2 (unauthorized).
 
+**3a.1 committed** as `ba4f0ec` by Codex; revalidated against the reviewed fingerprint (manifest `27d00253…08b1`): `MATCH`.
+
+## Slice 3a.2: Case-insensitive `.git` match
+
+**Authorized 2026-09-25 by Chris.** Implementer: Codex. Reviewer: Claude. Spec amended with this declaration.
+
+- **Problem:** the `.git` match is case-sensitive, so on Windows a declared `.GIT/HEAD` is not refused and reads the real git metadata file.
+- **Evidence:** 3a.1 review probe: `computeFingerprint('.', ['.GIT/HEAD'])` returned a `PRESENT` entry instead of an error.
+- **Target result:** any segment equal to `.git` regardless of letter case is refused in declared paths and excluded during expansion ([WORKTREE_MANIFEST_FORMAT.md](../templates/WORKTREE_MANIFEST_FORMAT.md), Path rules).
+- **In scope:** `tools/slice-runner/manifest.js` and `manifest.test.mjs`.
+- **Out of scope:** everything else.
+- **Proof required:** tests 1–17 still pass, plus:
+  18. **Case variants:** declared `.GIT/HEAD`, `.Git/config`, and `tree/.gIt/x` each fail with `MANIFEST_PATH_GIT_METADATA_DECLARED`. During expansion, an entry named `.GIT` is excluded. On Windows the filesystem stores it as a case-variant name, so create it under that exact name; if the environment cannot, say so in the report. A name that merely contains `.git` (for example `.gitignore`, `x.git`) is **not** affected.
+- **Stop condition:** 18 tests pass (tests 10 and 16 may be skipped only with a recorded reason, as before); exact counts and validator-only steps reported; the slice stops.
+
 ## Slice 3b: Verdict ledger module
+
+**Authorized 2026-09-25 by Chris.** Implementer: Codex. Reviewer: Claude. Starts after 3a.2 is committed. **Amended with the authorization** (reviewer's design decisions, which Chris may overrule): the ledger format, review rounds, and ledger-computed hashes below. The original test 4 ("a second append for the same slice is refused") conflicted with the split gate's own FAIL-then-fix-then-review-again cycle, and is replaced.
 
 - **Problem:** the ledger at `docs/verdicts/LEDGER.md` is a format with no code, so tamper detection is still only a convention.
 - **Evidence:** Codex's review, correction 1. `LEDGER.md` says "inactive."
-- **Target result:** functions to append a ledger row (hashing the verdict file at write time) and to verify a verdict (current file hash compared with the ledger row).
+- **Ledger format:** JSON Lines. One JSON object per line, UTF-8, LF line endings, each line terminated by `\n`. Future real location: `docs/verdicts/ledger.jsonl`, which 3b does not create. Row fields: `sliceId` (string), `round` (integer ≥ 1), `verdictPath` (repository-relative, forward slashes), `verdictSha256` (lowercase hex), `verdict` (`PASS` | `FAIL` | `ESCALATE` | `SELF_REVIEW_DEFERRED`), `subtype` (`NEEDS_HUMAN_ACTION` or `null`), `reviewer` (string), `recordedAt` (ISO 8601 UTC).
+- **Review rounds:** a slice may be reviewed more than once (FAIL, fix, review again). Each review is its own round and its own verdict file. A slice's current verdict is its highest round.
+- **Target result:** `appendVerdict(ledgerPath, repoRoot, row)` reads the verdict file, **computes its SHA-256 itself** (a caller-supplied hash is rejected), validates the row, and appends one line without rewriting anything. `verifyVerdict(ledgerPath, repoRoot, sliceId, round?)` returns `VALID`, `TAMPERED`, `UNRECORDED`, or `LEDGER_CORRUPT`.
 - **In scope:** `tools/slice-runner/ledger.js` and `ledger.test.mjs`. Tests use a temporary directory and never touch the real `docs/verdicts/`.
-- **Out of scope:** the real ledger file's content, the control loop, CLIs.
+- **Out of scope:** creating the real ledger file, the control loop, CLIs, and the verdict file's own internal format (an open decision for 3c).
 - **Proof required** (named tests):
   1. Append, then verify: `VALID`.
   2. Edit the verdict file after appending: `TAMPERED`, never a new valid verdict.
-  3. A verdict with no ledger row: `UNRECORDED`.
-  4. A second append for the same slice is refused. Corrections go through addenda.
-  5. Existing ledger rows are never rewritten (compare the file's prefix before and after).
-  6. `verdict` and `subtype` are separate fields; `NEEDS_HUMAN_ACTION` is accepted only with `verdict: ESCALATE`.
-- **Stop condition:** all six pass, the result is recorded, and the slice stops.
+  3. A slice or round with no ledger row: `UNRECORDED`.
+  4. **Rounds:** round 1 `FAIL` then round 2 `PASS` both append, and the current verdict is round 2. A duplicate round, a skipped round (1 then 3), and a round 1 appended twice are each refused.
+  5. Existing ledger lines are never rewritten: the file's bytes before an append are an exact prefix of its bytes after.
+  6. `verdict` and `subtype` are separate fields. `NEEDS_HUMAN_ACTION` is accepted only with `verdict: ESCALATE`; any other `subtype` value, or a verdict outside the four allowed, is refused.
+  7. **Hash computed, not trusted:** a row supplied with its own `verdictSha256` is refused. The stored hash equals the SHA-256 of the verdict file's exact bytes at append time.
+  8. **Corrupt ledger:** a ledger line that is not valid JSON, or is missing a required field, makes verification return `LEDGER_CORRUPT` for the whole ledger, not a best guess.
+- **Stop condition:** all eight pass, the result is recorded, and the slice stops.
 
 ## Slice 3c: Runner control loop, with fake agents
 
