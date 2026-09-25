@@ -31,7 +31,7 @@ Each entry must carry these fields so a runner can determine what "approved, in 
 
 | Position | Slice ID | Risk class | Owner/implementer | Dependencies | Governing contract version/hash | Approval record | Status |
 |---|---|---|---|---|---|---|---|
-| 1 | 3a (worktree manifest module) | Ordinary | Codex (implements); Claude (reviews) | Line-ending normalization (`6f90622`) | Spec at `630948d`; declaration at `3aba6a7` | Chris, 2026-09-25, in session; recorded in `docs/proposals/STEP3_RUNNER_SLICE_DECLARATIONS_DRAFT.md` | Authorized, not started |
+| 1 | 3a (worktree manifest module) | Ordinary | Codex (implements); Claude (reviews) | Line-ending normalization (`6f90622`) | Spec and declaration amended after authorization (delimiter-path refusal, test 12), at Chris's request; see the commit following `d2954c4` | Chris, 2026-09-25, in session; recorded in `docs/proposals/STEP3_RUNNER_SLICE_DECLARATIONS_DRAFT.md` | Authorized, not started |
 
 - **Approval record** means: who approved it, when, and a pointer to where that approval is recorded — not just "it appears in this column."
 - **Before activation (Codex's correction 8):** the runner must verify each entry's approval record independently before dispatching it. An entry merely appearing under Queued is not sufficient evidence of approval, since this file is hand-edited and nothing currently stops an agent from adding a row. Until that verification exists, this column is convention only.

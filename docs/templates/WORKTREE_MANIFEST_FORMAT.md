@@ -34,6 +34,7 @@ In-scope paths come from the slice declaration and are validated before anything
 - Each path is converted to POSIX form (backslashes become `/`) and resolved against the repository root.
 - **Refused, and the whole manifest computation fails:** an absolute path, a drive-letter path (`C:...`), a UNC path (`\\server\...`), or any path whose resolved location lies outside the repository root (for example through `..`). A refused path is an error, never a silently skipped entry.
 - Stored paths are repository-root-relative, POSIX forward slashes, no leading `./`, no trailing `/`.
+- **Delimiter characters refused:** a path is refused, and the whole manifest computation fails, if any segment contains a control character (U+0000 through U+001F, or U+007F). This includes tab and line feed, the serialization's field and record delimiters. Without this rule, a filename containing them could serialize to the same bytes as several ordinary entries, and two different trees could compare as `MATCH`. The rule applies both to declared in-scope paths and to every file found while expanding an in-scope directory. A matching file found during expansion is an error, not a skipped entry. Windows cannot create such filenames; Linux and macOS can.
 - `.git/` is never included, even when nested under an in-scope path.
 
 ### Links
@@ -66,7 +67,7 @@ A declared in-scope path that does not exist is recorded as `MISSING`, never omi
 ## Serialization and the manifest hash
 
 1. Sort entries by `path`, ascending, as a plain byte-wise (UTF-8) comparison.
-2. Build one line per entry: `path\tsize\tstate\tcontent_hash`.
+2. Build one line per entry: `path\tsize\tstate\tcontent_hash`. No field can contain a tab or line feed: paths are refused if they contain control characters (see Path rules), and size, state, and hash come from fixed character sets. That makes the serialization unambiguous: distinct entry lists always produce distinct strings.
 3. Join lines with `\n`, no trailing newline.
 4. **Manifest hash** = SHA-256, lowercase hex, of that joined string encoded as UTF-8.
 
