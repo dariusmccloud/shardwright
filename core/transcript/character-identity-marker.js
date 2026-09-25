@@ -3,14 +3,16 @@
 const MARKER_VERSION = 1;
 
 function isNonEmptyString(value) { return typeof value === 'string' && value.trim().length > 0; }
+function createFallbackOpaqueId() { return `fallback-${Date.now()}-${Math.random().toString(16).slice(2)}`; }
+function defaultRandomUUID() { return globalThis.crypto?.randomUUID?.() || createFallbackOpaqueId(); }
 
-export function createCharacterIdentityMarker({ randomUUID = globalThis.crypto?.randomUUID?.bind(globalThis.crypto) } = {}) {
+export function createCharacterIdentityMarker({ randomUUID = defaultRandomUUID } = {}) {
     if (typeof randomUUID !== 'function') throw new Error('TIR_MARKER_RANDOM_SOURCE_UNAVAILABLE');
     const characterInstanceId = `transcript_character_${randomUUID()}`;
     return Object.freeze({ schemaVersion: MARKER_VERSION, characterInstanceId, copyUuid: randomUUID() });
 }
 
-export function createDuplicateCharacterIdentityMarker(sourceMarker, { randomUUID = globalThis.crypto?.randomUUID?.bind(globalThis.crypto) } = {}) {
+export function createDuplicateCharacterIdentityMarker(sourceMarker, { randomUUID = defaultRandomUUID } = {}) {
     const source = validateCharacterIdentityMarker(sourceMarker);
     if (source.state !== 'VALID') return source;
     if (typeof randomUUID !== 'function') throw new Error('TIR_MARKER_RANDOM_SOURCE_UNAVAILABLE');

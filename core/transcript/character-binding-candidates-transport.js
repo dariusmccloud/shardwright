@@ -9,12 +9,18 @@ export async function requestCharacterBindingCandidates(fetchImpl = globalThis.f
     } catch { return Object.freeze({ state: 'REFUSED', reason: 'CANDIDATE_TRANSPORT_FAILED', candidates: Object.freeze([]) }); }
 }
 
-export async function registerCharacterBinding({ bindingToken = `operator:${crypto.randomUUID()}`, operatorActionId = crypto.randomUUID(), fetchImpl = globalThis.fetch } = {}) {
+function createOperatorId() {
+    return globalThis.crypto?.randomUUID?.() || `operator-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+export async function registerCharacterBinding({ bindingToken, operatorActionId, fetchImpl = globalThis.fetch } = {}) {
+    const resolvedOperatorActionId = operatorActionId || createOperatorId();
+    const resolvedBindingToken = bindingToken || `operator:${resolvedOperatorActionId}`;
     if (typeof fetchImpl !== 'function') return Object.freeze({ state: 'REFUSED', reason: 'BINDING_REGISTRATION_TRANSPORT_UNAVAILABLE' });
     try {
         const csrf = await fetchImpl('/csrf-token', { method: 'GET', headers: { 'Cache-Control': 'no-store' } }); const token = (await csrf.json())?.token; const headers = { 'Content-Type': 'application/json' }; if (token && token !== 'disabled') headers['x-csrf-token'] = token;
-        const response = await fetchImpl('/api/plugins/shardwright-memory/transcript-recall/character-binding/register', { method: 'POST', headers, body: JSON.stringify({ bindingToken, operatorActionId, recordedAt: new Date().toISOString() }) }); const body = await response.json();
+        const response = await fetchImpl('/api/plugins/shardwright-memory/transcript-recall/character-binding/register', { method: 'POST', headers, body: JSON.stringify({ bindingToken: resolvedBindingToken, operatorActionId: resolvedOperatorActionId, recordedAt: new Date().toISOString() }) }); const body = await response.json();
         if (!response.ok || body?.ok !== true || typeof body.characterInstanceId !== 'string') return Object.freeze({ state: 'REFUSED', reason: body?.code || `BINDING_REGISTRATION_HTTP_${response.status || 'ERROR'}` });
-        return Object.freeze({ state: 'REGISTERED', bindingToken, characterInstanceId: body.characterInstanceId });
+        return Object.freeze({ state: 'REGISTERED', bindingToken: resolvedBindingToken, characterInstanceId: body.characterInstanceId });
     } catch (error) { return Object.freeze({ state: 'REFUSED', reason: error?.name === 'TypeError' ? 'BINDING_REGISTRATION_NETWORK_FAILED' : 'BINDING_REGISTRATION_TRANSPORT_FAILED' }); }
 }

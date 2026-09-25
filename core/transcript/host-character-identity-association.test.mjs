@@ -9,6 +9,14 @@ test('host capability binds the active character index and delegates explicit as
     assert.equal(result.state, 'APPLIED_AND_AUDITED'); assert.equal(writes[0][0], 1); assert.equal(audits.length, 1);
 });
 
+test('host capability can target an explicitly selected group participant', async () => {
+    const writes = []; const target = {};
+    installHostCharacterIdentityAssociationCapability({ target, contextResolver: () => ({ characterId: undefined, characters: [{}, { name: 'Jeep' }, { name: 'Lyra' }] }), writeExtensionField: async (...args) => writes.push(args), auditDecision: async () => ({ state: 'RECORDED' }) });
+    const result = await target.Shardwright.transcript.associateCharacterIdentity({ characterId: 2, decision: CHARACTER_ASSOCIATION_DECISIONS.CREATE_NEW, operatorActionId: 'op-group-1', basis: 'operator selected group participant', recordedAt: '2026-09-21T12:00:00Z', createMarker: () => ({ schemaVersion: 1, characterInstanceId: 'transcript_character_lyra', copyUuid: 'copy-lyra' }) });
+    assert.equal(result.state, 'APPLIED_AND_AUDITED');
+    assert.equal(writes[0][0], 2);
+});
+
 test('missing host persistence primitives fail closed', async () => {
     const target = {};
     assert.equal(installHostCharacterIdentityAssociationCapability({ target, contextResolver: () => ({ characterId: 0 }), auditDecision: async () => {} }), true);
