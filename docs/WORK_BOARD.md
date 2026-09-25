@@ -46,7 +46,7 @@ Each entry must carry these fields so a runner can determine what "approved, in 
 
 ## ⚪ On the table, not yet scoped
 
-- **Step 4 pilot:** run the full system on a few real, low-risk slices in this repository, with Chris reviewing the results before any decision to activate the split gate. Needs its own approval.
+- **Step 4 pilot:** drafted in `docs/proposals/STEP4_PILOT_DECLARATION_DRAFT.md` (2026-09-25): three low-risk slices in this repository, backlog off, one bound working-directory exception, a report for Chris. Needs Codex review of the declaration and Chris approval; starts only after 3d passes.
 - Register restructure: shrink long accumulated-proof rows into linked slice records (raised in the transcript-recall design review; not started)
 - D-A: whether/when BananaBread + Similharity join transcript recall as a reranker (waiting on the D-1 baseline)
 - Recall-quality baseline harness itself (depends on D-1 answers above)
