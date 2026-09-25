@@ -290,6 +290,19 @@ Same files. Tests 1–31 still pass, plus:
 
 32. **Working tree matches the parked commit:** immediately after committing a pending slice, the runner rewrites that slice's in-scope files in the working tree from the commit, deleting and restoring them rather than relying on git's stat cache. Afterwards the working-tree fingerprint of those paths equals the fingerprint computed in the commit's checkout. Cover, in fixture repositories: (a) no `.gitattributes`, with `core.autocrlf=true` set in the fixture; (b) the project's `.gitattributes`, with the implementer writing CRLF. In both, after the reviewer returns and passes the backlog, the run continues and implements the next slice (the probe scenario: park `a` and `b`, then validate both, then implement `c`).
 
+**3e review, round 3 (2026-09-25): PASS.** Reviewer: Claude. Proof rerun: 31 of 31; full suite 61 of 61 (Codex had not run the full suite this round; the reviewer did). This repository's `HEAD` and worktree list are unchanged. After each pending commit, the runner deletes and restores that slice's in-scope files from the index (`checkout-index --force`), refuses linked parent paths, and requires `HEAD` to be the pending commit. Probes, all in fixture repositories:
+
+- The round-2 failure (validation passes, the runner then stalls) now completes, both without `.gitattributes` and with it.
+- An implementer writing CRLF, with the project's `.gitattributes`: the file is rewritten to LF, and the run completes. Without `.gitattributes`: it stays consistently CRLF, and the run completes.
+- Probe P3 (reviewer returns): review `a`, then review `b`, then implement `c`, then review `c`. The backlog ends with both parked slices resolved as PASS.
+- The earlier probes still hold: a restart during an outage keeps building; a lost record halts `BACKLOG_INCONSISTENT`; the cap holds at 5 across restarts.
+
+A reviewer probe script initially failed to switch its implementer to CRLF (a text substitution made 0 replacements); it was rewritten and confirmed to write CR before the result above was counted.
+
+Reviewed fingerprint (`review-backlog.js`, `runner.js`, `runner.test.mjs`): policy `e480bb45…f220`, manifest `01a18020…e3d4`, identical from both implementations.
+
+Carried to the pilot: every git operation refuses to run outside the OS temp directory. Using the backlog on this repository requires deliberately lifting that guard, with Chris's approval.
+
 ## Slice 3d: Real CLI adapters
 
 - **Problem:** the fake adapters prove control flow, not the real agents.
