@@ -110,6 +110,30 @@ Location for all four: `tools/slice-runner/`, in Node (`v24.21.0` here), with `n
   8. **Corrupt ledger:** a ledger line that is not valid JSON, or is missing a required field, makes verification return `LEDGER_CORRUPT` for the whole ledger, not a best guess.
 - **Stop condition:** all eight pass, the result is recorded, and the slice stops.
 
+**3a.2 committed** as `0e7ae9d` by Codex; revalidated against the reviewed fingerprint (manifest `75077063…7f27`): `MATCH`.
+
+**3b review (2026-09-25): PASS for the slice as declared.** Reviewer: Claude. Proof rerun independently: 8 of 8. Reviewed fingerprint: policy `e480bb45…f220`, manifest `4eeadae0…45df`, identical from both implementations. Scope: `ledger.js` and `ledger.test.mjs` only; `docs/verdicts/ledger.jsonl` was not created. Code matches the declaration. Three reviewer probes, run in a scratch git repository with this project's `.gitattributes`, found gaps that the declaration did not specify:
+
+- **A (high):** a verdict file written with CRLF records `VALID`, but after it is committed and freshly checked out (git normalizes it to LF), verification reports **`TAMPERED`**. Any CRLF-writing editor or agent would produce false tampering alarms.
+- **B (medium):** round 2 can reuse round 1's verdict file. The probe edited that file to PASS and appended it as round 2: accepted; the current verdict reads `VALID` and round 1 silently becomes `TAMPERED`. This breaks the declared rule "each review is its own round and its own verdict file," which no test covered.
+- **C (low):** if a verdict path later becomes a directory, verification throws `VERDICT_FILE_INVALID` instead of reporting `TAMPERED`.
+
+Accepted limits, documented in [LEDGER.md](../verdicts/LEDGER.md): no write locking (a concurrent duplicate round is detected as `LEDGER_CORRUPT` on the next read, never silently accepted; the runner is single-process); a crash-truncated last line leaves the ledger `LEDGER_CORRUPT` until repaired by hand.
+
+## Slice 3b.1: Ledger hardening (proposed, not authorized)
+
+- **Problem:** findings A, B, and C above.
+- **Target result:**
+  - `appendVerdict` refuses a verdict file containing a carriage return (CR) byte (`VERDICT_FILE_LINE_ENDINGS`). The repository policy is LF, so this refuses exactly the files a checkout would rewrite.
+  - `appendVerdict` refuses a `verdictPath` already recorded for any slice or round (`VERDICT_PATH_REUSED`). The comparison ignores letter case, because Windows paths do.
+  - `verifyVerdict` returns `TAMPERED`, not an exception, when the recorded path is no longer a regular file.
+- **In scope:** `tools/slice-runner/ledger.js` and `ledger.test.mjs`.
+- **Proof required:** tests 1–8 still pass, plus:
+  9. **Line endings:** a verdict containing CRLF is refused at append; a verdict containing a lone CR is refused; an LF verdict is accepted, and after the file passes through a real git commit and checkout in a temporary repository using this project's `.gitattributes`, verification is still `VALID`.
+  10. **No file reuse:** appending round 2 with round 1's `verdictPath` is refused; a different slice reusing it is refused; a case variant of it (for example `docs/verdicts/A-r1.md` after `docs/verdicts/a-r1.md`) is refused.
+  11. **Non-file path:** after the recorded verdict path is replaced by a directory, verification returns `TAMPERED`.
+- **Stop condition:** 11 of 11 pass, counts reported, the slice stops.
+
 ## Slice 3c: Runner control loop, with fake agents
 
 - **Problem:** nothing enforces the split gate's dispatch rules.
