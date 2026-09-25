@@ -7,7 +7,7 @@
 ## Preconditions (before 3a starts)
 
 1. Codex's in-progress work is committed or stashed, and the worktree is clean.
-2. The line-ending normalization maintenance commit has run ([WORKTREE_MANIFEST_FORMAT.md](../templates/WORKTREE_MANIFEST_FORMAT.md), "Open issue: line endings"), so the files are LF on disk and byte-exact hashing is stable.
+2. The working tree is LF-normalized so byte-exact hashing is stable. **Met 2026-09-25:** see [WORKTREE_MANIFEST_FORMAT.md](../templates/WORKTREE_MANIFEST_FORMAT.md), "Current line-ending state" and "History: line-ending policy" (commit `6f90622`; 863/863 tracked files byte-identical). Precondition 1 was also met the same day, when Codex committed all in-progress work.
 
 ## Why four slices, not one
 
@@ -43,7 +43,7 @@ Location for all four: `tools/slice-runner/`, in Node (`v24.21.0` here), with `n
   9. **Escaped paths are refused:** `..` escaping the root, an absolute path, a drive-letter path, and a UNC path each make the computation fail with an error; none is silently skipped.
   10. **Links are not followed:** a symlink or junction (inside the repository or pointing outside it) is recorded as a `LINK` entry hashed from its target string, and a linked directory's contents are not walked. If the test environment cannot create links (Windows without the needed permission), the test is reported as skipped with the reason, not passed.
   11. **Policy hash participates in comparison:** same policy and same manifest gives `MATCH`; same policy with changed content gives `CONTENT_CHANGED`; a changed `.gitattributes` gives `STALE_REVIEW` even when the manifest hash is unchanged; a missing `.gitattributes` hashes as `NONE`.
-- **Stop condition:** all eleven tests pass (test 10 may be skipped only with a stated reason), the result is recorded, and the slice stops.
+- **Stop condition:** tests 1–9 and 11 pass. Test 10 either passes or is skipped with its reason recorded in the result, and the report states which: "11 of 11 passed" or "10 passed, 1 skipped (reason)", never "11 passed" when one was skipped. A skipped link test leaves link handling unproven on this machine, and that is listed as unresolved. The result is recorded and the slice stops.
 
 ## Slice 3b: Verdict ledger module
 
