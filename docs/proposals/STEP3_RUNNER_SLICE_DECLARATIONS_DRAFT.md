@@ -69,6 +69,8 @@ Location for all four: `tools/slice-runner/`, in Node (`v24.21.0` here), with `n
   17. **File prefix:** declaring `a.txt/b`, where `a.txt` is a regular file, yields `MISSING` for `a.txt/b`.
 - **Stop condition:** tests 1–17 pass, except that tests 10 and 16 may be skipped only with a recorded reason, and test 13's real-file step may be skipped on Windows only with a recorded reason. The report states exact counts (for example "17 of 17 passed" or "16 passed, 1 skipped (reason)") and names every step that ran against the validator rather than a real file. Result recorded; the slice stops.
 
+**Review (2026-09-25): PASS.** Reviewer: Claude. 3a's committed content (`2ab0877`) was first revalidated against the 3a reviewed fingerprint: `MATCH`, byte-identical. 3a.1 proof rerun independently: 17 of 17. Scope limited to the two authorized files. Reviewed fingerprint: policy `e480bb45…f220`, manifest `27d00253…08b1`, identical from the reviewer's separate implementation. Validator-only steps disclosed (test 12's expansion case and test 13's real-file step, both on Windows). Finding: the `.git` match is case-sensitive, so a declared `.GIT/HEAD` is not refused on Windows. The code follows the spec as written; recorded in the spec as a known gap, with a proposed 3a.2 (unauthorized).
+
 ## Slice 3b: Verdict ledger module
 
 - **Problem:** the ledger at `docs/verdicts/LEDGER.md` is a format with no code, so tamper detection is still only a convention.
