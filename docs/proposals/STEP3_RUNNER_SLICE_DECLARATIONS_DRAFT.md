@@ -145,7 +145,7 @@ Accepted limits, documented in [LEDGER.md](../verdicts/LEDGER.md): no write lock
 - **Out of scope:** real CLIs, the real Work Board, and anything that reads or writes project files outside a temporary fixture directory. The runner is never pointed at this repository in this slice.
 - **Proof required** (named tests):
   1. **Refuses without PASS:** FAIL returns the slice to the implementer; ESCALATE stops the run with a brief; neither starts the next slice.
-  2. **Halts on reviewer unavailable:** the fake reviewer errors or times out, and the run halts with nothing advanced.
+  2. **Halts on agent unavailable:** a fake reviewer or a fake implementer that errors or exceeds its timeout halts the run with nothing advanced and the slice **not** marked FAIL. A per-slice timeout set in the declaration overrides the default. A run stopped on `ESCALATE` or `NEEDS_HUMAN_ACTION` stays stopped indefinitely: the test confirms no timeout ever advances or cancels a human wait.
   3. **Fingerprint revalidation:** a file changes between PASS and dispatch, and the runner refuses to dispatch and routes back to review.
   4. **STALE_REVIEW:** a governing-contract hash changes after queueing, and the entry is pulled from the queue even if it already has a PASS.
   5. **Tampered verdict:** a verdict edited after its ledger entry is rejected.
@@ -164,12 +164,12 @@ Accepted limits, documented in [LEDGER.md](../verdicts/LEDGER.md): no write lock
 
 ---
 
-## Open decisions (needed before 3c)
+## Decisions for 3c (decided by Chris, 2026-09-25)
 
-1. **Machine-readable queue.** The runner cannot reliably parse the Markdown Work Board. Recommendation: a JSON queue file (for example `docs/work-queue.json`) that is the runner's source, with the Work Board's Queued table generated from it or checked against it. Only Chris approves entries in either form. 3c uses fixture JSON either way.
-2. **Machine-readable verdict fields.** The verdict template is Markdown. Recommendation: a small fenced front-matter block at the top of each verdict file (`slice_id`, `verdict`, `subtype`, `reviewer`, `reviewed_fingerprint`, `policy_hash`), parsed by 3b and 3c. The Markdown body stays for humans.
-3. **Proof-output archive location.** Recommendation: `docs/slices/<slice-id>/proof/`, with each captured output stored by hash.
-4. **Timeouts.** How long a fake or real reviewer may run before counting as "unavailable." A default is needed for test 3c-2. Recommendation: configurable, 30 minutes default for real agents, seconds for fakes.
+1. **Machine-readable queue: accepted.** The runner reads a JSON queue file, `docs/work-queue.json`. The Work Board's Queued table stays as the human view and is checked against it. Only Chris approves entries in either form. 3c uses fixture JSON only and does not create the real file.
+2. **Machine-readable verdict fields: accepted.** Each verdict file starts with a small fenced front-matter block (`slice_id`, `round`, `verdict`, `subtype`, `reviewer`, `reviewed_fingerprint`, `policy_hash`), parsed by the runner. The Markdown body below it stays for humans.
+3. **Proof-output archive: accepted.** `docs/slices/<slice-id>/proof/`, with each captured output stored under its own SHA-256 so it cannot be silently swapped.
+4. **Timeouts: amended by Chris.** Timeouts apply only to agent steps (Claude or Codex as implementer or reviewer). **Chris is never timed out:** `ESCALATE` and `NEEDS_HUMAN_ACTION` stop the run and wait indefinitely. Default agent timeout: **15 minutes**, which a slice declaration may raise for an intricate slice. A timed-out agent counts as unavailable and **halts** the run; the work is not marked FAIL. In 3c's tests, fake agents use timeouts of seconds.
 
 ## What this does not do
 
