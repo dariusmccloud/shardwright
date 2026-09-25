@@ -194,6 +194,20 @@ Same two files (`runner.js`, `runner.test.mjs`). Tests 1–14 still pass, plus:
 
 15. **Escalation survives restart:** if a slice's latest valid verdict is `ESCALATE` (any subtype), a restarted run does not dispatch the implementer or reviewer for it. It returns `AWAITING_DECISION`, naming the slice, the escalated round, and the recorded decision brief, and it dispatches no later queue entries. The slice resumes only when its queue entry's `approvalRecord.recordedAt` is later than the `ESCALATE` ledger row's `recordedAt`, meaning Chris re-approved it after the escalation. The test covers: a restart with no re-approval blocks; a re-approval dated *before* the escalation still blocks; a later re-approval resumes at the next round; and the later queue entry is not dispatched while the slice is blocked.
 
+**3c review, round 3 (2026-09-25): FAIL.** Reviewer: Claude. Proof rerun: 15 of 15; full suite 44 of 44. The escalation gate works: rerunning the round-2 probe with an approval dated before the escalation stops at `AWAITING_DECISION`, with nothing dispatched and the ledger unchanged. Two findings:
+
+1. **Future-dated approval bypasses the gate (confirmed by probe).** The round-2 probe's approval was dated `2026-09-25T18:00:00Z`; the escalation was recorded at the real time, about `17:02Z`. The approval, written before the escalation but dated after it, counted as a re-approval: the restart re-dispatched the implementer and recorded `ESCALATE -> PASS`. The runner trusts the self-declared approval date.
+2. **Declared requirement unmet.** Test 15 requires `AWAITING_DECISION` to name the escalated round and include the recorded decision brief. The runner returns only `blockedSliceId`, and the test does not assert either field.
+
+Known limit, unchanged and out of scope: the runner can check an approval's date but not that Chris made it; anything able to edit the queue can add an approval (Codex's correction 8; needs a trusted approval source such as a signature, for the pilot or activation stage).
+
+### 3c round 4 requirement
+
+Same two files. Tests 1–15 still pass, plus:
+
+16. **No future-dated approvals:** an `approvalRecord.recordedAt` later than the runner's current time is invalid. The entry is not dispatched and the result is `UNAPPROVED`, including for an escalated slice, where a future-dated approval never counts as re-approval. The runner accepts an injectable clock (for example a `now` option) so the test is deterministic. Cover: an approval dated one second in the future is refused; an approval dated now or earlier is accepted where otherwise valid; the round-2 probe scenario (approval written before the escalation, dated after it but in the future) stays `AWAITING_DECISION` or `UNAPPROVED`, never dispatched.
+17. **`AWAITING_DECISION` is informative:** the result includes the escalated round and the decision brief (the recorded verdict's subtype and body), and test 15 asserts both.
+
 ## Slice 3d: Real CLI adapters (later, separate authorization)
 
 - **Problem:** the fake adapters prove control flow, not the real agents.
