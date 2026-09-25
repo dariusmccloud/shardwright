@@ -280,6 +280,16 @@ Same files. Tests 1–29 still pass, plus:
 31. **Orphaned pending commits are detected:** at start, the runner lists commits reachable from `HEAD` whose message begins `REVIEW_PENDING ` and that no `PENDING` event references. If any exist, it halts with `BACKLOG_INCONSISTENT`, naming each commit, before implementing or committing anything. Cover: the lost-record scenario halts with no new commit and no implementer call; a normal backlog, including a slice re-parked after `ANCESTOR_FAILED` with its own new `PENDING` event, is not flagged.
 - **Risk class:** Ordinary. It runs git in fixture repositories only, and never in this repository.
 
+**3e review, round 2 (2026-09-25): FAIL.** Reviewer: Claude. Proof rerun: 30 of 30; full suite 60 of 60. This repository's `HEAD` and worktree list are unchanged. Round-1 findings fixed, and the probes were rerun: a restart during a continuing outage now keeps building (two new slices parked); a lost `PENDING` record halts `BACKLOG_INCONSISTENT` with no re-implementation and no second commit; the cap holds at exactly 5 across restarts.
+
+**New finding (confirmed by probe, then diagnosed): after validation passes, the runner stops with `REVIEW_REQUIRED` instead of continuing.** The reviewer returned, validated `a` and `b` at their own commits, and both passed. The run then returned `REVIEW_REQUIRED / CONTENT_CHANGED` for `a` instead of implementing `c`. Cause: line endings. A pending slice's fingerprint is computed from a fresh checkout of its commit, but the restart check compares it with the working-tree bytes. With this machine's system-wide `core.autocrlf=true` and no `.gitattributes` in the fixture, the checkout holds CRLF while the implementer wrote LF. The same fixture with the project's `.gitattributes` completes normally. In this repository (which has `.gitattributes`), the mismatch recurs whenever an agent writes a file with CRLF: git normalizes the commit to LF, and the working tree keeps CRLF. The result fails safe (nothing is wrongly passed), but it stalls the backlog's main flow.
+
+### 3e round 3 requirement
+
+Same files. Tests 1–31 still pass, plus:
+
+32. **Working tree matches the parked commit:** immediately after committing a pending slice, the runner rewrites that slice's in-scope files in the working tree from the commit, deleting and restoring them rather than relying on git's stat cache. Afterwards the working-tree fingerprint of those paths equals the fingerprint computed in the commit's checkout. Cover, in fixture repositories: (a) no `.gitattributes`, with `core.autocrlf=true` set in the fixture; (b) the project's `.gitattributes`, with the implementer writing CRLF. In both, after the reviewer returns and passes the backlog, the run continues and implements the next slice (the probe scenario: park `a` and `b`, then validate both, then implement `c`).
+
 ## Slice 3d: Real CLI adapters
 
 - **Problem:** the fake adapters prove control flow, not the real agents.
