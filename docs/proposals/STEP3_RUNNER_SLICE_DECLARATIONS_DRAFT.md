@@ -120,7 +120,9 @@ Location for all four: `tools/slice-runner/`, in Node (`v24.21.0` here), with `n
 
 Accepted limits, documented in [LEDGER.md](../verdicts/LEDGER.md): no write locking (a concurrent duplicate round is detected as `LEDGER_CORRUPT` on the next read, never silently accepted; the runner is single-process); a crash-truncated last line leaves the ledger `LEDGER_CORRUPT` until repaired by hand.
 
-## Slice 3b.1: Ledger hardening (proposed, not authorized)
+## Slice 3b.1: Ledger hardening
+
+**Authorized 2026-09-25 by Chris** ("let's address the gaps and proceed"). Implementer: Codex. Reviewer: Claude. Builds on 3b (`b1ed2bd`).
 
 - **Problem:** findings A, B, and C above.
 - **Target result:**
