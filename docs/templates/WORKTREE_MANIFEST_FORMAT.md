@@ -36,3 +36,15 @@ The manifest hash is the single value compared for revalidation (amendment §3b:
 | **Dispatch fingerprint** | **Runner, independently recomputed** immediately before starting the next slice | What revalidation checks against the reviewed fingerprint |
 
 The reviewer and the runner each run the same deterministic algorithm above against the live tree; they do not trust a value written by someone else.
+
+## Open issue: line endings (must be decided before the runner is built)
+
+**Observed 2026-09-25:** this repository has `core.autocrlf=true` and no `.gitattributes`. Git stores LF but rewrites text files to CRLF in the working tree on checkout. "Hash exact bytes on disk" therefore gives different results for the same content depending on whether a file was freshly written (LF) or checked out (CRLF), and on which machine or git configuration computed it. At the time of observation, `docs/verdicts/LEDGER.md` hashed identically in the working tree and the index only because git had not yet rewritten it.
+
+That breaks the determinism this spec exists to guarantee. Options:
+
+1. **Hash git blob content** (`git hash-object` or the index copy) for tracked files: stable across machines, but untracked files have no blob and need a separate rule.
+2. **Normalize line endings before hashing** (CRLF to LF for text files): stable, but requires a reliable text-versus-binary decision.
+3. **Add a `.gitattributes`** that pins line endings (`* text=auto eol=lf`) so the working tree matches the repository: fixes the cause, but is a repository-wide change that touches every contributor's checkout, including Codex's in-progress work.
+
+Not decided. Option 3 is the most robust, but it affects the whole repository, so it needs Chris's approval.
