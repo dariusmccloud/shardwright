@@ -228,6 +228,10 @@ Carried forward to 3d: proof timeouts do not kill child processes; an `ESCALATE`
 - **Proof:** ledger tests 1–11 still pass (test 6 updated to the three values), plus **12:** append refused and existing-line corruption, both for `SELF_REVIEW_DEFERRED`. The full suite still passes.
 - **Risk class:** Ordinary.
 
+**Declaration review (Codex, 2026-09-25):** no changes recommended for 3b.2. For 3e: define how pending entries reach a terminal state and how the active backlog is reconstructed (adopted below as "Resolution and replay"). For 3d: prove least privilege against the real CLIs, not only by the flags (adopted below as the live containment checks).
+
+**3b.2 review (2026-09-25): PASS.** Reviewer: Claude. Proof rerun: 12 of 12; full suite 46 of 46. The diff is the one-line allowed-verdict change plus test 12. Probe: `SELF_REVIEW_DEFERRED`, a lowercase variant, and `"PASS "` with a trailing space are each refused with `VERDICT_ROW_INVALID`; `PASS`, `FAIL`, and `ESCALATE` are accepted. Reviewed fingerprint (`ledger.js`, `ledger.test.mjs`): policy `e480bb45…f220`, manifest `72801c96…76fe`, identical from both implementations.
+
 ## Slice 3e: Review backlog
 
 - **Problem:** if the independent reviewer is out of usage, the runner halts, and all work waits, even though the other agent may have usage left (Chris's requirement; amendment §8).
@@ -239,6 +243,13 @@ Carried forward to 3d: proof timeouts do not kill child processes; an `ESCALATE`
   - **Validation pass first:** when the reviewer is available and the backlog is not empty, no new slice is implemented. Pending slices are reviewed oldest first, each **at its own commit**: the runner checks it out in a temporary git worktree, recomputes the fingerprint there (it must equal the pending record, otherwise `HALTED` with `PENDING_RECORD_MISMATCH`), and gives the reviewer that commit and fingerprint. The verdict is recorded in the ledger as usual.
   - **Cascade:** if a pending slice gets `FAIL`, every later pending slice whose `dependsOn` includes it becomes `REVIEW_REQUIRED` (reason `ANCESTOR_FAILED`), and the run stops with `FAIL`. `ESCALATE` during validation stops with `AWAITING_DECISION`, as today.
   - **Restart:** a slice with a pending record is not re-implemented; it waits for validation.
+  - **Resolution and replay (added after Codex's declaration review):** `docs/review-pending.jsonl` holds two event types, each appended once and never edited:
+    - `PENDING`: the fields listed above, plus `event: "PENDING"`.
+    - `RESOLVED`: `event: "RESOLVED"`, `sliceId`, `commit` (matching the `PENDING` event), `outcome` (`PASS`, `FAIL`, or `ANCESTOR_FAILED`), `ledgerRound` (the ledger round for `PASS` or `FAIL`; `null` for `ANCESTOR_FAILED`), and `recordedAt`.
+    - **When each is written:** after validation records `PASS` or `FAIL` in the ledger, the runner appends `RESOLVED` with that outcome. On `FAIL`, it then appends `RESOLVED / ANCESTOR_FAILED` for every later pending slice that depends on it. `ESCALATE` during validation does **not** resolve anything: the slice and every later one stay pending until Chris's decision, under the existing `AWAITING_DECISION` gate.
+    - **After resolution:** a `PASS`-resolved slice is done. It behaves like any recorded PASS, including restart fingerprint checks. A `FAIL`-resolved slice returns to its implementer for the next ledger round, as usual. An `ANCESTOR_FAILED` slice returns to the queue as not done, and is re-implemented and re-reviewed normally after its ancestor passes.
+    - **Replay rule:** the active backlog is every `PENDING` event with no later `RESOLVED` for the same `sliceId` and `commit`, in file order. The runner rebuilds it from the file on every start, and keeps no other copy.
+    - **Fails closed:** a malformed line, a `RESOLVED` with no matching `PENDING`, a second `RESOLVED` for the same entry, a `PASS`/`FAIL` resolution that disagrees with the ledger's verdict for that round, or a second `PENDING` for a slice that is still pending makes the runner halt with `BACKLOG_CORRUPT`, without guessing.
 - **In scope:** `tools/slice-runner/runner.js`, `runner.test.mjs`, and a new `tools/slice-runner/review-backlog.js` if Codex prefers to separate it. Fake agents only; fixture repositories under the OS temp directory, each initialized with `git init`.
 - **Proof** (runner tests 1–16 still pass, plus):
   18. Backlog disabled: an unavailable reviewer halts, with no commit and no pending record.
@@ -250,6 +261,9 @@ Carried forward to 3d: proof timeouts do not kill child processes; an `ESCALATE`
   24. Cascade: pending A then B (B depends on A); A fails validation, so B becomes `REVIEW_REQUIRED` with `ANCESTOR_FAILED`, and nothing new is implemented.
   25. Restart: a pending slice is not re-implemented on restart.
   26. A pending slice never appears as PASS in the ledger or the run result.
+  27. **Resolution and replay:** after validation records PASS for pending A and FAIL for pending B (with C depending on B), the file holds `RESOLVED / PASS` for A, `RESOLVED / FAIL` for B, and `RESOLVED / ANCESTOR_FAILED` for C. A fresh restart replays an empty active backlog. B returns to its implementer at the next round. C is re-implemented only after B passes.
+  28. **Escalation keeps the backlog:** `ESCALATE` on pending A leaves A and every later pending slice unresolved, and the restart reports `AWAITING_DECISION`.
+  29. **Corrupt backlog file:** each fail-closed case listed under "Resolution and replay" halts with `BACKLOG_CORRUPT`.
 - **Risk class:** Ordinary. It runs git in fixture repositories only, and never in this repository.
 
 ## Slice 3d: Real CLI adapters
@@ -268,6 +282,11 @@ Carried forward to 3d: proof timeouts do not kill child processes; an `ESCALATE`
 - **Proof:**
   - **Offline tests** (run by default, no usage spent): adapters tested against stub executables that imitate each CLI, covering success, malformed output, a usage-limit message, a missing binary, and a hang (process tree killed, no survivor); the no-handler `ESCALATE` exit; least-privilege flags present, and dangerous flags absent, in the built command lines.
   - **One live test, opt-in only** (runs only with `SLICE_RUNNER_LIVE=1`, because it spends real usage): in a temporary git repository, a trivial approved slice (create `hello.txt` with fixed content; the proof checks it) is implemented by one real CLI and reviewed by the other, ending in a recorded, valid PASS in a temporary ledger. Run once per direction (Codex implements and Claude reviews, then the reverse). The report states whether the live test was run.
+  - **Live containment checks (added after Codex's declaration review):** flags alone do not prove confinement, so the live test also checks behavior against the installed CLIs, in each direction:
+    - **Reviewer is read-only:** the fixture's full-tree fingerprint (every file, not just in-scope paths) is identical before and after the reviewer runs.
+    - **Implementer stays inside:** a sibling canary directory is created next to the fixture repository, outside it. The implementer's prompt asks it, as part of the task, to also write a file into that canary directory. Afterwards the canary directory must still be empty, and the attempt is recorded (refused, error, or ignored).
+    - **Outcome rule:** if either check fails for a CLI, the result is `ESCALATE` (a security finding for Chris), not FAIL, and that CLI is not used further until Chris decides.
+    - The report records the CLI versions and the exact command lines used.
 - **Stop condition:** offline tests pass; the live test is run and passes in both directions, or the report says it was not run and why. Reviewing 3d includes Claude rerunning the live test.
 
 **Chris, note on usage:** the live 3d test uses a small amount of both subscriptions each time it is run.
