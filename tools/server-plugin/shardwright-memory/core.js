@@ -209,6 +209,7 @@ function buildStoragePaths(userRoot, storageDirectoryName) {
     const transcriptCharacterBindingLedgerPath = path.join(storageRoot, 'transcript-character-binding-ledger.jsonl');
     const characterAssociationAuditLedgerPath = path.join(storageRoot, 'character-association-audit-ledger.jsonl');
     const transcriptSourceRegistryLedgerPath = path.join(storageRoot, 'transcript-source-registry-ledger.jsonl');
+    const transcriptMaintenanceRunLedgerPath = path.join(storageRoot, 'transcript-maintenance-run-ledger.jsonl');
     const transcriptSourceRevisionLedgerPath = path.join(storageRoot, 'transcript-source-revision-ledger.jsonl');
     const transcriptMessageLedgerPath = path.join(storageRoot, 'transcript-message-ledger.jsonl');
     const transcriptVisibilityLedgerPath = path.join(storageRoot, 'transcript-visibility-ledger.jsonl');
