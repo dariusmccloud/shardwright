@@ -85,7 +85,7 @@ Transcript Recall needs the Shardwright server plugin, `shardwright-memory`, fro
 
 The folder must be named `shardwright-memory`; the installer refuses any other plugin ID.
 
-**Development setup (link instead of copy).** A host can load the plugin straight from the repository with a directory link: `<host>\plugins\shardwright-memory` pointing to `tools\server-plugin\shardwright-memory`. Run `node tools/server-plugin/package-shardwright-memory.mjs` after pulling changes, so the plugin's `lib/` copies of shared code stay current. Running the plugin's tests or regenerating its validators needs its development dependencies (`npm ci` in that folder); after a schema change in `docs/schemas/memory-catalog/`, run `node tools/server-plugin/generate-memory-catalog-validators.mjs`.
+**Development setup (link instead of copy).** A host can load the plugin straight from the repository with a directory link: `<host>\plugins\shardwright-memory` pointing to `tools\server-plugin\shardwright-memory`. `tools\dev\link-local-hosts.ps1` creates or repairs these links (plugin, bridge, and extension) for each host; run it with `-WhatIf` first to preview, and pass `-Instances` for hosts other than its defaults. Run `node tools/server-plugin/package-shardwright-memory.mjs` after pulling changes, so the plugin's `lib/` copies of shared code stay current. Running the plugin's tests or regenerating its validators needs its development dependencies (`npm ci` in that folder); after a schema change in `docs/schemas/memory-catalog/`, run `node tools/server-plugin/generate-memory-catalog-validators.mjs`.
 
 ---
 
