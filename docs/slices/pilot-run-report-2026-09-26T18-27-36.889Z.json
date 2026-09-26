@@ -1,0 +1,81 @@
+{
+  "mode": "run",
+  "repository": "C:\\Users\\chris\\OneDrive\\Documents\\Personal\\Projects\\Shardwright",
+  "startedAt": "2026-09-26T18:27:36.889Z",
+  "guards": {
+    "cleanWorktree": {
+      "ok": true,
+      "detail": {
+        "launch": "first",
+        "recordedSlices": [],
+        "refused": [],
+        "acceptedLeftovers": []
+      }
+    },
+    "queue": {
+      "ok": true,
+      "detail": []
+    },
+    "containment": {
+      "ok": true,
+      "insideWritable": true,
+      "protectedWritten": [],
+      "exitCode": 0,
+      "output": "{\"C:\\\\Users\\\\chris\\\\OneDrive\\\\Documents\\\\Personal\\\\Projects\\\\Shardwright\\\\docs\\\\slices\\\\.pilot-preflight-61872-b84d3a3b-bda6-4882-92cc-04c1a7b85047.txt\":\"WROTE\",\"C:\\\\Users\\\\chris\\\\OneDrive\\\\.shardwright-containment-61872-b84d3a3b-bda6-4882-92cc-04c1a7b85047-OneDrive.txt\":\"DENIED EPERM\",\"C:\\\\Users\\\\chris\\\\OneDrive\\\\Documents\\\\.shardwright-containment-61872-b84d3a3b-bda6-4882-92cc-04c1a7b85047-OneDrive-Documents.txt\":\"DENIED EPERM\",\"D:\\\\AI\\\\Projects\\\\SillyTavern\\\\.shardwright-containment-61872-b84d3a3b-bda6-4882-92cc-04c1a7b85047-D-SillyTavern.txt\":\"DENIED EPERM\",\"D:\\\\AI\\\\Projects\\\\SillyBunny\\\\.shardwright-containment-61872-b84d3a3b-bda6-4882-92cc-04c1a7b85047-D-SillyBunny.txt\":\"DENIED EPERM\"}"
+    },
+    "runnerDryDispatch": {
+      "ok": true,
+      "detail": {
+        "state": "HALTED",
+        "dispatchedSliceIds": [],
+        "skippedSliceIds": [],
+        "sliceResults": [],
+        "reason": "AGENT_UNAVAILABLE",
+        "message": "No configured adapter exists for codex.",
+        "blockedSliceId": "pilot-1-plugin-engines-node"
+      }
+    },
+    "codexConfig": {
+      "ok": true,
+      "detail": "unchanged"
+    },
+    "outsideFolders": {
+      "ok": true,
+      "detail": []
+    },
+    "scope": {
+      "ok": true,
+      "detail": []
+    }
+  },
+  "snapshotMs": 950,
+  "runner": {
+    "state": "FAIL",
+    "dispatchedSliceIds": [
+      "pilot-1-plugin-engines-node"
+    ],
+    "skippedSliceIds": [],
+    "sliceResults": [
+      {
+        "sliceId": "pilot-1-plugin-engines-node",
+        "verdict": "FAIL",
+        "proofReceipt": {
+          "command": [
+            "node",
+            "tools/pilot/proofs/pilot-1-engines-node.mjs"
+          ],
+          "exitCode": 1,
+          "stdout": "",
+          "stderr": "node:internal/modules/run_main:107\r\n    triggerUncaughtException(\r\n    ^\r\n\r\nAssertionError [ERR_ASSERTION]: package.json must declare engines.node \">=24.21.0\"\r\n+ actual - expected\r\n\r\n+ undefined\r\n- '>=24.21.0'\r\n\r\n    at file:///C:/Users/chris/OneDrive/Documents/Personal/Projects/Shardwright/tools/pilot/proofs/pilot-1-engines-node.mjs:13:8\r\n    at ModuleJob.run (node:internal/modules/esm/module_job:561:25)\r\n    at async node:internal/modules/esm/loader:647:26\r\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {\r\n  generatedMessage: false,\r\n  code: 'ERR_ASSERTION',\r\n  actual: undefined,\r\n  expected: '>=24.21.0',\r\n  operator: 'strictEqual',\r\n  diff: 'simple'\r\n}\r\n\r\nNode.js v24.21.0\r\n",
+          "outputHash": "f20360c877382171a3c67c3a53ad0264860d1aa11f6b602b7ec4635fd9161ec6",
+          "archivePath": "docs/slices/pilot-1-plugin-engines-node/proof/f20360c877382171a3c67c3a53ad0264860d1aa11f6b602b7ec4635fd9161ec6.json"
+        },
+        "recordedRound": 1
+      }
+    ],
+    "nextAction": "IMPLEMENTER",
+    "blockedSliceId": "pilot-1-plugin-engines-node"
+  },
+  "finishedAt": "2026-09-26T18:28:42.409Z",
+  "state": "PILOT_RUN_STOPPED"
+}

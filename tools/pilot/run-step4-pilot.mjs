@@ -108,6 +108,37 @@ export function snapshotOutside(root) {
     return { codexConfigPath: codexConfig, codexConfig: fs.existsSync(codexConfig) ? fs.readFileSync(codexConfig) : null, folders };
 }
 
+// Evidence only: records what each agent call returned (the runner keeps an implementer's reply only
+// when the agent was unavailable). Passes every call and result through unchanged.
+const RESPONSE_LIMIT = 20000;
+function recordingAdapter(adapter, invocations) {
+    return {
+        id: adapter.id,
+        async run(input) {
+            const started = Date.now();
+            const record = { adapter: adapter.id, role: input?.role, sliceId: input?.entry?.sliceId, round: input?.round ?? null };
+            invocations.push(record);
+            try {
+                const result = await adapter.run(input);
+                record.durationMs = Date.now() - started;
+                record.state = result?.state ?? 'RETURNED';
+                const text = result?.response ?? result?.verdictDocument ?? result?.message ?? '';
+                record.response = String(text).slice(0, RESPONSE_LIMIT);
+                record.responseTruncated = String(text).length > RESPONSE_LIMIT;
+                if (result?.reason) record.reason = result.reason;
+                if (result?.command) record.command = result.command;
+                return result;
+            } catch (error) {
+                record.durationMs = Date.now() - started;
+                record.state = 'THREW';
+                record.error = error?.message || String(error);
+                throw error;
+            }
+        },
+        terminate: (...args) => adapter.terminate?.(...args),
+    };
+}
+
 // Slice IDs with at least one row in the pilot ledger (read-only; the runner itself verifies the ledger).
 function recordedSliceIds(root) {
     const ledger = path.join(root, LEDGER_RELATIVE_PATH);
@@ -236,6 +267,7 @@ export async function main(argv = process.argv.slice(2)) {
     let result = null;
     let runnerError = null;
     try {
+        report.invocations = [];
         result = await runQueue({
             queuePath: path.join(root, QUEUE_RELATIVE_PATH),
             repoRoot: root,
@@ -243,7 +275,7 @@ export async function main(argv = process.argv.slice(2)) {
             adapters: [
                 createClaudeAdapter({ executable: process.env.SLICE_RUNNER_CLAUDE_CLI || 'claude' }),
                 createCodexAdapter({ executable: process.env.SLICE_RUNNER_CODEX_CLI || 'codex' }),
-            ],
+            ].map((adapter) => recordingAdapter(adapter, report.invocations)),
             allowedRepositoryRoot: root,
         });
         report.runner = result;
