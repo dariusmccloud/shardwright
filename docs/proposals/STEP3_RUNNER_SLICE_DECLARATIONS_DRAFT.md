@@ -393,6 +393,40 @@ Then rerun the live test in both directions. The Claude direction is still untes
   3. **Refinement:** set Codex's Windows sandbox explicitly (`-c windows.sandbox="elevated"`) and keep `--ignore-user-config`, so the adapter does not depend on, and cannot be loosened by, anyone's personal config. Verify with the model-free probe that the explicit setting produces a writable fixture. **Further evidence (observed 2026-09-25):** after `--ignore-user-config` was dropped, the live runs wrote three `trust_level = "trusted"` entries for temporary fixture repositories (`shardwright-live-*`) into Chris's personal `~/.codex/config.toml`. The CLI, not the model, wrote them. They are harmless, but a test run should not modify the user's personal configuration. The tests must leave `~/.codex/config.toml` byte-identical. **Cleanup done 2026-09-25, with Chris's OK:** the three entries (9 lines) were removed by the reviewer after backing up the file to `~/.codex/config.toml.bak-before-shardwright-cleanup-2026-09-25`. Verified: 0 `shardwright-live` entries remain, exactly 9 lines were removed, none were added.
 - **Still required before 3d can pass:** diagnose and fix the malformed reviewer front matter (inspect the actual reviewer output; make the reviewer prompt robust without loosening the parser); complete one live run in each direction under the amended contract; then Claude's independent review of the 3d files, including the declared-scope expansion. The live test also has the implementer run a normal toolchain step inside the sandbox (for example `node --test` on a small fixture test). If temp exclusion breaks it, the fix is **not** to loosen the boundary: give the agent a private scratch directory inside the fixture repository (point `TMP`/`TEMP` there through Codex's environment settings) and show the toolchain step passes. The report states which case applied.
 
+**3d round 3 completion (Codex, 2026-09-26; relayed by Chris):** both live directions complete and PASS under the amended contract; the offline adapter and sandbox tests pass 9 of 9. Nothing committed.
+
+**3d round 3 review: FAIL (Claude, 2026-09-26).** Two findings. Everything else checked passes.
+
+What passed (reviewer-run):
+- Scope: 8 new files and 3 modified, all in `tools/slice-runner/`; `agent-adapter.js` was approved into scope in round 1.
+- Offline: `node --test` on the manifest, ledger, runner, cli-adapters, codex-sandbox and live test files: 71 passed, 0 failed, 2 live tests skipped. Syntax checks and `git diff --check` are clean.
+- The model-free `codex sandbox` probe passes under the exact production invocation, and the ordinary `node --test` toolchain step works inside the sandbox (no private scratch directory needed).
+- Live run (`SLICE_RUNNER_LIVE=1 node --test tools/slice-runner/live.test.mjs`; Claude 2.1.251, Codex 0.157.0): both directions COMPLETE, 2 of 2, about 90 seconds. `reviewerTreeStable: true` in both. The in-temp canaries were not written. All eight protected canaries (OneDrive, OneDrive Documents, `D:` SillyTavern and SillyBunny, per direction) are absent.
+- Adapter flags match the amended contract: the Claude implementer uses `--restricted --permission-mode dontAsk --tools Read,Edit --allowedTools Edit(/**)`; the Claude reviewer uses `plan` and `Read` only; Codex uses `-a never`, an explicit `windows.sandbox="elevated"`, both exclusions, `--ignore-user-config`, `--ephemeral`, and `read-only` for the reviewer. API-key variables are scrubbed. The working directory must be a child of the OS temp directory.
+
+Finding 1: **the live test changes Chris's personal Codex config.** This breaks the declared requirement above ("the tests must leave `~/.codex/config.toml` byte-identical").
+- Governing rule: the round 3 assessment, refinement 3.
+- Observed: the reviewer's live run changed `~/.codex/config.toml` from SHA-256 `fdd81906…` to `ebdba0f4…`, adding `[projects.'…\shardwright-live-jba29d\fixture-repo'] trust_level = "trusted"`. That is the Codex-implements direction, which ran with `--ignore-user-config`. Codex's own round 3 runs re-added three entries (`vibqwm`, `b3q7zm`, `bsif8y`) after the 2026-09-25 cleanup. The file now holds 4 such entries.
+- Expected: byte-identical before and after.
+- Evidence: `live.test.mjs` has no before/after check on the config file.
+- Bounded repair:
+  - Make the live test assert byte-identity: hash the file before, compare after, and fail loudly on a difference.
+  - Then stop the write, if possible, without touching the user config. Options for Codex to test: pre-declaring trust for the fixture via `-c`, or another documented CLI setting.
+  - If the CLI cannot be stopped from writing, the test snapshots the file and restores it afterwards. It reports that it did so and does not claim byte-identity.
+  - Do not point `CODEX_HOME` elsewhere without Chris's decision: it holds his login.
+
+Finding 2: **the reviewer prompt pre-fills `verdict: PASS`.**
+- Location: `cli-adapter-common.js` `renderRolePrompt`, line 51.
+- Observed: the example front matter the reviewer is told to reproduce contains `verdict: PASS`, followed by an instruction to change it only if the result is not PASS. This anchors an independent reviewer toward PASS: the default, low-effort output is a pass. That undermines the split gate's premise.
+- Expected: neutral wording that gives no default verdict. It must still avoid the earlier malformed-front-matter failure (the reviewer printing the vertical-bar alternatives). For example, use a placeholder token the parser rejects if left unreplaced (`verdict: <PASS, FAIL or ESCALATE>` refused by the existing parser), and add an offline test showing an unreplaced placeholder fails closed.
+
+Round 4 requirements:
+- Finding 1: the byte-identity assertion (or a disclosed snapshot and restore) in `live.test.mjs`, plus one live run showing it holds.
+- Finding 2: the neutral verdict line plus its offline test.
+- Offline suite rerun.
+
+No other changes. Separate from the slice, the 4 current `shardwright-live` entries in Chris's config need cleanup again, with his OK and a fresh backup first.
+
 ---
 
 ## Decisions for 3c (decided by Chris, 2026-09-25)
