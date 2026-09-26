@@ -240,6 +240,37 @@ Do **not** replace the Terminal Gate until all of these exist. Activating early 
 >
 > If no independent reviewer is available, stop. No agent reviews its own work. Implementation may continue only through the review backlog described in Section 8 of the amendment proposal, once that is built; backlog slices are never counted as passed until independently reviewed.
 
+## 13a. Activation text, revised 2026-09-26 (supersedes Section 13 if approved)
+
+Written by Claude after the Step 4 pilot and Chris's decision: activate for ordinary-risk work once Work Board entry 19 (automatic FAIL return) is done; keystone work stays on the current gate. It folds in Chris's progress rule, escalation standard, checkpoint pause, and phase approval. **It needs Codex's review and Chris's explicit approval of this exact text before it replaces the Terminal Gate in `AGENTS.md`.**
+
+**Prerequisite status (Section 12):**
+- **2, 3, 5:** met (Steps 2 and 3, the Step 4 pilot).
+- **4:** met. Both CLIs are installed and callable headless; the Section 12 note dated 2026-09-21 is stale.
+- **6:** pending, and is this approval.
+- **1:** partly met. The Work Board and slice records exist, and the queue is approved by Chris. **The Delivery Register restructure into short status rows has not been done.** Chris decides whether to waive it for activation or do it first.
+
+> ## Terminal Gate
+>
+> > Naming a candidate next slice does not authorize it.
+>
+> Once the required proof succeeds, record the already-observed proof result, stop investigative and modification tools, do not inspect auxiliary material without cause, and do not pursue adjacent findings.
+>
+> **Which gate applies.** Ordinary-risk slices use the verification gate below. Keystone slices use the original rule instead: report the result and await Chris's authorization. Keystone slices are those touching authority, persistence, lifecycle, replay, projections, schemas, migrations, security, sync, identity, UI state, or user data, and any slice the Authority Gate finds keystone. That applies until Chris extends the verification gate to them.
+>
+> **Verification gate (ordinary-risk slices).** Chris approves work by phase. A phase approval covers every slice queued under it in `docs/work-queue.json`. Each slice is built by one agent and reviewed by the other; no agent reviews its own work. The reviewer issues `PASS`, `FAIL`, or `ESCALATE` (including the `NEEDS_HUMAN_ACTION` subtype), bound to the exact evidence reviewed and inspecting the runner-captured proof output directly.
+>
+> - `PASS` permits the next slice only if it is already in the approved queue and not `STALE_REVIEW`. The runner revalidates the reviewed evidence before dispatch, and the reviewed work is committed and revalidated against its fingerprint.
+> - `FAIL` returns the slice to the implementer with the reviewer's findings. Rounds continue while each round makes progress.
+> - Where there is no progress, the implementer and reviewer first discuss alternatives within scope. The slice escalates only for a likely bad design, an unforeseen blocker, or a disagreement about what the slice requires.
+> - After round 5 on one slice, the runner pauses before round 6 with a round-by-round brief. Chris resumes, redirects, or stops the slice.
+> - `ESCALATE` stops for a human decision. Anything sent to Chris asks for a concrete decision, with options, the agents' joint recommendation, and the cost of each option.
+> - A `PASS` never authorizes a new or amended contract, a migration, a destructive action, a keystone change, or scope expansion.
+>
+> Human authorization remains mandatory for authority uncertainty, contract creation or amendment, contract conflict, scope expansion, keystone structures, a governing contract changing under an approved queue entry, and security, migration, destructive, or external-state effects not already authorized by clause in an existing contract.
+>
+> If no independent reviewer is available, stop. The review backlog is not active until it is piloted and Chris approves it.
+
 ## 14. Open questions
 
 1. Sampling audit rate, and who performs it.
