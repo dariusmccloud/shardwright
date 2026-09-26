@@ -45,7 +45,10 @@
 .NOTES
     Creating symbolic links on Windows needs Developer Mode or an elevated PowerShell;
     junctions do not.
+    Requires PowerShell 7 (pwsh). Windows PowerShell 5.1's recursive delete can follow
+    links into their targets, and one of these links targets the whole repository.
 #>
+#Requires -Version 7.0
 [CmdletBinding(SupportsShouldProcess)]
 param(
     [string[]]$Instances = @(
@@ -72,6 +75,24 @@ function Get-NormalizedPath([string]$Path, [string]$RelativeTo) {
     [IO.Path]::GetFullPath($Path).TrimEnd('\')
 }
 
+# A link is identified by LinkType, not the ReparsePoint attribute: OneDrive sets that
+# attribute on ordinary synced folders too.
+function Test-IsLink($Item) {
+    [bool]$Item.LinkType
+}
+
+# Removes a link as a link (never following it into its target); anything else recursively.
+function Remove-LinkOrItem([string]$Path) {
+    $Item = Get-Item -LiteralPath $Path -Force -ErrorAction Stop
+    if (Test-IsLink $Item) {
+        if ($Item.PSIsContainer) { [IO.Directory]::Delete($Item.FullName, $false) }
+        else { [IO.File]::Delete($Item.FullName) }
+    }
+    else {
+        Remove-Item -LiteralPath $Path -Force -Recurse -ErrorAction Stop
+    }
+}
+
 foreach ($Instance in $Instances) {
     if (-not (Test-Path -LiteralPath $Instance -PathType Container)) {
         Write-Warning "Host folder not found, skipped: $Instance"
@@ -90,7 +111,7 @@ foreach ($Instance in $Instances) {
         $Existing = Get-Item -LiteralPath $Destination -Force -ErrorAction SilentlyContinue
         $Action = "Link to $Source"
         if ($Existing) {
-            if ($Existing.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+            if (Test-IsLink $Existing) {
                 $ExistingTarget = @($Existing.Target)[0]
                 $LinkParent     = Split-Path -Parent $Destination
                 if ((Get-NormalizedPath $ExistingTarget $LinkParent) -ieq (Get-NormalizedPath $Source $LinkParent)) {
@@ -119,26 +140,62 @@ foreach ($Instance in $Instances) {
         }
 
         # Create the new link beside the destination first; touch nothing existing unless that works.
-        $Pending = "$Destination.link-pending"
-        if (Test-Path -LiteralPath $Pending) { Remove-Item -LiteralPath $Pending -Force }
+        $Pending = Join-Path $DestinationParent (".$([IO.Path]::GetFileName($Destination)).link-pending.$([guid]::NewGuid().ToString('N'))")
         try {
             New-Item -ItemType $LinkType -Path $Pending -Target $Source -ErrorAction Stop | Out-Null
         }
         catch {
+            if (Test-Path -LiteralPath $Pending) {
+                Remove-LinkOrItem $Pending
+            }
             Write-Error "Could not create $LinkType at ${Destination}: $($_.Exception.Message) Nothing was changed there."
             continue
         }
 
         if ($Existing) {
-            # Removing a link removes only the link, never the folder it points to.
-            if ($Existing.Attributes -band [IO.FileAttributes]::ReparsePoint) {
-                Remove-Item -LiteralPath $Destination -Force
+            $Backup = Join-Path $DestinationParent (".$([IO.Path]::GetFileName($Destination)).backup.$([guid]::NewGuid().ToString('N'))")
+            try {
+                Move-Item -LiteralPath $Destination -Destination $Backup -Force -ErrorAction Stop
             }
-            else {
-                Remove-Item -LiteralPath $Destination -Force -Recurse
+            catch {
+                if (Test-Path -LiteralPath $Pending) {
+                    Remove-LinkOrItem $Pending
+                }
+                Write-Error "Could not move existing destination aside for replacement at ${Destination}: $($_.Exception.Message) Nothing was changed there."
+                continue
+            }
+
+            try {
+                Rename-Item -LiteralPath $Pending -NewName (Split-Path -Leaf $Destination) -ErrorAction Stop
+            }
+            catch {
+                if (Test-Path -LiteralPath $Backup) {
+                    Move-Item -LiteralPath $Backup -Destination $Destination -Force -ErrorAction Stop
+                }
+                if (Test-Path -LiteralPath $Pending) {
+                    Remove-LinkOrItem $Pending
+                }
+                Write-Error "Could not promote $LinkType at ${Destination}: $($_.Exception.Message) Original destination was restored."
+                continue
+            }
+
+            if (Test-Path -LiteralPath $Backup) {
+                Remove-LinkOrItem $Backup
             }
         }
-        Rename-Item -LiteralPath $Pending -NewName (Split-Path -Leaf $Destination)
+        else {
+            try {
+                Rename-Item -LiteralPath $Pending -NewName (Split-Path -Leaf $Destination) -ErrorAction Stop
+            }
+            catch {
+                if (Test-Path -LiteralPath $Pending) {
+                    Remove-LinkOrItem $Pending
+                }
+                Write-Error "Could not promote $LinkType at ${Destination}: $($_.Exception.Message) Nothing was changed there."
+                continue
+            }
+        }
+
         Write-Host "LINKED:  $Destination"
         Write-Host "         -> $Source"
     }
