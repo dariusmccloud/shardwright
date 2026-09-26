@@ -108,6 +108,17 @@ foreach ($Instance in $Instances) {
             continue
         }
 
+        $SourceNormalized = Get-NormalizedPath -Path $Source -RelativeTo $Instance
+        $DestinationNormalized = Get-NormalizedPath -Path $Destination -RelativeTo $Instance
+        $SourcePrefix = $SourceNormalized + [IO.Path]::DirectorySeparatorChar
+        $DestinationPrefix = $DestinationNormalized + [IO.Path]::DirectorySeparatorChar
+        if ($DestinationNormalized -ieq $SourceNormalized -or
+            $DestinationNormalized.StartsWith($SourcePrefix, [StringComparison]::OrdinalIgnoreCase) -or
+            $SourceNormalized.StartsWith($DestinationPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+            Write-Warning "Destination overlaps source, skipped: $Destination -> $Source"
+            continue
+        }
+
         $Existing = Get-Item -LiteralPath $Destination -Force -ErrorAction SilentlyContinue
         $Action = "Link to $Source"
         if ($Existing) {
