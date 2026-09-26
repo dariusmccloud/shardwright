@@ -52,5 +52,15 @@ foreach ($hostRoot in $HostRoots) {
         }
     }
     Copy-Item -LiteralPath $payloadManifestPath -Destination (Join-Path $target 'payload-manifest.json') -Force
+
+    Push-Location -LiteralPath $target
+    try {
+        npm ci --omit=dev --no-audit --no-fund | Out-Host
+        if ($LASTEXITCODE -ne 0) {
+            throw "Installing shardwright-memory dependencies failed with exit code $LASTEXITCODE in $target"
+        }
+    } finally {
+        Pop-Location
+    }
     Write-Host "Installed shardwright-memory to $target"
 }

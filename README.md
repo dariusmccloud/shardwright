@@ -81,14 +81,8 @@ Transcript Recall needs the Shardwright server plugin, `shardwright-memory`, fro
    ```powershell
    .\tools\server-plugin\install-shardwright-memory.ps1 -HostRoots 'D:\SillyTavern'
    ```
-   It packages the plugin and copies its files to `<host>\plugins\shardwright-memory`, checking each file's hash. It replaces any existing copy there.
-2. Install the plugin's dependency inside the installed folder:
-   ```powershell
-   cd 'D:\SillyTavern\plugins\shardwright-memory'
-   npm ci --omit=dev
-   ```
-   The plugin does not load without this. The host's own `ajv` is an older version the plugin cannot use. Because the installer replaces the folder, repeat this step after every reinstall.
-3. Restart SillyTavern.
+   It packages the plugin, copies its files to `<host>\plugins\shardwright-memory` (checking each file's hash), and installs the plugin's dependency there with `npm ci --omit=dev`. It replaces any existing copy there. If the dependency install fails, the installer stops with an error: the plugin does not load without it, because the host's own `ajv` is an older version the plugin cannot use.
+2. Restart SillyTavern.
 
 The folder must be named `shardwright-memory`; the installer refuses any other plugin ID.
 
