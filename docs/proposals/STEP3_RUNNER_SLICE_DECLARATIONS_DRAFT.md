@@ -444,6 +444,14 @@ No other changes. Separate from the slice, the 4 current `shardwright-live` entr
 
 Next: Codex commits exactly the 11 scope files; then the reviewer revalidates the commit against the reviewed fingerprint.
 
+**Done (2026-09-26):**
+- Codex committed `19f3765`, containing exactly the 11 scope files; the working tree is clean.
+- Reviewer revalidation: MATCH.
+  - A clean `git archive` of the commit gives manifest hash `d80218d2…b074`.
+  - The clean working tree at that commit gives the full reviewed fingerprint (policy `e480bb45…f220`, manifest `d80218d2…b074`).
+- Slice 3d is closed. With 3a–3e done, the Step 3 runner machinery is complete.
+- The split gate remains inactive. Activation still needs the Step 4 pilot and Chris's explicit approval.
+
 ---
 
 ## Decisions for 3c (decided by Chris, 2026-09-25)
