@@ -66,7 +66,33 @@ Clone into `data/<user-data>/extensions/third-party/shardwright` and restart Sil
 
 ### Server plugin
 
-Transcript Recall needs the Shardwright server plugin in `tools/server-plugin/shardwright-memory/`. Its installation steps are not yet documented here.
+Transcript Recall needs the Shardwright server plugin, `shardwright-memory`, from `tools/server-plugin/shardwright-memory/`. It runs inside the SillyTavern (or SillyBunny) server.
+
+**Requirements**
+- Node.js 24.21.0 or later for SillyTavern. SillyBunny runs plugins on its bundled Bun, which has been checked with Bun 1.3.14.
+- `npm`, to install the plugin's one runtime dependency (`ajv` 8).
+- Server plugins enabled in the host's `config.yaml`:
+  ```yaml
+  enableServerPlugins: true
+  ```
+
+**Install (Windows, PowerShell)**
+1. From a clone of this repository, run the installer. Pass the root folder of each host:
+   ```powershell
+   .\tools\server-plugin\install-shardwright-memory.ps1 -HostRoots 'D:\SillyTavern'
+   ```
+   It packages the plugin and copies its files to `<host>\plugins\shardwright-memory`, checking each file's hash. It replaces any existing copy there.
+2. Install the plugin's dependency inside the installed folder:
+   ```powershell
+   cd 'D:\SillyTavern\plugins\shardwright-memory'
+   npm ci --omit=dev
+   ```
+   The plugin does not load without this. The host's own `ajv` is an older version the plugin cannot use. Because the installer replaces the folder, repeat this step after every reinstall.
+3. Restart SillyTavern.
+
+The folder must be named `shardwright-memory`; the installer refuses any other plugin ID.
+
+**Development setup (link instead of copy).** A host can load the plugin straight from the repository with a directory link: `<host>\plugins\shardwright-memory` pointing to `tools\server-plugin\shardwright-memory`. Run `npm ci --omit=dev` once in that repository folder, and run `node tools/server-plugin/package-shardwright-memory.mjs` after pulling changes, so the plugin's `lib/` copies of shared code stay current.
 
 ---
 
