@@ -84,13 +84,29 @@ export function quoteCommand(executable, args) {
     return [executable, ...args].map((part) => JSON.stringify(part)).join(' ');
 }
 
-export function validateFixtureCwd(cwd) {
+function samePath(left, right) {
+    const normalizedLeft = path.resolve(left);
+    const normalizedRight = path.resolve(right);
+    return process.platform === 'win32'
+        ? normalizedLeft.toLowerCase() === normalizedRight.toLowerCase()
+        : normalizedLeft === normalizedRight;
+}
+
+export function validateFixtureCwd(cwd, { allowedRepositoryRoot = null } = {}) {
     if (typeof cwd !== 'string' || !path.isAbsolute(cwd)) {
         const error = new TypeError('Agent working directory must be an absolute fixture path.');
         error.code = 'AGENT_CWD_INVALID';
         throw error;
     }
     const resolved = path.resolve(cwd);
+    if (allowedRepositoryRoot !== null && allowedRepositoryRoot !== undefined) {
+        if (typeof allowedRepositoryRoot !== 'string' || !path.isAbsolute(allowedRepositoryRoot)) {
+            const error = new TypeError('The allowed repository path must be an absolute path.');
+            error.code = 'AGENT_ALLOWED_REPOSITORY_INVALID';
+            throw error;
+        }
+        if (samePath(resolved, allowedRepositoryRoot)) return resolved;
+    }
     const relative = path.relative(path.resolve(os.tmpdir()), resolved);
     if (relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative) || relative === '') {
         const error = new TypeError('Agent working directory must be a child fixture under the OS temp directory.');

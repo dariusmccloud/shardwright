@@ -16,7 +16,7 @@ export const CODEX_RESTRICTED_WORKSPACE_ARGS = Object.freeze([
 ]);
 
 export function buildCodexCommand(input, { executable = 'codex' } = {}) {
-    const cwd = validateFixtureCwd(input?.repoRoot);
+    const cwd = validateFixtureCwd(input?.repoRoot, { allowedRepositoryRoot: input?.allowedRepositoryRoot });
     const prompt = renderRolePrompt({ ...input, adapterId: 'codex' });
     const args = [
         ...CODEX_RESTRICTED_WORKSPACE_ARGS,

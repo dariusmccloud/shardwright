@@ -38,7 +38,19 @@ function sha256(bytes) {
     return createHash('sha256').update(bytes).digest('hex');
 }
 
-function assertTemporaryRoot(repoRoot) {
+function samePath(left, right) {
+    const normalizedLeft = path.resolve(left);
+    const normalizedRight = path.resolve(right);
+    return process.platform === 'win32'
+        ? normalizedLeft.toLowerCase() === normalizedRight.toLowerCase()
+        : normalizedLeft === normalizedRight;
+}
+
+function assertTemporaryRoot(repoRoot, allowedRepositoryRoot = null) {
+    if (allowedRepositoryRoot !== null && allowedRepositoryRoot !== undefined) {
+        if (typeof allowedRepositoryRoot !== 'string' || !path.isAbsolute(allowedRepositoryRoot)) return false;
+        if (samePath(repoRoot, allowedRepositoryRoot)) return true;
+    }
     const tempRoot = path.resolve(os.tmpdir());
     const relative = path.relative(tempRoot, path.resolve(repoRoot));
     return relative !== '' && relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);
@@ -341,7 +353,7 @@ function recordVerdict(repoRoot, ledgerPath, verdictDocument, parsedVerdict) {
 }
 
 async function validatePendingBacklog({
-    backlogState, entries, repoRoot, ledgerPath, adapters, defaultAgentTimeoutMs, now, result,
+    backlogState, entries, repoRoot, allowedRepositoryRoot, ledgerPath, adapters, defaultAgentTimeoutMs, now, result,
 }) {
     const entriesById = new Map(entries.map((entry) => [entry.sliceId, entry]));
     for (const pending of backlogState.active) {
@@ -396,6 +408,7 @@ async function validatePendingBacklog({
                 const proofReceipt = readArchivedProof(repoRoot, pending.sliceId, pending.proofOutputHash, entry.proof.argv);
                 const review = await invokeAdapter(reviewer, {
                     role: 'reviewer', entry, commit: pending.commit, repoRoot: worktree,
+                    allowedRepositoryRoot,
                     proofReceipt, reviewedFingerprint: fingerprint.manifestHash,
                     policyHash: fingerprint.policyHash, round,
                 }, timeouts.timeoutMs, 'reviewer');
@@ -477,12 +490,13 @@ export async function runQueue({
     defaultAgentTimeoutMs = DEFAULT_AGENT_TIMEOUT_MS,
     now = () => new Date(),
     humanDecision = null,
+    allowedRepositoryRoot = null,
 }) {
     if (!Number.isSafeInteger(defaultAgentTimeoutMs) || defaultAgentTimeoutMs < 1) {
         throw runnerError('RUNNER_CONFIGURATION_INVALID', 'defaultAgentTimeoutMs must be a positive safe integer.');
     }
     const resolvedRoot = path.resolve(repoRoot);
-    if (!assertTemporaryRoot(resolvedRoot)) {
+    if (!assertTemporaryRoot(resolvedRoot, allowedRepositoryRoot)) {
         return { state: 'REFUSED', reason: 'RUNNER_ROOT_OUTSIDE_TEMP', message: 'This runner slice may operate only on fixture repositories under the OS temp directory.' };
     }
     let queue;
@@ -504,7 +518,7 @@ export async function runQueue({
     }
     let reviewerUnavailableInRun = null;
     if (backlogState.active.length > 0) {
-        const validation = await validatePendingBacklog({ backlogState, entries, repoRoot: resolvedRoot, ledgerPath, adapters,
+        const validation = await validatePendingBacklog({ backlogState, entries, repoRoot: resolvedRoot, allowedRepositoryRoot, ledgerPath, adapters,
             defaultAgentTimeoutMs, now, result });
         if (validation) {
             if (reviewBacklog && validation.state === 'REVIEW_PENDING' && validation.phase === 'reviewer') {
@@ -613,6 +627,7 @@ export async function runQueue({
             role: 'implementer',
             entry,
             repoRoot: resolvedRoot,
+            allowedRepositoryRoot,
             baselineFingerprint: baseline,
         }, timeouts.timeoutMs, 'implementer');
         if (implementation.unavailable) {
@@ -647,6 +662,7 @@ export async function runQueue({
                 role: 'reviewer',
                 entry,
                 repoRoot: resolvedRoot,
+                allowedRepositoryRoot,
                 proofReceipt,
                 reviewedFingerprint: reviewedFingerprint.manifestHash,
                 policyHash: reviewedFingerprint.policyHash,

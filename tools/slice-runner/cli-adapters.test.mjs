@@ -163,3 +163,20 @@ test('agent adapter refuses a working directory outside the OS temp fixtures', a
     assert.equal(result.state, 'UNAVAILABLE');
     assert.equal(result.reason, 'AGENT_CWD_OUTSIDE_TEMP');
 });
+
+test('repository working directory requires the exact explicit opt-in path', () => {
+    const repositoryRoot = process.cwd();
+    const allowed = buildClaudeCommand({
+        role: 'implementer', entry: entry(repositoryRoot), repoRoot: repositoryRoot,
+        allowedRepositoryRoot: repositoryRoot,
+    });
+    assert.equal(allowed.cwd, path.resolve(repositoryRoot));
+    assert.throws(() => buildClaudeCommand({
+        role: 'implementer', entry: entry(repositoryRoot), repoRoot: path.dirname(repositoryRoot),
+        allowedRepositoryRoot: repositoryRoot,
+    }), { code: 'AGENT_CWD_OUTSIDE_TEMP' });
+    assert.throws(() => buildCodexCommand({
+        role: 'implementer', entry: entry(repositoryRoot), repoRoot: repositoryRoot,
+        allowedRepositoryRoot: path.join(repositoryRoot, 'child'),
+    }), { code: 'AGENT_CWD_OUTSIDE_TEMP' });
+});

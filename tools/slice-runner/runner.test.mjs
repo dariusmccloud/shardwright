@@ -148,6 +148,24 @@ function deferred() {
     return { promise, resolve };
 }
 
+test('repository root remains refused unless the exact opt-in path is supplied', async () => {
+    const repositoryRoot = process.cwd();
+    const base = {
+        queuePath: path.join(repositoryRoot, 'missing-pilot-queue.json'),
+        repoRoot: repositoryRoot,
+        ledgerPath: path.join(repositoryRoot, 'missing-pilot-ledger.jsonl'),
+        adapters: [],
+        defaultAgentTimeoutMs: 100,
+        now: () => new Date('2026-09-26T00:00:00.000Z'),
+    };
+    const refused = await runQueue(base);
+    assert.equal(refused.state, 'REFUSED');
+    assert.equal(refused.reason, 'RUNNER_ROOT_OUTSIDE_TEMP');
+    const optedIn = await runQueue({ ...base, allowedRepositoryRoot: repositoryRoot });
+    assert.equal(optedIn.state, 'REFUSED');
+    assert.equal(optedIn.reason, 'QUEUE_INVALID');
+});
+
 test('only valid PASS advances the approved queue; FAIL and ESCALATE stop before the next slice', async () => {
     assert.equal(DEFAULT_AGENT_TIMEOUT_MS, 30 * 60 * 1000);
 

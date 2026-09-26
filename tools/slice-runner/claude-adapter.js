@@ -8,7 +8,7 @@ import {
 } from './cli-adapter-common.js';
 
 export function buildClaudeCommand(input, { executable = 'claude' } = {}) {
-    const cwd = validateFixtureCwd(input?.repoRoot);
+    const cwd = validateFixtureCwd(input?.repoRoot, { allowedRepositoryRoot: input?.allowedRepositoryRoot });
     const role = input.role;
     const prompt = renderRolePrompt({ ...input, adapterId: 'claude' });
     const args = [
