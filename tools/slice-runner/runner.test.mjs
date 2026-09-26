@@ -149,7 +149,7 @@ function deferred() {
 }
 
 test('repository root remains refused unless the exact opt-in path is supplied', async () => {
-    const repositoryRoot = process.cwd();
+    const repositoryRoot = path.resolve(process.cwd(), '..', '..');
     const base = {
         queuePath: path.join(repositoryRoot, 'missing-pilot-queue.json'),
         repoRoot: repositoryRoot,
@@ -164,6 +164,16 @@ test('repository root remains refused unless the exact opt-in path is supplied',
     const optedIn = await runQueue({ ...base, allowedRepositoryRoot: repositoryRoot });
     assert.equal(optedIn.state, 'REFUSED');
     assert.equal(optedIn.reason, 'QUEUE_INVALID');
+    for (const invalidOptIn of [
+        path.dirname(path.dirname(repositoryRoot)),
+        path.dirname(repositoryRoot),
+        path.parse(repositoryRoot).root,
+        path.join(repositoryRoot, 'child'),
+    ]) {
+        const invalid = await runQueue({ ...base, allowedRepositoryRoot: invalidOptIn });
+        assert.equal(invalid.state, 'REFUSED');
+        assert.equal(invalid.reason, 'RUNNER_ALLOWED_REPOSITORY_MISMATCH');
+    }
 });
 
 test('only valid PASS advances the approved queue; FAIL and ESCALATE stop before the next slice', async () => {

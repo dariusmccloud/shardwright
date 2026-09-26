@@ -165,18 +165,21 @@ test('agent adapter refuses a working directory outside the OS temp fixtures', a
 });
 
 test('repository working directory requires the exact explicit opt-in path', () => {
-    const repositoryRoot = process.cwd();
+    const repositoryRoot = path.resolve(process.cwd(), '..', '..');
     const allowed = buildClaudeCommand({
         role: 'implementer', entry: entry(repositoryRoot), repoRoot: repositoryRoot,
         allowedRepositoryRoot: repositoryRoot,
     });
     assert.equal(allowed.cwd, path.resolve(repositoryRoot));
-    assert.throws(() => buildClaudeCommand({
-        role: 'implementer', entry: entry(repositoryRoot), repoRoot: path.dirname(repositoryRoot),
-        allowedRepositoryRoot: repositoryRoot,
-    }), { code: 'AGENT_CWD_OUTSIDE_TEMP' });
-    assert.throws(() => buildCodexCommand({
-        role: 'implementer', entry: entry(repositoryRoot), repoRoot: repositoryRoot,
-        allowedRepositoryRoot: path.join(repositoryRoot, 'child'),
-    }), { code: 'AGENT_CWD_OUTSIDE_TEMP' });
+    for (const invalidOptIn of [
+        path.dirname(path.dirname(repositoryRoot)),
+        path.dirname(repositoryRoot),
+        path.parse(repositoryRoot).root,
+        path.join(repositoryRoot, 'child'),
+    ]) {
+        assert.throws(() => buildCodexCommand({
+            role: 'implementer', entry: entry(repositoryRoot), repoRoot: repositoryRoot,
+            allowedRepositoryRoot: invalidOptIn,
+        }), { code: 'AGENT_ALLOWED_REPOSITORY_MISMATCH' });
+    }
 });

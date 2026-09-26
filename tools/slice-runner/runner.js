@@ -7,6 +7,7 @@ import { runAgentWithTimeout } from './agent-adapter.js';
 import { appendVerdict, verifyVerdict } from './ledger.js';
 import { compareFingerprints, computeFingerprint } from './manifest.js';
 import { spawnProcessTree } from './process-tree.js';
+import { canonicalPath, projectRoot } from './cli-adapter-common.js';
 import {
     appendPendingEvent,
     appendResolvedEvent,
@@ -39,8 +40,8 @@ function sha256(bytes) {
 }
 
 function samePath(left, right) {
-    const normalizedLeft = path.resolve(left);
-    const normalizedRight = path.resolve(right);
+    const normalizedLeft = canonicalPath(left);
+    const normalizedRight = canonicalPath(right);
     return process.platform === 'win32'
         ? normalizedLeft.toLowerCase() === normalizedRight.toLowerCase()
         : normalizedLeft === normalizedRight;
@@ -49,7 +50,8 @@ function samePath(left, right) {
 function assertTemporaryRoot(repoRoot, allowedRepositoryRoot = null) {
     if (allowedRepositoryRoot !== null && allowedRepositoryRoot !== undefined) {
         if (typeof allowedRepositoryRoot !== 'string' || !path.isAbsolute(allowedRepositoryRoot)) return false;
-        if (samePath(repoRoot, allowedRepositoryRoot)) return true;
+        if (!samePath(allowedRepositoryRoot, projectRoot())) return false;
+        if (samePath(repoRoot, projectRoot())) return true;
     }
     const tempRoot = path.resolve(os.tmpdir());
     const relative = path.relative(tempRoot, path.resolve(repoRoot));
@@ -496,6 +498,11 @@ export async function runQueue({
         throw runnerError('RUNNER_CONFIGURATION_INVALID', 'defaultAgentTimeoutMs must be a positive safe integer.');
     }
     const resolvedRoot = path.resolve(repoRoot);
+    if (allowedRepositoryRoot !== null && allowedRepositoryRoot !== undefined
+        && (typeof allowedRepositoryRoot !== 'string' || !path.isAbsolute(allowedRepositoryRoot)
+            || !samePath(allowedRepositoryRoot, projectRoot()))) {
+        return { state: 'REFUSED', reason: 'RUNNER_ALLOWED_REPOSITORY_MISMATCH', message: 'The opt-in repository path must be this repository root.' };
+    }
     if (!assertTemporaryRoot(resolvedRoot, allowedRepositoryRoot)) {
         return { state: 'REFUSED', reason: 'RUNNER_ROOT_OUTSIDE_TEMP', message: 'This runner slice may operate only on fixture repositories under the OS temp directory.' };
     }

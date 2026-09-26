@@ -1,5 +1,17 @@
 import path from 'node:path';
 import os from 'node:os';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
+export function canonicalPath(value) {
+    const resolved = path.resolve(value);
+    try { return fs.realpathSync.native(resolved); }
+    catch { return resolved; }
+}
+
+export function projectRoot() {
+    return canonicalPath(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..'));
+}
 
 export function unavailable(reason, message = '') {
     return { state: 'UNAVAILABLE', reason, message };
@@ -85,8 +97,8 @@ export function quoteCommand(executable, args) {
 }
 
 function samePath(left, right) {
-    const normalizedLeft = path.resolve(left);
-    const normalizedRight = path.resolve(right);
+    const normalizedLeft = canonicalPath(left);
+    const normalizedRight = canonicalPath(right);
     return process.platform === 'win32'
         ? normalizedLeft.toLowerCase() === normalizedRight.toLowerCase()
         : normalizedLeft === normalizedRight;
@@ -105,7 +117,12 @@ export function validateFixtureCwd(cwd, { allowedRepositoryRoot = null } = {}) {
             error.code = 'AGENT_ALLOWED_REPOSITORY_INVALID';
             throw error;
         }
-        if (samePath(resolved, allowedRepositoryRoot)) return resolved;
+        if (!samePath(allowedRepositoryRoot, projectRoot()) || !samePath(resolved, projectRoot())) {
+            const error = new TypeError('The opt-in repository path must be this repository root.');
+            error.code = 'AGENT_ALLOWED_REPOSITORY_MISMATCH';
+            throw error;
+        }
+        return resolved;
     }
     const relative = path.relative(path.resolve(os.tmpdir()), resolved);
     if (relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative) || relative === '') {
