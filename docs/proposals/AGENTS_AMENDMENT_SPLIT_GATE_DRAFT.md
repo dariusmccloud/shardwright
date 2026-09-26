@@ -91,7 +91,7 @@ A lack of progress (the same finding returns, or implementer and reviewer disagr
 
 **Escalation standard:** anything that reaches Chris must ask him for a concrete action: a choice between stated options, with the agents' joint recommendation, what each option costs, and what happens next under each. It is never a status report, and never a request to "keep going" or "suggest what to do instead"; that conversation belongs to the agents first.
 
-**Checkpoint pause (Chris, 2026-09-26):** after 5 rounds on one slice (one number in the queue file), the runner pauses so the work cannot run on indefinitely and exhaust context or usage limits. The pause is not a judgement that the slice has failed. It produces a "where we've landed" brief that gives Chris enough to decide from:
+**Checkpoint pause (Chris, 2026-09-26):** after round 5 on one slice completes, and before round 6 is dispatched (5 is one number in the queue file), the runner pauses so the work cannot run on indefinitely and exhaust context or usage limits. The pause is not a judgement that the slice has failed. It produces a "where we've landed" brief that gives Chris enough to decide from:
 - what each round found and fixed;
 - what is still open;
 - the agents' joint assessment: converging (each round smaller) or not, and why;
