@@ -1,6 +1,6 @@
 # Step 4 Pilot: Draft Declaration
 
-**Status:** Draft. Not authorized. Written 2026-09-25 by Claude while Codex was unavailable (OpenAI Codex incident). Codex reviews this declaration before anything is implemented; Chris approves it.
+**Status:** Approved by Chris, 2026-09-26 ("Step 4 approved"; slice adjustment approved the same day); declaration reviewed by Codex (PASS). Written 2026-09-25 by Claude while Codex was unavailable (OpenAI Codex incident). Approval and reviews are recorded below and on the Work Board (entries 16 and 17).
 **Parent:** [AGENTS_AMENDMENT_SPLIT_GATE_DRAFT.md](AGENTS_AMENDMENT_SPLIT_GATE_DRAFT.md) §12, activation prerequisite 5: "A pilot over a few real slices, reviewed by Chris, before the rule becomes permanent."
 **Boundary:** the pilot tests the machinery on real work. It does **not** activate the split gate or edit `AGENTS.md`. The current Terminal Gate governs throughout. Activation remains a separate decision by Chris after the pilot report.
 

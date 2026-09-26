@@ -4,12 +4,13 @@
 //   node tools/pilot/run-step4-pilot.mjs           the same checks, then run the approved queue
 //
 // Wraps the reviewed runner (tools/slice-runner) with the pilot's own guards:
-//   before: no uncommitted change outside the pilot's scopes and record folders (a relaunch after
-//           FAIL continues on top of that slice's own leftovers); queue shape, approvals and governing hashes; a model-free Codex sandbox
+//   before: a clean tree on first launch; on relaunch, uncommitted work only inside the scopes of
+//           slices the ledger already records, plus the runner's records; queue shape, approvals and governing hashes; a model-free Codex sandbox
 //           probe on this repository (writable inside, protected canaries denied); snapshots of the
 //           Codex config, sibling project folders, and host plugin folders.
 //   after:  every changed path lies inside a declared scope or the runner's own record folders;
-//           the snapshots are unchanged (the Codex config is restored byte-for-byte if the CLI wrote to it).
+//           the recursive snapshots are unchanged; any Codex config change fails the run and is undone.
+//           These run in a finally block, so they also happen if the runner throws.
 // Exit 0 only when the runner reports COMPLETE and every guard holds. Nothing is committed.
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -32,6 +33,7 @@ const EXPECTED_SLICES = Object.freeze([
     'pilot-2-readme-plugin-troubleshooting',
     'pilot-3-payload-package-json-test',
 ]);
+const REQUIRED_GOVERNING_CONTRACTS = Object.freeze(['AGENTS.md', 'docs/proposals/STEP4_PILOT_DECLARATION_DRAFT.md']);
 const HOST_FOLDERS = Object.freeze([
     'D:\\SillyTavern', 'D:\\SillyBunny', 'D:\\AI\\Projects\\SillyTavern', 'D:\\AI\\Projects\\SillyBunny',
 ]);
@@ -42,47 +44,80 @@ function git(root, args) {
     return execFileSync('git', args, { cwd: root, encoding: 'utf8', windowsHide: true }).replace(/\n$/u, '');
 }
 
-function changedPaths(root) {
+// Every path git reports as changed, including both sides of a rename or copy, so moving a
+// file out of a protected location cannot hide that location's deletion.
+export function changedPaths(root) {
     const out = git(root, ['status', '--porcelain=v1', '-z', '--untracked-files=all']);
     const paths = [];
     const records = out.split('\0').filter(Boolean);
     for (let i = 0; i < records.length; i += 1) {
         const status = records[i].slice(0, 2);
         paths.push(records[i].slice(3));
-        if (status.includes('R') || status.includes('C')) i += 1; // skip the rename source
+        if ((status.includes('R') || status.includes('C')) && i + 1 < records.length) {
+            i += 1;
+            paths.push(records[i]); // the rename or copy source
+        }
     }
     return paths;
 }
 
-// Top-level names, sizes and modification times: detects writes without reading file contents.
-function folderSnapshot(folder) {
+// Recursive fingerprint of names, types, sizes and modification times. It never reads file
+// contents and never follows links (host plugin links point back into this repository), and it
+// skips .git and node_modules, where agent writes are not expected and walks would be slow.
+const SNAPSHOT_SKIP = new Set(['.git', 'node_modules']);
+
+function folderSnapshot(folder, excluded = null) {
     if (!fs.existsSync(folder)) return null;
-    const entries = [];
-    for (const name of fs.readdirSync(folder).sort()) {
-        try {
-            const stat = fs.lstatSync(path.join(folder, name));
-            entries.push(`${name}\t${stat.isDirectory() ? 'd' : stat.size}\t${stat.mtimeMs}`);
-        } catch { entries.push(`${name}\tunreadable`); }
-    }
-    return sha256(entries.join('\n'));
+    const hash = crypto.createHash('sha256');
+    const walk = (dir, relative) => {
+        let names;
+        try { names = fs.readdirSync(dir).sort(); } catch { hash.update(`${relative}\tunreadable\n`); return; }
+        for (const name of names) {
+            const full = path.join(dir, name);
+            if (SNAPSHOT_SKIP.has(name) || (excluded && full.toLowerCase() === excluded.toLowerCase())) continue;
+            const rel = relative ? `${relative}/${name}` : name;
+            let stat;
+            try { stat = fs.lstatSync(full); } catch { hash.update(`${rel}\tunreadable\n`); continue; }
+            if (stat.isSymbolicLink()) {
+                let target = '';
+                try { target = fs.readlinkSync(full); } catch { /* unreadable link target */ }
+                hash.update(`${rel}\tlink\t${target}\n`);
+            } else if (stat.isDirectory()) {
+                hash.update(`${rel}\tdir\n`);
+                walk(full, rel);
+            } else {
+                hash.update(`${rel}\t${stat.size}\t${stat.mtimeMs}\n`);
+            }
+        }
+    };
+    walk(folder, '');
+    return hash.digest('hex');
 }
 
-function snapshotOutside(root) {
+export function snapshotOutside(root) {
     const codexConfig = path.join(os.homedir(), '.codex', 'config.toml');
     const projects = path.dirname(root);
     const folders = {};
-    for (const name of fs.readdirSync(projects).sort()) {
-        const full = path.join(projects, name);
-        if (full.toLowerCase() === root.toLowerCase()) continue;
-        try { if (fs.statSync(full).isDirectory()) folders[full] = folderSnapshot(full); } catch { /* skip unreadable */ }
-    }
-    folders[projects] = folderSnapshot(projects);
+    // The Projects folder, recursively, excluding this repository itself.
+    folders[projects] = folderSnapshot(projects, root);
     for (const host of HOST_FOLDERS) {
         for (const sub of ['plugins', path.join('public', 'scripts', 'extensions', 'third-party')]) {
             folders[path.join(host, sub)] = folderSnapshot(path.join(host, sub));
         }
     }
     return { codexConfigPath: codexConfig, codexConfig: fs.existsSync(codexConfig) ? fs.readFileSync(codexConfig) : null, folders };
+}
+
+// Slice IDs with at least one row in the pilot ledger (read-only; the runner itself verifies the ledger).
+function recordedSliceIds(root) {
+    const ledger = path.join(root, LEDGER_RELATIVE_PATH);
+    const ids = new Set();
+    if (!fs.existsSync(ledger)) return ids;
+    for (const line of fs.readFileSync(ledger, 'utf8').split('\n')) {
+        if (!line.trim()) continue;
+        try { const row = JSON.parse(line); if (typeof row.sliceId === 'string') ids.add(row.sliceId); } catch { /* the runner reports corruption */ }
+    }
+    return ids;
 }
 
 export function checkQueue(root, now = new Date()) {
@@ -101,6 +136,11 @@ export function checkQueue(root, now = new Date()) {
         const approvedAt = Date.parse(entry.approvalRecord?.recordedAt);
         if (entry.approvalRecord?.approvedBy !== 'Chris' || !Number.isFinite(approvedAt) || approvedAt > now.getTime()) {
             problems.push(`${at} approval record must be Chris, in the past`);
+        }
+        for (const required of REQUIRED_GOVERNING_CONTRACTS) {
+            if (!(entry.governingContracts ?? []).some((contract) => contract.path === required)) {
+                problems.push(`${at} governingContracts must include ${required}`);
+            }
         }
         for (const contract of entry.governingContracts ?? []) {
             const file = path.join(root, contract.path);
@@ -147,13 +187,21 @@ export async function main(argv = process.argv.slice(2)) {
     const fail = (guard, detail) => { report.guards[guard] = { ok: false, detail }; };
 
     const { queue, problems } = checkQueue(root);
-    // A relaunch after FAIL continues the next round on top of that slice's uncommitted work,
-    // so leftovers inside declared scopes or the runner's record folders are allowed; anything else refuses.
-    const pilotOwned = (changed) => (queue.entries ?? []).some((entry) => (entry.inScopePaths ?? []).includes(changed))
-        || RUNNER_OWNED_PREFIXES.some((prefix) => changed.startsWith(prefix));
+    // First launch: the tree must be clean. Relaunch: uncommitted work is accepted only where the
+    // ledger shows it belongs to a slice that already has a recorded verdict (a FAIL round to continue,
+    // or an earlier PASS the runner will revalidate and skip), plus the runner's own records.
+    // Anything else, including work from a run that stopped before any verdict, refuses.
+    const recordedSlices = recordedSliceIds(root);
+    const pilotOwned = (changed) => (queue.entries ?? []).some((entry) => recordedSlices.has(entry.sliceId)
+            && (entry.inScopePaths ?? []).includes(changed))
+        || (recordedSlices.size > 0 && RUNNER_OWNED_PREFIXES.some((prefix) => changed.startsWith(prefix)));
     const dirty = changedPaths(root);
     const foreign = dirty.filter((changed) => !pilotOwned(changed));
-    report.guards.cleanWorktree = { ok: foreign.length === 0, detail: { outsidePilot: foreign, pilotLeftovers: dirty.filter(pilotOwned) } };
+    report.guards.cleanWorktree = {
+        ok: foreign.length === 0,
+        detail: { launch: recordedSlices.size > 0 ? 'relaunch' : 'first', recordedSlices: [...recordedSlices],
+            refused: foreign, acceptedLeftovers: dirty.filter(pilotOwned) },
+    };
     report.guards.queue = { ok: problems.length === 0, detail: problems };
     try { report.guards.containment = await containmentProbe(root); }
     catch (error) { fail('containment', error?.message || String(error)); }
@@ -182,39 +230,59 @@ export async function main(argv = process.argv.slice(2)) {
         return preflightOk ? 0 : 1;
     }
 
+    const snapshotStarted = Date.now();
     const before = snapshotOutside(root);
-    const result = await runQueue({
-        queuePath: path.join(root, QUEUE_RELATIVE_PATH),
-        repoRoot: root,
-        ledgerPath: path.join(root, LEDGER_RELATIVE_PATH),
-        adapters: [
-            createClaudeAdapter({ executable: process.env.SLICE_RUNNER_CLAUDE_CLI || 'claude' }),
-            createCodexAdapter({ executable: process.env.SLICE_RUNNER_CODEX_CLI || 'codex' }),
-        ],
-        allowedRepositoryRoot: root,
-    });
-    report.runner = result;
+    report.snapshotMs = Date.now() - snapshotStarted;
+    let result = null;
+    let runnerError = null;
+    try {
+        result = await runQueue({
+            queuePath: path.join(root, QUEUE_RELATIVE_PATH),
+            repoRoot: root,
+            ledgerPath: path.join(root, LEDGER_RELATIVE_PATH),
+            adapters: [
+                createClaudeAdapter({ executable: process.env.SLICE_RUNNER_CLAUDE_CLI || 'claude' }),
+                createCodexAdapter({ executable: process.env.SLICE_RUNNER_CODEX_CLI || 'codex' }),
+            ],
+            allowedRepositoryRoot: root,
+        });
+        report.runner = result;
+    } catch (error) {
+        runnerError = error;
+        report.runner = { state: 'RUNNER_THREW', message: error?.stack || String(error) };
+    } finally {
+        // Whatever the runner did, restore the Codex config, check the outside world, and write the report.
+        const after = snapshotOutside(root);
+        const configSame = (before.codexConfig === null && after.codexConfig === null)
+            || (before.codexConfig !== null && after.codexConfig !== null && before.codexConfig.equals(after.codexConfig));
+        let configDetail = 'unchanged';
+        if (!configSame) {
+            if (before.codexConfig !== null) {
+                fs.writeFileSync(before.codexConfigPath, before.codexConfig);
+                configDetail = 'changed during the run; restored byte-for-byte';
+            } else {
+                fs.rmSync(before.codexConfigPath, { force: true });
+                configDetail = 'created during the run; removed';
+            }
+        }
+        report.guards.codexConfig = { ok: configSame, detail: configDetail };
+        const changedFolders = Object.keys(before.folders).filter((folder) => before.folders[folder] !== after.folders[folder]);
+        report.guards.outsideFolders = { ok: changedFolders.length === 0, detail: changedFolders };
+        const scopes = new Set(queue.entries.flatMap((entry) => entry.inScopePaths));
+        const outOfScope = changedPaths(root).filter((changed) => !scopes.has(changed)
+            && !RUNNER_OWNED_PREFIXES.some((prefix) => changed.startsWith(prefix)));
+        report.guards.scope = { ok: outOfScope.length === 0, detail: outOfScope };
 
-    const after = snapshotOutside(root);
-    const configSame = (before.codexConfig === null && after.codexConfig === null)
-        || (before.codexConfig !== null && after.codexConfig !== null && before.codexConfig.equals(after.codexConfig));
-    if (!configSame && before.codexConfig !== null) fs.writeFileSync(before.codexConfigPath, before.codexConfig);
-    report.guards.codexConfig = { ok: true, detail: configSame ? 'unchanged' : 'changed by the CLI; restored byte-for-byte' };
-    const changedFolders = Object.keys(before.folders).filter((folder) => before.folders[folder] !== after.folders[folder]);
-    report.guards.outsideFolders = { ok: changedFolders.length === 0, detail: changedFolders };
-    const scopes = new Set(queue.entries.flatMap((entry) => entry.inScopePaths));
-    const outOfScope = changedPaths(root).filter((changed) => !scopes.has(changed)
-        && !RUNNER_OWNED_PREFIXES.some((prefix) => changed.startsWith(prefix)));
-    report.guards.scope = { ok: outOfScope.length === 0, detail: outOfScope };
-
-    report.finishedAt = new Date().toISOString();
-    const allOk = result.state === 'COMPLETE' && Object.values(report.guards).every((guard) => guard.ok);
-    report.state = allOk ? 'PILOT_RUN_COMPLETE' : 'PILOT_RUN_STOPPED';
-    const reportPath = path.join(root, 'docs', 'slices', `pilot-run-report-${report.startedAt.replaceAll(':', '-')}.json`);
-    fs.mkdirSync(path.dirname(reportPath), { recursive: true });
-    fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`);
-    console.log(JSON.stringify(report, null, 2));
-    return allOk ? 0 : 1;
+        report.finishedAt = new Date().toISOString();
+        const allOk = result?.state === 'COMPLETE' && Object.values(report.guards).every((guard) => guard.ok);
+        report.state = allOk ? 'PILOT_RUN_COMPLETE' : 'PILOT_RUN_STOPPED';
+        const reportPath = path.join(root, 'docs', 'slices', `pilot-run-report-${report.startedAt.replaceAll(':', '-')}.json`);
+        fs.mkdirSync(path.dirname(reportPath), { recursive: true });
+        fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`);
+        console.log(JSON.stringify(report, null, 2));
+    }
+    if (runnerError) throw runnerError;
+    return report.state === 'PILOT_RUN_COMPLETE' ? 0 : 1;
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {

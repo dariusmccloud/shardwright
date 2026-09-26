@@ -19,5 +19,14 @@ assert.equal(entry.sha256, crypto.createHash('sha256').update(packageBytes).dige
     'payload-manifest.json must carry the current package.json hash (rerun the packager)');
 console.log('engines.node and payload manifest: ok');
 
+// Governing-document reconciliation: the D-H row must record the declaration, not list it as not done.
+const map = fs.readFileSync(path.join('docs', 'MISSION_AND_CAPABILITY_MAP.md'), 'utf8');
+const dhRow = map.split(/\r?\n/u).find((line) => line.startsWith('| D-H |'));
+assert.ok(dhRow, 'docs/MISSION_AND_CAPABILITY_MAP.md must keep its D-H row');
+assert.match(dhRow, /engines\.node/u, 'the D-H row must mention engines.node');
+assert.doesNotMatch(dhRow, /Not done here:[^|]*engines\.node/u, 'the D-H row must no longer list engines.node as not done');
+assert.match(dhRow, /engines\.node[^|]*declared|declared[^|]*engines\.node/iu, 'the D-H row must record that engines.node is declared');
+console.log('D-H row reconciliation: ok');
+
 const suite = spawnSync(process.execPath, ['--test', 'package.test.mjs'], { cwd: pluginDir, stdio: 'inherit' });
 process.exit(suite.status ?? 1);

@@ -25,11 +25,11 @@
         },
         {
           "path": "docs/proposals/STEP4_PILOT_DECLARATION_DRAFT.md",
-          "sha256": "6f9458f2df689848552fe5bb15738eef21c4c21f014314bfe10642686e28392d"
+          "sha256": "f358e0f0e5991e58c2ffe2baf0de710166912d8a088bf63ee823cf1ccbb58b00"
         },
         {
           "path": "tools/pilot/proofs/pilot-1-engines-node.mjs",
-          "sha256": "638e043d54ed1a483c8192df65f4573dfae00f15b0abb00bfa038530b84154df"
+          "sha256": "9a97c9b99c5c8673439245c6675f211c51f965f37fff10004c1670339e39e34f"
         }
       ],
       "proof": {
@@ -67,7 +67,7 @@
         },
         {
           "path": "docs/proposals/STEP4_PILOT_DECLARATION_DRAFT.md",
-          "sha256": "6f9458f2df689848552fe5bb15738eef21c4c21f014314bfe10642686e28392d"
+          "sha256": "f358e0f0e5991e58c2ffe2baf0de710166912d8a088bf63ee823cf1ccbb58b00"
         },
         {
           "path": "tools/pilot/proofs/pilot-2-readme-troubleshooting.mjs",
@@ -109,7 +109,7 @@
         },
         {
           "path": "docs/proposals/STEP4_PILOT_DECLARATION_DRAFT.md",
-          "sha256": "6f9458f2df689848552fe5bb15738eef21c4c21f014314bfe10642686e28392d"
+          "sha256": "f358e0f0e5991e58c2ffe2baf0de710166912d8a088bf63ee823cf1ccbb58b00"
         },
         {
           "path": "tools/pilot/proofs/pilot-3-payload-package-json-test.mjs",
