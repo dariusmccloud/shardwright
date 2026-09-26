@@ -4,7 +4,8 @@
 //   node tools/pilot/run-step4-pilot.mjs           the same checks, then run the approved queue
 //
 // Wraps the reviewed runner (tools/slice-runner) with the pilot's own guards:
-//   before: clean worktree; queue shape, approvals and governing hashes; a model-free Codex sandbox
+//   before: no uncommitted change outside the pilot's scopes and record folders (a relaunch after
+//           FAIL continues on top of that slice's own leftovers); queue shape, approvals and governing hashes; a model-free Codex sandbox
 //           probe on this repository (writable inside, protected canaries denied); snapshots of the
 //           Codex config, sibling project folders, and host plugin folders.
 //   after:  every changed path lies inside a declared scope or the runner's own record folders;
@@ -145,9 +146,14 @@ export async function main(argv = process.argv.slice(2)) {
     const report = { mode: checkOnly ? 'check' : 'run', repository: root, startedAt: new Date().toISOString(), guards: {} };
     const fail = (guard, detail) => { report.guards[guard] = { ok: false, detail }; };
 
-    const dirty = changedPaths(root);
-    report.guards.cleanWorktree = { ok: dirty.length === 0, detail: dirty };
     const { queue, problems } = checkQueue(root);
+    // A relaunch after FAIL continues the next round on top of that slice's uncommitted work,
+    // so leftovers inside declared scopes or the runner's record folders are allowed; anything else refuses.
+    const pilotOwned = (changed) => (queue.entries ?? []).some((entry) => (entry.inScopePaths ?? []).includes(changed))
+        || RUNNER_OWNED_PREFIXES.some((prefix) => changed.startsWith(prefix));
+    const dirty = changedPaths(root);
+    const foreign = dirty.filter((changed) => !pilotOwned(changed));
+    report.guards.cleanWorktree = { ok: foreign.length === 0, detail: { outsidePilot: foreign, pilotLeftovers: dirty.filter(pilotOwned) } };
     report.guards.queue = { ok: problems.length === 0, detail: problems };
     try { report.guards.containment = await containmentProbe(root); }
     catch (error) { fail('containment', error?.message || String(error)); }
