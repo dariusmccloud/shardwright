@@ -8,7 +8,7 @@ import test from 'node:test';
 import { runAgentWithTimeout } from './agent-adapter.js';
 import { buildClaudeCommand, createClaudeAdapter } from './claude-adapter.js';
 import { buildCodexCommand, createCodexAdapter } from './codex-adapter.js';
-import { scrubApiKeyEnvironment } from './cli-adapter-common.js';
+import { projectRoot, scrubApiKeyEnvironment } from './cli-adapter-common.js';
 
 async function withFixture(callback) {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'shardwright-cli-test-'));
@@ -165,7 +165,7 @@ test('agent adapter refuses a working directory outside the OS temp fixtures', a
 });
 
 test('repository working directory requires the exact explicit opt-in path', () => {
-    const repositoryRoot = path.resolve(process.cwd(), '..', '..');
+    const repositoryRoot = projectRoot();
     const allowed = buildClaudeCommand({
         role: 'implementer', entry: entry(repositoryRoot), repoRoot: repositoryRoot,
         allowedRepositoryRoot: repositoryRoot,

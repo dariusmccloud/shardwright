@@ -11,6 +11,7 @@ import { createFakeAgent } from './fake-agents.js';
 import { computeFingerprint } from './manifest.js';
 import { DEFAULT_AGENT_TIMEOUT_MS, runQueue } from './runner.js';
 import { REVIEW_BACKLOG_PATH, replayReviewBacklog } from './review-backlog.js';
+import { projectRoot } from './cli-adapter-common.js';
 
 function hash(bytes) {
     return createHash('sha256').update(bytes).digest('hex');
@@ -149,7 +150,7 @@ function deferred() {
 }
 
 test('repository root remains refused unless the exact opt-in path is supplied', async () => {
-    const repositoryRoot = path.resolve(process.cwd(), '..', '..');
+    const repositoryRoot = projectRoot();
     const base = {
         queuePath: path.join(repositoryRoot, 'missing-pilot-queue.json'),
         repoRoot: repositoryRoot,
