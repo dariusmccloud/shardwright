@@ -348,6 +348,19 @@ function makePackagedFinalizedSemanticPayload() {
     };
 }
 
+test('packaged payload carries package.json declaring an ES module', () => {
+    const staged = stagePackagedPlugin();
+    const packageJsonPath = path.join(staged.pluginRoot, 'package.json');
+    const payloadManifest = JSON.parse(fs.readFileSync(
+        path.join(staged.pluginRoot, 'payload-manifest.json'), 'utf8',
+    ));
+
+    assert.equal(payloadManifest.staticPayloadFiles.includes('package.json'), true);
+    assert.equal(fs.existsSync(packageJsonPath), true);
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+    assert.equal(packageJson.type, 'module');
+});
+
 test('packaged plugin stages only declared payload and resolves runtime imports within plugin root', async () => {
     const staged = stagePackagedPlugin();
     const payloadManifestPath = path.join(staged.pluginRoot, 'payload-manifest.json');
