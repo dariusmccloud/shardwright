@@ -157,6 +157,23 @@ export async function main(argv = process.argv.slice(2)) {
     report.guards.queue = { ok: problems.length === 0, detail: problems };
     try { report.guards.containment = await containmentProbe(root); }
     catch (error) { fail('containment', error?.message || String(error)); }
+    // Dry dispatch: the real runner, the real queue, and no adapters. It must pass every startup
+    // check and stop at the first slice's dispatch gate, having invoked and written nothing.
+    try {
+        const dry = await runQueue({
+            queuePath: path.join(root, QUEUE_RELATIVE_PATH),
+            repoRoot: root,
+            ledgerPath: path.join(root, LEDGER_RELATIVE_PATH),
+            adapters: [],
+            allowedRepositoryRoot: root,
+        });
+        // On a relaunch, earlier slices may already have passed, so the gate may be at a later slice.
+        report.guards.runnerDryDispatch = {
+            ok: dry.state === 'HALTED' && dry.reason === 'AGENT_UNAVAILABLE' && dry.dispatchedSliceIds.length === 0
+                && (queue.entries ?? []).some((entry) => entry.sliceId === dry.blockedSliceId),
+            detail: dry,
+        };
+    } catch (error) { fail('runnerDryDispatch', error?.message || String(error)); }
 
     const preflightOk = Object.values(report.guards).every((guard) => guard.ok);
     if (checkOnly || !preflightOk) {

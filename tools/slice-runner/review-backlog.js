@@ -4,6 +4,7 @@ import * as fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
+import { canonicalPath, projectRoot } from './cli-adapter-common.js';
 import { verifyVerdict } from './ledger.js';
 import { validateManifestPath } from './manifest.js';
 
@@ -174,13 +175,13 @@ export function appendResolvedEvent(repoRoot, ledgerPath, event) {
 }
 
 /** Find reachable REVIEW_PENDING commits that have no corresponding PENDING event. */
-export function findOrphanedPendingCommits(repoRoot, events) {
+export function findOrphanedPendingCommits(repoRoot, events, { allowedRepositoryRoot = null } = {}) {
     if (!Array.isArray(events)) throw backlogError('The replayed backlog event list is unavailable.');
     const recordedCommits = new Set(events
         .filter((event) => event.event === 'PENDING')
         .map((event) => event.commit));
     let log;
-    try { log = git(repoRoot, ['log', '--format=%H%x09%s', 'HEAD']); }
+    try { log = gitReadOnly(repoRoot, ['log', '--format=%H%x09%s', 'HEAD'], { allowedRepositoryRoot }); }
     catch (error) {
         const failure = new Error(`Could not inspect pending commits reachable from HEAD: ${error?.message || error}`);
         failure.code = 'BACKLOG_INCONSISTENT';
@@ -213,6 +214,23 @@ function assertTemporaryRepository(repoRoot) {
 function git(repoRoot, args) {
     const cwd = assertTemporaryRepository(repoRoot);
     return execFileSync('git', args, { cwd, encoding: 'utf8', windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+}
+
+function sameCanonicalPath(left, right) {
+    const a = canonicalPath(left);
+    const b = canonicalPath(right);
+    return process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b;
+}
+
+// Read-only history inspection. Temp fixture repositories as before; additionally this repository
+// itself, only when the runner was given the explicit opt-in for it. Every Git command that changes
+// anything still goes through git(), which remains restricted to temp fixtures.
+function gitReadOnly(repoRoot, args, { allowedRepositoryRoot = null } = {}) {
+    if (allowedRepositoryRoot !== null && allowedRepositoryRoot !== undefined
+        && sameCanonicalPath(allowedRepositoryRoot, projectRoot()) && sameCanonicalPath(repoRoot, projectRoot())) {
+        return execFileSync('git', args, { cwd: projectRoot(), encoding: 'utf8', windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+    }
+    return git(repoRoot, args);
 }
 
 /** Commit only the declared paths in an isolated OS-temp fixture repository. */

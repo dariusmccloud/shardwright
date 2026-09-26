@@ -516,7 +516,7 @@ export async function runQueue({
     try { backlogState = replayReviewBacklog(resolvedRoot, ledgerPath); }
     catch (error) { return resultForBacklogCorrupt(result, error); }
     try {
-        const orphans = findOrphanedPendingCommits(resolvedRoot, backlogState.events);
+        const orphans = findOrphanedPendingCommits(resolvedRoot, backlogState.events, { allowedRepositoryRoot });
         if (orphans.length > 0) {
             return { ...result, state: 'HALTED', reason: 'BACKLOG_INCONSISTENT', orphanedCommits: orphans };
         }

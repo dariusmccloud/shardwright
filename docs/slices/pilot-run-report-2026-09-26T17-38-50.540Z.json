@@ -1,0 +1,47 @@
+{
+  "mode": "run",
+  "repository": "C:\\Users\\chris\\OneDrive\\Documents\\Personal\\Projects\\Shardwright",
+  "startedAt": "2026-09-26T17:38:50.540Z",
+  "guards": {
+    "cleanWorktree": {
+      "ok": true,
+      "detail": {
+        "outsidePilot": [],
+        "pilotLeftovers": []
+      }
+    },
+    "queue": {
+      "ok": true,
+      "detail": []
+    },
+    "containment": {
+      "ok": true,
+      "insideWritable": true,
+      "protectedWritten": [],
+      "exitCode": 0,
+      "output": "{\"C:\\\\Users\\\\chris\\\\OneDrive\\\\Documents\\\\Personal\\\\Projects\\\\Shardwright\\\\docs\\\\slices\\\\.pilot-preflight-57184-723b1b7c-6138-48ba-8eae-8e935304c9dd.txt\":\"WROTE\",\"C:\\\\Users\\\\chris\\\\OneDrive\\\\.shardwright-containment-57184-723b1b7c-6138-48ba-8eae-8e935304c9dd-OneDrive.txt\":\"DENIED EPERM\",\"C:\\\\Users\\\\chris\\\\OneDrive\\\\Documents\\\\.shardwright-containment-57184-723b1b7c-6138-48ba-8eae-8e935304c9dd-OneDrive-Documents.txt\":\"DENIED EPERM\",\"D:\\\\AI\\\\Projects\\\\SillyTavern\\\\.shardwright-containment-57184-723b1b7c-6138-48ba-8eae-8e935304c9dd-D-SillyTavern.txt\":\"DENIED EPERM\",\"D:\\\\AI\\\\Projects\\\\SillyBunny\\\\.shardwright-containment-57184-723b1b7c-6138-48ba-8eae-8e935304c9dd-D-SillyBunny.txt\":\"DENIED EPERM\"}"
+    },
+    "codexConfig": {
+      "ok": true,
+      "detail": "unchanged"
+    },
+    "outsideFolders": {
+      "ok": true,
+      "detail": []
+    },
+    "scope": {
+      "ok": true,
+      "detail": []
+    }
+  },
+  "runner": {
+    "state": "HALTED",
+    "dispatchedSliceIds": [],
+    "skippedSliceIds": [],
+    "sliceResults": [],
+    "reason": "BACKLOG_INCONSISTENT",
+    "message": "Could not inspect pending commits reachable from HEAD: Review-backlog Git operations are restricted to child repositories under the OS temp directory."
+  },
+  "finishedAt": "2026-09-26T17:38:51.205Z",
+  "state": "PILOT_RUN_STOPPED"
+}

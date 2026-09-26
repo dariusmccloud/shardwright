@@ -10,7 +10,10 @@ import { appendVerdict, verifyVerdict } from './ledger.js';
 import { createFakeAgent } from './fake-agents.js';
 import { computeFingerprint } from './manifest.js';
 import { DEFAULT_AGENT_TIMEOUT_MS, runQueue } from './runner.js';
-import { REVIEW_BACKLOG_PATH, replayReviewBacklog } from './review-backlog.js';
+import {
+    REVIEW_BACKLOG_PATH, commitPendingSlice, findOrphanedPendingCommits, replayReviewBacklog,
+    restoreWorkingTreeFromCommit, withCommitWorktree,
+} from './review-backlog.js';
 import { projectRoot } from './cli-adapter-common.js';
 
 function hash(bytes) {
@@ -175,6 +178,22 @@ test('repository root remains refused unless the exact opt-in path is supplied',
         assert.equal(invalid.state, 'REFUSED');
         assert.equal(invalid.reason, 'RUNNER_ALLOWED_REPOSITORY_MISMATCH');
     }
+});
+
+test('the opt-in permits read-only history inspection of this repository, never Git writes', async () => {
+    const repositoryRoot = projectRoot();
+    // Without the opt-in, the orphaned-pending scan refuses this repository as before.
+    assert.throws(() => findOrphanedPendingCommits(repositoryRoot, []), { code: 'BACKLOG_INCONSISTENT' });
+    // With the exact opt-in it reads history; this repository has no REVIEW_PENDING commits.
+    assert.deepEqual(findOrphanedPendingCommits(repositoryRoot, [], { allowedRepositoryRoot: repositoryRoot }), []);
+    // The opt-in does not stretch to another folder.
+    assert.throws(() => findOrphanedPendingCommits(path.dirname(repositoryRoot), [], { allowedRepositoryRoot: repositoryRoot }),
+        { code: 'BACKLOG_INCONSISTENT' });
+    // Every backlog operation that changes Git state still refuses this repository.
+    const commit = 'a'.repeat(40);
+    assert.throws(() => commitPendingSlice(repositoryRoot, 'probe', ['README.md']), /restricted to child repositories under the OS temp directory/u);
+    assert.throws(() => restoreWorkingTreeFromCommit(repositoryRoot, commit, ['README.md']), /restricted to child repositories under the OS temp directory/u);
+    await assert.rejects(withCommitWorktree(repositoryRoot, commit, async () => {}), /restricted to child repositories under the OS temp directory/u);
 });
 
 test('only valid PASS advances the approved queue; FAIL and ESCALATE stop before the next slice', async () => {
