@@ -71,6 +71,19 @@ function archiveAgentPrompt(repoRoot, sliceId, phase, prompt) {
     return relativePath;
 }
 
+function archiveImplementerReply(repoRoot, sliceId, round, reply) {
+    const text = typeof reply === 'string' ? reply : JSON.stringify(reply ?? null);
+    const bytes = Buffer.from(`${text}\n`, 'utf8');
+    const relativePath = `docs/slices/${sliceId}/proof/implementer-r${round}-${sha256(bytes)}.response.txt`;
+    const target = resolveRepositoryPath(repoRoot, relativePath, 'implementer response archive');
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    try { fs.writeFileSync(target, bytes, { flag: 'wx' }); }
+    catch (error) {
+        if (error?.code !== 'EEXIST' || !fs.readFileSync(target).equals(bytes)) throw error;
+    }
+    return relativePath;
+}
+
 function withinRoot(root, absolutePath) {
     const relative = path.relative(root, absolutePath);
     return relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);
@@ -122,7 +135,11 @@ function readQueue(queuePath, repoRoot) {
         || !Number.isSafeInteger(queue.reviewBacklog.maxPending) || queue.reviewBacklog.maxPending < 1)) {
         throw runnerError('QUEUE_INVALID', 'reviewBacklog.maxPending must be a positive safe integer.');
     }
-    return { entries: queue.entries, reviewBacklog: queue.reviewBacklog ?? null };
+    if (queue.checkpointRounds !== undefined
+        && (!Number.isSafeInteger(queue.checkpointRounds) || queue.checkpointRounds < 1)) {
+        throw runnerError('QUEUE_INVALID', 'checkpointRounds must be a positive safe integer.');
+    }
+    return { entries: queue.entries, reviewBacklog: queue.reviewBacklog ?? null, checkpointRounds: queue.checkpointRounds ?? 5 };
 }
 
 const BACKLOG_EXCLUDED_TOUCHES = new Set([
@@ -354,6 +371,25 @@ function recordVerdict(repoRoot, ledgerPath, verdictDocument, parsedVerdict) {
     return { recordedAt, verification };
 }
 
+function checkpointDecisionBrief(repoRoot, ledgerPath, entry, latest, checkpointRounds) {
+    const rounds = [];
+    for (let round = 1; round <= latest.row.round; round += 1) {
+        const recorded = readRecordedVerdict(repoRoot, verifyVerdict(ledgerPath, repoRoot, entry.sliceId, round), entry.sliceId);
+        if (recorded.state !== 'VALID') {
+            rounds.push({ round, state: recorded.state });
+            continue;
+        }
+        rounds.push({ round, verdict: recorded.verdict.verdict, recordedAt: recorded.row.recordedAt, body: recorded.verdict.body });
+    }
+    return {
+        sliceId: entry.sliceId,
+        round: latest.row.round,
+        checkpointRounds,
+        rounds,
+        requiredAction: 'Review the checkpoint and approve this slice again to resume work.',
+    };
+}
+
 async function validatePendingBacklog({
     backlogState, entries, repoRoot, allowedRepositoryRoot, ledgerPath, adapters, defaultAgentTimeoutMs, now, result,
 }) {
@@ -509,7 +545,7 @@ export async function runQueue({
     let queue;
     try { queue = readQueue(queuePath, resolvedRoot); }
     catch (error) { return { state: 'REFUSED', reason: error?.code || 'QUEUE_INVALID', message: error.message }; }
-    const { entries, reviewBacklog } = queue;
+    const { entries, reviewBacklog, checkpointRounds } = queue;
     const result = { state: 'COMPLETE', dispatchedSliceIds: [], skippedSliceIds: [], sliceResults: [] };
 
     let backlogState;
@@ -542,7 +578,8 @@ export async function runQueue({
         .filter(({ event }) => event.outcome === 'ANCESTOR_FAILED')
         .map(({ event, pending }) => [event.sliceId, pending.dependsOn]));
 
-    for (const entry of entries) {
+    for (let entryIndex = 0; entryIndex < entries.length; entryIndex += 1) {
+        const entry = entries[entryIndex];
         if (entry?.status !== 'QUEUED') continue;
         if (pendingSliceIds.has(entry.sliceId)) continue;
         if (ancestorFailed.has(entry.sliceId)) {
@@ -595,6 +632,15 @@ export async function runQueue({
                     round: latest.row.round, decisionBrief };
             }
         }
+        if (latest.state === 'VALID' && latest.verdict.verdict === 'FAIL'
+            && latest.row.round % checkpointRounds === 0) {
+            const approvalTime = Date.parse(entry.approvalRecord.recordedAt);
+            const checkpointTime = Date.parse(latest.row.recordedAt);
+            if (!Number.isFinite(approvalTime) || !Number.isFinite(checkpointTime) || approvalTime <= checkpointTime) {
+                return { ...result, state: 'CHECKPOINT_PAUSED', blockedSliceId: entry.sliceId,
+                    round: latest.row.round, decisionBrief: checkpointDecisionBrief(resolvedRoot, ledgerPath, entry, latest, checkpointRounds) };
+            }
+        }
         if (!governanceIsCurrent(resolvedRoot, entry.governingContracts)) {
             return { ...result, state: 'STALE_REVIEW', blockedSliceId: entry.sliceId };
         }
@@ -630,12 +676,15 @@ export async function runQueue({
 
         const baseline = computeFingerprint(resolvedRoot, entry.inScopePaths).fingerprint;
         result.dispatchedSliceIds.push(entry.sliceId);
+        const previousVerdictBody = latest.state === 'VALID' ? latest.verdict.body : null;
         const implementation = await invokeAdapter(implementer, {
             role: 'implementer',
             entry,
             repoRoot: resolvedRoot,
             allowedRepositoryRoot,
             baselineFingerprint: baseline,
+            round: roundInfo.round,
+            previousVerdictBody,
         }, timeouts.timeoutMs, 'implementer');
         if (implementation.unavailable) {
             return {
@@ -649,6 +698,8 @@ export async function runQueue({
         }
         try { implementation.promptArchivePath = archiveAgentPrompt(resolvedRoot, entry.sliceId, 'implementer', implementation.value?.prompt); }
         catch (error) { return { ...result, state: 'HALTED', reason: 'AGENT_PROMPT_ARCHIVE_FAILED', message: error.message, blockedSliceId: entry.sliceId }; }
+        try { implementation.responseArchivePath = archiveImplementerReply(resolvedRoot, entry.sliceId, roundInfo.round, implementation.value?.response ?? implementation.value); }
+        catch (error) { return { ...result, state: 'HALTED', reason: 'AGENT_RESPONSE_ARCHIVE_FAILED', message: error.message, blockedSliceId: entry.sliceId }; }
         if (implementation.value?.state === 'ESCALATE') {
             return { ...result, state: 'ESCALATED', reason: 'CLI_CONTAINMENT_FAILED',
                 decisionBrief: implementation.value.decisionBrief || { sliceId: entry.sliceId, details: implementation.value.message || 'A live CLI failed a containment check.' },
@@ -786,7 +837,13 @@ export async function runQueue({
         result.sliceResults.push(sliceResult);
 
         if (verdict.verdict === 'FAIL') {
-            return { ...result, state: 'FAIL', nextAction: 'IMPLEMENTER', blockedSliceId: entry.sliceId };
+            if (verdict.round % checkpointRounds === 0) {
+                return { ...result, state: 'CHECKPOINT_PAUSED', blockedSliceId: entry.sliceId,
+                    round: verdict.round, decisionBrief: checkpointDecisionBrief(resolvedRoot, ledgerPath, entry,
+                        { row: { ...recorded.verification.row, recordedAt: recorded.recordedAt }, verdict }, checkpointRounds) };
+            }
+            entryIndex -= 1;
+            continue;
         }
         if (verdict.verdict === 'ESCALATE') {
             const decisionBrief = {

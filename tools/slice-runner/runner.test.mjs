@@ -140,7 +140,7 @@ function run(env, adapters, options = {}) {
         repoRoot: env.root,
         ledgerPath: env.ledgerPath,
         adapters,
-        defaultAgentTimeoutMs: options.defaultAgentTimeoutMs ?? 100,
+        defaultAgentTimeoutMs: options.defaultAgentTimeoutMs ?? 5000,
         now: options.now ?? (() => new Date('2026-09-26T00:00:00.000Z')),
         humanDecision: options.humanDecision,
     });
@@ -196,20 +196,21 @@ test('the opt-in permits read-only history inspection of this repository, never 
     await assert.rejects(withCommitWorktree(repositoryRoot, commit, async () => {}), /restricted to child repositories under the OS temp directory/u);
 });
 
-test('only valid PASS advances the approved queue; FAIL and ESCALATE stop before the next slice', async () => {
+test('only valid PASS advances the approved queue; ordinary FAIL returns to the implementer', async () => {
     assert.equal(DEFAULT_AGENT_TIMEOUT_MS, 30 * 60 * 1000);
 
     await withEnvironment(async (env) => {
         writeQueue(env, [entry(env.root, 'slice-fail'), entry(env.root, 'slice-next')]);
-        const adapters = baseAdapters({ reviewer: createFakeAgent('reviewer', [
+        const adapters = [createFakeAgent('implementer', [{ result: { claim: 'first implementation' } }, { result: { claim: 'repaired implementation' } }, { result: { claim: 'next implementation' } }]), createFakeAgent('reviewer', [
             { run: (input) => ({ verdictDocument: verdictDocument(input, 'FAIL') }) },
             { run: (input) => ({ verdictDocument: verdictDocument(input, 'PASS') }) },
-        ]) });
+            { run: (input) => ({ verdictDocument: verdictDocument(input, 'PASS') }) },
+        ])];
         const result = await run(env, adapters);
-        assert.equal(result.state, 'FAIL');
-        assert.deepEqual(result.dispatchedSliceIds, ['slice-fail']);
-        assert.equal(adapters[0].calls.length, 1);
-        assert.equal(result.nextAction, 'IMPLEMENTER');
+        assert.equal(result.state, 'COMPLETE');
+        assert.deepEqual(result.dispatchedSliceIds, ['slice-fail', 'slice-fail', 'slice-next']);
+        assert.equal(adapters[0].calls.length, 3);
+        assert.match(adapters[0].calls[1].previousVerdictBody, /Reviewed fixture evidence/u);
     });
 
     await withEnvironment(async (env) => {
@@ -368,10 +369,8 @@ test('proof receipt is runner-captured and a failed proof cannot become PASS', a
                 argv: [process.execPath, '-e', "process.stdout.write('actual-proof-output'); process.exitCode = 7"],
                 cwd: '.',
             },
-        })]);
-        const implementer = createFakeAgent('implementer', [{
-            result: { claimedProof: { exitCode: 0, outputHash: 'fake-claim' } },
-        }]);
+        })], { checkpointRounds: 2 });
+        const implementer = createFakeAgent('implementer', [{ result: { claimedProof: { exitCode: 0, outputHash: 'fake-claim' } } }, { result: {} }]);
         const reviewer = createFakeAgent('reviewer', [{
             run: (input) => {
                 assert.equal(input.repoRoot, env.root);
@@ -380,9 +379,9 @@ test('proof receipt is runner-captured and a failed proof cannot become PASS', a
                 assert.notEqual(input.proofReceipt.outputHash, 'fake-claim');
                 return { verdictDocument: verdictDocument(input, 'FAIL', null, 'Runner-captured proof failed.') };
             },
-        }]);
+        }, { run: (input) => ({ verdictDocument: verdictDocument(input, 'FAIL', null, 'Runner-captured proof failed.') }) }]);
         const result = await run(env, [implementer, reviewer]);
-        assert.equal(result.state, 'FAIL');
+        assert.equal(result.state, 'CHECKPOINT_PAUSED');
         const receipt = result.sliceResults[0].proofReceipt;
         const archive = fs.readFileSync(path.join(env.root, receipt.archivePath));
         assert.equal(hash(archive), receipt.outputHash);
@@ -392,6 +391,82 @@ test('proof receipt is runner-captured and a failed proof cannot become PASS', a
             stdout: 'actual-proof-output',
             stderr: '',
         });
+    });
+});
+
+test('five ordinary FAIL rounds pause with a mechanical checkpoint and later approval resumes', async () => {
+    await withEnvironment(async (env) => {
+        const slice = entry(env.root, 'checkpointed-slice');
+        writeQueue(env, [slice]);
+        const implementer = createFakeAgent('implementer', Array.from({ length: 5 }, (_, index) => ({
+            result: { claim: `round ${index + 1}` },
+        })));
+        const reviewer = createFakeAgent('reviewer', Array.from({ length: 5 }, () => ({
+            run: (input) => ({ verdictDocument: verdictDocument(input, 'FAIL', null, `Finding for round ${input.round}.`) }),
+        })));
+        const paused = await run(env, [implementer, reviewer]);
+        assert.equal(paused.state, 'CHECKPOINT_PAUSED');
+        assert.equal(paused.round, 5);
+        assert.equal(paused.decisionBrief.rounds.length, 5);
+        assert.equal(paused.decisionBrief.rounds[4].body, 'Finding for round 5.\n');
+        assert.equal(implementer.calls.length, 5);
+        const responseArchives = fs.readdirSync(path.join(env.root, 'docs', 'slices', slice.sliceId, 'proof'))
+            .filter((name) => name.startsWith('implementer-r') && name.endsWith('.response.txt'));
+        assert.equal(responseArchives.length, 5);
+
+        const checkpointRecordedAt = verifyVerdict(env.ledgerPath, env.root, slice.sliceId).row.recordedAt;
+        slice.approvalRecord = { approvedBy: 'Chris', recordedAt: checkpointRecordedAt };
+        writeQueue(env, [slice]);
+        const stillPaused = await run(env, [
+            createFakeAgent('implementer', [{ result: { claim: 'must not run' } }]),
+            reviewerAgent('PASS'),
+        ], { now: () => new Date('2026-09-28T00:00:00Z') });
+        assert.equal(stillPaused.state, 'CHECKPOINT_PAUSED');
+        assert.equal(stillPaused.decisionBrief.round, 5);
+        assert.equal(stillPaused.dispatchedSliceIds.length, 0);
+
+        slice.approvalRecord = { approvedBy: 'Chris', recordedAt: '2026-09-27T00:00:00Z' };
+        writeQueue(env, [slice]);
+        const resumed = await run(env, [
+            createFakeAgent('implementer', [{ result: { claim: 'round 6' } }]),
+            reviewerAgent('PASS'),
+        ], { now: () => new Date('2026-09-28T00:00:00Z') });
+        assert.equal(resumed.state, 'COMPLETE');
+        assert.equal(resumed.sliceResults.at(-1).recordedRound, 6);
+    });
+});
+
+test('checkpoint brief preserves an earlier tampered verdict round', async () => {
+    await withEnvironment(async (env) => {
+        const slice = entry(env.root, 'checkpoint-tampered-history');
+        writeQueue(env, [slice]);
+        const implementer = createFakeAgent('implementer', Array.from({ length: 5 }, () => ({ result: {} })));
+        const reviewer = createFakeAgent('reviewer', Array.from({ length: 5 }, () => ({
+            run: (input) => ({ verdictDocument: verdictDocument(input, 'FAIL', null, `Finding ${input.round}.`) }),
+        })));
+        const paused = await run(env, [implementer, reviewer]);
+        assert.equal(paused.state, 'CHECKPOINT_PAUSED');
+
+        const earlierVerdictPath = path.join(env.root, 'docs', 'verdicts', `${slice.sliceId}-r3.md`);
+        fs.appendFileSync(earlierVerdictPath, 'tampered\n');
+        const replayed = await run(env, [
+            createFakeAgent('implementer', [{ result: { claim: 'must not run' } }]),
+            reviewerAgent('PASS'),
+        ]);
+        assert.equal(replayed.state, 'CHECKPOINT_PAUSED');
+        assert.deepEqual(replayed.decisionBrief.rounds[2], { round: 3, state: 'TAMPERED' });
+        assert.equal(replayed.decisionBrief.rounds.length, 5);
+        assert.equal(replayed.decisionBrief.rounds[0].verdict, 'FAIL');
+        assert.equal(replayed.decisionBrief.rounds[4].verdict, 'FAIL');
+    });
+});
+
+test('checkpointRounds must be a positive safe integer', async () => {
+    await withEnvironment(async (env) => {
+        writeQueue(env, [entry(env.root, 'invalid-checkpoint')], { checkpointRounds: 0 });
+        const result = await run(env, baseAdapters());
+        assert.equal(result.state, 'REFUSED');
+        assert.equal(result.reason, 'QUEUE_INVALID');
     });
 });
 
