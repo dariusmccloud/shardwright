@@ -125,6 +125,7 @@ function recordingAdapter(adapter, invocations) {
                 const text = result?.response ?? result?.verdictDocument ?? result?.message ?? '';
                 record.response = String(text).slice(0, RESPONSE_LIMIT);
                 record.responseTruncated = String(text).length > RESPONSE_LIMIT;
+                if (result?.preamble) record.preamble = String(result.preamble).slice(0, RESPONSE_LIMIT);
                 if (result?.reason) record.reason = result.reason;
                 if (result?.command) record.command = result.command;
                 return result;

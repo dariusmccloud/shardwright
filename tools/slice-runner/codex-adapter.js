@@ -1,6 +1,7 @@
 import { spawnProcessTree } from './process-tree.js';
 import {
     isUnavailableOutput,
+    separateVerdictPreamble,
     parseCodexFinalMessage,
     renderRolePrompt,
     scrubApiKeyEnvironment,
@@ -54,7 +55,7 @@ export function createCodexAdapter({ executable = 'codex', prefixArgs = [], envi
                 const response = parseCodexFinalMessage(output.stdout);
                 if (!response) return unavailable('CLI_OUTPUT_MALFORMED', output.stderr || 'Codex returned no final agent_message event.');
                 return input.role === 'reviewer'
-                    ? { verdictDocument: response, prompt: command.prompt, command: [command.executable, ...prefixArgs, ...command.args] }
+                    ? { ...separateVerdictPreamble(response), prompt: command.prompt, command: [command.executable, ...prefixArgs, ...command.args] }
                     : { response, prompt: command.prompt, command: [command.executable, ...prefixArgs, ...command.args] };
             } catch (error) {
                 if (input.signal?.aborted) throw error;

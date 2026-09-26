@@ -8,7 +8,7 @@ import test from 'node:test';
 import { runAgentWithTimeout } from './agent-adapter.js';
 import { buildClaudeCommand, createClaudeAdapter } from './claude-adapter.js';
 import { buildCodexCommand, createCodexAdapter } from './codex-adapter.js';
-import { isUnavailableOutput, projectRoot, scrubApiKeyEnvironment } from './cli-adapter-common.js';
+import { isUnavailableOutput, projectRoot, scrubApiKeyEnvironment, separateVerdictPreamble } from './cli-adapter-common.js';
 
 async function withFixture(callback) {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'shardwright-cli-test-'));
@@ -199,5 +199,19 @@ test('repository working directory requires the exact explicit opt-in path', () 
             role: 'implementer', entry: entry(repositoryRoot), repoRoot: repositoryRoot,
             allowedRepositoryRoot: invalidOptIn,
         }), { code: 'AGENT_ALLOWED_REPOSITORY_MISMATCH' });
+    }
+});
+
+test('a reviewer preamble before a single complete verdict document is split off; anything ambiguous passes through unchanged', () => {
+    const doc = '---\nslice_id: s\nround: 2\nverdict: FAIL\nsubtype: null\nreviewer: claude\nreviewed_fingerprint: f\npolicy_hash: p\n---\n\nFindings.';
+    // The shape seen in pilot launch 3: one sentence, then the document.
+    const split = separateVerdictPreamble(`Verified independently: the target was not implemented.\n\n${doc}`);
+    assert.equal(split.verdictDocument, doc);
+    assert.equal(split.preamble, 'Verified independently: the target was not implemented.\n\n');
+    // Already well-formed: untouched.
+    assert.deepEqual(separateVerdictPreamble(doc), { verdictDocument: doc, preamble: '' });
+    // Two documents, no document, or an unclosed document: unchanged, so the runner still refuses.
+    for (const ambiguous of [`note\n${doc}\n${doc}`, 'just prose, no verdict', 'note\n---\nslice_id: s\nverdict: PASS']) {
+        assert.deepEqual(separateVerdictPreamble(ambiguous), { verdictDocument: ambiguous, preamble: '' });
     }
 });

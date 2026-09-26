@@ -72,6 +72,22 @@ export function renderRolePrompt(input) {
     return base.join('\n\n');
 }
 
+// A reviewer sometimes writes a sentence before its verdict document. When the reply contains exactly
+// one complete front-matter block that opens with `slice_id:` on its own line, the leading text is split
+// off (and kept as evidence); the block is passed on byte-for-byte, and the runner's strict parser still
+// decides whether it is valid. Anything else (no block, several blocks, an unclosed block) is returned
+// unchanged, so the runner refuses it exactly as before.
+export function separateVerdictPreamble(text) {
+    const reply = String(text ?? '');
+    if (reply.startsWith('---\n')) return { verdictDocument: reply, preamble: '' };
+    const openings = [...reply.matchAll(/(?:^|\n)---\nslice_id: /gu)];
+    if (openings.length !== 1) return { verdictDocument: reply, preamble: '' };
+    const start = openings[0].index + (reply[openings[0].index] === '\n' ? 1 : 0);
+    const document = reply.slice(start);
+    if (document.indexOf('\n---\n', 4) < 0 && !document.endsWith('\n---')) return { verdictDocument: reply, preamble: '' };
+    return { verdictDocument: document, preamble: reply.slice(0, start) };
+}
+
 export function isUnavailableOutput(output) {
     if (output?.exitCode === 0) return false;
     const text = `${output?.stderr ?? ''}`;

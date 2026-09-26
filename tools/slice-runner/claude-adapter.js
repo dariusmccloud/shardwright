@@ -1,6 +1,7 @@
 import { spawnProcessTree } from './process-tree.js';
 import {
     isUnavailableOutput,
+    separateVerdictPreamble,
     renderRolePrompt,
     scrubApiKeyEnvironment,
     unavailable,
@@ -48,7 +49,7 @@ export function createClaudeAdapter({ executable = 'claude', prefixArgs = [], en
                 const response = output.stdout.trim();
                 if (!response) return unavailable('CLI_OUTPUT_EMPTY', output.stderr);
                 return input.role === 'reviewer'
-                    ? { verdictDocument: response, prompt: command.prompt, command: [command.executable, ...prefixArgs, ...command.args] }
+                    ? { ...separateVerdictPreamble(response), prompt: command.prompt, command: [command.executable, ...prefixArgs, ...command.args] }
                     : { response, prompt: command.prompt, command: [command.executable, ...prefixArgs, ...command.args] };
             } catch (error) {
                 if (input.signal?.aborted) throw error;
