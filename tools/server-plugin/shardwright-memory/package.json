@@ -6,9 +6,10 @@
   "private": true,
   "scripts": {
     "generate:architectural-schema": "node ../generate-architectural-intermediate-validator.mjs",
-    "test:architectural-schema": "node --test architectural-intermediate-schema.test.mjs"
+    "test:architectural-schema": "node --test architectural-intermediate-schema.test.mjs",
+    "generate:memory-catalog-validators": "node ../generate-memory-catalog-validators.mjs"
   },
-  "dependencies": {
+  "devDependencies": {
     "ajv": "8.20.0"
   }
 }

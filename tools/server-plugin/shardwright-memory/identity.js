@@ -7,17 +7,10 @@
 // remain unauthorized.
 
 import fs from 'node:fs';
-import path from 'node:path';
 import crypto from 'node:crypto';
-import { fileURLToPath } from 'node:url';
 
-import Ajv2020 from 'ajv/dist/2020.js';
-
+import memoryCatalogValidators from './memory-catalog-validators.generated.cjs';
 import { cloneJson, createError, createId, ensureStorageRoot, nowTimestamp, stableStringify } from './core.js';
-
-const currentDir = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(currentDir, '..', '..', '..');
-const schemaDir = path.join(repoRoot, 'docs', 'schemas', 'memory-catalog');
 
 export const CONTEXT_SHEET_IDENTITY_LEDGER_VERSION = 1;
 export const CONTEXT_SHEET_RECORD_SCHEMA_ID = 'context-sheet-record-v1';
@@ -35,24 +28,13 @@ const KNOWN_CONTEXT_SHEET_CONTRACT_BINDING = 'phase-x-context-sheet-anchor@0.1.0
 const KNOWN_CONTEXT_SHEET_IDENTITY_POLICY_BINDING = 'context-sheet-identity-policy@v1';
 const KNOWN_CONTEXT_SHEET_MERGE_POLICY_BINDING = 'context-sheet-merge-policy@v1';
 const KNOWN_CONTEXT_SHEET_SPLIT_POLICY_BINDING = 'context-sheet-split-policy@v1';
-const DATE_TIME_FORMAT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/u;
 
-const artifactValidators = new Map();
-
-function loadSchema(fileName) {
-    return JSON.parse(fs.readFileSync(path.join(schemaDir, fileName), 'utf8'));
-}
-
+// Prebuilt from docs/schemas/memory-catalog by tools/server-plugin/generate-memory-catalog-validators.mjs.
 function getArtifactValidator(schemaFileName) {
-    if (artifactValidators.has(schemaFileName)) {
-        return artifactValidators.get(schemaFileName);
+    const validator = memoryCatalogValidators[schemaFileName];
+    if (typeof validator !== 'function') {
+        throw new Error(`No prebuilt validator for ${schemaFileName}.`);
     }
-    const ajv = new Ajv2020({ strict: true, allErrors: true });
-    ajv.addFormat('date-time', { type: 'string', validate: (value) => DATE_TIME_FORMAT.test(value) });
-    ajv.addSchema(loadSchema('memory-artifact-envelope-v1.schema.json'));
-    ajv.addSchema(loadSchema('memory-artifact-reference-v1.schema.json'));
-    const validator = ajv.compile(loadSchema(schemaFileName));
-    artifactValidators.set(schemaFileName, validator);
     return validator;
 }
 

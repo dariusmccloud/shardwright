@@ -70,7 +70,6 @@ Transcript Recall needs the Shardwright server plugin, `shardwright-memory`, fro
 
 **Requirements**
 - Node.js 24.21.0 or later for SillyTavern. SillyBunny runs plugins on its bundled Bun, which has been checked with Bun 1.3.14.
-- `npm`, to install the plugin's one runtime dependency (`ajv` 8).
 - Server plugins enabled in the host's `config.yaml`:
   ```yaml
   enableServerPlugins: true
@@ -81,12 +80,12 @@ Transcript Recall needs the Shardwright server plugin, `shardwright-memory`, fro
    ```powershell
    .\tools\server-plugin\install-shardwright-memory.ps1 -HostRoots 'D:\SillyTavern'
    ```
-   It packages the plugin, copies its files to `<host>\plugins\shardwright-memory` (checking each file's hash), and installs the plugin's dependency there with `npm ci --omit=dev`. It replaces any existing copy there. If the dependency install fails, the installer stops with an error: the plugin does not load without it, because the host's own `ajv` is an older version the plugin cannot use.
+   It packages the plugin and copies its files to `<host>\plugins\shardwright-memory`, checking each file's hash. It replaces any existing copy there. The plugin has no runtime dependencies to install: its schema validators are prebuilt into the package.
 2. Restart SillyTavern.
 
 The folder must be named `shardwright-memory`; the installer refuses any other plugin ID.
 
-**Development setup (link instead of copy).** A host can load the plugin straight from the repository with a directory link: `<host>\plugins\shardwright-memory` pointing to `tools\server-plugin\shardwright-memory`. Run `npm ci --omit=dev` once in that repository folder, and run `node tools/server-plugin/package-shardwright-memory.mjs` after pulling changes, so the plugin's `lib/` copies of shared code stay current.
+**Development setup (link instead of copy).** A host can load the plugin straight from the repository with a directory link: `<host>\plugins\shardwright-memory` pointing to `tools\server-plugin\shardwright-memory`. Run `node tools/server-plugin/package-shardwright-memory.mjs` after pulling changes, so the plugin's `lib/` copies of shared code stay current. Running the plugin's tests or regenerating its validators needs its development dependencies (`npm ci` in that folder); after a schema change in `docs/schemas/memory-catalog/`, run `node tools/server-plugin/generate-memory-catalog-validators.mjs`.
 
 ---
 

@@ -62,6 +62,7 @@
     "schema.js",
     "architectural-intermediate-validator.js",
     "architectural-intermediate-validator.generated.cjs",
+    "memory-catalog-validators.generated.cjs",
     "sqlite-node.js",
     "sqlite-bun.js"
   ],
@@ -244,7 +245,7 @@
     },
     {
       "relativePath": "identity.js",
-      "sha256": "74f7fbc6659d6e444896814bfe6ef3a30ed81f184727da5781076fe5ac3a0f1f"
+      "sha256": "a78aee8564fed58d2ad6ff50025ca1c7dca772d0639b3d8ef795216ab37d4d46"
     },
     {
       "relativePath": "index.js",
@@ -364,15 +365,19 @@
     },
     {
       "relativePath": "membership.js",
-      "sha256": "5197e8b77d69a262b61c33c22200141d00e1f31002b83818555a921799053afd"
+      "sha256": "fefed42f771250173eff8451f296ace8004a653fb391a60477ae58fedb88a496"
+    },
+    {
+      "relativePath": "memory-catalog-validators.generated.cjs",
+      "sha256": "7c1178e17ba406965297642fb7a2b47bf4b156436d51089cf545df6c7c3a8bab"
     },
     {
       "relativePath": "package-lock.json",
-      "sha256": "4ad390a994d875b6ba250c2ec7a180458a309b373452aa0ab70a45b051a559ac"
+      "sha256": "ab4de489bd34ec2bb6b7c67af2c33b7e9f470b1bd5520ac563b7fa067b7d6493"
     },
     {
       "relativePath": "package.json",
-      "sha256": "9bfd674e2a4828a0f0db53c5d824a287fa5fd2a79098879b405285d878c63392"
+      "sha256": "2ea4fca077114063dfc2ee4c84f0327e4e7405554da72237deb13729c2556332"
     },
     {
       "relativePath": "promotion.js",

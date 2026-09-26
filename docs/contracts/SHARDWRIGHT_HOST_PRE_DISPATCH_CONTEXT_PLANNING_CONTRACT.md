@@ -560,6 +560,13 @@ dependency and ships its lockfile; the current checkout's existing dependency
 directory remains Windows-locked, so local install execution is still an environment
 concern rather than a package-declaration gap.
 
+Superseded on 2026-09-26 (Work Board entry 15): AJV is no longer a runtime
+dependency. The memory-catalog validators are generated at build time from the same
+schemas and options by `tools/server-plugin/generate-memory-catalog-validators.mjs`
+and shipped as `memory-catalog-validators.generated.cjs`; AJV is a development
+dependency only. Proof: `node --test memory-catalog-validators.test.mjs` (3/3,
+75,140 prebuilt-versus-runtime comparisons with identical validity and errors).
+
 Live proof completed on 2026-09-08 after the server restart and browser hard
 refresh. The controlled planner returned `APPROVED` with
 `EXACT_CAPACITY_APPROVED`, request ID

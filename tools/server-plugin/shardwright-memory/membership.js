@@ -10,16 +10,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { fileURLToPath } from 'node:url';
 
-import Ajv2020 from 'ajv/dist/2020.js';
-
+import memoryCatalogValidators from './memory-catalog-validators.generated.cjs';
 import { atomicWriteFile, cloneJson, createError, createId, ensureStorageRoot, nowTimestamp, stableStringify } from './core.js';
 import { readContextSheetIdentityLedger } from './identity.js';
-
-const currentDir = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(currentDir, '..', '..', '..');
-const schemaDir = path.join(repoRoot, 'docs', 'schemas', 'memory-catalog');
 
 export const MEMBERSHIP_LEDGER_VERSION = 1;
 export const MEMBERSHIP_NOMINATION_SCHEMA_ID = 'context-sheet-membership-nomination-v1';
@@ -99,24 +93,12 @@ function assertKnownValidationPolicyBindings(artifact, operationName, errorPrefi
     }
 }
 
-function loadSchema(fileName) {
-    return JSON.parse(fs.readFileSync(path.join(schemaDir, fileName), 'utf8'));
-}
-
-const DATE_TIME_FORMAT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/u;
-
-const artifactValidators = new Map();
-
+// Prebuilt from docs/schemas/memory-catalog by tools/server-plugin/generate-memory-catalog-validators.mjs.
 function getArtifactValidator(schemaFileName) {
-    if (artifactValidators.has(schemaFileName)) {
-        return artifactValidators.get(schemaFileName);
+    const validator = memoryCatalogValidators[schemaFileName];
+    if (typeof validator !== 'function') {
+        throw new Error(`No prebuilt validator for ${schemaFileName}.`);
     }
-    const ajv = new Ajv2020({ strict: true, allErrors: true });
-    ajv.addFormat('date-time', { type: 'string', validate: (value) => DATE_TIME_FORMAT.test(value) });
-    ajv.addSchema(loadSchema('memory-artifact-envelope-v1.schema.json'));
-    ajv.addSchema(loadSchema('memory-artifact-reference-v1.schema.json'));
-    const validator = ajv.compile(loadSchema(schemaFileName));
-    artifactValidators.set(schemaFileName, validator);
     return validator;
 }
 

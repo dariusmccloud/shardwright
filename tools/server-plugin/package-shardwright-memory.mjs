@@ -68,6 +68,7 @@ const STATIC_PAYLOAD_FILES = Object.freeze([
     'schema.js',
     'architectural-intermediate-validator.js',
     'architectural-intermediate-validator.generated.cjs',
+    'memory-catalog-validators.generated.cjs',
     'sqlite-node.js',
     'sqlite-bun.js',
 ]);
