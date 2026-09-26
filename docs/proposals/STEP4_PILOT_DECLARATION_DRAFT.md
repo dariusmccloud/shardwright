@@ -55,6 +55,25 @@ One document for Chris covering:
 - **Normal:** all pilot slices reach a recorded verdict, and the report is delivered. The pilot then stops; activation waits for Chris.
 - **Early stop:** any containment finding, any change outside this repository, a ledger or backlog integrity error, or Chris's instruction. The pilot halts and the finding goes to Chris.
 
+## Review and Chris's answers (2026-09-26)
+
+**Codex review:** PASS at the declaration level (2026-09-26). Codex noted that before authorization Chris must choose the three slices, approve the single repository-path exception, and specify the protected paths and canaries and the exact test-only slice.
+
+**Chris's answers:**
+1. **Slices** (replacing the two table candidates since done as ordinary slices, entries 10 and 11):
+   - Codex implements, Claude reviews: declare the plugin's minimum Node version (`engines.node` `>=24.21.0`) in `tools/server-plugin/shardwright-memory/package.json`, the follow-up the D-H row leaves open.
+   - Claude implements, Codex reviews: a README Troubleshooting row for the plugin failing to load with a missing-`ajv` error.
+   - Test-only: a test that the installed payload carries `package.json` and `package-lock.json`, so the dependency install can run. The exact test file is named in the queue entry.
+2. **Review backlog:** off.
+3. **Off-limits beyond declared scopes:**
+   - In the repository: `AGENTS.md`, `docs/contracts/`, the split-gate amendment draft, `tools/slice-runner/`, and `vendor/`.
+   - Outside it:
+     - `C:\Users\chris\OneDrive\Documents\Personal\Projects` and every subfolder other than this repository. Chris's standing rule: not touched unless a project is expressly the work.
+     - `~/.codex/config.toml`, `D:\SillyTavern`, `D:\SillyBunny`, and `D:\AI\Projects`.
+   - Protected canaries and before/after fingerprints cover these.
+
+**Still needed:** Chris's explicit approval of the pilot as a whole, including the one repository-path exception.
+
 ## Questions for Chris before approval
 
 1. Which three slices? (The table above is a starting point.)
