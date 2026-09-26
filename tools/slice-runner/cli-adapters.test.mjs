@@ -89,6 +89,9 @@ test('adapter prompt carries declaration, scope, proof receipt, and verdict form
         assert.match(reviewer.prompt, /Proof receipt/u);
         assert.match(reviewer.prompt, /verdict: <REPLACE_WITH_PASS_FAIL_OR_ESCALATE>/u);
         assert.doesNotMatch(reviewer.prompt, /verdict: PASS\n/u);
+        // The template is one block of nine lines with single newlines (pilot launch 4: a reviewer
+        // copied blank lines from a template whose lines were separated by blank lines).
+        assert.match(reviewer.prompt, /\n---\nslice_id: [^\n]+\nround: 1\nverdict: <REPLACE_WITH_PASS_FAIL_OR_ESCALATE>\nsubtype: null\nreviewer: codex\nreviewed_fingerprint: a{64}\npolicy_hash: b{64}\n---\n/u);
         assert.match(reviewer.prompt, /reviewed_fingerprint/u);
     });
 });
