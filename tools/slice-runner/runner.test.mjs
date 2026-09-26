@@ -149,7 +149,7 @@ function deferred() {
 }
 
 test('only valid PASS advances the approved queue; FAIL and ESCALATE stop before the next slice', async () => {
-    assert.equal(DEFAULT_AGENT_TIMEOUT_MS, 15 * 60 * 1000);
+    assert.equal(DEFAULT_AGENT_TIMEOUT_MS, 30 * 60 * 1000);
 
     await withEnvironment(async (env) => {
         writeQueue(env, [entry(env.root, 'slice-fail'), entry(env.root, 'slice-next')]);
@@ -194,7 +194,7 @@ test('only valid PASS advances the approved queue; FAIL and ESCALATE stop before
 });
 
 test('agent errors and timeouts halt without FAIL; slice timeout overrides default; human wait has no timeout', async () => {
-    assert.equal(DEFAULT_AGENT_TIMEOUT_MS, 900_000);
+    assert.equal(DEFAULT_AGENT_TIMEOUT_MS, 1_800_000);
 
     await withEnvironment(async (env) => {
         writeQueue(env, [entry(env.root, 'impl-timeout'), entry(env.root, 'slice-next')]);
@@ -248,6 +248,17 @@ test('agent errors and timeouts halt without FAIL; slice timeout overrides defau
             assert.deepEqual(result.dispatchedSliceIds, [`human-${subtype || 'escalate'}`]);
         });
     }
+});
+
+test('ESCALATE without a decision handler returns immediately for restart-safe resumption', async () => {
+    await withEnvironment(async (env) => {
+        writeQueue(env, [entry(env.root, 'escalate-exit'), entry(env.root, 'must-not-run')]);
+        const result = await run(env, baseAdapters({ reviewer: reviewerAgent('ESCALATE', 'NEEDS_HUMAN_ACTION', 'Operator decision required.') }));
+        assert.equal(result.state, 'ESCALATED');
+        assert.equal(result.reason, 'HUMAN_DECISION_REQUIRED');
+        assert.equal(result.decisionBrief.sliceId, 'escalate-exit');
+        assert.deepEqual(result.dispatchedSliceIds, ['escalate-exit']);
+    });
 });
 
 test('a fingerprint change after PASS refuses dispatch and returns the slice to review', async () => {
@@ -315,6 +326,7 @@ test('proof receipt is runner-captured and a failed proof cannot become PASS', a
         }]);
         const reviewer = createFakeAgent('reviewer', [{
             run: (input) => {
+                assert.equal(input.repoRoot, env.root);
                 assert.equal(input.proofReceipt.exitCode, 7);
                 assert.equal(input.proofReceipt.stdout, 'actual-proof-output');
                 assert.notEqual(input.proofReceipt.outputHash, 'fake-claim');
@@ -328,6 +340,7 @@ test('proof receipt is runner-captured and a failed proof cannot become PASS', a
         assert.equal(hash(archive), receipt.outputHash);
         assert.deepEqual(JSON.parse(archive.toString('utf8')), {
             exitCode: 7,
+            signal: null,
             stdout: 'actual-proof-output',
             stderr: '',
         });
@@ -458,6 +471,21 @@ test('invalid verdicts are rejected before writing and ledger append failure rem
     });
 });
 
+test('a neutral reviewer verdict placeholder fails closed before recording', async () => {
+    await withEnvironment(async (env) => {
+        const slice = entry(env.root, 'neutral-verdict-placeholder');
+        writeQueue(env, [slice]);
+        const reviewer = createFakeAgent('reviewer', [{
+            run: (input) => ({ verdictDocument: verdictDocument(input, '<REPLACE_WITH_PASS_FAIL_OR_ESCALATE>') }),
+        }]);
+        const result = await run(env, baseAdapters({ reviewer }));
+        assert.equal(result.state, 'HALTED');
+        assert.equal(result.reason, 'VERDICT_INVALID');
+        assert.equal(fs.existsSync(env.ledgerPath), false);
+        assert.equal(fs.existsSync(path.join(env.root, 'docs', 'verdicts', 'neutral-verdict-placeholder-r1.md')), false);
+    });
+});
+
 test('missing or empty governing contracts refuse dispatch as QUEUE_ENTRY_INVALID', async () => {
     for (const governingContracts of [undefined, []]) {
         await withEnvironment(async (env) => {
@@ -475,9 +503,12 @@ test('missing or empty governing contracts refuse dispatch as QUEUE_ENTRY_INVALI
 
 test('proof timeout halts without recording a verdict or invoking the reviewer', async () => {
     await withEnvironment(async (env) => {
+        const survivorMarker = path.join(env.root, 'proof-grandchild-survived.txt');
+        const childCode = `setTimeout(() => require('node:fs').writeFileSync(${JSON.stringify(survivorMarker)}, 'survived'), 1800)`;
+        const proofCode = `const { spawn } = require('node:child_process'); spawn(process.execPath, ['-e', ${JSON.stringify(childCode)}], { stdio: 'ignore' }); setInterval(() => {}, 1000);`;
         writeQueue(env, [entry(env.root, 'proof-timeout', {
             proof: {
-                argv: [process.execPath, '-e', 'setTimeout(() => {}, 1000)'],
+                argv: [process.execPath, '-e', proofCode],
                 cwd: '.',
                 timeoutMs: 25,
             },
@@ -488,6 +519,8 @@ test('proof timeout halts without recording a verdict or invoking the reviewer',
         assert.equal(result.reason, 'PROOF_TIMEOUT');
         assert.equal(fs.existsSync(env.ledgerPath), false);
         assert.equal(adapters[1].calls.length, 0);
+        await new Promise((resolve) => setTimeout(resolve, 2100));
+        assert.equal(fs.existsSync(survivorMarker), false, 'timed-out proof grandchild must not survive');
     });
 });
 

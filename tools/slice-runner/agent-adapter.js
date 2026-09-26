@@ -26,15 +26,21 @@ export async function runAgentWithTimeout(adapter, input, timeoutMs) {
 
     const controller = new AbortController();
     let timer;
+    let timeoutStarted = false;
     const timeout = new Promise((_, reject) => {
-        timer = setTimeout(() => {
+        timer = setTimeout(async () => {
+            timeoutStarted = true;
             controller.abort();
+            try { await adapter.terminate?.(); } catch { /* the timeout remains authoritative */ }
             reject(new AgentTimeoutError(adapter.id, timeoutMs));
         }, timeoutMs);
     });
     try {
         return await Promise.race([
-            Promise.resolve().then(() => adapter.run({ ...input, signal: controller.signal })),
+            Promise.resolve().then(() => adapter.run({ ...input, signal: controller.signal })).catch((error) => {
+                if (timeoutStarted) return new Promise(() => {});
+                throw error;
+            }),
             timeout,
         ]);
     } finally {

@@ -1,12 +1,12 @@
-import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
-import { promisify } from 'node:util';
 
 import { runAgentWithTimeout } from './agent-adapter.js';
 import { appendVerdict, verifyVerdict } from './ledger.js';
 import { compareFingerprints, computeFingerprint } from './manifest.js';
+import { spawnProcessTree } from './process-tree.js';
 import {
     appendPendingEvent,
     appendResolvedEvent,
@@ -18,8 +18,7 @@ import {
     withCommitWorktree,
 } from './review-backlog.js';
 
-const execFileAsync = promisify(execFile);
-export const DEFAULT_AGENT_TIMEOUT_MS = 15 * 60 * 1000;
+export const DEFAULT_AGENT_TIMEOUT_MS = 30 * 60 * 1000;
 const FRONT_MATTER_FIELDS = [
     'slice_id',
     'round',
@@ -37,6 +36,25 @@ function runnerError(code, message) {
 
 function sha256(bytes) {
     return createHash('sha256').update(bytes).digest('hex');
+}
+
+function assertTemporaryRoot(repoRoot) {
+    const tempRoot = path.resolve(os.tmpdir());
+    const relative = path.relative(tempRoot, path.resolve(repoRoot));
+    return relative !== '' && relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);
+}
+
+function archiveAgentPrompt(repoRoot, sliceId, phase, prompt) {
+    if (typeof prompt !== 'string' || prompt.length === 0) return null;
+    const bytes = Buffer.from(`${prompt}\n`, 'utf8');
+    const relativePath = `docs/slices/${sliceId}/proof/${phase}-${sha256(bytes)}.prompt.txt`;
+    const target = resolveRepositoryPath(repoRoot, relativePath, 'agent prompt archive');
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    try { fs.writeFileSync(target, bytes, { flag: 'wx' }); }
+    catch (error) {
+        if (error?.code !== 'EEXIST' || !fs.readFileSync(target).equals(bytes)) throw error;
+    }
+    return relativePath;
 }
 
 function withinRoot(root, absolutePath) {
@@ -173,7 +191,7 @@ async function invokeAdapter(adapter, input, timeoutMs, phase) {
     try {
         const value = await runAgentWithTimeout(adapter, input, timeoutMs);
         if (value?.state === 'UNAVAILABLE') {
-            return { unavailable: true, reason: value.reason || 'AGENT_UNAVAILABLE', phase };
+            return { unavailable: true, reason: value.reason || 'AGENT_UNAVAILABLE', message: value.message || '', phase };
         }
         return { value };
     } catch (error) {
@@ -188,23 +206,20 @@ async function invokeAdapter(adapter, input, timeoutMs, phase) {
 
 async function runProof(repoRoot, sliceId, proof, timeoutMs) {
     const cwd = resolveRepositoryPath(repoRoot, proof.cwd, 'proof.cwd', { allowDot: true });
-    const output = await execFileAsync(proof.argv[0], proof.argv.slice(1), {
-        cwd,
-        encoding: 'utf8',
-        windowsHide: true,
-        maxBuffer: 16 * 1024 * 1024,
-        timeout: timeoutMs,
-    }).then(({ stdout, stderr }) => ({ exitCode: 0, stdout, stderr }))
-        .catch((error) => {
-            if (error?.code === 'ETIMEDOUT' || (error?.killed && error?.signal)) {
-                throw runnerError('PROOF_TIMEOUT', `Proof command exceeded its ${timeoutMs} ms limit.`);
-            }
-            return {
-                exitCode: Number.isInteger(error?.code) ? error.code : 127,
-                stdout: error?.stdout || '',
-                stderr: error?.stderr || '',
-            };
-        });
+    let output;
+    const processHandle = spawnProcessTree(proof.argv[0], proof.argv.slice(1), { cwd, maxBuffer: 16 * 1024 * 1024 });
+    const timeout = setTimeout(() => {
+        void processHandle.terminate('PROOF_TIMEOUT', `Proof command exceeded its ${timeoutMs} ms limit.`).catch(() => {});
+    }, timeoutMs);
+    try {
+        output = await processHandle.result;
+    } catch (error) {
+        if (error?.code === 'PROOF_TIMEOUT') throw runnerError('PROOF_TIMEOUT', `Proof command exceeded its ${timeoutMs} ms limit.`);
+        if (error?.code === 'PROCESS_TREE_KILL_FAILED') throw error;
+        output = { exitCode: 127, stdout: '', stderr: error?.message || String(error) };
+    } finally {
+        clearTimeout(timeout);
+    }
 
     const archiveBytes = Buffer.from(`${JSON.stringify(output)}\n`, 'utf8');
     const outputHash = sha256(archiveBytes);
@@ -461,12 +476,15 @@ export async function runQueue({
     adapters = [],
     defaultAgentTimeoutMs = DEFAULT_AGENT_TIMEOUT_MS,
     now = () => new Date(),
-    humanDecision = () => new Promise(() => {}),
+    humanDecision = null,
 }) {
     if (!Number.isSafeInteger(defaultAgentTimeoutMs) || defaultAgentTimeoutMs < 1) {
         throw runnerError('RUNNER_CONFIGURATION_INVALID', 'defaultAgentTimeoutMs must be a positive safe integer.');
     }
     const resolvedRoot = path.resolve(repoRoot);
+    if (!assertTemporaryRoot(resolvedRoot)) {
+        return { state: 'REFUSED', reason: 'RUNNER_ROOT_OUTSIDE_TEMP', message: 'This runner slice may operate only on fixture repositories under the OS temp directory.' };
+    }
     let queue;
     try { queue = readQueue(queuePath, resolvedRoot); }
     catch (error) { return { state: 'REFUSED', reason: error?.code || 'QUEUE_INVALID', message: error.message }; }
@@ -607,6 +625,13 @@ export async function runQueue({
                 blockedSliceId: entry.sliceId,
             };
         }
+        try { implementation.promptArchivePath = archiveAgentPrompt(resolvedRoot, entry.sliceId, 'implementer', implementation.value?.prompt); }
+        catch (error) { return { ...result, state: 'HALTED', reason: 'AGENT_PROMPT_ARCHIVE_FAILED', message: error.message, blockedSliceId: entry.sliceId }; }
+        if (implementation.value?.state === 'ESCALATE') {
+            return { ...result, state: 'ESCALATED', reason: 'CLI_CONTAINMENT_FAILED',
+                decisionBrief: implementation.value.decisionBrief || { sliceId: entry.sliceId, details: implementation.value.message || 'A live CLI failed a containment check.' },
+                blockedSliceId: entry.sliceId };
+        }
 
         let proofReceipt;
         try {
@@ -621,11 +646,16 @@ export async function runQueue({
             : await invokeAdapter(reviewer, {
                 role: 'reviewer',
                 entry,
+                repoRoot: resolvedRoot,
                 proofReceipt,
                 reviewedFingerprint: reviewedFingerprint.manifestHash,
                 policyHash: reviewedFingerprint.policyHash,
                 round: roundInfo.round,
             }, timeouts.timeoutMs, 'reviewer');
+        if (!review.unavailable) {
+            try { review.promptArchivePath = archiveAgentPrompt(resolvedRoot, entry.sliceId, 'reviewer', review.value?.prompt); }
+            catch (error) { return { ...result, state: 'HALTED', reason: 'AGENT_PROMPT_ARCHIVE_FAILED', message: error.message, blockedSliceId: entry.sliceId }; }
+        }
         if (review.unavailable) {
             reviewerUnavailableInRun = { reason: review.reason, message: review.message };
             const latestBacklog = (() => {
@@ -674,6 +704,11 @@ export async function runQueue({
                 message: review.message,
                 blockedSliceId: entry.sliceId,
             };
+        }
+        if (review.value?.state === 'ESCALATE') {
+            return { ...result, state: 'ESCALATED', reason: 'CLI_CONTAINMENT_FAILED',
+                decisionBrief: review.value.decisionBrief || { sliceId: entry.sliceId, details: review.value.message || 'A live CLI failed a containment check.' },
+                blockedSliceId: entry.sliceId };
         }
 
         const verdictDocument = review.value?.verdictDocument;
@@ -738,6 +773,9 @@ export async function runQueue({
                 details: verdict.body.trim(),
                 requiredAction: 'Review the decision brief and choose how work should proceed.',
             };
+            if (typeof humanDecision !== 'function') {
+                return { ...result, state: 'ESCALATED', reason: 'HUMAN_DECISION_REQUIRED', decisionBrief, blockedSliceId: entry.sliceId };
+            }
             const decision = await humanDecision({ entry, verdict, decisionBrief });
             return { ...result, state: 'ESCALATED', decisionBrief, humanDecision: decision, blockedSliceId: entry.sliceId };
         }
