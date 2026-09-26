@@ -8,11 +8,10 @@ import test from 'node:test';
 
 import { resolveProtectedCanaryPaths, runCodexSandboxCommand, runSandboxedNodeTest } from './codex-sandbox-probe.js';
 
-async function withSandboxFixture(callback) {
+async function withSandboxFixture(outsideCanaryPaths, callback) {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'shardwright-codex-sandbox-'));
     const repoRoot = path.join(root, 'fixture-repo');
     const insideCanary = path.join(root, 'sibling-in-temp');
-    const outsideCanaryPaths = resolveProtectedCanaryPaths(`${process.pid}-${randomUUID()}`);
     fs.mkdirSync(repoRoot);
     fs.mkdirSync(insideCanary);
     try {
@@ -36,7 +35,13 @@ function installedCodex() {
 test('model-free Codex sandbox regression allows the fixture and denies protected-location canaries', async (t) => {
     const codex = installedCodex();
     if (codex.reason) return t.skip(`Codex CLI unavailable: ${codex.reason}`);
-    await withSandboxFixture(async ({ repoRoot, insideCanary, outsideCanaryPaths }) => {
+    let outsideCanaryPaths;
+    try { outsideCanaryPaths = resolveProtectedCanaryPaths(`${process.pid}-${randomUUID()}`); }
+    catch (error) {
+        if (error?.code === 'CANARY_PARENT_UNAVAILABLE') return t.skip(error.message);
+        throw error;
+    }
+    await withSandboxFixture(outsideCanaryPaths, async ({ repoRoot, insideCanary }) => {
         const fixtureFile = path.join(repoRoot, 'fixture-write.txt');
         const inTempCanary = path.join(insideCanary, 'temp-canary.txt');
         const canaryFiles = [inTempCanary, ...outsideCanaryPaths];
@@ -64,7 +69,13 @@ test('model-free Codex sandbox regression allows the fixture and denies protecte
 test('ordinary node --test works under the tightened Codex sandbox', async (t) => {
     const codex = installedCodex();
     if (codex.reason) return t.skip(`Codex CLI unavailable: ${codex.reason}`);
-    await withSandboxFixture(async ({ repoRoot }) => {
+    let outsideCanaryPaths;
+    try { outsideCanaryPaths = resolveProtectedCanaryPaths(`${process.pid}-${randomUUID()}`); }
+    catch (error) {
+        if (error?.code === 'CANARY_PARENT_UNAVAILABLE') return t.skip(error.message);
+        throw error;
+    }
+    await withSandboxFixture(outsideCanaryPaths, async ({ repoRoot }) => {
         const testPath = path.join(repoRoot, 'toolchain.test.mjs');
         fs.writeFileSync(testPath, `import test from 'node:test'; import assert from 'node:assert/strict'; test('fixture toolchain', () => assert.equal(2 + 2, 4));\n`);
         const result = await runSandboxedNodeTest({ executable: codex.executable, repoRoot, testPath });

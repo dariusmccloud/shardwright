@@ -73,7 +73,7 @@ export function spawnProcessTree(executable, args = [], options = {}) {
     const append = (current, chunk, streamName) => {
         const next = current + chunk.toString('utf8');
         if (Buffer.byteLength(next, 'utf8') > maxBuffer) {
-            void terminate('PROCESS_OUTPUT_LIMIT');
+            void terminate('PROCESS_OUTPUT_LIMIT').catch(() => {});
             rejectResult(processError('PROCESS_OUTPUT_LIMIT', `${streamName} exceeded ${maxBuffer} bytes.`));
             settled = true;
             return current;
@@ -97,6 +97,13 @@ export function spawnProcessTree(executable, args = [], options = {}) {
             return;
         }
         resolveResult({ exitCode: Number.isInteger(code) ? code : 1, signal, stdout, stderr });
+    });
+
+    child.stdin.once('error', (error) => {
+        if (error?.code === 'EPIPE' || error?.code === 'ECONNRESET') return;
+        if (settled) return;
+        settled = true;
+        rejectResult(error);
     });
 
     async function terminate(code = 'PROCESS_TERMINATED', message = 'The process tree was terminated.') {

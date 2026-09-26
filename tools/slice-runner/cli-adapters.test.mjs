@@ -8,7 +8,7 @@ import test from 'node:test';
 import { runAgentWithTimeout } from './agent-adapter.js';
 import { buildClaudeCommand, createClaudeAdapter } from './claude-adapter.js';
 import { buildCodexCommand, createCodexAdapter } from './codex-adapter.js';
-import { projectRoot, scrubApiKeyEnvironment } from './cli-adapter-common.js';
+import { isUnavailableOutput, projectRoot, scrubApiKeyEnvironment } from './cli-adapter-common.js';
 
 async function withFixture(callback) {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'shardwright-cli-test-'));
@@ -98,6 +98,12 @@ test('API-key environment values are removed for subscription-authenticated CLI 
     assert.deepEqual(result, { PATH: 'fixture', CUSTOM: 'ok' });
 });
 
+test('unavailable output uses only stderr for failed runs', () => {
+    assert.equal(isUnavailableOutput({ exitCode: 0, stdout: 'usage limit reached', stderr: '' }), false);
+    assert.equal(isUnavailableOutput({ exitCode: 2, stdout: 'usage limit reached', stderr: '' }), false);
+    assert.equal(isUnavailableOutput({ exitCode: 2, stdout: 'ordinary output', stderr: 'quota exceeded' }), true);
+});
+
 test('Claude adapter returns plain text and maps malformed/usage-limit output to UNAVAILABLE', async () => {
     await withFixture(async ({ repoRoot }) => {
         const stub = stubFile(repoRoot, `
@@ -155,6 +161,18 @@ setInterval(() => {}, 1000);
         await new Promise((resolve) => setTimeout(resolve, 2100));
         assert.equal(fs.existsSync(marker), false, 'timed-out grandchild must not survive to write its marker');
     });
+});
+
+test('a successful adapter result after timeout begins is discarded', async () => {
+    const adapter = {
+        id: 'slow-terminator',
+        async run() {
+            await new Promise((resolve) => setTimeout(resolve, 20));
+            return { response: 'late success' };
+        },
+        async terminate() { await new Promise((resolve) => setTimeout(resolve, 40)); },
+    };
+    await assert.rejects(runAgentWithTimeout(adapter, {}, 5), { code: 'AGENT_TIMEOUT' });
 });
 
 test('agent adapter refuses a working directory outside the OS temp fixtures', async () => {

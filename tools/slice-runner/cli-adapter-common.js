@@ -73,7 +73,8 @@ export function renderRolePrompt(input) {
 }
 
 export function isUnavailableOutput(output) {
-    const text = `${output?.stdout ?? ''}\n${output?.stderr ?? ''}`;
+    if (output?.exitCode === 0) return false;
+    const text = `${output?.stderr ?? ''}`;
     return /(?:usage limit|rate limit|quota exceeded|out of (?:messages|credits)|sign[ -]?in required|not logged in|authentication failed|please log in)/iu.test(text);
 }
 

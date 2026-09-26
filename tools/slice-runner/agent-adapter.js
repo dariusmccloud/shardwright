@@ -37,10 +37,12 @@ export async function runAgentWithTimeout(adapter, input, timeoutMs) {
     });
     try {
         return await Promise.race([
-            Promise.resolve().then(() => adapter.run({ ...input, signal: controller.signal })).catch((error) => {
-                if (timeoutStarted) return new Promise(() => {});
-                throw error;
-            }),
+            Promise.resolve().then(() => adapter.run({ ...input, signal: controller.signal }))
+                .then((result) => timeoutStarted ? new Promise(() => {}) : result)
+                .catch((error) => {
+                    if (timeoutStarted) return new Promise(() => {});
+                    throw error;
+                }),
             timeout,
         ]);
     } finally {
