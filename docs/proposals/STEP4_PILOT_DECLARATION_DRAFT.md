@@ -72,7 +72,12 @@ One document for Chris covering:
      - `~/.codex/config.toml`, `D:\SillyTavern`, `D:\SillyBunny`, and `D:\AI\Projects`.
    - Protected canaries and before/after fingerprints cover these.
 
-**Still needed:** Chris's explicit approval of the pilot as a whole, including the one repository-path exception.
+**Approved by Chris, 2026-09-26, in session ("Step 4 approved"),** including the one repository-path exception. Queued as Work Board entries 16 (runner exception) and 17 (pilot run).
+
+**Slice adjustment (Claude, 2026-09-26), recorded for Chris.** Chris also approved removing the plugin's runtime `ajv` dependency (Work Board entry 15), which lands before the pilot, and that makes two chosen slices moot. They are reshaped to the same size and direction:
+- Claude implements: the README Troubleshooting row becomes "server plugin not loading": check `enableServerPlugins: true`, restart the server, read the console. This replaces the missing-`ajv` row.
+- Test-only: the test checks that the installed payload carries `package.json`, which is needed because the plugin is an ES module (`"type": "module"`). The lockfile check is dropped, since there are no runtime dependencies.
+- The `engines.node` slice is unchanged.
 
 ## Questions for Chris before approval
 
