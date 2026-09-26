@@ -4,6 +4,9 @@
   "type": "module",
   "main": "index.js",
   "private": true,
+  "engines": {
+    "node": ">=24.21.0"
+  },
   "scripts": {
     "generate:architectural-schema": "node ../generate-architectural-intermediate-validator.mjs",
     "test:architectural-schema": "node --test architectural-intermediate-schema.test.mjs",
