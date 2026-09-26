@@ -91,7 +91,14 @@ A lack of progress (the same finding returns, or implementer and reviewer disagr
 
 **Escalation standard:** anything that reaches Chris must ask him for a concrete action: a choice between stated options, with the agents' joint recommendation, what each option costs, and what happens next under each. It is never a status report, and never a request to "keep going" or "suggest what to do instead"; that conversation belongs to the agents first.
 
-**Runaway safety net:** a high round cap (default 8, one number in the queue file) exists only to stop a loop from exhausting usage limits. Reaching it halts the runner with a summary. It is not a judgement that the slice has failed.
+**Checkpoint pause (Chris, 2026-09-26):** after 5 rounds on one slice (one number in the queue file), the runner pauses so the work cannot run on indefinitely and exhaust context or usage limits. The pause is not a judgement that the slice has failed. It produces a "where we've landed" brief that gives Chris enough to decide from:
+- what each round found and fixed;
+- what is still open;
+- the agents' joint assessment: converging (each round smaller) or not, and why;
+- their recommendation, with the options: continue for N more rounds, change the approach or scope, or stop the slice;
+- roughly what continuing would cost.
+
+Chris's reply resumes, redirects, or stops the slice.
 
 **ESCALATE (decision or impossibility; to Chris):**
 
