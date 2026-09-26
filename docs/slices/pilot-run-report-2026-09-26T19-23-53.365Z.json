@@ -1,0 +1,294 @@
+{
+  "mode": "run",
+  "repository": "C:\\Users\\chris\\OneDrive\\Documents\\Personal\\Projects\\Shardwright",
+  "startedAt": "2026-09-26T19:23:53.365Z",
+  "guards": {
+    "cleanWorktree": {
+      "ok": true,
+      "detail": {
+        "launch": "relaunch",
+        "recordedSlices": [
+          "pilot-1-plugin-engines-node"
+        ],
+        "refused": [],
+        "acceptedLeftovers": [
+          "docs/MISSION_AND_CAPABILITY_MAP.md",
+          "tools/server-plugin/shardwright-memory/package.json",
+          "tools/server-plugin/shardwright-memory/payload-manifest.json"
+        ]
+      }
+    },
+    "queue": {
+      "ok": true,
+      "detail": []
+    },
+    "containment": {
+      "ok": true,
+      "insideWritable": true,
+      "protectedWritten": [],
+      "exitCode": 0,
+      "output": "{\"C:\\\\Users\\\\chris\\\\OneDrive\\\\Documents\\\\Personal\\\\Projects\\\\Shardwright\\\\docs\\\\slices\\\\.pilot-preflight-38104-330febc1-cd35-4155-968d-e995361c8cdc.txt\":\"WROTE\",\"C:\\\\Users\\\\chris\\\\OneDrive\\\\.shardwright-containment-38104-330febc1-cd35-4155-968d-e995361c8cdc-OneDrive.txt\":\"DENIED EPERM\",\"C:\\\\Users\\\\chris\\\\OneDrive\\\\Documents\\\\.shardwright-containment-38104-330febc1-cd35-4155-968d-e995361c8cdc-OneDrive-Documents.txt\":\"DENIED EPERM\",\"D:\\\\AI\\\\Projects\\\\SillyTavern\\\\.shardwright-containment-38104-330febc1-cd35-4155-968d-e995361c8cdc-D-SillyTavern.txt\":\"DENIED EPERM\",\"D:\\\\AI\\\\Projects\\\\SillyBunny\\\\.shardwright-containment-38104-330febc1-cd35-4155-968d-e995361c8cdc-D-SillyBunny.txt\":\"DENIED EPERM\"}"
+    },
+    "runnerDryDispatch": {
+      "ok": true,
+      "detail": {
+        "state": "HALTED",
+        "dispatchedSliceIds": [],
+        "skippedSliceIds": [],
+        "sliceResults": [],
+        "reason": "AGENT_UNAVAILABLE",
+        "message": "No configured adapter exists for codex.",
+        "blockedSliceId": "pilot-1-plugin-engines-node"
+      }
+    },
+    "codexConfig": {
+      "ok": true,
+      "detail": "unchanged"
+    },
+    "outsideFolders": {
+      "ok": true,
+      "detail": []
+    },
+    "scope": {
+      "ok": true,
+      "detail": []
+    }
+  },
+  "snapshotMs": 2027,
+  "invocations": [
+    {
+      "adapter": "codex",
+      "role": "implementer",
+      "sliceId": "pilot-1-plugin-engines-node",
+      "round": null,
+      "durationMs": 41341,
+      "state": "RETURNED",
+      "response": "The requested changes were already present. Regenerated the manifest and verified:\n\n- `engines.node` is `>=24.21.0`.\n- The manifest matches the package hash.\n- D-H records the declaration.\n- Only the three approved paths are modified.\n\nGoverning files remain unchanged. Full proof is deferred to the runner as authorized. Older-Node startup messaging remains a separate candidate slice.\n\nNo commit. Stopped awaiting runner proof and review.",
+      "responseTruncated": false,
+      "command": [
+        "codex",
+        "-a",
+        "never",
+        "-c",
+        "windows.sandbox=\"elevated\"",
+        "-c",
+        "sandbox_workspace_write.exclude_tmpdir_env_var=true",
+        "-c",
+        "sandbox_workspace_write.exclude_slash_tmp=true",
+        "exec",
+        "--ignore-user-config",
+        "--cd",
+        "C:\\Users\\chris\\OneDrive\\Documents\\Personal\\Projects\\Shardwright",
+        "--sandbox",
+        "workspace-write",
+        "--ephemeral",
+        "--ignore-rules",
+        "--json",
+        "-"
+      ]
+    },
+    {
+      "adapter": "claude",
+      "role": "reviewer",
+      "sliceId": "pilot-1-plugin-engines-node",
+      "round": 2,
+      "durationMs": 54014,
+      "state": "RETURNED",
+      "response": "---\nslice_id: pilot-1-plugin-engines-node\nround: 2\nverdict: PASS\nsubtype: null\nreviewer: claude\nreviewed_fingerprint: 29aa9ce803dc429d5e8cab814577eef449b419cff290cc12fc1d4763b6e63b46\npolicy_hash: e480bb4557ea2ff84c14c82c72f0b2f9f320e1a7b9516c795d216675c1f9f220\n---\nVerified by direct inspection of the three in-scope files plus git status.\n\npackage.json (tools/server-plugin/shardwright-memory/package.json): now declares \"engines\": { \"node\": \">=24.21.0\" } as required, with no other unrelated edits.\n\npayload-manifest.json: payloadFiles entry for \"package.json\" carries a new sha256 (250509ff36fb6a72a02eb1c0addd99d53e38ac702316c7a9007d9ee4fc4d3e2d), consistent with regeneration after the package.json edit. No other manifest entries appear altered beyond what regeneration would touch.\n\ndocs/MISSION_AND_CAPABILITY_MAP.md, D-H row: no longer lists engines.node as \"not done.\" It now reads \"Declared engines.node: >=24.21.0 in the plugin's package.json (2026-09-26)\" and confines the remaining \"not done\" note to a startup error for older Node (explicitly out of scope per the declaration) and a possible separate slice. This matches the target result exactly.\n\nScope: git status at session start shows modifications only to the three declared in-scope paths (docs/MISSION_AND_CAPABILITY_MAP.md, package.json, payload-manifest.json), plus an untracked runner-owned proof archive under docs/slices/pilot-1-plugin-engines-node/proof/, which is excluded from scope findings per instructions. No out-of-scope files (package-lock.json, lib/, AGENTS.md, docs/contracts/, docs/proposals/, tools/slice-runner/, tools/pilot/, vendor/) were touched.\n\nProof receipt: exitCode 0; stdout confirms \"engines.node and payload manifest: ok\" and \"D-H row reconciliation: ok,\" followed by all 7 packaging/parity tests passing (Node and Bun) with 0 failures. This matches the declared proof command and satisfies the stop condition.\n\nNo discrepancies found between the approved queue entry, the declaration, the file contents, and the proof receipt.",
+      "responseTruncated": false,
+      "command": [
+        "claude",
+        "--print",
+        "--input-format",
+        "text",
+        "--output-format",
+        "text",
+        "--no-session-persistence",
+        "--safe-mode",
+        "--restricted",
+        "--permission-mode",
+        "plan",
+        "--tools",
+        "Read",
+        "-p"
+      ]
+    },
+    {
+      "adapter": "claude",
+      "role": "implementer",
+      "sliceId": "pilot-2-readme-plugin-troubleshooting",
+      "round": null,
+      "durationMs": 8848,
+      "state": "RETURNED",
+      "response": "Added a new row to the Troubleshooting table in README.md for \"Server plugin not loading,\" instructing readers to set `enableServerPlugins: true` in the host's config.yaml, restart the server, and check the server console for the load error. No other files were changed.",
+      "responseTruncated": false,
+      "command": [
+        "claude",
+        "--print",
+        "--input-format",
+        "text",
+        "--output-format",
+        "text",
+        "--no-session-persistence",
+        "--safe-mode",
+        "--restricted",
+        "--permission-mode",
+        "dontAsk",
+        "--tools",
+        "Read,Edit",
+        "--allowedTools",
+        "Edit(/**)",
+        "-p"
+      ]
+    },
+    {
+      "adapter": "codex",
+      "role": "reviewer",
+      "sliceId": "pilot-2-readme-plugin-troubleshooting",
+      "round": 1,
+      "durationMs": 47175,
+      "state": "RETURNED",
+      "response": "---\nslice_id: pilot-2-readme-plugin-troubleshooting\nround: 1\nverdict: PASS\nsubtype: null\nreviewer: codex\nreviewed_fingerprint: 76af948588b61701c862acf1ea0a11240d60dd60336eeb3a5a4305312376d0c5\npolicy_hash: e480bb4557ea2ff84c14c82c72f0b2f9f320e1a7b9516c795d216675c1f9f220\n---\n\nREADME.md has exactly one added Troubleshooting table row. It instructs readers to set `enableServerPlugins: true` in the host’s `config.yaml`, restart the server, and read the server console for the load error. No other README content changed.\n\nScope verified against the diff and prior pilot-1 round-2 verdict: the other three modified implementation/documentation files match the previously reviewed pilot-1 changes. Runner-owned ledger, verdict, prompt, and proof artifacts are excluded from scope findings.\n\nThe captured proof command, `node tools/pilot/proofs/pilot-2-readme-troubleshooting.mjs`, completed with exit code 0 and empty stderr. Its output matches the added row. The archived receipt’s SHA-256 matches the supplied output hash.\n\nAll three governing-contract hashes match the approved queue entry. AGENTS.md and the pilot declaration remain current for this slice; the proof script is intentionally unchanged.\n\nNo findings. Review complete; stopped.",
+      "responseTruncated": false,
+      "command": [
+        "codex",
+        "-a",
+        "never",
+        "-c",
+        "windows.sandbox=\"elevated\"",
+        "-c",
+        "sandbox_workspace_write.exclude_tmpdir_env_var=true",
+        "-c",
+        "sandbox_workspace_write.exclude_slash_tmp=true",
+        "exec",
+        "--ignore-user-config",
+        "--cd",
+        "C:\\Users\\chris\\OneDrive\\Documents\\Personal\\Projects\\Shardwright",
+        "--sandbox",
+        "read-only",
+        "--ephemeral",
+        "--ignore-rules",
+        "--json",
+        "-"
+      ]
+    },
+    {
+      "adapter": "codex",
+      "role": "implementer",
+      "sliceId": "pilot-3-payload-package-json-test",
+      "round": null,
+      "durationMs": 40843,
+      "state": "RETURNED",
+      "response": "Added the exact named test in `tools/server-plugin/shardwright-memory/package.test.mjs`. It checks manifest inclusion, staged `package.json` existence, and `\"type\": \"module\"`.\n\nExisting tests, governing documents, and pre-existing changes remain untouched. No commit.\n\nProof deferred to the runner as authorized; passing status remains unverified. Stopped pending runner proof and review; no next slice begun.",
+      "responseTruncated": false,
+      "command": [
+        "codex",
+        "-a",
+        "never",
+        "-c",
+        "windows.sandbox=\"elevated\"",
+        "-c",
+        "sandbox_workspace_write.exclude_tmpdir_env_var=true",
+        "-c",
+        "sandbox_workspace_write.exclude_slash_tmp=true",
+        "exec",
+        "--ignore-user-config",
+        "--cd",
+        "C:\\Users\\chris\\OneDrive\\Documents\\Personal\\Projects\\Shardwright",
+        "--sandbox",
+        "workspace-write",
+        "--ephemeral",
+        "--ignore-rules",
+        "--json",
+        "-"
+      ]
+    },
+    {
+      "adapter": "claude",
+      "role": "reviewer",
+      "sliceId": "pilot-3-payload-package-json-test",
+      "round": 1,
+      "durationMs": 89884,
+      "state": "RETURNED",
+      "response": "---\nslice_id: pilot-3-payload-package-json-test\nround: 1\nverdict: PASS\nsubtype: null\nreviewer: claude\nreviewed_fingerprint: aec2c6405e6fa17b7d622364f9d41a1224dae7d5509632533fefe0243c2c0b10\npolicy_hash: e480bb4557ea2ff84c14c82c72f0b2f9f320e1a7b9516c795d216675c1f9f220\n---\nEvidence reviewed: tools/server-plugin/shardwright-memory/package.test.mjs (full file, 795 lines) and tools/pilot/proofs/pilot-3-payload-package-json-test.mjs (governing contract, unmodified per its listed sha).\n\nFindings:\n1. A single new test exists at lines 351–362 with the exact required name \"packaged payload carries package.json declaring an ES module,\" positioned as the first test in the file. It stages the packaged plugin, then asserts (a) payload-manifest.json's staticPayloadFiles includes \"package.json\", (b) package.json exists in the staged payload root, and (c) the staged package.json's \"type\" field equals \"module\". This satisfies the declaration's requirement to fail if either the manifest or staged payload lacks package.json, or if package.json doesn't declare type:module.\n2. The remaining 7 pre-existing tests in the file (payload staging/import resolution, Node/Bun semantic replay, Node/Bun rebuild smoke, Node/Bun interpretive evidence parity, Node/Bun interpretive publication flow) are present and unchanged in substance; their names match 1:1 with the 8 subtests reported in the proof receipt, confirming none were altered or removed.\n3. Proof receipt shows exitCode 0 and all 8 tests passing (TAP: \"ok 1\" through \"ok 8\", \"# fail 0\"), and the runner-side regex confirming the exact required test name ran and passed. This matches the proof script's pass condition.\n4. Cross-checked current tools/server-plugin/shardwright-memory/package.json (already declares \"type\": \"module\") and payload-manifest.json (already lists \"package.json\" in staticPayloadFiles) — the packager/runtime already satisfies the new test's assertions, so no packager or runtime change was needed or made, consistent with the \"no runtime or packager change\" scope constraint.\n5. Scope: the only in-scope path is package.test.mjs, and the reviewed content is additive (one new test) with no evidence of edits to package-shardwright-memory.mjs or other packager/runtime files. Pre-existing uncommitted diffs on package.json/payload-manifest.json visible in git status correspond to the engines-field change from the separate, earlier pilot-1 slice (still uncommitted), not to this slice's implementer — payload-manifest.json's package.json hash reflects that engines-field content, and no additional drift is attributable to this task.\n\nConclusion: test name, logic, and scope match the approved queue entry and declaration; proof receipt is genuine and passing. PASS.",
+      "responseTruncated": false,
+      "command": [
+        "claude",
+        "--print",
+        "--input-format",
+        "text",
+        "--output-format",
+        "text",
+        "--no-session-persistence",
+        "--safe-mode",
+        "--restricted",
+        "--permission-mode",
+        "plan",
+        "--tools",
+        "Read",
+        "-p"
+      ]
+    }
+  ],
+  "runner": {
+    "state": "COMPLETE",
+    "dispatchedSliceIds": [
+      "pilot-1-plugin-engines-node",
+      "pilot-2-readme-plugin-troubleshooting",
+      "pilot-3-payload-package-json-test"
+    ],
+    "skippedSliceIds": [],
+    "sliceResults": [
+      {
+        "sliceId": "pilot-1-plugin-engines-node",
+        "verdict": "PASS",
+        "proofReceipt": {
+          "command": [
+            "node",
+            "tools/pilot/proofs/pilot-1-engines-node.mjs"
+          ],
+          "exitCode": 0,
+          "stdout": "engines.node and payload manifest: ok\nD-H row reconciliation: ok\n✔ packaged plugin stages only declared payload and resolves runtime imports within plugin root (1703.8875ms)\n✔ packaged finalized semantic replay is identical under Node and Bun (459.3831ms)\n✔ packaged plugin smoke succeeds under Node from staged payload only (1090.3051ms)\n✔ packaged plugin smoke succeeds under Bun from staged payload only (1252.7438ms)\n✔ packaged interpretive evidence findings remain semantically identical under Node and Bun (1012.5608ms)\n✔ packaged interpretive publication flow succeeds under Node from staged payload only (824.347ms)\n✔ packaged interpretive publication flow succeeds under Bun from staged payload only (885.6483ms)\nℹ tests 7\nℹ suites 0\nℹ pass 7\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 7341.2191\n",
+          "stderr": "",
+          "outputHash": "51111352a213518921485c08617b12a425dd961b892ed2c96b152116ecba5521",
+          "archivePath": "docs/slices/pilot-1-plugin-engines-node/proof/51111352a213518921485c08617b12a425dd961b892ed2c96b152116ecba5521.json"
+        },
+        "recordedRound": 2
+      },
+      {
+        "sliceId": "pilot-2-readme-plugin-troubleshooting",
+        "verdict": "PASS",
+        "proofReceipt": {
+          "command": [
+            "node",
+            "tools/pilot/proofs/pilot-2-readme-troubleshooting.mjs"
+          ],
+          "exitCode": 0,
+          "stdout": "README troubleshooting row: ok\n| Server plugin not loading | Set `enableServerPlugins: true` in the host's `config.yaml`, restart the server, and read the server console for the load error |\n",
+          "stderr": "",
+          "outputHash": "26951e5c53a584265e81fe97e47412da1c255939880870222baaeff670c7e4ce",
+          "archivePath": "docs/slices/pilot-2-readme-plugin-troubleshooting/proof/26951e5c53a584265e81fe97e47412da1c255939880870222baaeff670c7e4ce.json"
+        },
+        "recordedRound": 1
+      },
+      {
+        "sliceId": "pilot-3-payload-package-json-test",
+        "verdict": "PASS",
+        "proofReceipt": {
+          "command": [
+            "node",
+            "tools/pilot/proofs/pilot-3-payload-package-json-test.mjs"
+          ],
+          "exitCode": 0,
+          "stdout": "TAP version 13\n# Subtest: packaged payload carries package.json declaring an ES module\nok 1 - packaged payload carries package.json declaring an ES module\n  ---\n  duration_ms: 170.1348\n  type: 'test'\n  ...\n# Subtest: packaged plugin stages only declared payload and resolves runtime imports within plugin root\nok 2 - packaged plugin stages only declared payload and resolves runtime imports within plugin root\n  ---\n  duration_ms: 1701.2038\n  type: 'test'\n  ...\n# Subtest: packaged finalized semantic replay is identical under Node and Bun\nok 3 - packaged finalized semantic replay is identical under Node and Bun\n  ---\n  duration_ms: 489.9386\n  type: 'test'\n  ...\n# Subtest: packaged plugin smoke succeeds under Node from staged payload only\nok 4 - packaged plugin smoke succeeds under Node from staged payload only\n  ---\n  duration_ms: 1170.5079\n  type: 'test'\n  ...\n# Subtest: packaged plugin smoke succeeds under Bun from staged payload only\nok 5 - packaged plugin smoke succeeds under Bun from staged payload only\n  ---\n  duration_ms: 1038.5569\n  type: 'test'\n  ...\n# Subtest: packaged interpretive evidence findings remain semantically identical under Node and Bun\nok 6 - packaged interpretive evidence findings remain semantically identical under Node and Bun\n  ---\n  duration_ms: 955.4467\n  type: 'test'\n  ...\n# Subtest: packaged interpretive publication flow succeeds under Node from staged payload only\nok 7 - packaged interpretive publication flow succeeds under Node from staged payload only\n  ---\n  duration_ms: 1063.8512\n  type: 'test'\n  ...\n# Subtest: packaged interpretive publication flow succeeds under Bun from staged payload only\nok 8 - packaged interpretive publication flow succeeds under Bun from staged payload only\n  ---\n  duration_ms: 1018.8859\n  type: 'test'\n  ...\n1..8\n# tests 8\n# suites 0\n# pass 8\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 7741.928\n",
+          "stderr": "",
+          "outputHash": "90f1e162f1d6755056c64cf20e9e67e2f71c9851f47a7a67c0ee726758a19e9f",
+          "archivePath": "docs/slices/pilot-3-payload-package-json-test/proof/90f1e162f1d6755056c64cf20e9e67e2f71c9851f47a7a67c0ee726758a19e9f.json"
+        },
+        "recordedRound": 1
+      }
+    ]
+  },
+  "finishedAt": "2026-09-26T19:28:56.785Z",
+  "state": "PILOT_RUN_COMPLETE"
+}

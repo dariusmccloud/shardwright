@@ -131,6 +131,7 @@ Optional semantic shard retrieval needs the Similharity plugin. Its original rep
 | Recall refuses with a stated reason | The refusal is deliberate: the system reports *why* (for example, no match, insufficient evidence, or capacity) rather than guessing |
 | Semantic retrieval not injecting | Confirm the Similharity plugin, a backend, and an embedding server are configured per their own documentation |
 | API errors | Each feature may use a different endpoint; check per-feature API config |
+| Server plugin not loading | Set `enableServerPlugins: true` in the host's `config.yaml`, restart the server, and read the server console for the load error |
 
 ---
 
