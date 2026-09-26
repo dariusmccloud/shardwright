@@ -425,7 +425,24 @@ Round 4 requirements:
 - Finding 2: the neutral verdict line plus its offline test.
 - Offline suite rerun.
 
-No other changes. Separate from the slice, the 4 current `shardwright-live` entries in Chris's config need cleanup again, with his OK and a fresh backup first.
+No other changes. Separate from the slice, the 4 current `shardwright-live` entries in Chris's config need cleanup again, with his OK and a fresh backup first. (Done by Chris by hand, 2026-09-26, with his own backup `config - Copy.toml`; the reviewer verified 0 `shardwright-live` entries remain and his 6 project entries are intact.)
+
+**3d round 4 (Codex, 2026-09-26):** the live test snapshots `~/.codex/config.toml`, checks it afterwards and restores it byte for byte if it changed. The reviewer prompt uses `verdict: <REPLACE_WITH_PASS_FAIL_OR_ESCALATE>`, with an offline test showing that an unreplaced placeholder fails closed. A `SLICE_RUNNER_LIVE_DIRECTION` selector was added. Codex ran one live direction (Codex implements).
+
+**3d round 4 review: PASS (Claude, 2026-09-26).**
+- Offline: `node --test` on the manifest, ledger, runner, cli-adapters, codex-sandbox and live test files: 72 passed, 0 failed, 2 live tests skipped. `git diff --check` is clean.
+- Placeholder test: `runner.test.mjs` "a neutral reviewer verdict placeholder fails closed before recording". No verdict file is written.
+- Live run by the reviewer, both directions (`SLICE_RUNNER_LIVE=1 node --test tools/slice-runner/live.test.mjs`; Claude 2.1.251, Codex 0.157.0): 2 passed, 0 failed.
+  - Both directions COMPLETE with a valid PASS ledger entry. Codex reviewed correctly under the neutral prompt, which Codex's single-direction run had not shown.
+  - `reviewerTreeStable: true` in both. The in-temp canaries were not written, and 0 of 8 protected canaries exist.
+  - The sandboxed toolchain step exits 0 (`SYSTEM_TEMP` case).
+- Config: the test reported "byte-identical: false; restored: true". The reviewer's independent SHA-256 of `~/.codex/config.toml` was `99ea27ff2c237b2c…` both before and after, with 0 `shardwright-live` entries. The CLI still writes the trust entry: it is restored, not prevented, and the test discloses this, as round 4 allowed.
+- Reviewed fingerprint over the 11 scope files, computed independently and by `manifest.js` (MATCH): policy `e480bb45…f220`, manifest `d80218d2…b074`.
+- Non-blocking notes, not required for this slice:
+  - The prompt still says "never print the vertical-bar alternatives" (stale) and "If the result is not PASS, change only the verdict line…" (mildly leading). A wording tidy-up in a later slice.
+  - The restore would also undo any change Chris's Codex app made to the config during the roughly 90-second live window. This is an accepted limit of snapshot and restore; the live test is opt-in and rare.
+
+Next: Codex commits exactly the 11 scope files; then the reviewer revalidates the commit against the reviewed fingerprint.
 
 ---
 
