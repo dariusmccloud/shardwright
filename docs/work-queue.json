@@ -1,0 +1,135 @@
+{
+  "queueVersion": 1,
+  "purpose": "Step 4 pilot (Work Board entry 17). Exactly the three pilot slices approved by Chris. Review backlog off (no reviewBacklog key). Launch: node tools/pilot/run-step4-pilot.mjs",
+  "entries": [
+    {
+      "sliceId": "pilot-1-plugin-engines-node",
+      "title": "Declare the server plugin's minimum Node version",
+      "status": "QUEUED",
+      "riskClass": "ordinary",
+      "touches": [
+        "build-config",
+        "documentation"
+      ],
+      "implementerAdapter": "codex",
+      "reviewerAdapter": "claude",
+      "inScopePaths": [
+        "tools/server-plugin/shardwright-memory/package.json",
+        "tools/server-plugin/shardwright-memory/payload-manifest.json",
+        "docs/MISSION_AND_CAPABILITY_MAP.md"
+      ],
+      "governingContracts": [
+        {
+          "path": "AGENTS.md",
+          "sha256": "be8651251c9ca9c468a81a6011a19cc01e653dd04a4eff7f038d3fb8570c52d2"
+        },
+        {
+          "path": "docs/proposals/STEP4_PILOT_DECLARATION_DRAFT.md",
+          "sha256": "6f9458f2df689848552fe5bb15738eef21c4c21f014314bfe10642686e28392d"
+        },
+        {
+          "path": "tools/pilot/proofs/pilot-1-engines-node.mjs",
+          "sha256": "638e043d54ed1a483c8192df65f4573dfae00f15b0abb00bfa038530b84154df"
+        }
+      ],
+      "proof": {
+        "argv": [
+          "node",
+          "tools/pilot/proofs/pilot-1-engines-node.mjs"
+        ],
+        "cwd": ".",
+        "timeoutMs": 600000
+      },
+      "approvalRecord": {
+        "approvedBy": "Chris",
+        "recordedAt": "2026-09-26T14:40:46Z",
+        "reference": "Chris in session, 2026-09-26 (\"Step 4 approved\"; slices chosen: \"My three picks\"); recorded in commit b828223, Work Board entry 17, docs/proposals/STEP4_PILOT_DECLARATION_DRAFT.md"
+      },
+      "declaration": "Problem: the server plugin needs Node 24.21.0 or later (Mission and Capability Map, D-H row), but its package.json does not declare it; the D-H row records this as not done. Evidence: tools/server-plugin/shardwright-memory/package.json has no engines field; D-H row says \"Not done here: declaring engines.node in the plugin's package.json\". Target result: package.json declares \"engines\": { \"node\": \">=24.21.0\" }; payload-manifest.json is regenerated so it carries the new package.json hash (run: node tools/server-plugin/package-shardwright-memory.mjs from the repository root; it must change no file other than payload-manifest.json); the D-H row no longer lists engines.node as not done and records that it is declared. In scope: exactly the three inScopePaths. Out of scope: every other file, including package-lock.json (do not run npm), lib/, the SillyBunny/Bun requirement, any startup error for older Node, AGENTS.md, docs/contracts/, docs/proposals/, tools/slice-runner/, tools/pilot/, vendor/. Outside this repository: nothing. Proof: node tools/pilot/proofs/pilot-1-engines-node.mjs from the repository root (asserts engines.node and the manifest hash, then runs the packaging suite). Stop condition: proof passes; report and stop. Do not commit."
+    },
+    {
+      "sliceId": "pilot-2-readme-plugin-troubleshooting",
+      "title": "README troubleshooting row: server plugin not loading",
+      "status": "QUEUED",
+      "riskClass": "ordinary",
+      "touches": [
+        "documentation"
+      ],
+      "implementerAdapter": "claude",
+      "reviewerAdapter": "codex",
+      "inScopePaths": [
+        "README.md"
+      ],
+      "governingContracts": [
+        {
+          "path": "AGENTS.md",
+          "sha256": "be8651251c9ca9c468a81a6011a19cc01e653dd04a4eff7f038d3fb8570c52d2"
+        },
+        {
+          "path": "docs/proposals/STEP4_PILOT_DECLARATION_DRAFT.md",
+          "sha256": "6f9458f2df689848552fe5bb15738eef21c4c21f014314bfe10642686e28392d"
+        },
+        {
+          "path": "tools/pilot/proofs/pilot-2-readme-troubleshooting.mjs",
+          "sha256": "9d21f2e4100d042aa8b1292b74f1cd0b41ed1a6cdabd09a57cc290dc095947d6"
+        }
+      ],
+      "proof": {
+        "argv": [
+          "node",
+          "tools/pilot/proofs/pilot-2-readme-troubleshooting.mjs"
+        ],
+        "cwd": ".",
+        "timeoutMs": 120000
+      },
+      "approvalRecord": {
+        "approvedBy": "Chris",
+        "recordedAt": "2026-09-26T14:55:16Z",
+        "reference": "Chris in session, 2026-09-26 (\"Step 4 approved\"; reshaped slice approved: \"The swapped tasks are noted and approved\"); recorded in commit 8710a99, docs/proposals/STEP4_PILOT_DECLARATION_DRAFT.md"
+      },
+      "declaration": "Problem: README's Troubleshooting table has no entry for the server plugin failing to load, the most likely setup failure now that the plugin has no runtime dependencies. Evidence: README.md \"## Troubleshooting\" table rows cover the extension, recall refusals, semantic retrieval, and API errors only. Target result: one new row in that table, in the existing table style, for the server plugin not loading, telling the reader to set enableServerPlugins: true in the host's config.yaml, restart the server, and read the server console for the load error. In scope: README.md, that table only. Out of scope: every other README section and every other file, including AGENTS.md, docs/contracts/, docs/proposals/, tools/slice-runner/, tools/pilot/, vendor/. Outside this repository: nothing. Proof: node tools/pilot/proofs/pilot-2-readme-troubleshooting.mjs from the repository root. Stop condition: proof passes; report and stop. Do not commit."
+    },
+    {
+      "sliceId": "pilot-3-payload-package-json-test",
+      "title": "Test: the packaged payload carries package.json",
+      "status": "QUEUED",
+      "riskClass": "ordinary",
+      "touches": [
+        "tests"
+      ],
+      "implementerAdapter": "codex",
+      "reviewerAdapter": "claude",
+      "inScopePaths": [
+        "tools/server-plugin/shardwright-memory/package.test.mjs"
+      ],
+      "governingContracts": [
+        {
+          "path": "AGENTS.md",
+          "sha256": "be8651251c9ca9c468a81a6011a19cc01e653dd04a4eff7f038d3fb8570c52d2"
+        },
+        {
+          "path": "docs/proposals/STEP4_PILOT_DECLARATION_DRAFT.md",
+          "sha256": "6f9458f2df689848552fe5bb15738eef21c4c21f014314bfe10642686e28392d"
+        },
+        {
+          "path": "tools/pilot/proofs/pilot-3-payload-package-json-test.mjs",
+          "sha256": "01f8bb04e14d71498576fc99cf65ff83083fa55eb35d057716a859e0198c0120"
+        }
+      ],
+      "proof": {
+        "argv": [
+          "node",
+          "tools/pilot/proofs/pilot-3-payload-package-json-test.mjs"
+        ],
+        "cwd": ".",
+        "timeoutMs": 600000
+      },
+      "approvalRecord": {
+        "approvedBy": "Chris",
+        "recordedAt": "2026-09-26T14:55:16Z",
+        "reference": "Chris in session, 2026-09-26 (\"Step 4 approved\"; reshaped slice approved: \"The swapped tasks are noted and approved\"); recorded in commit 8710a99, docs/proposals/STEP4_PILOT_DECLARATION_DRAFT.md"
+      },
+      "declaration": "Problem: nothing tests that the packaged plugin carries package.json, which the plugin needs because it is an ES module (\"type\": \"module\"); without it, every .js file fails to load. Evidence: tools/server-plugin/shardwright-memory/package.test.mjs has no test for it. Target result: one new test in package.test.mjs named exactly \"packaged payload carries package.json declaring an ES module\", test-only, that fails if the staged or manifest payload lacks package.json or if that package.json does not declare \"type\": \"module\"; all existing tests unchanged and passing. In scope: package.test.mjs only; no runtime or packager change. Out of scope: every other file, including AGENTS.md, docs/contracts/, docs/proposals/, tools/slice-runner/, tools/pilot/, vendor/. Outside this repository: nothing. Proof: node tools/pilot/proofs/pilot-3-payload-package-json-test.mjs from the repository root (requires that named test to run and pass, and the whole file to pass). Stop condition: proof passes; report and stop. Do not commit."
+    }
+  ]
+}
