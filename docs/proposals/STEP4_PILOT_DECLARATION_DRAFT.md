@@ -79,6 +79,8 @@ One document for Chris covering:
 - Test-only: the test checks that the installed payload carries `package.json`, which is needed because the plugin is an ES module (`"type": "module"`). The lockfile check is dropped, since there are no runtime dependencies.
 - The `engines.node` slice is unchanged.
 
+**Adjustment approved by Chris, 2026-09-26, in session ("The swapped tasks are noted and approved").**
+
 ## Questions for Chris before approval
 
 1. Which three slices? (The table above is a starting point.)
