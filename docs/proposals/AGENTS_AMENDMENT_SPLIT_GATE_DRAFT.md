@@ -85,6 +85,14 @@ Most anomalies are defects, not decisions. Sending every anomaly to Chris would 
 
 **Repeated-failure rule:** a proof failing does not by itself create a decision point. It counts toward the `ESCALATE` "fails twice" trigger below only when all of these match the prior failure: the same proof, the same declared slice, the same failure class, and no revised diagnosis has been accepted in between. Two unrelated or transient failures do not compound (Codex's correction 6).
 
+**Progress rule (Chris, 2026-09-26):** repeated rounds are not a decision point while progress is being made. If each round exposes and fixes a different, previously unforeseen issue, the slice keeps cycling between implementer and reviewer, however many rounds that takes. There is no round limit aimed at Chris, because more rounds give him nothing to act on.
+
+A lack of progress (the same finding returns, or implementer and reviewer disagree) first goes to the two agents. They discuss what to do instead and try an alternative within the declared scope, recording that discussion in the slice record. It becomes `ESCALATE` only when the cause is something patient coding cannot fix: a likely bad design, a blocker nobody foresaw, or a disagreement about what the slice requires rather than how to build it.
+
+**Escalation standard:** anything that reaches Chris must ask him for a concrete action: a choice between stated options, with the agents' joint recommendation, what each option costs, and what happens next under each. It is never a status report, and never a request to "keep going" or "suggest what to do instead"; that conversation belongs to the agents first.
+
+**Runaway safety net:** a high round cap (default 8, one number in the queue file) exists only to stop a loop from exhausting usage limits. Reaching it halts the runner with a summary. It is not a judgement that the slice has failed.
+
 **ESCALATE (decision or impossibility; to Chris):**
 
 - the Authority Gate cannot be satisfied, or governing authority is unclear;
@@ -93,7 +101,7 @@ Most anomalies are defects, not decisions. Sending every anomaly to Chris would 
 - a keystone structure (schema, persistence, lifecycle, replay, identity) is touched with no governing contract;
 - the external effect (network call, data leaving the system, a new integration) is **not already authorized by an existing contract** (cited by clause, not just by name — see Section 3) **or** materially changes data, privacy, security, or custody boundaries. Routine calls an existing contract already authorizes do not escalate on their own (narrowed per Codex's correction 5 from the original blanket "external-network or user-data impact");
 - migration, backfill, deletion, overwrite, or recovery behavior is involved;
-- the same proof fails twice under the Repeated-failure rule above, or implementer and reviewer disagree;
+- the same proof fails twice under the Repeated-failure rule above, or implementer and reviewer disagree, **and** the agents' own discussion (Progress rule above) finds a design problem, an unforeseen blocker, or a disagreement about what the slice requires;
 - the reviewer believes the code is correct but cannot establish that it is contract-correct;
 - the reviewer's independence or evidence custody cannot be established;
 - the slice depends on an unrecorded assumption;
